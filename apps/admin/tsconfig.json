@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@haifeng/shared": ["../../packages/shared/src"],
+      "@haifeng/shared/*": ["../../packages/shared/src/*"]
+    },
+    "ignoreDeprecations": "5.0"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "env.d.ts"],
+  "references": [
+    { "path": "../../packages/shared" }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "haifeng-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "海峰未来规划院 - 前端 Monorepo",
+  "scripts": {
+    "dev:admin": "pnpm --filter @haifeng/admin dev",
+    "dev:user": "pnpm --filter @haifeng/user dev",
+    "build": "pnpm -r build",
+    "build:admin": "pnpm --filter @haifeng/admin build",
+    "build:user": "pnpm --filter @haifeng/user build",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
+    "clean": "rimraf **/node_modules **/dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
