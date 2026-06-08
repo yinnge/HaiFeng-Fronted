@@ -96,29 +96,6 @@ function goProfile() {
         </div>
       </section>
 
-      <!-- Stats Section -->
-      <section class="bg-gradient-to-r from-slate-800 to-slate-900 py-16">
-        <div class="container mx-auto px-6">
-          <div class="grid grid-cols-2 gap-8 md:grid-cols-4">
-            <div class="text-center">
-              <div class="text-4xl font-bold text-orange-400 mb-2">10W+</div>
-              <div class="text-gray-400">服务学生</div>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl font-bold text-amber-400 mb-2">2800+</div>
-              <div class="text-gray-400">合作院校</div>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl font-bold text-yellow-400 mb-2">98.6%</div>
-              <div class="text-gray-400">满意度</div>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl font-bold text-orange-300 mb-2">500+</div>
-              <div class="text-gray-400">专业顾问</div>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
 
     <!-- Footer -->
