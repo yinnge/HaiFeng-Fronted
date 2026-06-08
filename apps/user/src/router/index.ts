@@ -46,6 +46,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '培训机构详情' },
   },
   {
+    path: '/university',
+    name: 'UniversityList',
+    component: () => import('@/views/university/List.vue'),
+    meta: { title: '院校列表' },
+  },
+  {
+    path: '/university/:id',
+    name: 'UniversityDetail',
+    component: () => import('@/views/university/Detail.vue'),
+    meta: { title: '院校详情', requiresAuth: true },
+  },
+  {
+    path: '/university/:id/guide',
+    name: 'UniversityGuide',
+    component: () => import('@/views/university/Guide.vue'),
+    meta: { title: '适应指南', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
