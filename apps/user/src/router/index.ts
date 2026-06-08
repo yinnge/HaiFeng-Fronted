@@ -28,6 +28,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '个人中心', requiresAuth: true },
   },
   {
+    path: '/home/announcement/:id',
+    name: 'AnnouncementDetail',
+    component: () => import('@/views/home/announcement/Detail.vue'),
+    meta: { title: '公告详情' },
+  },
+  {
+    path: '/home/planner/:id',
+    name: 'PlannerDetail',
+    component: () => import('@/views/home/planner/Detail.vue'),
+    meta: { title: '规划师详情' },
+  },
+  {
+    path: '/home/institution/:id',
+    name: 'InstitutionDetail',
+    component: () => import('@/views/home/institution/Detail.vue'),
+    meta: { title: '培训机构详情' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
