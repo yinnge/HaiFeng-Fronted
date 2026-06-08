@@ -1,7 +1,75 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
 import logoMain from '@/assets/images/logo-main.png'
+
+interface StatConfig {
+  label: string
+  target: number
+  display: (v: number) => string
+  color: string
+}
+
+const stats: StatConfig[] = [
+  { label: '服务学生', target: 10, display: v => `${v}W+`, color: '#e8722a' },
+  { label: '院校库', target: 2800, display: v => `${v}+`, color: '#f5a54a' },
+  { label: '满意度', target: 986, display: v => `${(v / 10).toFixed(1)}%`, color: '#fbbf24' },
+  { label: '专业顾问', target: 500, display: v => `${v}+`, color: '#e8722a' },
+]
+
+const currentValues = ref<number[]>(stats.map(() => 0))
+const hasAnimated = ref(false)
+
+let animationFrameId: number | null = null
+
+const animateStats = () => {
+  if (hasAnimated.value) return
+  hasAnimated.value = true
+
+  const startTime = performance.now()
+  const duration = 1800
+
+  const step = (timestamp: number) => {
+    const elapsed = timestamp - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - (1 - progress) * (1 - progress)
+
+    stats.forEach((stat, i) => {
+      currentValues.value[i] = Math.round(eased * stat.target)
+    })
+
+    if (progress < 1) {
+      animationFrameId = requestAnimationFrame(step)
+    } else {
+      stats.forEach((stat, i) => {
+        currentValues.value[i] = stat.target
+      })
+    }
+  }
+
+  animationFrameId = requestAnimationFrame(step)
+}
+
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateStats()
+      }
+    })
+  }, { threshold: 0.3 })
+
+  const el = document.querySelector('.stats-section')
+  if (el) observer.observe(el)
+})
+
+onUnmounted(() => {
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
+  if (observer) observer.disconnect()
+})
 
 const router = useRouter()
 
@@ -71,6 +139,25 @@ function goProfile() {
         </div>
       </div>
 
+      <!-- Stats -->
+      <div class="stats-section">
+        <div class="stats-container">
+          <div
+            v-for="(stat, index) in stats"
+            :key="stat.label"
+            class="stat-item"
+          >
+            <div
+              class="stat-value"
+              :style="{ color: stat.color }"
+            >
+              {{ stat.display(currentValues[index]) }}
+            </div>
+            <div class="stat-label">{{ stat.label }}</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Features -->
       <section class="container mx-auto grid gap-8 px-6 py-16 md:grid-cols-3">
         <div class="group rounded-2xl bg-white p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-orange-200">
@@ -102,3 +189,90 @@ function goProfile() {
     <SiteFooter />
   </div>
 </template>
+
+<style scoped>
+.stats-section {
+  padding: 48px 24px 40px;
+  position: relative;
+  background: #ffffff;
+}
+
+.stats-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 900px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 114, 42, 0.2), rgba(251, 191, 36, 0.2), transparent);
+}
+
+.stats-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+}
+
+.stat-label {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 1024px) {
+  .stats-container {
+    gap: 24px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 20px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-section {
+    padding: 36px 16px 32px;
+  }
+
+  .stats-container {
+    gap: 24px 16px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+  }
+}
+</style>
