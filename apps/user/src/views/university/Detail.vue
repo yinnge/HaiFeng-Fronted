@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus'
 import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
 import DepartmentTab from '@/components/university/DepartmentTab.vue'
 import SubjectEvaluationTab from '@/components/university/SubjectEvaluationTab.vue'
+import PostgradMajorForUniversityTab from '@/components/major/PostgradMajorForUniversityTab.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -16,6 +17,7 @@ const detail = ref<UniversityDetailVO | null>(null)
 const activeTab = ref('laboratory')
 const tabs = [
   { key: 'laboratory', label: '重点实验室', icon: '🔬' },
+  { key: 'postgrad', label: '考研专业', icon: '🎓' },
   { key: 'department', label: '院系', icon: '🏛️' },
   { key: 'evaluation', label: '学科评估', icon: '📊' },
 ]
@@ -123,7 +125,7 @@ onMounted(fetchDetail)
 
         <!-- Tab 导航 -->
         <section class="mb-8">
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-4 gap-4">
             <button
               v-for="tab in tabs" :key="tab.key"
               class="relative rounded-2xl p-5 text-center transition-all border"
@@ -141,6 +143,7 @@ onMounted(fetchDetail)
         <!-- Tab 内容区 -->
         <section class="min-h-[200px] mb-8">
           <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="Number(route.params.id)" />
+          <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="Number(route.params.id)" />
           <DepartmentTab v-else-if="activeTab === 'department'" :university-id="Number(route.params.id)" />
           <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="Number(route.params.id)" />
         </section>
