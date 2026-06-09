@@ -76,6 +76,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '院系详情', requiresAuth: true },
   },
   {
+    path: '/major',
+    name: 'MajorList',
+    component: () => import('@/views/major/List.vue'),
+    meta: { title: '专业查询' }
+  },
+  {
+    path: '/major/:id',
+    name: 'MajorDetail',
+    component: () => import('@/views/major/Detail.vue'),
+    meta: { title: '专业详情', requiresAuth: true }
+  },
+  {
+    path: '/postgrad-major',
+    name: 'PostgradMajorList',
+    component: () => import('@/views/major/PostgradList.vue'),
+    meta: { title: '考研专业', requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
