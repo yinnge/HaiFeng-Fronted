@@ -64,6 +64,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '适应指南', requiresAuth: true },
   },
   {
+    path: '/university/laboratory/:labId',
+    name: 'LaboratoryDetail',
+    component: () => import('@/views/university/LaboratoryDetail.vue'),
+    meta: { title: '实验室详情', requiresAuth: true },
+  },
+  {
+    path: '/university/departments/:deptId',
+    name: 'DepartmentDetail',
+    component: () => import('@/views/university/DepartmentDetail.vue'),
+    meta: { title: '院系详情', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
