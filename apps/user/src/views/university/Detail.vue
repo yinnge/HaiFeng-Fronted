@@ -4,12 +4,21 @@ import { useRouter, useRoute } from 'vue-router'
 import { getUniversityDetail } from '@/api/university'
 import type { UniversityDetailVO } from '@/types/university'
 import { ElMessage } from 'element-plus'
+import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
+import DepartmentTab from '@/components/university/DepartmentTab.vue'
+import SubjectEvaluationTab from '@/components/university/SubjectEvaluationTab.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 const loading = ref(false)
 const detail = ref<UniversityDetailVO | null>(null)
+const activeTab = ref('laboratory')
+const tabs = [
+  { key: 'laboratory', label: '重点实验室', icon: '🔬' },
+  { key: 'department', label: '院系', icon: '🏛️' },
+  { key: 'evaluation', label: '学科评估', icon: '📊' },
+]
 
 async function fetchDetail() {
   const id = Number(route.params.id)
@@ -110,6 +119,30 @@ onMounted(fetchDetail)
         <section class="mb-8 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
           <h3 class="mb-4 text-lg font-bold text-gray-800">院校介绍</h3>
           <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
+        </section>
+
+        <!-- Tab 导航 -->
+        <section class="mb-8">
+          <div class="grid grid-cols-3 gap-4">
+            <button
+              v-for="tab in tabs" :key="tab.key"
+              class="relative rounded-2xl p-5 text-center transition-all border"
+              :class="activeTab === tab.key
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg border-transparent'
+                : 'bg-white text-gray-700 border-gray-100 shadow-md hover:shadow-lg hover:border-orange-200'"
+              @click="activeTab = tab.key"
+            >
+              <div class="text-3xl mb-2">{{ tab.icon }}</div>
+              <div class="text-sm font-semibold">{{ tab.label }}</div>
+            </button>
+          </div>
+        </section>
+
+        <!-- Tab 内容区 -->
+        <section class="min-h-[200px] mb-8">
+          <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="Number(route.params.id)" />
+          <DepartmentTab v-else-if="activeTab === 'department'" :university-id="Number(route.params.id)" />
+          <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="Number(route.params.id)" />
         </section>
 
         <!-- 操作 -->
