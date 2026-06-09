@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { getMajorDetail } from '@/api/major'
 import type { MajorDetailVO } from '@/types/major'
 import { Motion } from 'motion-v'
@@ -27,9 +26,7 @@ async function fetchDetail() {
     const res = await getMajorDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    const msg = e?.response?.data?.msg || '获取专业详情失败'
-    error.value = msg
-    ElMessage.error(msg)
+    error.value = e?.response?.data?.msg || '获取专业详情失败'
   } finally {
     loading.value = false
   }
@@ -91,7 +88,7 @@ onMounted(fetchDetail)
                 <div class="text-gray-500 mt-1">开设课程</div>
               </div>
               <div class="rounded-xl bg-amber-50 p-4 text-center">
-                <div class="text-2xl font-bold text-amber-600">{{ detail.graduateScale || '-' }}</div>
+                <div class="text-2xl font-bold text-amber-600">{{ detail.graduateScale ?? '-' }}</div>
                 <div class="text-gray-500 mt-1">毕业规模</div>
               </div>
             </div>
@@ -124,23 +121,23 @@ onMounted(fetchDetail)
             <div class="space-y-4 text-sm text-gray-600 leading-relaxed">
               <div v-if="detail.majorDescription">
                 <h4 class="font-semibold text-gray-800 mb-1">专业描述</h4>
-                <p>{{ detail.majorDescription }}</p>
+                <p class="whitespace-pre-line">{{ detail.majorDescription }}</p>
               </div>
               <div v-if="detail.trainingObjective">
                 <h4 class="font-semibold text-gray-800 mb-1">培养目标</h4>
-                <p>{{ detail.trainingObjective }}</p>
+                <p class="whitespace-pre-line">{{ detail.trainingObjective }}</p>
               </div>
               <div v-if="detail.trainingRequirement">
                 <h4 class="font-semibold text-gray-800 mb-1">培养要求</h4>
-                <p>{{ detail.trainingRequirement }}</p>
+                <p class="whitespace-pre-line">{{ detail.trainingRequirement }}</p>
               </div>
               <div v-if="detail.subjectRequirement">
                 <h4 class="font-semibold text-gray-800 mb-1">选科要求</h4>
-                <p>{{ detail.subjectRequirement }}</p>
+                <p class="whitespace-pre-line">{{ detail.subjectRequirement }}</p>
               </div>
               <div v-if="detail.careerProspect">
                 <h4 class="font-semibold text-gray-800 mb-1">就业前景</h4>
-                <p>{{ detail.careerProspect }}</p>
+                <p class="whitespace-pre-line">{{ detail.careerProspect }}</p>
               </div>
             </div>
           </section>
@@ -173,7 +170,9 @@ onMounted(fetchDetail)
 
       <template v-if="error && !loading">
         <div class="py-20 text-center">
-          <div class="text-5xl mb-4">📭</div>
+          <svg class="inline-block w-12 h-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <p class="text-gray-400">{{ error }}</p>
           <button class="mt-4 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-white font-medium"
             @click="router.back()"
