@@ -1,3 +1,170 @@
+# C 端统一岗位搜索 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build unified job search page aggregating all job types (civil, institution, enterprise, etc.) in `apps/user/`
+
+**Architecture:** Single-page search with category tabs + fuzzy search + 5 dropdown filters + paginated card list. Detail page requires auth. Backend already patched with `categoryLabel` filter parameter.
+
+**Tech Stack:** Vue 3 Composition API, `<script setup>`, TypeScript, Tailwind CSS, Element Plus, Axios
+
+---
+
+### Task 1: Type Definitions (employment/jobIndex)
+
+**Files:**
+- Create: `apps/user/src/types/employment/jobIndex/index.ts`
+
+- [ ] Create the directory and type file
+
+```bash
+New-Item -ItemType Directory -Path "apps/user/src/types/employment/jobIndex" -Force
+```
+
+```typescript
+// apps/user/src/types/employment/jobIndex/index.ts
+export interface JobSearchDTO {
+  page?: number
+  size?: number
+  keyword?: string
+  province?: string
+  city?: string
+  educationRequirement?: string
+  recruitmentType?: string
+  salaryMin?: number
+  salaryMax?: number
+  positionStatus?: string
+  categoryLabel?: string
+}
+
+export interface JobIndexListVO {
+  id: number
+  categoryLabel: string
+  positionName: string
+  organizationName: string
+  city: string
+  educationRequirement: string
+  recruitmentType: string
+  salaryText: string
+  positionStatus: string
+}
+
+export interface JobIndexDetailVO {
+  id: number
+  sourceType: string
+  sourceId: number
+  categoryLabel: string
+  positionName: string
+  organizationName: string
+  organizationLogo: string
+  province: string
+  city: string
+  educationRequirement: string
+  recruitmentCount: number
+  recruitmentType: string
+  salaryMin: number
+  salaryMax: number
+  salaryText: string
+  positionStatus: string
+  publishDate: string
+  regDeadline: string
+  isHot: boolean
+  viewCount: number
+  applyCount: number
+}
+```
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/types/employment/jobIndex/index.ts
+git commit -m "feat(user): add job index type definitions"
+```
+
+---
+
+### Task 2: API Layer
+
+**Files:**
+- Create: `apps/user/src/api/employment/jobIndex/index.ts`
+
+- [ ] Create the directory and API file
+
+```bash
+New-Item -ItemType Directory -Path "apps/user/src/api/employment/jobIndex" -Force
+```
+
+```typescript
+// apps/user/src/api/employment/jobIndex/index.ts
+import request from '@haifeng/shared/utils/request'
+import type { R, PageResult } from '@haifeng/shared/types/api'
+import type { JobIndexListVO, JobIndexDetailVO, JobSearchDTO } from '@/types/employment/jobIndex'
+
+export const getJobList = (params: JobSearchDTO) => {
+  return request.get<R<PageResult<JobIndexListVO>>>('/api/v1/app/employment/job/list', { params })
+}
+
+export const getJobDetail = (id: number) => {
+  return request.get<R<JobIndexDetailVO>>(`/api/v1/app/employment/job/${id}/detail`)
+}
+```
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/api/employment/jobIndex/index.ts
+git commit -m "feat(user): add job index API layer"
+```
+
+---
+
+### Task 3: Router Configuration
+
+**Files:**
+- Modify: `apps/user/src/router/index.ts`
+
+- [ ] Add employment routes after existing routes (before the 404 catch-all)
+
+Add after the enterprise routes block (before the `/:pathMatch(.*)*` route):
+
+```typescript
+  {
+    path: '/employment/jobs',
+    name: 'EmploymentJobList',
+    component: () => import('@/views/employment/jobs/index.vue'),
+    meta: { title: '统一岗位搜索' },
+  },
+  {
+    path: '/employment/job/:id',
+    name: 'EmploymentJobDetail',
+    component: () => import('@/views/employment/job/Detail.vue'),
+    meta: { title: '岗位详情', requiresAuth: true },
+  },
+```
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/router/index.ts
+git commit -m "feat(user): add employment routes"
+```
+
+---
+
+### Task 4: Job Search List Page
+
+**Files:**
+- Create: `apps/user/src/views/employment/jobs/index.vue`
+
+- [ ] Create directory
+
+```bash
+New-Item -ItemType Directory -Path "apps/user/src/views/employment/jobs" -Force
+```
+
+- [ ] Write the main search list page component
+
+```vue
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -8,11 +175,10 @@ import logoMain from '@/assets/images/logo-main.png'
 import { ProvinceOptions } from '@haifeng/shared'
 import { getJobList } from '@/api/employment/jobIndex'
 import type { JobIndexListVO, JobSearchDTO } from '@/types/employment/jobIndex'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
 
 const router = useRouter()
 
+// Category tabs config
 const categoryTabs = [
   { label: '全部', value: '' },
   { label: '公务员', value: '公务员' },
@@ -29,9 +195,10 @@ const categoryTabs = [
 ]
 
 const activeCategory = ref('')
+
+// Search & filter state
 const keyword = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
+const province = ref('')
 const educationRequirement = ref('')
 const recruitmentType = ref('')
 const positionStatus = ref('')
@@ -50,6 +217,7 @@ const recruitmentTypeOptions = ['', '国考', '省考', '校招', '社招', '春
 const positionStatusOptions = ['', '招聘中', '已结束', '即将开始']
 const salaryRangeOptions = ['', '5k以下', '5k-10k', '10k-20k', '20k以上']
 
+// List state
 const loading = ref(false)
 const jobs = ref<JobIndexListVO[]>([])
 const total = ref(0)
@@ -62,8 +230,7 @@ function buildParams(): JobSearchDTO {
     page: page.value,
     size: pageSize.value,
     keyword: keyword.value || undefined,
-    province: regionValue.value[0] || undefined,
-    city: regionValue.value[1] || undefined,
+    province: province.value || undefined,
     educationRequirement: educationRequirement.value || undefined,
     recruitmentType: recruitmentType.value || undefined,
     positionStatus: positionStatus.value || undefined,
@@ -90,18 +257,6 @@ async function fetchJobs() {
 }
 
 function onCategoryTabClick(value: string) {
-  if (value === '教师') {
-    router.push('/employment/teacher')
-    return
-  }
-  if (value === '医疗卫生') {
-    router.push('/employment/healthcare')
-    return
-  }
-  if (value === '金融银行') {
-    router.push('/employment/finance')
-    return
-  }
   activeCategory.value = value
   page.value = 1
   fetchJobs()
@@ -114,7 +269,7 @@ function onSearch() {
 
 function onReset() {
   keyword.value = ''
-  regionValue.value = []
+  province.value = ''
   educationRequirement.value = ''
   recruitmentType.value = ''
   positionStatus.value = ''
@@ -166,7 +321,7 @@ async function goDetail(id: number) {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || regionValue.value.length > 0 || educationRequirement.value || recruitmentType.value || positionStatus.value || salaryRange.value)
+  return !!(keyword.value || province.value || educationRequirement.value || recruitmentType.value || positionStatus.value || salaryRange.value)
 })
 
 onMounted(() => {
@@ -176,6 +331,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
+    <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div class="container mx-auto flex items-center justify-between px-6 py-4">
         <div class="flex items-center gap-3">
@@ -206,6 +362,7 @@ onMounted(() => {
     </header>
 
     <main class="flex-1">
+      <!-- Intro Section -->
       <div class="container mx-auto px-6 py-12 text-center">
         <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
           <span class="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
@@ -219,6 +376,7 @@ onMounted(() => {
         </p>
       </div>
 
+      <!-- Category Tabs -->
       <div class="container mx-auto px-6 pb-6">
         <div class="flex flex-wrap items-center justify-center gap-2">
           <button
@@ -235,8 +393,10 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Search & Filter Area -->
       <div class="container mx-auto px-6 pb-8">
         <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+          <!-- Fuzzy Search -->
           <div class="flex gap-3 mb-4">
             <input
               v-model="keyword"
@@ -253,15 +413,22 @@ onMounted(() => {
             </button>
           </div>
 
+          <!-- Precise Filters -->
           <div class="flex flex-wrap items-center gap-3">
-            <el-cascader
-              v-model="regionValue"
-              :options="regionOptions"
-              placeholder="省份/城市/区县"
+            <el-select
+              v-model="province"
+              placeholder="省份/城市"
               clearable
-              class="!w-[200px]"
+              class="!w-[150px]"
               @change="onSearch"
-            />
+            >
+              <el-option
+                v-for="opt in ProvinceOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
 
             <el-select
               v-model="educationRequirement"
@@ -334,6 +501,7 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Results -->
       <div class="container mx-auto px-6 pb-16">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-bold text-gray-800">
@@ -353,6 +521,7 @@ onMounted(() => {
           />
         </div>
 
+        <!-- Job Cards -->
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
           <div
             v-for="job in jobs"
@@ -409,6 +578,7 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Bottom Pagination -->
         <div v-if="total > pageSize" class="mt-8 flex justify-center">
           <el-pagination
             background
@@ -427,3 +597,244 @@ onMounted(() => {
     <SiteFooter />
   </div>
 </template>
+```
+
+
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/views/employment/jobs/index.vue
+git commit -m "feat(user): add unified job search list page"
+```
+
+---
+
+### Task 5: Job Detail Page
+
+**Files:**
+- Create: `apps/user/src/views/employment/job/Detail.vue`
+
+- [ ] Create directory
+
+```bash
+New-Item -ItemType Directory -Path "apps/user/src/views/employment/job" -Force
+```
+
+- [ ] Write detail page
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import SiteFooter from '@/components/SiteFooter.vue'
+import { getJobDetail } from '@/api/employment/jobIndex'
+import type { JobIndexDetailVO } from '@/types/employment/jobIndex'
+
+const route = useRoute()
+const router = useRouter()
+const jobId = Number(route.params.id)
+
+const loading = ref(false)
+const job = ref<JobIndexDetailVO | null>(null)
+
+async function fetchDetail() {
+  loading.value = true
+  try {
+    const res = await getJobDetail(jobId)
+    job.value = res.data.data
+  } catch (e: any) {
+    const msg = e?.response?.data?.msg || '获取岗位详情失败'
+    ElMessage.error(msg)
+    if (e?.response?.status === 404) {
+      router.replace('/employment/jobs')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '暂无'
+  return dateStr.slice(0, 10)
+}
+
+function formatSalary(min: number | null, max: number | null): string {
+  if (min == null && max == null) return '薪资面议'
+  if (min != null && max != null) return `${min}k-${max}k/月`
+  if (min != null) return `${min}k起/月`
+  return `最高${max}k/月`
+}
+
+onMounted(fetchDetail)
+</script>
+
+<template>
+  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <div class="container mx-auto flex items-center px-6 py-4">
+        <button
+          class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors"
+          @click="router.push('/employment/jobs')"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span class="font-medium">返回岗位列表</span>
+        </button>
+        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16">岗位详情</h1>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+      <div v-loading="loading" class="min-h-[400px]">
+        <div v-if="job" class="max-w-3xl mx-auto space-y-6">
+          <!-- Header Card -->
+          <div class="rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-600">
+                {{ job.categoryLabel }}
+              </span>
+              <span
+                class="rounded-full px-3 py-1 text-sm font-medium"
+                :class="job.positionStatus === '招聘中'
+                  ? 'bg-green-50 text-green-600'
+                  : job.positionStatus === '即将开始'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'bg-gray-100 text-gray-500'"
+              >
+                {{ job.positionStatus }}
+              </span>
+              <span v-if="job.isHot" class="rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-500">
+                🔥 热门
+              </span>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ job.positionName }}</h2>
+            <p class="text-gray-500 mb-6">{{ job.organizationName }}</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">薪资</p>
+                <p class="font-semibold text-gray-800">{{ formatSalary(job.salaryMin, job.salaryMax) }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">工作地点</p>
+                <p class="font-semibold text-gray-800">{{ job.province }} {{ job.city }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">学历要求</p>
+                <p class="font-semibold text-gray-800">{{ job.educationRequirement }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">招录人数</p>
+                <p class="font-semibold text-gray-800">{{ job.recruitmentCount ?? '未知' }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">招聘类型</p>
+                <p class="font-semibold text-gray-800">{{ job.recruitmentType }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-gray-400 mb-1">报名截止</p>
+                <p class="font-semibold text-gray-800">{{ formatDate(job.regDeadline) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Card -->
+          <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+            <div class="flex items-center justify-around text-center">
+              <div>
+                <p class="text-2xl font-bold text-gray-800">{{ job.viewCount ?? 0 }}</p>
+                <p class="text-sm text-gray-400">浏览量</p>
+              </div>
+              <div class="w-px h-12 bg-gray-200"></div>
+              <div>
+                <p class="text-2xl font-bold text-gray-800">{{ job.applyCount ?? 0 }}</p>
+                <p class="text-sm text-gray-400">报名人数</p>
+              </div>
+              <div class="w-px h-12 bg-gray-200"></div>
+              <div>
+                <p class="text-2xl font-bold text-gray-800">{{ job.recruitmentCount ?? '—' }}</p>
+                <p class="text-sm text-gray-400">招录人数</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Date Info -->
+          <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">发布日期</p>
+                <p class="text-gray-800 font-medium">{{ formatDate(job.publishDate) }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">报名截止</p>
+                <p class="text-gray-800 font-medium">{{ formatDate(job.regDeadline) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!loading && !job" class="py-20 text-center text-gray-400">
+          岗位不存在
+        </div>
+      </div>
+    </main>
+
+    <SiteFooter />
+  </div>
+</template>
+```
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/views/employment/job/Detail.vue
+git commit -m "feat(user): add job detail page"
+```
+
+---
+
+### Task 6: Add Nav Link to Homepage Header
+
+**Files:**
+- Modify: `apps/user/src/views/home/index.vue`
+
+- [ ] Add "岗位搜索" nav link after the logo/title in the header
+
+Find the header section and add a nav link between the title and the "个人中心" button:
+
+```vue
+<h1 class="text-xl font-bold text-gray-800">海枫未来规划院</h1>
+```
+
+Change to include nav links. Find the div containing `个人中心` button and add a router-link before it:
+
+Look for:
+```html
+<button
+  class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
+  @click="goProfile"
+>
+  个人中心
+</button>
+```
+
+Add a router-link before it:
+```html
+<router-link
+  to="/employment/jobs"
+  class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
+>
+  岗位搜索
+</router-link>
+```
+
+- [ ] Commit
+
+```bash
+git add apps/user/src/views/home/index.vue
+git commit -m "feat(user): add job search link to homepage header"
+```

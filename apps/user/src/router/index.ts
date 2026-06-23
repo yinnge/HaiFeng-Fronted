@@ -166,6 +166,42 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '岗位详情', requiresAuth: true },
   },
   {
+    path: '/employment/teacher',
+    name: 'EmploymentTeacherList',
+    component: () => import('@/views/employment/teacher/List.vue'),
+    meta: { title: '教师招聘' },
+  },
+  {
+    path: '/employment/teacher/:id',
+    name: 'EmploymentTeacherDetail',
+    component: () => import('@/views/employment/teacher/Detail.vue'),
+    meta: { title: '教师岗位详情', requiresAuth: true },
+  },
+  {
+    path: '/employment/healthcare',
+    name: 'EmploymentHealthcareList',
+    component: () => import('@/views/employment/healthcare/List.vue'),
+    meta: { title: '医疗卫生招聘' },
+  },
+  {
+    path: '/employment/healthcare/:id',
+    name: 'EmploymentHealthcareDetail',
+    component: () => import('@/views/employment/healthcare/Detail.vue'),
+    meta: { title: '医疗卫生岗位详情', requiresAuth: true },
+  },
+  {
+    path: '/employment/finance',
+    name: 'EmploymentFinanceList',
+    component: () => import('@/views/employment/finance/List.vue'),
+    meta: { title: '金融银行招聘' },
+  },
+  {
+    path: '/employment/finance/:id',
+    name: 'EmploymentFinanceDetail',
+    component: () => import('@/views/employment/finance/Detail.vue'),
+    meta: { title: '金融银行岗位详情', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
