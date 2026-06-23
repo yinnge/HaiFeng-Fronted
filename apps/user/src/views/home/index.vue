@@ -222,7 +222,13 @@ onUnmounted(() => {
           />
           <h1 class="text-xl font-bold text-gray-800">海枫未来规划院</h1>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
+          <router-link
+            to="/employment/jobs"
+            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
+          >
+            岗位搜索
+          </router-link>
           <button
             class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
             @click="goProfile"
