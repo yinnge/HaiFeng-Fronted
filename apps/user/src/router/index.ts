@@ -94,6 +94,66 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '考研专业', requiresAuth: true }
   },
   {
+    path: '/city',
+    name: 'CityList',
+    component: () => import('@/views/city/List.vue'),
+    meta: { title: '城市查询' },
+  },
+  {
+    path: '/city/:id',
+    name: 'CityDetail',
+    component: () => import('@/views/city/Detail.vue'),
+    meta: { title: '城市详情', requiresAuth: true },
+  },
+  {
+    path: '/industry',
+    name: 'IndustryList',
+    component: () => import('@/views/industry/List.vue'),
+    meta: { title: '行业探索' },
+  },
+  {
+    path: '/industry/:id',
+    name: 'IndustryDetail',
+    component: () => import('@/views/industry/Detail.vue'),
+    meta: { title: '行业详情', requiresAuth: true },
+  },
+  {
+    path: '/resource',
+    name: 'ResourceList',
+    component: () => import('@/views/resource/List.vue'),
+    meta: { title: '资源下载' },
+  },
+  {
+    path: '/certificate',
+    name: 'CertificateList',
+    component: () => import('@/views/certificate/List.vue'),
+    meta: { title: '职业技能证书' },
+  },
+  {
+    path: '/competition',
+    name: 'CompetitionList',
+    component: () => import('@/views/competition/List.vue'),
+    meta: { title: '大学科研与竞赛' },
+  },
+  {
+    path: '/competition/:id',
+    name: 'CompetitionDetail',
+    component: () => import('@/views/competition/Detail.vue'),
+    meta: { title: '竞赛详情', requiresAuth: true },
+  },
+  {
+    path: '/enterprise',
+    name: 'EnterpriseList',
+    component: () => import('@/views/enterprise/List.vue'),
+    meta: { title: '企业探索' },
+  },
+  {
+    path: '/enterprise/:id/positions',
+    name: 'EnterprisePositionList',
+    component: () => import('@/views/enterprise/PositionList.vue'),
+    meta: { title: '企业岗位', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),

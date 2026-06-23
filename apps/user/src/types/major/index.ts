@@ -58,3 +58,8 @@ export interface MajorRankingQueryDTO extends BasePageQuery {
   sortBy?: 'employmentRate' | 'salaryMin' | 'salaryMax'
   sortOrder?: 'asc' | 'desc'
 }
+
+export interface UndergraduateMajorDirectionBriefVO {
+  id: number
+  majorName: string
+}

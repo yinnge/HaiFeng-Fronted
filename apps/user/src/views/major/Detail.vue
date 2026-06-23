@@ -4,6 +4,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { getMajorDetail } from '@/api/major'
 import type { MajorDetailVO } from '@/types/major'
 import { Motion } from 'motion-v'
+import { getMajorCompetitions } from '@/api/major'
+import type { CompetitionBriefVO } from '@/types/certificate'
+import { useUserStore } from '@/store'
+import { getMajorPostgradDirections } from '@/api/major'
+import type { PostgradMajorDirectionBriefVO } from '@/types/postgrad-major'
+import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,6 +20,18 @@ const error = ref('')
 
 const malePercent = computed(() => detail.value?.maleRatio ?? 0)
 const femalePercent = computed(() => detail.value?.femaleRatio ?? 0)
+
+const userStore = useUserStore()
+const competitions = ref<CompetitionBriefVO[]>([])
+const compTotal = ref(0)
+const compPage = ref(1)
+const compPageSize = ref(10)
+const compLoading = ref(false)
+
+const isPro = computed(() => {
+  const mt = userStore.userInfo?.memberType
+  return mt === 'pro' || mt === 'vip'
+})
 
 async function fetchDetail() {
   const id = Number(route.params.id)
@@ -32,7 +50,71 @@ async function fetchDetail() {
   }
 }
 
-onMounted(fetchDetail)
+async function fetchCompetitions() {
+  const id = Number(route.params.id)
+  if (!id || !isPro.value) return
+  compLoading.value = true
+  try {
+    const res = await getMajorCompetitions(id, { page: compPage.value, size: compPageSize.value })
+    competitions.value = res.data.data.records
+    compTotal.value = res.data.data.total
+  } catch {
+    // 403 handled silently
+  } finally {
+    compLoading.value = false
+  }
+}
+
+function onCompPageChange(page: number) {
+  compPage.value = page
+  fetchCompetitions()
+}
+
+function goCompetitionDetail(id: number) {
+  router.push(`/competition/${id}`)
+}
+
+const directions = ref<PostgradMajorDirectionBriefVO[]>([])
+const directionTotal = ref(0)
+const directionPage = ref(1)
+const directionPageSize = ref(10)
+const directionLoading = ref(false)
+
+const dialogVisible = ref(false)
+const selectedDirectionId = ref<number | null>(null)
+
+async function fetchPostgradDirections() {
+  const id = Number(route.params.id)
+  if (!id || !isPro.value) return
+  directionLoading.value = true
+  try {
+    const res = await getMajorPostgradDirections(id, { page: directionPage.value, size: directionPageSize.value })
+    directions.value = res.data.data.records
+    directionTotal.value = res.data.data.total
+  } catch (e: any) {
+    if (e?.response?.status !== 403) {
+      error.value = e?.response?.data?.msg || '获取考研方向失败'
+    }
+  } finally {
+    directionLoading.value = false
+  }
+}
+
+function onDirectionPageChange(page: number) {
+  directionPage.value = page
+  fetchPostgradDirections()
+}
+
+function showDirectionDetail(id: number) {
+  selectedDirectionId.value = id
+  dialogVisible.value = true
+}
+
+onMounted(() => {
+  fetchDetail()
+  fetchPostgradDirections()
+  fetchCompetitions()
+})
 </script>
 
 <template>
@@ -67,6 +149,48 @@ onMounted(fetchDetail)
               <div><span class="text-gray-400">学科：</span><span class="text-gray-700">{{ detail.disciplineName }}</span></div>
               <div><span class="text-gray-400">授予学位：</span><span class="text-gray-700">{{ detail.degreeAwarded }}</span></div>
             </div>
+          </section>
+        </Motion>
+
+        <!-- Postgrad Directions -->
+        <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.05 }" class="mb-6">
+          <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+            <h3 class="mb-4 text-lg font-bold text-gray-800">考研方向</h3>
+            <template v-if="isPro">
+              <div v-loading="directionLoading" class="min-h-[100px]">
+                <div v-if="directions.length" class="flex flex-wrap gap-3">
+                  <button
+                    v-for="d in directions" :key="d.id"
+                    class="rounded-lg bg-orange-50 px-4 py-2 text-sm text-orange-700 hover:bg-orange-100 transition-colors"
+                    @click="showDirectionDetail(d.id)"
+                  >
+                    {{ d.postgradMajorName }}
+                  </button>
+                </div>
+                <div v-else-if="!directionLoading" class="text-sm text-gray-400">暂无考研方向数据</div>
+              </div>
+              <div v-if="directionTotal > directionPageSize" class="mt-4 flex justify-center">
+                <el-pagination
+                  background small layout="prev, pager, next"
+                  :total="directionTotal" :page-size="directionPageSize"
+                  :current-page="directionPage"
+                  @current-change="onDirectionPageChange"
+                />
+              </div>
+            </template>
+            <template v-else>
+              <div class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 text-center border border-orange-100">
+                <div class="text-4xl mb-3">🔒</div>
+                <h4 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看可报考的考研方向</h4>
+                <p class="text-gray-500 mb-4">了解该本科专业可以报考哪些研究生专业</p>
+                <button
+                  class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+                  @click="router.push('/profile')"
+                >
+                  立即升级
+                </button>
+              </div>
+            </template>
           </section>
         </Motion>
 
@@ -166,6 +290,48 @@ onMounted(fetchDetail)
             </div>
           </section>
         </Motion>
+
+        <!-- Related Competitions (Pro) -->
+        <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.3 }" class="mb-6">
+          <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+            <h3 class="mb-4 text-lg font-bold text-gray-800">关联竞赛</h3>
+            <template v-if="isPro">
+              <div v-loading="compLoading" class="min-h-[100px]">
+                <div v-if="competitions.length" class="flex flex-wrap gap-3">
+                  <button
+                    v-for="c in competitions" :key="c.competitionId"
+                    class="rounded-lg bg-orange-50 px-4 py-2 text-sm text-orange-700 hover:bg-orange-100 transition-colors"
+                    @click="goCompetitionDetail(c.competitionId)"
+                  >
+                    {{ c.competitionName }}
+                  </button>
+                </div>
+                <div v-else-if="!compLoading" class="text-sm text-gray-400">暂无关联竞赛数据</div>
+              </div>
+              <div v-if="compTotal > compPageSize" class="mt-4 flex justify-center">
+                <el-pagination
+                  background small layout="prev, pager, next"
+                  :total="compTotal" :page-size="compPageSize"
+                  :current-page="compPage"
+                  @current-change="onCompPageChange"
+                />
+              </div>
+            </template>
+            <template v-else>
+              <div class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 text-center border border-orange-100">
+                <div class="text-4xl mb-3">🔒</div>
+                <h4 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看关联竞赛</h4>
+                <p class="text-gray-500 mb-4">了解该专业适合参加哪些学科竞赛</p>
+                <button
+                  class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+                  @click="router.push('/profile')"
+                >
+                  立即升级
+                </button>
+              </div>
+            </template>
+          </section>
+        </Motion>
       </template>
 
       <template v-if="error && !loading">
@@ -179,6 +345,10 @@ onMounted(fetchDetail)
           >返回</button>
         </div>
       </template>
+    <PostgradMajorDialog
+      v-model:visible="dialogVisible"
+      :major-id="selectedDirectionId"
+    />
     </main>
   </div>
 </template>

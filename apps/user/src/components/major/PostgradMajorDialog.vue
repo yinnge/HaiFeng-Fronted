@@ -2,8 +2,9 @@
 import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getPostgradMajorDetail, getUniversitiesByPostgradMajor } from '@/api/postgrad-major'
+import { getPostgradMajorDetail, getUniversitiesByPostgradMajor, getPostgradMajorUndergraduateMajors } from '@/api/postgrad-major'
 import type { PostgradMajorDetailVO, UniversityBriefForPostgradVO } from '@/types/postgrad-major'
+import type { UndergraduateMajorDirectionBriefVO } from '@/types/major'
 import { useUserStore } from '@/store'
 import { MemberType } from '@haifeng/shared'
 
@@ -76,14 +77,54 @@ function onPageChange(page: number) {
   fetchUniversities()
 }
 
+const undergradLoading = ref(false)
+const undergraduateMajors = ref<UndergraduateMajorDirectionBriefVO[]>([])
+const undergradTotal = ref(0)
+const undergradPage = ref(1)
+const undergradPageSize = ref(10)
+
+async function fetchUndergraduateMajors() {
+  if (!props.majorId || !isPro.value) return
+  undergradLoading.value = true
+  try {
+    const res = await getPostgradMajorUndergraduateMajors(props.majorId, {
+      page: undergradPage.value,
+      size: undergradPageSize.value,
+    })
+    undergraduateMajors.value = res.data.data.records
+    undergradTotal.value = res.data.data.total
+  } catch (e: any) {
+    if (e?.response?.status !== 403) {
+      ElMessage.error('获取关联本科专业失败')
+    }
+  } finally {
+    undergradLoading.value = false
+  }
+}
+
+function onUndergradPageChange(page: number) {
+  undergradPage.value = page
+  fetchUndergraduateMajors()
+}
+
+function goMajor(id: number) {
+  emit('update:visible', false)
+  router.push(`/major/${id}`)
+}
+
 watch(() => props.visible, (val) => {
   if (val) {
     universityPage.value = 1
+    undergradPage.value = 1
     universityCategory.value = ''
     detail.value = null
     universities.value = []
+    undergraduateMajors.value = []
     fetchDetail()
-    if (isPro.value) fetchUniversities()
+    if (isPro.value) {
+      fetchUniversities()
+      fetchUndergraduateMajors()
+    }
   }
 })
 </script>
@@ -153,6 +194,43 @@ watch(() => props.visible, (val) => {
             </div>
           </section>
         </div>
+
+        <!-- Undergraduate Majors -->
+        <section class="rounded-xl border border-gray-200 p-4 mb-4">
+          <h4 class="font-semibold text-gray-800 mb-3">关联本科专业</h4>
+          <template v-if="isPro">
+            <div v-loading="undergradLoading" class="min-h-[100px]">
+              <div v-if="undergraduateMajors.length" class="space-y-2">
+                <div
+                  v-for="m in undergraduateMajors" :key="m.id"
+                  class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 hover:bg-orange-50/50 cursor-pointer transition-colors"
+                  @click="goMajor(m.id)"
+                >
+                  <span class="text-sm font-medium text-gray-800">{{ m.majorName }}</span>
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+              <div v-else-if="!undergradLoading" class="py-8 text-center text-gray-400 text-sm">暂无关联本科专业数据</div>
+            </div>
+            <div v-if="undergradTotal > undergradPageSize" class="mt-4 flex justify-center">
+              <el-pagination
+                background small layout="prev, pager, next"
+                :total="undergradTotal" :page-size="undergradPageSize" :current-page="undergradPage"
+                @current-change="onUndergradPageChange"
+              />
+            </div>
+          </template>
+          <template v-else>
+            <div class="rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 p-6 text-center border border-orange-100">
+              <p class="text-sm text-gray-600 mb-3">开通专业版，查看可报考该考研方向的本科专业</p>
+              <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
+                @click="router.push('/profile')"
+              >立即升级</button>
+            </div>
+          </template>
+        </section>
 
         <!-- Universities Section -->
         <section class="rounded-xl border border-gray-200 p-4">
