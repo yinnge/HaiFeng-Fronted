@@ -25,12 +25,17 @@ const regionOptions: CascaderOption[] = buildRegionOptions()
 const ageLimit = ref<number | undefined>(undefined)
 const salaryMin = ref<number | undefined>(undefined)
 const positionStatus = ref('')
+const educationRequirement = ref('')
+const degreeRequirement = ref('')
+const majorRequirement = ref('')
 
 const institutionTypeOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技', '资产管理', '融资租赁', '消费金融', '小额贷款', '其他']
 const institutionCategoryOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技']
 const recruitmentTypeOptions = ['秋招', '春招', '社招', '实习', '定向']
 const positionCategoryOptions = ['前台业务', '中台风控', '后台运营', '技术研发', '职能管理', '管理培训生', '实习生', '其他']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const educationRequirementOptions = ['不限', '大专', '本科', '硕士', '博士']
+const degreeRequirementOptions = ['不限', '学士', '硕士', '博士']
 
 const loading = ref(false)
 const jobs = ref<FinancePositionListVO[]>([])
@@ -53,6 +58,9 @@ function buildParams(): FinanceQueryDTO {
     ageLimit: ageLimit.value || undefined,
     salaryMin: salaryMin.value || undefined,
     positionStatus: positionStatus.value || undefined,
+    educationRequirement: educationRequirement.value || undefined,
+    degreeRequirement: degreeRequirement.value || undefined,
+    majorRequirement: majorRequirement.value || undefined,
   }
 }
 
@@ -86,6 +94,7 @@ function onReset() {
   branchName.value = ''; recruitmentType.value = ''; positionCategory.value = ''
   regionValue.value = []; ageLimit.value = undefined
   salaryMin.value = undefined; positionStatus.value = ''
+  educationRequirement.value = ''; degreeRequirement.value = ''; majorRequirement.value = ''
   page.value = 1; fetchList()
 }
 
@@ -108,7 +117,7 @@ async function goDetail(id: number) {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || institutionType.value || institutionCategory.value || branchName.value || recruitmentType.value || positionCategory.value || regionValue.value.length > 0 || ageLimit.value || salaryMin.value || positionStatus.value)
+  return !!(keyword.value || institutionType.value || institutionCategory.value || branchName.value || recruitmentType.value || positionCategory.value || regionValue.value.length > 0 || ageLimit.value || salaryMin.value || positionStatus.value || educationRequirement.value || degreeRequirement.value || majorRequirement.value)
 })
 
 onMounted(fetchList)
@@ -175,6 +184,13 @@ onMounted(fetchList)
             <el-select v-model="positionStatus" placeholder="岗位状态" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in positionStatusOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
+            <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in educationRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <el-select v-model="degreeRequirement" placeholder="学位要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in degreeRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="majorRequirement" type="text" placeholder="专业要求" class="!w-[140px] rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
 
             <button v-if="isFilterActive" class="rounded-lg px-4 py-2.5 text-sm text-gray-500 hover:text-orange-500 border border-gray-200 hover:border-orange-300 transition-all" @click="onReset">重置</button>
           </div>
@@ -194,12 +210,13 @@ onMounted(fetchList)
               </div>
             </div>
             <h4 class="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-500 transition-colors">{{ job.positionName }}</h4>
-            <p class="text-sm text-gray-500 mb-3">{{ job.institutionName }}<span v-if="job.institutionCategory"> · {{ job.institutionCategory }}</span><span v-if="job.city"> · {{ job.city }}</span></p>
+            <p class="text-sm text-gray-500 mb-3">{{ job.institutionName }}<span v-if="job.institutionCategory"> · {{ job.institutionCategory }}</span><span v-if="job.city"> · {{ job.city }}</span><span v-if="job.educationRequirement"> · {{ job.educationRequirement }}</span></p>
             <div class="flex items-center gap-3 flex-wrap text-sm">
               <span v-if="job.recruitmentType" class="rounded-full bg-gray-50 px-2.5 py-0.5 text-xs text-gray-600 border border-gray-200">{{ job.recruitmentType }}</span>
               <span class="text-gray-400">{{ job.recruitmentCount }}人</span>
               <span class="text-gray-400">{{ formatSalary(job.salaryMin, job.salaryMax) }}</span>
               <span v-if="job.ageLimit" class="text-gray-400">{{ job.ageLimit }}岁以下</span>
+              <span v-if="job.majorRequirement" class="text-gray-400">专业：{{ job.majorRequirement }}</span>
             </div>
             <p v-if="job.workLocation" class="mt-2 text-xs text-gray-400">{{ job.workLocation }} <span v-if="job.isRemote">· 支持远程</span></p>
             <div class="mt-3 flex justify-end">

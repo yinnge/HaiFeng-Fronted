@@ -11,6 +11,9 @@ export interface TeacherQueryDTO {
   recruitmentCount?: number
   ageLimit?: number
   positionStatus?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
 }
 
 export interface TeacherPositionListVO {
@@ -31,6 +34,9 @@ export interface TeacherPositionListVO {
   regStartDate: string
   regEndDate: string
   positionStatus: string
+  educationRequirement: string
+  degreeRequirement: string
+  majorRequirement: string
 }
 
 export interface TeacherPositionDetailVO {

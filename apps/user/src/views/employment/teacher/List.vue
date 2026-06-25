@@ -23,11 +23,16 @@ const regionOptions: CascaderOption[] = buildRegionOptions()
 const recruitmentCount = ref<number | undefined>(undefined)
 const ageLimit = ref<number | undefined>(undefined)
 const positionStatus = ref('')
+const educationRequirement = ref('')
+const degreeRequirement = ref('')
+const majorRequirement = ref('')
 
 const schoolTypeOptions = ['幼儿园', '小学', '初中', '高中', '中职', '高职', '大学', '特殊教育学校']
 const schoolNatureOptions = ['公办', '民办']
 const subjectOptions = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '音乐', '美术', '体育', '信息技术', '心理健康', '通用技术', '科学', '道德与法治', '综合实践', '学前教育', '特殊教育', '其他']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const educationRequirementOptions = ['不限', '大专', '本科', '硕士', '博士']
+const degreeRequirementOptions = ['不限', '学士', '硕士', '博士']
 
 const loading = ref(false)
 const jobs = ref<TeacherPositionListVO[]>([])
@@ -49,6 +54,9 @@ function buildParams(): TeacherQueryDTO {
     recruitmentCount: recruitmentCount.value || undefined,
     ageLimit: ageLimit.value || undefined,
     positionStatus: positionStatus.value || undefined,
+    educationRequirement: educationRequirement.value || undefined,
+    degreeRequirement: degreeRequirement.value || undefined,
+    majorRequirement: majorRequirement.value || undefined,
   }
 }
 
@@ -82,6 +90,9 @@ function onReset() {
   recruitmentCount.value = undefined
   ageLimit.value = undefined
   positionStatus.value = ''
+  educationRequirement.value = ''
+  degreeRequirement.value = ''
+  majorRequirement.value = ''
   page.value = 1
   fetchList()
 }
@@ -130,7 +141,7 @@ function formatDateRange(start: string, end: string): string {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || schoolType.value || schoolNature.value || subject.value || regionValue.value.length > 0 || recruitmentCount.value || ageLimit.value || positionStatus.value)
+  return !!(keyword.value || schoolType.value || schoolNature.value || subject.value || regionValue.value.length > 0 || recruitmentCount.value || ageLimit.value || positionStatus.value || educationRequirement.value || degreeRequirement.value || majorRequirement.value)
 })
 
 onMounted(fetchList)
@@ -201,6 +212,13 @@ onMounted(fetchList)
             <el-select v-model="positionStatus" placeholder="岗位状态" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in positionStatusOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
+            <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in educationRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <el-select v-model="degreeRequirement" placeholder="学位要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in degreeRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="majorRequirement" type="text" placeholder="专业要求" class="!w-[140px] rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
 
             <button v-if="isFilterActive" class="rounded-lg px-4 py-2.5 text-sm text-gray-500 hover:text-orange-500 border border-gray-200 hover:border-orange-300 transition-all" @click="onReset">
               重置
@@ -234,6 +252,7 @@ onMounted(fetchList)
               {{ job.schoolName }}
               <span v-if="job.city"> · {{ job.city }}</span>
               <span v-if="job.subject"> · {{ job.subject }}</span>
+              <span v-if="job.educationRequirement"> · {{ job.educationRequirement }}</span>
             </p>
 
             <div class="flex items-center gap-3 flex-wrap text-sm">
@@ -243,6 +262,7 @@ onMounted(fetchList)
               <span class="text-gray-400">{{ job.recruitmentCount }}人</span>
               <span class="text-gray-400">{{ job.salaryRange }}</span>
               <span v-if="job.ageLimit" class="text-gray-400">{{ job.ageLimit }}岁以下</span>
+              <span v-if="job.majorRequirement" class="text-gray-400">专业：{{ job.majorRequirement }}</span>
             </div>
 
             <p v-if="job.regStartDate || job.regEndDate" class="mt-2 text-xs text-gray-400">

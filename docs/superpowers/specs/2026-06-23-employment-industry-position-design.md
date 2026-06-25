@@ -67,7 +67,9 @@ export interface TeacherQueryDTO {
   keyword?: string
   schoolType?: string; schoolNature?: string; subject?: string
   province?: string; city?: string; district?: string
+  recruitmentCount?: number; ageLimit?: number
   positionStatus?: string
+  educationRequirement?: string; degreeRequirement?: string; majorRequirement?: string
 }
 
 export interface TeacherPositionListVO {
@@ -77,6 +79,7 @@ export interface TeacherPositionListVO {
   workExperience: string; recruitmentCount: number; ageLimit: number
   salaryRange: string; regStartDate: string; regEndDate: string
   positionStatus: string
+  educationRequirement: string; degreeRequirement: string; majorRequirement: string
 }
 
 export interface TeacherPositionDetailVO {
@@ -110,9 +113,11 @@ export const getHealthcareDetail = (id: number) =>
 export interface HealthcareQueryDTO {
   page?: number; size?: number
   keyword?: string
-  institutionLevel?: string; positionCategory?: string; department?: string
+  institutionType?: string; institutionLevel?: string; institutionNature?: string
+  positionCategory?: string; department?: string
   province?: string; city?: string; district?: string
-  positionStatus?: string
+  ageLimit?: number; positionStatus?: string
+  educationRequirement?: string; degreeRequirement?: string; majorRequirement?: string
 }
 
 export interface HealthcarePositionListVO {
@@ -121,6 +126,7 @@ export interface HealthcarePositionListVO {
   province: string; city: string; district: string
   ageLimit: number; recruitmentCount: number
   salaryRange: string; workExperience: string; positionStatus: string
+  educationRequirement: string; degreeRequirement: string; majorRequirement: string
 }
 
 export interface HealthcarePositionDetailVO {
@@ -153,9 +159,11 @@ export const getFinanceDetail = (id: number) =>
 export interface FinanceQueryDTO {
   page?: number; size?: number
   keyword?: string
-  institutionCategory?: string; recruitmentType?: string
+  institutionCategory?: string; institutionType?: string; branchName?: string
+  positionCategory?: string; recruitmentType?: string
   province?: string; city?: string
-  positionStatus?: string
+  ageLimit?: number; salaryMin?: number; positionStatus?: string
+  educationRequirement?: string; degreeRequirement?: string; majorRequirement?: string
 }
 
 export interface FinancePositionListVO {
@@ -165,6 +173,7 @@ export interface FinancePositionListVO {
   salaryMin: number; salaryMax: number
   regStartDate: string; regEndDate: string; isRemote: boolean
   workLocation: string; recruitmentCount: number; positionStatus: string
+  educationRequirement: string; degreeRequirement: string; majorRequirement: string
 }
 
 export interface FinancePositionDetailVO {
@@ -226,27 +235,46 @@ export interface FinancePositionDetailVO {
 | schoolType | 下拉 | 幼儿园/小学/初中/高中/中职/高职/大学/特殊教育学校 |
 | schoolNature | 下拉 | 公办/民办 |
 | subject | 下拉(滚动) | 语文/数学/英语/物理/化学/生物/历史/地理/政治/音乐/美术/体育/信息技术/心理健康/通用技术/科学/道德与法治/综合实践/学前教育/特殊教育/其他 |
-| province | 下拉 | ProvinceOptions (来自 @haifeng/shared) |
+| province/城市/区县 | 级联 | ProvinceOptions (来自 @haifeng/shared) |
+| recruitmentCount | 数字输入 | 按招聘人数精确匹配 |
+| ageLimit | 数字输入 | age_limit >= 输入值 |
 | positionStatus | 下拉 | 招聘中/已结束/即将开始 |
+| educationRequirement | 下拉 | 不限/大专/本科/硕士/博士 |
+| degreeRequirement | 下拉 | 不限/学士/硕士/博士 |
+| majorRequirement | 输入框 | 精确匹配专业要求 |
 
 **医疗卫生：**
 | 筛选项 | 类型 | 选项值 |
 |--------|------|--------|
 | keyword | 输入框 | 模糊匹配 institution_name / position_name |
+| institutionType | 下拉 | 综合医院/专科医院/中医医院/社区卫生服务中心/疾控中心/妇幼保健院/卫生监督所/急救中心/血站/精神卫生中心/康复中心/其他 |
 | institutionLevel | 下拉 | 三级甲等/三级乙等/二级甲等/二级乙等/一级/未定级/社区 |
+| institutionNature | 下拉 | 公立/民营 |
 | positionCategory | 下拉 | 临床医师/护理/药学/医技/公共卫生/行政后勤/科研 |
 | department | 下拉 | (从 API 获取或预定义列表) |
-| province | 下拉 | ProvinceOptions |
+| province/城市/区县 | 级联 | ProvinceOptions |
+| ageLimit | 数字输入 | age_limit >= 输入值 |
 | positionStatus | 下拉 | 招聘中/已结束/即将开始 |
+| educationRequirement | 下拉 | 不限/大专/本科/硕士/博士 |
+| degreeRequirement | 下拉 | 不限/学士/硕士/博士 |
+| majorRequirement | 输入框 | 精确匹配专业要求 |
 
 **金融银行：**
 | 筛选项 | 类型 | 选项值 |
 |--------|------|--------|
 | keyword | 输入框 | 模糊匹配 institution_name / position_name |
+| institutionType | 下拉 | 银行/证券/保险/基金/信托/期货/监管机构/金融科技/资产管理/融资租赁/消费金融/小额贷款/其他 |
 | institutionCategory | 下拉 | 银行/证券/保险/基金/信托/期货/监管机构/金融科技 |
+| branchName | 输入框 | 分支机构名称 |
+| positionCategory | 下拉 | 前台业务/中台风控/后台运营/技术研发/职能管理/管理培训生/实习生/其他 |
 | recruitmentType | 下拉 | 秋招/春招/社招/实习/定向 |
-| province | 下拉 | ProvinceOptions |
+| province/城市 | 级联 | ProvinceOptions |
+| ageLimit | 数字输入 | age_limit >= 输入值 |
+| salaryMin | 数字输入 | salary_min >= 输入值 |
 | positionStatus | 下拉 | 招聘中/已结束/即将开始 |
+| educationRequirement | 下拉 | 不限/大专/本科/硕士/博士 |
+| degreeRequirement | 下拉 | 不限/学士/硕士/博士 |
+| majorRequirement | 输入框 | 精确匹配专业要求 |
 
 ### 5.3 岗位卡片展示
 
@@ -254,8 +282,8 @@ export interface FinancePositionDetailVO {
 ┌─────────────────────────────────────────────────────────┐
 │  [分类标签]  [岗位状态标签]                      查看详情 > │
 │  岗位名称 (font-bold text-lg)                           │
-│  机构名称 · 城市 · 学历/经验                           │
-│  [招募类型标签]   招聘X人   薪资范围   年龄上限         │
+│  机构名称 · 城市 · 学历 · 经验                         │
+│  [招募类型标签]   招聘X人   薪资范围   年龄上限   专业要求 │
 │  报名：报名开始 ~ 报名截止                              │
 └─────────────────────────────────────────────────────────┘
 ```

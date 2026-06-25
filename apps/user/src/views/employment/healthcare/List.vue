@@ -24,12 +24,17 @@ const regionValue = ref<string[]>([])
 const regionOptions: CascaderOption[] = buildRegionOptions()
 const ageLimit = ref<number | undefined>(undefined)
 const positionStatus = ref('')
+const educationRequirement = ref('')
+const degreeRequirement = ref('')
+const majorRequirement = ref('')
 
 const institutionTypeOptions = ['综合医院', '专科医院', '中医医院', '社区卫生服务中心', '疾控中心', '妇幼保健院', '卫生监督所', '急救中心', '血站', '精神卫生中心', '康复中心', '其他']
 const institutionLevelOptions = ['三级甲等', '三级乙等', '二级甲等', '二级乙等', '一级', '未定级', '社区']
 const institutionNatureOptions = ['公立', '民营']
 const positionCategoryOptions = ['临床医师', '护理', '药学', '医技', '公共卫生', '行政后勤', '科研']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const educationRequirementOptions = ['不限', '大专', '本科', '硕士', '博士']
+const degreeRequirementOptions = ['不限', '学士', '硕士', '博士']
 
 const loading = ref(false)
 const jobs = ref<HealthcarePositionListVO[]>([])
@@ -52,6 +57,9 @@ function buildParams(): HealthcareQueryDTO {
     district: regionValue.value[2] || undefined,
     ageLimit: ageLimit.value || undefined,
     positionStatus: positionStatus.value || undefined,
+    educationRequirement: educationRequirement.value || undefined,
+    degreeRequirement: degreeRequirement.value || undefined,
+    majorRequirement: majorRequirement.value || undefined,
   }
 }
 
@@ -77,6 +85,7 @@ function onReset() {
   keyword.value = ''; institutionType.value = ''; institutionLevel.value = ''
   institutionNature.value = ''; positionCategory.value = ''; department.value = ''
   regionValue.value = []; ageLimit.value = undefined; positionStatus.value = ''
+  educationRequirement.value = ''; degreeRequirement.value = ''; majorRequirement.value = ''
   page.value = 1; fetchList()
 }
 
@@ -99,7 +108,7 @@ async function goDetail(id: number) {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || institutionType.value || institutionLevel.value || institutionNature.value || positionCategory.value || department.value || regionValue.value.length > 0 || ageLimit.value || positionStatus.value)
+  return !!(keyword.value || institutionType.value || institutionLevel.value || institutionNature.value || positionCategory.value || department.value || regionValue.value.length > 0 || ageLimit.value || positionStatus.value || educationRequirement.value || degreeRequirement.value || majorRequirement.value)
 })
 
 onMounted(fetchList)
@@ -167,6 +176,13 @@ onMounted(fetchList)
             <el-select v-model="positionStatus" placeholder="岗位状态" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in positionStatusOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
+            <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in educationRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <el-select v-model="degreeRequirement" placeholder="学位要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in degreeRequirementOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="majorRequirement" type="text" placeholder="专业要求" class="!w-[140px] rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
 
             <button v-if="isFilterActive" class="rounded-lg px-4 py-2.5 text-sm text-gray-500 hover:text-orange-500 border border-gray-200 hover:border-orange-300 transition-all" @click="onReset">重置</button>
           </div>
@@ -186,12 +202,13 @@ onMounted(fetchList)
               </div>
             </div>
             <h4 class="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-500 transition-colors">{{ job.positionName }}</h4>
-            <p class="text-sm text-gray-500 mb-3">{{ job.institutionName }}<span v-if="job.institutionLevel"> · {{ job.institutionLevel }}</span><span v-if="job.city"> · {{ job.city }}</span></p>
+            <p class="text-sm text-gray-500 mb-3">{{ job.institutionName }}<span v-if="job.institutionLevel"> · {{ job.institutionLevel }}</span><span v-if="job.city"> · {{ job.city }}</span><span v-if="job.educationRequirement"> · {{ job.educationRequirement }}</span></p>
             <div class="flex items-center gap-3 flex-wrap text-sm">
               <span v-if="job.positionCategory" class="rounded-full bg-gray-50 px-2.5 py-0.5 text-xs text-gray-600 border border-gray-200">{{ job.positionCategory }}</span>
               <span class="text-gray-400">{{ job.recruitmentCount }}人</span>
               <span class="text-gray-400">{{ job.salaryRange }}</span>
               <span v-if="job.ageLimit" class="text-gray-400">{{ job.ageLimit }}岁以下</span>
+              <span v-if="job.majorRequirement" class="text-gray-400">专业：{{ job.majorRequirement }}</span>
             </div>
             <div class="mt-3 flex justify-end">
               <span class="text-sm font-medium text-orange-500 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0 inline-flex items-center gap-1">

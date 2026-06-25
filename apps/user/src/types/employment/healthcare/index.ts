@@ -12,6 +12,9 @@ export interface HealthcareQueryDTO {
   district?: string
   ageLimit?: number
   positionStatus?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
 }
 
 export interface HealthcarePositionListVO {
@@ -29,6 +32,9 @@ export interface HealthcarePositionListVO {
   salaryRange: string
   workExperience: string
   positionStatus: string
+  educationRequirement: string
+  degreeRequirement: string
+  majorRequirement: string
 }
 
 export interface HealthcarePositionDetailVO {

@@ -12,6 +12,9 @@ export interface FinanceQueryDTO {
   ageLimit?: number
   salaryMin?: number
   positionStatus?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
 }
 
 export interface FinancePositionListVO {
@@ -33,6 +36,9 @@ export interface FinancePositionListVO {
   workLocation: string
   recruitmentCount: number
   positionStatus: string
+  educationRequirement: string
+  degreeRequirement: string
+  majorRequirement: string
 }
 
 export interface FinancePositionDetailVO {
