@@ -5,53 +5,50 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import SiteFooter from '@/components/SiteFooter.vue'
 import logoMain from '@/assets/images/logo-main.png'
-import { ProvinceOptions } from '@haifeng/shared'
-import { getHealthcareList } from '@/api/employment/healthcare'
-import type { HealthcarePositionListVO, HealthcareQueryDTO } from '@/types/employment/healthcare'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
+import { getInstitutionList } from '@/api/employment/institution'
+import type { InstitutionPositionListVO, InstitutionPositionSearchDTO } from '@/types/employment/institution'
+import { InstitutionStatusTag } from '@/types/employment/institution'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
 
 const router = useRouter()
 
 const keyword = ref('')
-const institutionType = ref('')
-const institutionLevel = ref('')
-const institutionNature = ref('')
-const positionCategory = ref('')
-const department = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
-const ageLimit = ref<number | undefined>(undefined)
+const province = ref('')
+const examCategory = ref('')
+const positionType = ref('')
+const educationRequirement = ref('')
+const degreeRequirement = ref('')
 const positionStatus = ref('')
+const specialPosition = ref('')
+const ageLimit = ref<number | undefined>(undefined)
 
-const institutionTypeOptions = ['综合医院', '专科医院', '中医医院', '社区卫生服务中心', '疾控中心', '妇幼保健院', '卫生监督所', '急救中心', '血站', '精神卫生中心', '康复中心', '其他']
-const institutionLevelOptions = ['三级甲等', '三级乙等', '二级甲等', '二级乙等', '一级', '未定级', '社区']
-const institutionNatureOptions = ['公立', '民营']
-const positionCategoryOptions = ['临床医师', '护理', '药学', '医技', '公共卫生', '行政后勤', '科研']
-const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const provinceOptions = ['北京市', '天津市', '河北省', '山西省', '内蒙古自治区', '辽宁省', '吉林省', '黑龙江省', '上海市', '江苏省', '浙江省', '安徽省', '福建省', '江西省', '山东省', '河南省', '湖北省', '湖南省', '广东省', '广西壮族自治区', '海南省', '重庆市', '四川省', '贵州省', '云南省', '西藏自治区', '陕西省', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区']
+const examCategoryOptions = ['A类（综合管理类）', 'B类（社会科学专技类）', 'C类（自然科学专技类）', 'D类（中小学教师类）', 'E类（医疗卫生类）']
+const positionTypeOptions = ['管理岗位', '专业技术岗位', '工勤技能岗位']
+const specialPositionOptions = ['无', '退役士兵定向', '基层项目定向', '应届生专项', '残疾人专项', '其他']
+const educationOptions = ['无要求', '大专', '本科', '硕士', '博士']
+const degreeOptions = ['无要求', '学士', '硕士', '博士']
+const statusOptions = ['招聘中', '已结束']
 
 const loading = ref(false)
-const jobs = ref<HealthcarePositionListVO[]>([])
+const jobs = ref<InstitutionPositionListVO[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 
-function buildParams(): HealthcareQueryDTO {
+function buildParams(): InstitutionPositionSearchDTO {
   return {
     page: page.value,
     size: pageSize.value,
     keyword: keyword.value || undefined,
-    institutionType: institutionType.value || undefined,
-    institutionLevel: institutionLevel.value || undefined,
-    institutionNature: institutionNature.value || undefined,
-    positionCategory: positionCategory.value || undefined,
-    department: department.value || undefined,
-    province: regionValue.value[0] || undefined,
-    city: regionValue.value[1] || undefined,
-    district: regionValue.value[2] || undefined,
-    ageLimit: ageLimit.value || undefined,
+    province: province.value || undefined,
+    examCategory: examCategory.value || undefined,
+    positionType: positionType.value || undefined,
+    educationRequirement: educationRequirement.value || undefined,
+    degreeRequirement: degreeRequirement.value || undefined,
     positionStatus: positionStatus.value || undefined,
+    specialPosition: specialPosition.value || undefined,
+    ageLimit: ageLimit.value || undefined,
   }
 }
 
@@ -59,11 +56,11 @@ async function fetchList() {
   loading.value = true
   try {
     const params = buildParams()
-    const res = await getHealthcareList(params)
+    const res = await getInstitutionList(params)
     jobs.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取医疗卫生招聘列表失败')
+    ElMessage.error(e?.response?.data?.msg || '获取事业编职位列表失败')
     jobs.value = []
     total.value = 0
   } finally {
@@ -72,14 +69,12 @@ async function fetchList() {
 }
 
 function onSearch() { page.value = 1; fetchList() }
-
 function onReset() {
-  keyword.value = ''; institutionType.value = ''; institutionLevel.value = ''
-  institutionNature.value = ''; positionCategory.value = ''; department.value = ''
-  regionValue.value = []; ageLimit.value = undefined; positionStatus.value = ''
+  keyword.value = ''; province.value = ''; examCategory.value = ''
+  positionType.value = ''; educationRequirement.value = ''; degreeRequirement.value = ''
+  positionStatus.value = ''; specialPosition.value = ''; ageLimit.value = undefined
   page.value = 1; fetchList()
 }
-
 function onPageChange(newPage: number) { page.value = newPage; fetchList() }
 function onPageSizeChange(newSize: number) { pageSize.value = newSize; page.value = 1; fetchList() }
 function goLogin() { router.push('/login') }
@@ -90,16 +85,16 @@ async function goDetail(id: number) {
   if (!userStore.isLoggedIn()) {
     try {
       await ElMessageBox.confirm('请先登录查看详情', '提示', { confirmButtonText: '前往登录', cancelButtonText: '取消', type: 'warning' })
-      userStore.setRedirectPath(`/employment/healthcare/${id}`)
+      userStore.setRedirectPath(`/employment/institution/${id}`)
       router.push({ name: 'Login' })
     } catch { /* cancelled */ }
     return
   }
-  router.push(`/employment/healthcare/${id}`)
+  router.push(`/employment/institution/${id}`)
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || institutionType.value || institutionLevel.value || institutionNature.value || positionCategory.value || department.value || regionValue.value.length > 0 || ageLimit.value || positionStatus.value)
+  return !!(keyword.value || province.value || examCategory.value || positionType.value || educationRequirement.value || degreeRequirement.value || positionStatus.value || specialPosition.value || ageLimit.value)
 })
 
 onMounted(fetchList)
@@ -125,47 +120,47 @@ onMounted(fetchList)
       <div class="container mx-auto px-6 py-6 flex gap-6">
         <div class="flex-1 min-w-0">
         <button class="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors text-sm mb-4" @click="router.push('/employment/jobs')">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
           返回岗位搜索
         </button>
 
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
             <span class="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
-            医疗健康
+            体制内招录
           </div>
-          <h2 class="mb-2 text-3xl font-bold text-gray-800">🏥 医疗卫生招聘</h2>
-          <p class="text-gray-500">全国医疗卫生机构岗位，公立/民营全覆盖</p>
+          <h2 class="mb-2 text-3xl font-bold text-gray-800">事业编招聘</h2>
+          <p class="text-gray-500">事业单位公开招聘职位查询</p>
         </div>
 
         <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
           <div class="flex gap-3 mb-4">
-            <input v-model="keyword" type="text" placeholder="输入机构名称或岗位名称" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
+            <input v-model="keyword" type="text" placeholder="搜索职位名称、主管部门或工作地点" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">搜索</button>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
-            <el-select v-model="institutionType" placeholder="机构类型" clearable class="!w-[150px]" @change="onSearch">
-              <el-option v-for="opt in institutionTypeOptions" :key="opt" :label="opt" :value="opt" />
+            <el-select v-model="province" placeholder="省份" clearable class="!w-[140px]" @change="onSearch">
+              <el-option v-for="opt in provinceOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-select v-model="institutionLevel" placeholder="机构等级" clearable class="!w-[150px]" @change="onSearch">
-              <el-option v-for="opt in institutionLevelOptions" :key="opt" :label="opt" :value="opt" />
+            <el-select v-model="examCategory" placeholder="考试类别" clearable class="!w-[190px]" @change="onSearch">
+              <el-option v-for="opt in examCategoryOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-select v-model="institutionNature" placeholder="机构性质" clearable class="!w-[130px]" @change="onSearch">
-              <el-option v-for="opt in institutionNatureOptions" :key="opt" :label="opt" :value="opt" />
+            <el-select v-model="positionType" placeholder="职位类型" clearable class="!w-[150px]" @change="onSearch">
+              <el-option v-for="opt in positionTypeOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-select v-model="positionCategory" placeholder="岗位类别" clearable class="!w-[140px]" @change="onSearch">
-              <el-option v-for="opt in positionCategoryOptions" :key="opt" :label="opt" :value="opt" />
+            <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in educationOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-select v-model="department" placeholder="科室" clearable class="!w-[130px]" @change="onSearch">
-              <el-option label="不限" value="" />
+            <el-select v-model="degreeRequirement" placeholder="学位要求" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in degreeOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市/区县" clearable class="!w-[200px]" @change="onSearch" />
-            <el-input-number v-model="ageLimit" :min="18" :max="100" placeholder="年龄上限" class="!w-[130px]" controls-position="right" @change="onSearch" />
-            <el-select v-model="positionStatus" placeholder="岗位状态" clearable class="!w-[140px]" @change="onSearch">
-              <el-option v-for="opt in positionStatusOptions" :key="opt" :label="opt" :value="opt" />
+            <el-input-number v-model="ageLimit" :min="18" :max="65" placeholder="年龄上限" class="!w-[130px]" controls-position="right" @change="onSearch" />
+            <el-select v-model="positionStatus" placeholder="职位状态" clearable class="!w-[140px]" @change="onSearch">
+              <el-option v-for="opt in statusOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <el-select v-model="specialPosition" placeholder="特殊岗位" clearable class="!w-[150px]" @change="onSearch">
+              <el-option v-for="opt in specialPositionOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
 
             <button v-if="isFilterActive" class="rounded-lg px-4 py-2.5 text-sm text-gray-500 hover:text-orange-500 border border-gray-200 hover:border-orange-300 transition-all" @click="onReset">重置</button>
@@ -173,7 +168,7 @@ onMounted(fetchList)
         </div>
 
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个医疗卫生岗位` }}</h3>
+          <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个事业编职位` }}</h3>
           <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
@@ -181,16 +176,15 @@ onMounted(fetchList)
           <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">医疗卫生</span>
-                <span class="rounded-full px-3 py-1 text-xs font-medium" :class="job.positionStatus === '招聘中' ? 'bg-green-50 text-green-600' : job.positionStatus === '即将开始' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'">{{ job.positionStatus }}</span>
+                <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-600">{{ job.positionType || '事业编' }}</span>
+                <span class="rounded-full px-3 py-1 text-xs font-medium" :class="InstitutionStatusTag[job.positionStatus] === 'success' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'">{{ job.positionStatus }}</span>
               </div>
             </div>
             <h4 class="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-500 transition-colors">{{ job.positionName }}</h4>
-            <p class="text-sm text-gray-500 mb-3">{{ job.institutionName }}<span v-if="job.institutionLevel"> · {{ job.institutionLevel }}</span><span v-if="job.city"> · {{ job.city }}</span></p>
+            <p class="text-sm text-gray-500 mb-3">{{ job.supervisingDept }}<span v-if="job.institution"> · {{ job.institution }}</span><span v-if="job.workLocation"> · {{ job.workLocation }}</span></p>
             <div class="flex items-center gap-3 flex-wrap text-sm">
-              <span v-if="job.positionCategory" class="rounded-full bg-gray-50 px-2.5 py-0.5 text-xs text-gray-600 border border-gray-200">{{ job.positionCategory }}</span>
               <span class="text-gray-400">{{ job.recruitmentCount }}人</span>
-              <span class="text-gray-400">{{ job.salaryRange }}</span>
+              <span v-if="job.salaryRange" class="text-gray-400">{{ job.salaryRange }}</span>
               <span v-if="job.ageLimit" class="text-gray-400">{{ job.ageLimit }}岁以下</span>
             </div>
             <div class="mt-3 flex justify-end">
@@ -199,7 +193,7 @@ onMounted(fetchList)
               </span>
             </div>
           </div>
-          <div v-if="!loading && jobs.length === 0" class="py-20 text-center text-gray-400">暂无医疗卫生招聘岗位</div>
+          <div v-if="!loading && jobs.length === 0" class="py-20 text-center text-gray-400">暂无事业编职位</div>
         </div>
 
         <div v-if="total > pageSize" class="mt-8 flex justify-center">
