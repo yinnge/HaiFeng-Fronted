@@ -286,6 +286,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '选调生岗位详情', requiresAuth: true },
   },
   {
+    path: '/special',
+    name: 'SpecialChannel',
+    component: () => import('@/views/special/index.vue'),
+    meta: { title: '特殊招生通道' },
+  },
+  {
+    path: '/special/channel/:id',
+    name: 'SpecialChannelDetail',
+    component: () => import('@/views/special/ChannelDetail.vue'),
+    meta: { title: '通道详情', requiresAuth: true },
+  },
+  {
+    path: '/special/strong-base/:id',
+    name: 'SpecialStrongBaseDetail',
+    component: () => import('@/views/special/StrongBaseDetail.vue'),
+    meta: { title: '强基数据详情', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),

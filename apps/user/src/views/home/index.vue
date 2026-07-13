@@ -229,6 +229,12 @@ onUnmounted(() => {
           >
             岗位搜索
           </router-link>
+          <router-link
+            to="/special"
+            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
+          >
+            特殊通道
+          </router-link>
           <button
             class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
             @click="goProfile"
