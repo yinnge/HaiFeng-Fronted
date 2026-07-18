@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '注册' },
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/forgot-password/index.vue'),
+    meta: { title: '重置密码' },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/profile/index.vue'),
@@ -56,6 +62,12 @@ const routes: RouteRecordRaw[] = [
     name: 'UniversityDetail',
     component: () => import('@/views/university/Detail.vue'),
     meta: { title: '院校详情', requiresAuth: true },
+  },
+  {
+    path: '/university/admission-group/:groupId',
+    name: 'AdmissionGroupDetail',
+    component: () => import('@/views/university/AdmissionGroupDetail.vue'),
+    meta: { title: '录取专业组详情', requiresAuth: true },
   },
   {
     path: '/university/:id/guide',

@@ -75,3 +75,97 @@ export interface GalleryItemVO {
   imageType: string
   imageUrl: string
 }
+
+// === 通道-大学关联 ===
+export interface ChannelListVO {
+  channelCode: string
+  channelName: string
+  year: number
+  regionTag: string
+  signupStart: string
+  signupEnd: string
+}
+
+export interface ChannelOptionVO {
+  channelCode: string
+  channelName: string
+}
+
+// === 录取专业组 ===
+export interface AdmissionGroupListVO {
+  id: number
+  groupCode: string
+  groupName: string
+  year: number
+  province: string
+  batch: string
+  cityName: string
+  subjects: string[]
+  requirementType: string
+  majorCount: number
+  admissionCount: number
+  minScore: number
+  minRank: number
+  maxScore: number
+  maxRank: number
+  avgScore: number
+  avgRank: number
+}
+
+export interface AdmissionGroupDetailVO {
+  id: number
+  universityId: number
+  universityName: string
+  cityName: string
+  year: number
+  province: string
+  batch: string
+  enrollmentCode: string
+  groupCode: string
+  groupName: string
+  subjects: string[]
+  requirementType: string
+  description: string
+  constraints: string[]
+  majorCount: number
+  categoryCount: number
+  admissionCount: number
+  minScore: number
+  minRank: number
+  maxScore: number
+  maxRank: number
+  avgScore: number
+  avgRank: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MajorScoreVO {
+  id: number
+  groupId: number
+  majorCode: string
+  majorName: string
+  educationLevel: string
+  duration: string
+  tuition: string
+  description: string
+  admissionCount: number
+  minScore: number
+  minRank: number
+  maxScore: number
+  maxRank: number
+  avgScore: number
+  avgRank: number
+  constraints: string[]
+}
+
+export interface AdmissionGroupQueryDTO extends BasePageQuery {
+  province?: string
+  batch?: string
+  cityName?: string
+}
+
+export interface ChannelQueryDTO extends BasePageQuery {
+  channelName?: string
+  regionTag?: string
+}

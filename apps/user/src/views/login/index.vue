@@ -32,7 +32,7 @@ function goHome() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-100">
+  <div class="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white">
     <div class="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
       <div class="mb-2 flex cursor-pointer items-center justify-center" @click="goHome">
         <img :src="logoImage" alt="海峰未来规划院" class="h-20 w-20 object-contain" />
@@ -47,26 +47,34 @@ function goHome() {
             v-model="form.phone"
             type="tel"
             placeholder="请输入手机号"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 outline-none transition-colors focus:border-orange-400"
             required
           />
         </div>
 
-        <div class="mb-6">
+        <div class="mb-2">
           <label class="mb-2 block text-sm text-gray-700">密码</label>
           <input
             v-model="form.password"
             type="password"
             placeholder="请输入密码"
-            class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 outline-none transition-colors focus:border-orange-400"
             required
           />
+        </div>
+        <div class="mb-6 flex justify-end">
+          <span
+            class="cursor-pointer text-sm text-orange-500 hover:text-orange-600 transition-colors"
+            @click="router.push('/forgot-password')"
+          >
+            忘记密码？
+          </span>
         </div>
 
         <button
           type="submit"
           :disabled="loading"
-          class="w-full rounded-lg bg-blue-600 py-3 text-white hover:bg-blue-700 disabled:bg-blue-400"
+          class="w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-3 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
         >
           {{ loading ? '登录中...' : '登录' }}
         </button>
@@ -74,7 +82,7 @@ function goHome() {
 
       <p class="mt-6 text-center text-gray-500">
         还没有账号？
-        <span class="cursor-pointer text-blue-600 hover:underline" @click="goRegister">
+        <span class="cursor-pointer text-orange-500 hover:text-orange-600" @click="goRegister">
           立即注册
         </span>
       </p>

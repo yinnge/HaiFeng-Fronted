@@ -7,6 +7,13 @@ import type {
   GuideOverviewVO,
   GuideCategoryVO,
   GalleryItemVO,
+  ChannelListVO,
+  ChannelOptionVO,
+  ChannelQueryDTO,
+  AdmissionGroupListVO,
+  AdmissionGroupDetailVO,
+  AdmissionGroupQueryDTO,
+  MajorScoreVO,
 } from '@/types/university'
 
 const PREFIX = '/api/v1/app/university'
@@ -37,3 +44,20 @@ export const getGuideLife = (id: number) =>
 
 export const getCampusGallery = (id: number, params: { page?: number; size?: number; imageType?: string }) =>
   request.get<R<PageResult<GalleryItemVO>>>(`${PREFIX}/${id}/gallery`, { params })
+
+// === 通道-大学关联 ===
+export const getUniversityChannels = (universityId: number, params: ChannelQueryDTO) =>
+  request.get<R<PageResult<ChannelListVO>>>(`${PREFIX}/${universityId}/channels`, { params })
+
+export const getChannelOptions = () =>
+  request.get<R<ChannelOptionVO[]>>(`${PREFIX}/channel-options`)
+
+// === 录取专业组 ===
+export const getAdmissionGroupPage = (universityId: number, params: AdmissionGroupQueryDTO) =>
+  request.get<R<PageResult<AdmissionGroupListVO>>>(`${PREFIX}/admission-group/${universityId}`, { params })
+
+export const getAdmissionGroupDetail = (groupId: number) =>
+  request.get<R<AdmissionGroupDetailVO>>(`${PREFIX}/admission-group/${groupId}/detail`)
+
+export const getMajorScores = (groupId: number) =>
+  request.get<R<MajorScoreVO[]>>(`${PREFIX}/admission-group/${groupId}/scores`)
