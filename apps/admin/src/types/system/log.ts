@@ -2,7 +2,7 @@ import type { BasePageQuery } from '@haifeng/shared'
 
 /** 操作日志列表 VO */
 export interface AdminLogListVO {
-  id: number
+  id: string
   adminName: string
   operation: string
   requestMethod: string
@@ -13,7 +13,7 @@ export interface AdminLogListVO {
 
 /** 操作日志详情 VO */
 export interface AdminLogDetailVO extends AdminLogListVO {
-  adminId: number
+  adminId: string
   requestPath: string
   requestParams: string
   errorMsg?: string

@@ -2,7 +2,7 @@ import type { BasePageQuery } from '@haifeng/shared'
 
 /** 用户列表 VO */
 export interface MemberListVO {
-  id: number
+  id: string
   username: string
   phone: string
   memberType: 'normal' | 'pro' | 'vip'
@@ -18,11 +18,11 @@ export interface MemberDetailVO extends MemberListVO {
   avatar: string
   inviteCode: string
   expireAt: string
-  referrerId: number
+  referrerId: string
   referrerUsername: string
   commissionBalance: number
   commissionTotalEarned: number
-  commissionTotalPaid: number
+  commissionTotalPaid: string
   updatedAt: string
 }
 
@@ -35,7 +35,7 @@ export interface MemberQueryDTO extends BasePageQuery {
   inviteCode?: string
 }
 
-/** 用户状态修改 DTO */
+/** 用户状态修�?DTO */
 export interface MemberStatusDTO {
   status: 'active' | 'disabled'
 }

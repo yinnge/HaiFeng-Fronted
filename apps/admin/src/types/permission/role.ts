@@ -2,7 +2,7 @@ import type { BasePageQuery } from '@haifeng/shared'
 
 /** 角色列表 VO */
 export interface RoleVO {
-  id: number
+  id: string
   roleName: string
   roleCode: string
   description?: string

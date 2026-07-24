@@ -15,7 +15,8 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
-  (e: 'detail', id: number): void
+  (e: 'detail', id: string): void
+  (e: 'module', id: string, name: string): void
   (e: 'refresh'): void
 }>()
 
@@ -78,9 +79,10 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" align="center" fixed="right">
+      <el-table-column label="操作" width="260" align="center" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link @click="emit('detail', row.id)">详情</el-button>
+          <el-button type="success" link @click="emit('module', row.id, row.roleName)">分配权限</el-button>
           <el-button
             :type="row.status === 1 ? 'warning' : 'success'"
             link
@@ -95,8 +97,8 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 
     <div class="flex justify-end mt-4">
       <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
+        :current-page="page"
+        :page-size="size"
         :page-sizes="pageSizes"
         :total="total"
         layout="total, sizes, prev, pager, next"

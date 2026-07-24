@@ -9,7 +9,7 @@ import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
-  moduleId?: number
+  moduleId?: string
   moduleTree: ModuleTreeVO[]
   currentModule?: ModuleTreeVO
 }>()
@@ -27,7 +27,7 @@ const originalData = ref<string>('')
 const isEdit = computed(() => !!props.moduleId)
 const title = computed(() => (isEdit.value ? '编辑模块' : '新增模块'))
 
-const form = reactive<ModuleAddDTO & { id?: number }>({
+const form = reactive<ModuleAddDTO & { id?: string }>({
   moduleName: '',
   moduleCode: '',
   parentId: undefined,

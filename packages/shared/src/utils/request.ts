@@ -73,9 +73,13 @@ const createRequest = (baseURL: string): AxiosInstance => {
             throw new Error('No refresh token')
           }
 
-          // 调用刷新 Token 接口
+          // 从原始请求 URL 提取 prefix（/api/v1/admin 或 /api/v1/app）
+          const originalUrl: string = originalRequest.url || ''
+          const match = originalUrl.match(/^(\/api\/v1\/(admin|app))/)
+          const prefix = match ? match[1] : '/api/v1/admin'
+
           const response = await axios.post<R<{ accessToken: string; refreshToken: string }>>(
-            `${originalRequest.baseURL}/api/v1/auth/refresh`,
+            `${originalRequest.baseURL}${prefix}/auth/refresh`,
             { refreshToken }
           )
 

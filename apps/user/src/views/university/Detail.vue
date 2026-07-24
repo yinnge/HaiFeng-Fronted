@@ -8,6 +8,8 @@ import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
 import DepartmentTab from '@/components/university/DepartmentTab.vue'
 import SubjectEvaluationTab from '@/components/university/SubjectEvaluationTab.vue'
 import PostgradMajorForUniversityTab from '@/components/major/PostgradMajorForUniversityTab.vue'
+import ChannelTab from '@/components/university/ChannelTab.vue'
+import AdmissionGroupTab from '@/components/university/AdmissionGroupTab.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,6 +22,8 @@ const tabs = [
   { key: 'postgrad', label: '考研专业', icon: '🎓' },
   { key: 'department', label: '院系', icon: '🏛️' },
   { key: 'evaluation', label: '学科评估', icon: '📊' },
+  { key: 'channel', label: '特殊通道', icon: '🎯' },
+  { key: 'admission', label: '录取数据', icon: '📈' },
 ]
 
 async function fetchDetail() {
@@ -125,7 +129,7 @@ onMounted(fetchDetail)
 
         <!-- Tab 导航 -->
         <section class="mb-8">
-          <div class="grid grid-cols-4 gap-4">
+          <div class="grid grid-cols-3 md:grid-cols-6 gap-4">
             <button
               v-for="tab in tabs" :key="tab.key"
               class="relative rounded-2xl p-5 text-center transition-all border"
@@ -146,6 +150,8 @@ onMounted(fetchDetail)
           <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="Number(route.params.id)" />
           <DepartmentTab v-else-if="activeTab === 'department'" :university-id="Number(route.params.id)" />
           <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="Number(route.params.id)" />
+          <ChannelTab v-else-if="activeTab === 'channel'" :university-id="Number(route.params.id)" />
+          <AdmissionGroupTab v-else-if="activeTab === 'admission'" :university-id="Number(route.params.id)" />
         </section>
 
         <!-- 操作 -->

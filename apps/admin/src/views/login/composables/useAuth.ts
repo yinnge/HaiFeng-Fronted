@@ -27,8 +27,9 @@ export function useAuth() {
   const preAuthToken = ref('')
 
   // 登录成功后的处理
-  const handleLoginSuccess = (tokenData: TokenVO) => {
+  const handleLoginSuccess = async (tokenData: TokenVO) => {
     userStore.setToken(tokenData.accessToken, tokenData.refreshToken)
+    await userStore.fetchProfile()
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)

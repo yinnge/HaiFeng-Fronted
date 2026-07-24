@@ -6,6 +6,7 @@ import logoMain from '@/assets/images/logo-main.png'
 import { getAnnouncements, getPlanners, getInstitutions } from '@/api/home'
 import type { AnnouncementListVO, PlannerListVO, InstitutionListVO } from '@/types/home'
 import { ProvinceOptions } from '@haifeng/shared'
+import PlannerCard from './components/PlannerCard.vue'
 
 interface StatConfig {
   label: string
@@ -229,6 +230,12 @@ onUnmounted(() => {
           >
             岗位搜索
           </router-link>
+          <router-link
+            to="/special"
+            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
+          >
+            特殊通道
+          </router-link>
           <button
             class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
             @click="goProfile"
@@ -429,9 +436,9 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="plannerPages.length" class="relative">
+          <div v-if="plannerPages.length" class="relative flex items-center">
             <button
-              class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              class="absolute left-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               :disabled="plannerPageIndex === 0"
               @click="prevPlannerPage"
             >
@@ -440,27 +447,16 @@ onUnmounted(() => {
               </svg>
             </button>
 
-            <div class="grid gap-6 md:grid-cols-4 px-8">
-              <div
+            <div class="flex-1 flex justify-center items-stretch gap-0 mx-14">
+              <PlannerCard
                 v-for="planner in currentPlannerPage"
                 :key="planner.id"
-                class="group cursor-pointer rounded-2xl bg-white p-6 text-center shadow-lg hover:shadow-xl border border-gray-100 hover:border-orange-200 transition-all"
-                @click="router.push(`/home/planner/${planner.id}`)"
-              >
-                <img
-                  :src="planner.avatar"
-                  :alt="planner.name"
-                  class="mx-auto h-24 w-24 rounded-full border-4 border-orange-100 object-cover group-hover:border-orange-300 transition-colors"
-                />
-                <h4 class="mt-4 text-lg font-bold text-gray-800">{{ planner.name }}</h4>
-                <p class="mt-1 text-sm text-orange-500">{{ planner.position }}</p>
-                <p class="mt-1 text-xs text-gray-400">{{ planner.region }}</p>
-                <p class="mt-2 text-sm text-gray-500 line-clamp-2">{{ planner.specialty }}</p>
-              </div>
+                :planner="planner"
+              />
             </div>
 
             <button
-              class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              class="absolute right-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               :disabled="plannerPageIndex >= plannerPages.length - 1"
               @click="nextPlannerPage"
             >
@@ -477,8 +473,9 @@ onUnmounted(() => {
             <span
               v-for="(_, i) in plannerPages"
               :key="i"
-              class="inline-block h-2 w-2 rounded-full transition-colors"
+              class="inline-block h-2 w-2 rounded-full transition-colors cursor-pointer"
               :class="i === plannerPageIndex ? 'bg-orange-500' : 'bg-gray-300'"
+              @click="plannerPageIndex = i"
             ></span>
           </div>
         </div>

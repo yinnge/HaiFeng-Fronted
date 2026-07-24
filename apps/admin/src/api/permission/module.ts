@@ -21,16 +21,16 @@ export const addModule = (data: ModuleAddDTO) => {
 }
 
 /** 更新模块 */
-export const updateModule = (id: number, data: ModuleUpdateDTO) => {
+export const updateModule = (id: string, data: ModuleUpdateDTO) => {
   return request.put<R<void>>(`${PREFIX}/${id}`, data)
 }
 
 /** 删除模块 */
-export const deleteModule = (id: number) => {
+export const deleteModule = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/${id}`)
 }
 
-/** 切换模块状态 */
-export const toggleModuleStatus = (id: number) => {
+/** 切换模块状�?*/
+export const toggleModuleStatus = (id: string) => {
   return request.put<R<void>>(`${PREFIX}/${id}/toggle-status`)
 }

@@ -1,0 +1,5 @@
+export * from './province-reform'
+export * from './score-rank'
+export * from './batch-score-line'
+export * from './province'
+export * from './gaokao'

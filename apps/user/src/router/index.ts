@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '注册' },
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/forgot-password/index.vue'),
+    meta: { title: '重置密码' },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/profile/index.vue'),
@@ -56,6 +62,12 @@ const routes: RouteRecordRaw[] = [
     name: 'UniversityDetail',
     component: () => import('@/views/university/Detail.vue'),
     meta: { title: '院校详情', requiresAuth: true },
+  },
+  {
+    path: '/university/admission-group/:groupId',
+    name: 'AdmissionGroupDetail',
+    component: () => import('@/views/university/AdmissionGroupDetail.vue'),
+    meta: { title: '录取专业组详情', requiresAuth: true },
   },
   {
     path: '/university/:id/guide',
@@ -284,6 +296,24 @@ const routes: RouteRecordRaw[] = [
     name: 'EmploymentSelectionDetail',
     component: () => import('@/views/employment/selection/Detail.vue'),
     meta: { title: '选调生岗位详情', requiresAuth: true },
+  },
+  {
+    path: '/special',
+    name: 'SpecialChannel',
+    component: () => import('@/views/special/index.vue'),
+    meta: { title: '特殊招生通道' },
+  },
+  {
+    path: '/special/channel/:id',
+    name: 'SpecialChannelDetail',
+    component: () => import('@/views/special/ChannelDetail.vue'),
+    meta: { title: '通道详情', requiresAuth: true },
+  },
+  {
+    path: '/special/strong-base/:id',
+    name: 'SpecialStrongBaseDetail',
+    component: () => import('@/views/special/StrongBaseDetail.vue'),
+    meta: { title: '强基数据详情', requiresAuth: true },
   },
   {
     path: '/:pathMatch(.*)*',

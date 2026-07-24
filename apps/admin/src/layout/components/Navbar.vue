@@ -75,36 +75,34 @@ onMounted(() => {
     <!-- 右侧：用户信息 + 后台管理按钮 -->
     <div class="flex items-center gap-4">
       <!-- 用户卡片 -->
-      <el-dropdown trigger="click">
-        <el-tooltip content="进入个人中心" placement="bottom">
+      <el-dropdown trigger="hover">
+        <div
+          class="flex cursor-pointer items-center gap-2.5 rounded-lg bg-white px-3 py-2 shadow-sm transition hover:shadow-md"
+        >
+          <!-- 头像 -->
           <div
-            class="flex cursor-pointer items-center gap-2.5 rounded-lg bg-white px-3 py-2 shadow-sm transition hover:shadow-md"
+            class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium text-white"
+            style="background: linear-gradient(135deg, #cc785c, #e8a55a);"
           >
-            <!-- 头像 -->
-            <div
-              class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium text-white"
-              style="background: linear-gradient(135deg, #cc785c, #e8a55a);"
-            >
-              <img
-                v-if="userStore.profile?.avatar"
-                :src="userStore.profile.avatar"
-                alt="头像"
-                class="h-full w-full rounded-full object-cover"
-              />
-              <span v-else>{{ avatarText }}</span>
-            </div>
-            <!-- 用户名和角色 -->
-            <div>
-              <div class="text-sm font-medium text-gray-800">
-                {{ userStore.profile?.username || '加载中...' }}
-              </div>
-              <div class="text-xs text-gray-500">
-                {{ userStore.profile?.roleName || '-' }}
-              </div>
-            </div>
-            <el-icon class="ml-1 text-gray-400"><ArrowDown /></el-icon>
+            <img
+              v-if="userStore.profile?.avatar"
+              :src="userStore.profile.avatar"
+              alt="头像"
+              class="h-full w-full rounded-full object-cover"
+            />
+            <span v-else>{{ avatarText }}</span>
           </div>
-        </el-tooltip>
+          <!-- 用户名和角色 -->
+          <div>
+            <div class="text-sm font-medium text-gray-800">
+              {{ userStore.profile?.username || '加载中...' }}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ userStore.profile?.roleName || '-' }}
+            </div>
+          </div>
+          <el-icon class="ml-1 text-gray-400"><ArrowDown /></el-icon>
+        </div>
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item @click="goToProfile">

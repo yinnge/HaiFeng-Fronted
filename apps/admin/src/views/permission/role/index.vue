@@ -6,6 +6,7 @@ import type { RoleVO, RoleQueryDTO } from '@/types/permission/role'
 import RoleSearch from './components/RoleSearch.vue'
 import RoleTable from './components/RoleTable.vue'
 import RoleDetailModal from './components/RoleDetailModal.vue'
+import RoleModuleModal from './components/RoleModuleModal.vue'
 
 const loading = ref(false)
 const tableData = ref<RoleVO[]>([])
@@ -19,7 +20,10 @@ const queryParams = reactive<RoleQueryDTO>({
 })
 
 const showDetailModal = ref(false)
-const currentRoleId = ref<number | undefined>()
+const currentRoleId = ref<string | undefined>()
+const showModuleModal = ref(false)
+const moduleRoleId = ref<string>('')
+const moduleRoleName = ref('')
 
 const fetchData = async () => {
   loading.value = true
@@ -66,9 +70,15 @@ const handleAdd = () => {
   showDetailModal.value = true
 }
 
-const handleDetail = (id: number) => {
+const handleDetail = (id: string) => {
   currentRoleId.value = id
   showDetailModal.value = true
+}
+
+const handleModule = (id: string, name: string) => {
+  moduleRoleId.value = id
+  moduleRoleName.value = name
+  showModuleModal.value = true
 }
 
 const handleSuccess = () => {
@@ -98,6 +108,7 @@ onMounted(() => {
         @page-change="handlePageChange"
         @size-change="handleSizeChange"
         @detail="handleDetail"
+        @module="handleModule"
         @refresh="fetchData"
       />
     </div>
@@ -105,6 +116,13 @@ onMounted(() => {
     <RoleDetailModal
       v-model:visible="showDetailModal"
       :role-id="currentRoleId"
+      @success="handleSuccess"
+    />
+
+    <RoleModuleModal
+      v-model:visible="showModuleModal"
+      :role-id="moduleRoleId"
+      :role-name="moduleRoleName"
       @success="handleSuccess"
     />
   </div>

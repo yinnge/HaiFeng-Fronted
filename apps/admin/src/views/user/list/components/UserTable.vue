@@ -86,8 +86,8 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 
     <div class="flex justify-end mt-4">
       <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
+        :current-page="page"
+        :page-size="size"
         :page-sizes="pageSizes"
         :total="total"
         layout="total, sizes, prev, pager, next"
