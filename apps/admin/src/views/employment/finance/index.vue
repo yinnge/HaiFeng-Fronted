@@ -152,7 +152,7 @@ const formData = reactive<Record<string, any>>({
 
   applyLink: '',
 
-  positionStatus: '招聘中,
+  positionStatus: '招聘中',
 
   contactInfo: '',
 
@@ -172,17 +172,17 @@ const recruitmentTypeOptions = ['秋招', '春招', '社招', '实习', '定向'
 
 const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
 
-const positionStatusOptions = ['招聘中, '已结束, '即将开始]
+const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
 
 
 const positionStatusTag: Record<string, 'success' | 'info' | 'warning'> = {
 
-  '招聘中: 'success',
+  '招聘中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
-  '即将开始: 'warning',
+  '即将开始': 'warning',
 
 }
 
@@ -280,7 +280,7 @@ const resetForm = () => {
 
   })
 
-  formData.positionStatus = '招聘中
+  formData.positionStatus = '招聘中'
 
 }
 
@@ -354,7 +354,7 @@ const fillForm = (d: FinanceDetailVO) => {
 
   formData.applyLink = d.applyLink || ''
 
-  formData.positionStatus = d.positionStatus || '招聘中
+  formData.positionStatus = d.positionStatus || '招聘中'
 
   formData.contactInfo = d.contactInfo || ''
 
@@ -514,7 +514,7 @@ const handleStatusChange = async (row: FinanceListVO, newStatus: string) => {
 
     const res = await updateFinanceStatus(row.id, { positionStatus: newStatus })
 
-    if (res.data.code === 200) { ElMessage.success('状态更新成功); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('状态更新成功'); fetchData() }
 
     else { ElMessage.error(res.data.msg || '操作失败') }
 
@@ -614,7 +614,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="状态>
+        <el-form-item label="状态">
 
           <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -676,7 +676,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="city" label="城市" width="80" />
 
-        <el-table-column prop="positionStatus" label="状态 width="100" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -804,7 +804,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="语言要求">{{ detailData.languageRequirement || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="计算机要求>{{ detailData.computerRequirement || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="计算机要求">{{ detailData.computerRequirement || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="其他要求" :span="2">{{ detailData.otherRequirement || '-' }}</el-descriptions-item>
 
@@ -822,7 +822,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="面试轮次">{{ detailData.interviewRounds || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名开始>{{ detailData.regStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="报名开始">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="报名截止">{{ detailData.regEndDate || '-' }}</el-descriptions-item>
 
@@ -834,7 +834,7 @@ onMounted(() => { fetchData() })
 
             </el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -862,7 +862,7 @@ onMounted(() => { fetchData() })
 
           <el-tabs v-model="activeTab">
 
-            <el-tab-pane label="机构与岗位信息 name="basic">
+            <el-tab-pane label="机构与岗位信息" name="basic">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -964,7 +964,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="地区与报考要求 name="location">
+            <el-tab-pane label="地区与报考要求" name="location">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1096,7 +1096,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="证书要求">
 
-                  <el-input v-model="formData.certRequirements" placeholder="多个证书用逗号分隔（如 CFA,CPA />
+                  <el-input v-model="formData.certRequirements" placeholder="多个证书用逗号分隔（如 CFA、CPA）" />
 
                   <span class="ml-2 text-xs text-gray-400">支持中英文逗号</span>
 
@@ -1108,9 +1108,9 @@ onMounted(() => { fetchData() })
 
                 </el-form-item>
 
-                <el-form-item label="计算机要求>
+                <el-form-item label="计算机要求">
 
-                  <el-input v-model="formData.computerRequirement" placeholder="计算机要求 maxlength="100" />
+                  <el-input v-model="formData.computerRequirement" placeholder="计算机要求" maxlength="100" />
 
                 </el-form-item>
 
@@ -1126,7 +1126,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="薪资与福利 name="salary">
+            <el-tab-pane label="薪资与福利" name="salary">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1134,7 +1134,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="最低月薪k)">
+                    <el-form-item label="最低月薪(k)">
 
                       <el-input-number v-model="formData.salaryMin" :min="0" style="width: 100%" />
 
@@ -1144,7 +1144,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="最高月薪k)">
+                    <el-form-item label="最高月薪(k)">
 
                       <el-input-number v-model="formData.salaryMax" :min="0" style="width: 100%" />
 
@@ -1178,7 +1178,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="考试与补录 name="exam">
+            <el-tab-pane label="考试与补录" name="exam">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1202,9 +1202,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="8">
 
-                    <el-form-item label="报名开始>
+                    <el-form-item label="报名开始">
 
-                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                     </el-form-item>
 
@@ -1232,7 +1232,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+<el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1310,7 +1310,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 

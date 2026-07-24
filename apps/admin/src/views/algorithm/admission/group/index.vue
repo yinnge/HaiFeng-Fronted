@@ -60,7 +60,7 @@ const selectedIds = ref<string[]>([])
 
 const provinceOptions = [
 
-  '北京','天津','河北','山西','内蒙古,'辽宁','吉林','黑龙江,'上海','江苏',
+  '北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏',
 
   '浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西',
 
@@ -300,7 +300,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
   if (mode === 'add') {
 
-    dialogTitle.value = '新增专业组
+    dialogTitle.value = '新增专业组'
 
     resetFormData()
 
@@ -320,7 +320,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
         if (mode === 'edit') {
 
-          dialogTitle.value = '修改专业组
+          dialogTitle.value = '修改专业组'
 
           formData.universityName = d.universityName
 
@@ -346,7 +346,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
         } else {
 
-          dialogTitle.value = '专业组详情
+          dialogTitle.value = '专业组详情'
 
           detailData.value = d
 
@@ -378,7 +378,7 @@ const handleSubmit = async () => {
 
   if (!formData.universityName || !formData.year || !formData.province || !formData.batch || !formData.groupCode) {
 
-    ElMessage.warning('请填写完整信息（字段)
+    ElMessage.warning('请填写完整信息（字段）')
 
     return
 
@@ -530,7 +530,7 @@ const handleBatchDelete = async () => {
 
   if (selectedIds.value.length === 0) {
 
-    ElMessage.warning('请先选择要删除的专业)
+    ElMessage.warning('请先选择要删除的专业')
 
     return
 
@@ -612,7 +612,7 @@ const handleRecalcAll = async () => {
 
   try {
 
-    await ElMessageBox.confirm('确定要全量重算所有专业组的聚合数据吗？此操作不可撤销, '提示', {
+    await ElMessageBox.confirm('确定要全量重算所有专业组的聚合数据吗？此操作不可撤销', '提示', {
 
       type: 'warning',
 
@@ -746,7 +746,7 @@ onMounted(() => {
 
           <el-col :span="6">
 
-            <el-form-item label="专业组代码 style="width: 100%; margin-bottom: 0;">
+            <el-form-item label="专业组代码" style="width: 100%; margin-bottom: 0;">
 
               <el-input v-model="queryParams.groupCode" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
 
@@ -756,7 +756,7 @@ onMounted(() => {
 
           <el-col :span="6">
 
-            <el-form-item label="专业组名称 style="width: 100%; margin-bottom: 0;">
+            <el-form-item label="专业组名称" style="width: 100%; margin-bottom: 0;">
 
               <el-input v-model="queryParams.groupName" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
 
@@ -766,7 +766,7 @@ onMounted(() => {
 
           <el-col :span="6">
 
-            <el-form-item label="状态 style="width: 100%; margin-bottom: 0;">
+            <el-form-item label="状态" style="width: 100%; margin-bottom: 0;">
 
               <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100%;">
 
@@ -804,13 +804,13 @@ onMounted(() => {
 
     <div class="mb-4">
 
-      <el-button type="primary" @click="openDialog('add')">新增专业组/el-button>
+      <el-button type="primary" @click="openDialog('add')">新增专业组</el-button>
 
       <el-button @click="handleImport">导入Excel</el-button>
 
       <el-button @click="handleRecalcAll">全量重算</el-button>
 
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除/el-button>
+      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除</el-button>
 
       <el-button @click="fetchData">刷新</el-button>
 
@@ -840,9 +840,9 @@ onMounted(() => {
 
         <el-table-column prop="enrollmentCode" label="省招代码" width="110" />
 
-        <el-table-column prop="groupCode" label="专业组代码 width="100" />
+        <el-table-column prop="groupCode" label="专业组代码" width="100" />
 
-        <el-table-column prop="groupName" label="专业组名称 width="130" show-overflow-tooltip />
+        <el-table-column prop="groupName" label="专业组名称" width="130" show-overflow-tooltip />
 
         <el-table-column label="选科要求" min-width="160">
 
@@ -860,11 +860,11 @@ onMounted(() => {
 
         <el-table-column prop="minScore" label="最低分" width="70" />
 
-        <el-table-column prop="minRank" label="最低位次 width="80" />
+        <el-table-column prop="minRank" label="最低位次" width="80" />
 
-        <el-table-column prop="avgScore" label="平均 width="70" />
+        <el-table-column prop="avgScore" label="平均分" width="70" />
 
-        <el-table-column label="状态 width="80" align="center">
+        <el-table-column label="状态" width="80" align="center">
 
           <template #default="{ row }">
 
@@ -894,7 +894,7 @@ onMounted(() => {
 
             </el-button>
 
-            <el-button type="danger" link @click="handleDelete(row.id)">软删除/el-button>
+            <el-button type="danger" link @click="handleDelete(row.id)">软删除</el-button>
 
           </template>
 
@@ -960,9 +960,9 @@ onMounted(() => {
 
                 <el-descriptions-item label="省招代码">{{ detailData.enrollmentCode || '-' }}</el-descriptions-item>
 
-                <el-descriptions-item label="专业组代码>{{ detailData.groupCode }}</el-descriptions-item>
+                <el-descriptions-item label="专业组代码">{{ detailData.groupCode }}</el-descriptions-item>
 
-                <el-descriptions-item label="专业组名称>{{ detailData.groupName || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="专业组名称">{{ detailData.groupName || '-' }}</el-descriptions-item>
 
                 <el-descriptions-item label="选科要求" :span="2">
 
@@ -982,7 +982,7 @@ onMounted(() => {
 
                 </el-descriptions-item>
 
-                <el-descriptions-item label="状态>
+                <el-descriptions-item label="状态">
 
                   <el-tag :type="detailData.isDeleted ? 'info' : 'success'" size="small">
 
@@ -992,7 +992,7 @@ onMounted(() => {
 
                 </el-descriptions-item>
 
-                <el-descriptions-item label="专业组简介 :span="2">
+                <el-descriptions-item label="专业组简介" :span="2">
 
                   <div class="max-h-40 overflow-y-auto">{{ detailData.description || '-' }}</div>
 
@@ -1014,15 +1014,15 @@ onMounted(() => {
 
                 <el-descriptions-item label="最低分">{{ detailData.minScore ?? '-' }}</el-descriptions-item>
 
-                <el-descriptions-item label="最低位次>{{ detailData.minRank ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="最低位次">{{ detailData.minRank ?? '-' }}</el-descriptions-item>
 
-                <el-descriptions-item label="平均>{{ detailData.avgScore ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="平均分">{{ detailData.avgScore ?? '-' }}</el-descriptions-item>
 
                 <el-descriptions-item label="平均位次">{{ detailData.avgRank ?? '-' }}</el-descriptions-item>
 
                 <el-descriptions-item label="最高分">{{ detailData.maxScore ?? '-' }}</el-descriptions-item>
 
-                <el-descriptions-item label="最高位次>{{ detailData.maxRank ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="最高位次">{{ detailData.maxRank ?? '-' }}</el-descriptions-item>
 
               </el-descriptions>
 
@@ -1058,7 +1058,7 @@ onMounted(() => {
 
                 <el-form-item label="大学名称" required>
 
-                  <el-input v-model="formData.universityName" placeholder="请输入 maxlength="50" />
+                  <el-input v-model="formData.universityName" placeholder="请输入" maxlength="50" />
 
                 </el-form-item>
 
@@ -1112,9 +1112,9 @@ onMounted(() => {
 
               <el-col :span="12">
 
-                <el-form-item label="专业组代码 required>
+                <el-form-item label="专业组代码" required>
 
-                  <el-input v-model="formData.groupCode" placeholder="请输入 maxlength="30" />
+                  <el-input v-model="formData.groupCode" placeholder="请输入" maxlength="30" />
 
                 </el-form-item>
 
@@ -1122,7 +1122,7 @@ onMounted(() => {
 
               <el-col :span="12">
 
-                <el-form-item label="专业组名称>
+                <el-form-item label="专业组名称">
 
                   <el-input v-model="formData.groupName" placeholder="为空则使用组代码" maxlength="100" />
 
@@ -1138,7 +1138,7 @@ onMounted(() => {
 
                 <el-form-item label="省招代码">
 
-                  <el-input v-model="formData.enrollmentCode" placeholder="请输入 maxlength="30" />
+                  <el-input v-model="formData.enrollmentCode" placeholder="请输入" maxlength="30" />
 
                 </el-form-item>
 
@@ -1170,7 +1170,7 @@ onMounted(() => {
 
                 filterable
 
-                placeholder="请选择科目（为空则表示不限
+                placeholder="请选择科目（为空则表示不限）"
 
                 style="width: 100%;"
 
@@ -1206,7 +1206,7 @@ onMounted(() => {
 
                 default-first-option
 
-                placeholder="输入约束条件后回车
+                placeholder="输入约束条件后回车"
 
                 style="width: 100%;"
 
@@ -1214,7 +1214,7 @@ onMounted(() => {
 
             </el-form-item>
 
-            <el-form-item label="专业组简介>
+            <el-form-item label="专业组简介">
 
               <el-input v-model="formData.description" type="textarea" :rows="3" maxlength="2000" show-word-limit />
 

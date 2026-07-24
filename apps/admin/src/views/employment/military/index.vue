@@ -102,7 +102,7 @@ const formData = reactive<Record<string, any>>({
 
   regDeadline: '',
 
-  positionStatus: '进行中,
+  positionStatus: '进行中',
 
   positionDescription: '',
 
@@ -116,19 +116,19 @@ const formData = reactive<Record<string, any>>({
 
 
 
-const positionTypeOptions = ['专业技术岗', '管理]
+const positionTypeOptions = ['专业技术岗', '管理']
 
-const positionStatusOptions = ['进行中, '已结束]
+const positionStatusOptions = ['进行中', '已结束']
 
-const educationOptions = ['本科及以上, '硕士及以上, '博士']
+const educationOptions = ['本科及以上', '硕士及以上', '博士']
 
 
 
 const positionStatusTag: Record<string, 'success' | 'info'> = {
 
-  '进行中: 'success',
+  '进行中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
 }
 
@@ -240,7 +240,7 @@ const resetForm = () => {
 
   formData.qualifications = []
 
-  formData.positionStatus = '进行中
+  formData.positionStatus = '进行中'
 
 }
 
@@ -266,7 +266,7 @@ const fillForm = (d: MilitaryDetailVO) => {
 
   formData.regDeadline = d.regDeadline || ''
 
-  formData.positionStatus = d.positionStatus || '进行中
+  formData.positionStatus = d.positionStatus || '进行中'
 
   formData.positionDescription = d.positionDescription || ''
 
@@ -418,7 +418,7 @@ const handleDelete = async (id: string) => {
 
   try {
 
-    await ElMessageBox.confirm('确定删除该部队文职岗位吗, '提示')
+    await ElMessageBox.confirm('确定删除该部队文职岗位吗？', '提示')
 
     const res = await deleteMilitary(id)
 
@@ -492,7 +492,7 @@ const handleStatusChange = async (row: MilitaryListVO, newStatus: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -684,7 +684,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="状态>
+        <el-form-item label="状态">
 
           <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -712,7 +712,7 @@ onMounted(() => { fetchData() })
 
       <div class="flex items-center gap-2">
 
-        <el-button type="warning" @click="openPreValidateDialog">Excel预览/el-button>
+        <el-button type="warning" @click="openPreValidateDialog">Excel预览</el-button>
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
@@ -748,7 +748,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="regDeadline" label="报名截止" width="180" />
 
-        <el-table-column prop="positionStatus" label="状态 width="100" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -854,7 +854,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="排序">{{ detailData.sortOrder ?? '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -972,7 +972,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="报考要求 name="requirements">
+            <el-tab-pane label="报考要求" name="requirements">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -994,7 +994,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="岗位职责">
 
-                  <el-select v-model="formData.responsibilities" multiple placeholder="输入职责，回车添加 filterable allow-create default-first-option style="width: 100%">
+                  <el-select v-model="formData.responsibilities" multiple placeholder="输入职责，回车添加" filterable allow-create default-first-option style="width: 100%">
 
                     <el-option v-for="item in formData.responsibilities" :key="item" :label="item" :value="item" />
 
@@ -1004,7 +1004,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="任职资格">
 
-                  <el-select v-model="formData.qualifications" multiple placeholder="输入资格，回车添加 filterable allow-create default-first-option style="width: 100%">
+                  <el-select v-model="formData.qualifications" multiple placeholder="输入资格，回车添加" filterable allow-create default-first-option style="width: 100%">
 
                     <el-option v-for="item in formData.qualifications" :key="item" :label="item" :value="item" />
 
@@ -1032,7 +1032,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+                    <el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1080,7 +1080,7 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="preValidateDialogVisible" title="Excel预览 width="500px">
+    <el-dialog v-model="preValidateDialogVisible" title="Excel预览" width="500px">
 
       <el-upload
 
@@ -1092,7 +1092,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1106,7 +1106,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1126,7 +1126,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 

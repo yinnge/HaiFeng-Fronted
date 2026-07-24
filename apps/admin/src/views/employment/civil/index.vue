@@ -138,7 +138,7 @@ const formData = reactive<Record<string, any>>({
 
   regEndDate: '',
 
-  regStatus: '即将开始,
+  regStatus: '即将开始',
 
   applicantCount: null,
 
@@ -148,9 +148,9 @@ const formData = reactive<Record<string, any>>({
 
 
 
-const examTypeOptions = ['国家级, '省级]
+const examTypeOptions = ['国家级', '省级']
 
-const regStatusOptions = ['报名中, '已结束, '即将开始]
+const regStatusOptions = ['报名中', '已结束', '即将开始']
 
 const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
 
@@ -162,11 +162,11 @@ const degreeOptions = ['不限', '学士', '硕士', '博士']
 
 const regStatusTag: Record<string, 'success' | 'info' | 'warning' | 'primary'> = {
 
-  '报名中: 'success',
+  '报名中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
-  '即将开始: 'warning',
+  '即将开始': 'warning',
 
 }
 
@@ -280,7 +280,7 @@ const resetForm = () => {
 
   formData.hasProfessionalTest = false
 
-  formData.regStatus = '即将开始
+  formData.regStatus = '即将开始'
 
 }
 
@@ -340,7 +340,7 @@ const fillForm = (d: CivilDetailVO) => {
 
   formData.regEndDate = d.regEndDate || ''
 
-  formData.regStatus = d.regStatus || '即将开始
+  formData.regStatus = d.regStatus || '即将开始'
 
   formData.applicantCount = d.applicantCount ?? null
 
@@ -362,7 +362,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   if (mode === 'edit' && id) {
 
-    dialogTitle.value = '修改公务员职位
+    dialogTitle.value = '修改公务员职位'
 
     formLoading.value = true
 
@@ -390,7 +390,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   } else if (mode === 'detail' && id) {
 
-    dialogTitle.value = '公务员职位详情
+    dialogTitle.value = '公务员职位详情'
 
     formLoading.value = true
 
@@ -552,13 +552,13 @@ const handleStatusChange = async (row: CivilListVO, newStatus: string) => {
 
   try {
 
-    const statusVal = newStatus === '报名中 ? 0 : 1
+    const statusVal = newStatus === '报名中' ? 0 : 1
 
     const res = await updateCivilStatus(row.id, { status: statusVal })
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -750,7 +750,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="报名状态>
+        <el-form-item label="报名状态">
 
           <el-select v-model="queryParams.regStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -760,7 +760,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="最低学历>
+        <el-form-item label="最低学历">
 
           <el-select v-model="queryParams.minEducation" placeholder="全部" clearable style="width: 100px">
 
@@ -788,7 +788,7 @@ onMounted(() => { fetchData() })
 
       <div class="flex items-center gap-2">
 
-        <el-button type="warning" @click="openPreValidateDialog">Excel预览/el-button>
+        <el-button type="warning" @click="openPreValidateDialog">Excel预览</el-button>
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
@@ -816,15 +816,15 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="recruitingDept" label="招录部门" min-width="180" show-overflow-tooltip />
 
-        <el-table-column prop="minEducation" label="最低学历 width="100" />
+        <el-table-column prop="minEducation" label="最低学历" width="100" />
 
         <el-table-column prop="workLocation" label="工作地点" width="120" />
 
-        <el-table-column prop="regStartDate" label="报名开始 width="180" />
+        <el-table-column prop="regStartDate" label="报名开始" width="180" />
 
         <el-table-column prop="regEndDate" label="报名截止" width="180" />
 
-        <el-table-column prop="regStatus" label="报名状态 width="100" align="center">
+        <el-table-column prop="regStatus" label="报名状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -920,11 +920,11 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="职位代码">{{ detailData.positionCode || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="所属局/>{{ detailData.affiliatedBureau || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="所属局">{{ detailData.affiliatedBureau || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="专业要求" :span="2">{{ detailData.majorRequirement || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="最低学历>{{ detailData.minEducation || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="最低学历">{{ detailData.minEducation || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="学位要求">{{ detailData.degreeRequirement || '-' }}</el-descriptions-item>
 
@@ -954,7 +954,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="落户地点">{{ detailData.householdLocation || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="职位简介 :span="2">{{ detailData.positionIntro || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="职位简介" :span="2">{{ detailData.positionIntro || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="官方网站">
 
@@ -970,11 +970,11 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="联系电话">{{ detailData.contactPhone || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名开始>{{ detailData.regStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="报名开始">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="报名截止">{{ detailData.regEndDate || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名状态>
+            <el-descriptions-item label="报名状态">
 
               <el-tag :type="regStatusTag[detailData.regStatus] || 'info'" size="small">{{ detailData.regStatus }}</el-tag>
 
@@ -1070,9 +1070,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="所属局/>
+                    <el-form-item label="所属局">
 
-                      <el-input v-model="formData.affiliatedBureau" placeholder="所属局/ maxlength="200" />
+                      <el-input v-model="formData.affiliatedBureau" placeholder="所属局" maxlength="200" />
 
                     </el-form-item>
 
@@ -1086,7 +1086,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="报考要求 name="requirements">
+            <el-tab-pane label="报考要求" name="requirements">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1094,7 +1094,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="最低学历>
+                    <el-form-item label="最低学历">
 
                       <el-select v-model="formData.minEducation" placeholder="请选择" clearable style="width: 100%">
 
@@ -1186,7 +1186,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="考试与地点 name="exam">
+            <el-tab-pane label="考试与地点" name="exam">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1302,9 +1302,9 @@ onMounted(() => { fetchData() })
 
                 </el-row>
 
-                <el-form-item label="职位简介>
+                <el-form-item label="职位简介">
 
-                  <el-input v-model="formData.positionIntro" type="textarea" :rows="3" placeholder="职位简介 maxlength="500" show-word-limit />
+                  <el-input v-model="formData.positionIntro" type="textarea" :rows="3" placeholder="职位简介" maxlength="500" show-word-limit />
 
                 </el-form-item>
 
@@ -1318,9 +1318,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="8">
 
-                    <el-form-item label="报名开始>
+                    <el-form-item label="报名开始">
 
-                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                     </el-form-item>
 
@@ -1338,7 +1338,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="8">
 
-                    <el-form-item label="报名状态>
+                    <el-form-item label="报名状态">
 
                       <el-select v-model="formData.regStatus" placeholder="请选择" style="width: 100%">
 
@@ -1400,7 +1400,7 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="preValidateDialogVisible" title="Excel预览 width="500px">
+    <el-dialog v-model="preValidateDialogVisible" title="Excel预览" width="500px">
 
       <el-upload
 
@@ -1412,7 +1412,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1426,7 +1426,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1446,7 +1446,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，<em>点击上传</em></div>
 
         <template #tip>
 

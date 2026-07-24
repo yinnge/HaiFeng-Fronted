@@ -156,7 +156,7 @@ const formData = reactive<Record<string, any>>({
 
   requiredDocuments: '',
 
-  positionStatus: '招聘中,
+  positionStatus: '招聘中',
 
   contactPhone: '',
 
@@ -172,21 +172,21 @@ const formData = reactive<Record<string, any>>({
 
 
 
-const positionCategoryOptions = ['公共管理, '公共服务, '公共环境, '公共安全, '设施维护, '其他']
+const positionCategoryOptions = ['公共管理', '公共服务', '公共环境', '公共安全', '设施维护', '其他']
 
 const educationOptions = ['不限', '初中', '高中', '大专', '本科']
 
-const positionStatusOptions = ['招聘中, '已结束, '即将开始]
+const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
 
 
 const positionStatusTag: Record<string, 'success' | 'info' | 'warning'> = {
 
-  '招聘中: 'success',
+  '招聘中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
-  '即将开始: 'warning',
+  '即将开始': 'warning',
 
 }
 
@@ -310,7 +310,7 @@ const resetForm = () => {
 
   })
 
-  formData.positionStatus = '招聘中
+  formData.positionStatus = '招聘中'
 
   formData.educationRequirement = '不限'
 
@@ -392,7 +392,7 @@ const fillForm = (d: WelfareDetailVO) => {
 
   formData.requiredDocuments = d.requiredDocuments || ''
 
-  formData.positionStatus = d.positionStatus || '招聘中
+  formData.positionStatus = d.positionStatus || '招聘中'
 
   formData.contactPhone = d.contactPhone || ''
 
@@ -420,7 +420,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   if (mode === 'edit' && id) {
 
-    dialogTitle.value = '修改公益性岗位
+    dialogTitle.value = '修改公益性岗位'
 
     formLoading.value = true
 
@@ -448,7 +448,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   } else if (mode === 'detail' && id) {
 
-    dialogTitle.value = '公益性岗位详情
+    dialogTitle.value = '公益性岗位详情'
 
     formLoading.value = true
 
@@ -552,7 +552,7 @@ const handleDelete = async (id: string) => {
 
   try {
 
-    await ElMessageBox.confirm('确定删除该公益性岗位吗, '提示')
+    await ElMessageBox.confirm('确定删除该公益性岗位吗？', '提示')
 
     const res = await deleteWelfare(id)
 
@@ -596,7 +596,7 @@ const handleBatchDelete = async () => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('批量软删除成功)
+      ElMessage.success('批量软删除成功')
 
       selectedIds.value = []
 
@@ -604,7 +604,7 @@ const handleBatchDelete = async () => {
 
     } else {
 
-      ElMessage.error(res.data.msg || '批量软删除失败)
+      ElMessage.error(res.data.msg || '批量软删除失败')
 
     }
 
@@ -626,7 +626,7 @@ const handleStatusChange = async (row: WelfareListVO, newStatus: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -804,9 +804,9 @@ onMounted(() => { fetchData() })
 
           <el-col :span="6">
 
-            <el-form-item label="开发单位>
+            <el-form-item label="开发单位">
 
-              <el-input v-model="queryParams.developingUnit" placeholder="开发单位 clearable style="width: 160px" @keyup.enter="handleSearch" />
+              <el-input v-model="queryParams.developingUnit" placeholder="开发单位" clearable style="width: 160px" @keyup.enter="handleSearch" />
 
             </el-form-item>
 
@@ -872,7 +872,7 @@ onMounted(() => { fetchData() })
 
           <el-col :span="6">
 
-            <el-form-item label="最长服务年限>
+            <el-form-item label="最长服务年限">
 
               <el-input-number v-model="queryParams.maxServiceYears" :min="1" style="width: 120px" />
 
@@ -886,7 +886,7 @@ onMounted(() => { fetchData() })
 
           <el-col :span="6">
 
-            <el-form-item label="状态>
+            <el-form-item label="状态">
 
               <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -926,7 +926,7 @@ onMounted(() => { fetchData() })
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除/el-button>
+        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除</el-button>
 
       </div>
 
@@ -944,7 +944,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="id" label="ID" width="140" />
 
-        <el-table-column prop="developingUnit" label="开发单位 width="140" show-overflow-tooltip />
+        <el-table-column prop="developingUnit" label="开发单位" width="140" show-overflow-tooltip />
 
         <el-table-column prop="employingUnit" label="用工单位" width="140" show-overflow-tooltip />
 
@@ -958,7 +958,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="district" label="区域" width="80" />
 
-        <el-table-column prop="monthlySalary" label="月工资 width="120" show-overflow-tooltip />
+        <el-table-column prop="monthlySalary" label="月工资" width="120" show-overflow-tooltip />
 
         <el-table-column label="报名起止" width="200">
 
@@ -970,7 +970,7 @@ onMounted(() => { fetchData() })
 
         </el-table-column>
 
-        <el-table-column prop="positionStatus" label="状态 width="100" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -1058,7 +1058,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
 
-            <el-descriptions-item label="开发单位>{{ detailData.developingUnit }}</el-descriptions-item>
+            <el-descriptions-item label="开发单位">{{ detailData.developingUnit }}</el-descriptions-item>
 
             <el-descriptions-item label="用工单位">{{ detailData.employingUnit || '-' }}</el-descriptions-item>
 
@@ -1122,7 +1122,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="所需材料" :span="2">{{ detailData.requiredDocuments || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -1130,7 +1130,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="联系电话">{{ detailData.contactPhone || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="联系人>{{ detailData.contactPerson || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="联系人">{{ detailData.contactPerson || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
 
@@ -1152,7 +1152,7 @@ onMounted(() => { fetchData() })
 
           <el-tabs v-model="activeTab">
 
-            <el-tab-pane label="单位与岗位信息 name="basic">
+            <el-tab-pane label="单位与岗位信息" name="basic">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1160,9 +1160,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="开发单位>
+                    <el-form-item label="开发单位">
 
-                      <el-input v-model="formData.developingUnit" placeholder="开发单位 maxlength="200" show-word-limit />
+                      <el-input v-model="formData.developingUnit" placeholder="开发单位" maxlength="200" show-word-limit />
 
                     </el-form-item>
 
@@ -1220,7 +1220,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="地区与报名要求 name="location">
+            <el-tab-pane label="地区与报名要求" name="location">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1280,11 +1280,11 @@ onMounted(() => { fetchData() })
 
                         <el-option label="残疾" value="残疾" />
 
-                        <el-option label="零就业家庭 value="零就业家庭 />
+                        <el-option label="零就业家庭" value="零就业家庭" />
 
-                        <el-option label="退役军人 value="退役军人 />
+                        <el-option label="退役军人" value="退役军人" />
 
-                        <el-option label="高校毕业生 value="高校毕业生 />
+                        <el-option label="高校毕业生" value="高校毕业生" />
 
                         <el-option label="其他" value="其他" />
 
@@ -1376,7 +1376,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="岗位期限与待遇 name="benefits">
+            <el-tab-pane label="岗位期限与待遇" name="benefits">
 
               <el-form :model="formData" label-width="140px" class="mt-2">
 
@@ -1394,7 +1394,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="可续期>
+                    <el-form-item label="可续期">
 
                       <el-switch v-model="formData.isRenewable" />
 
@@ -1408,7 +1408,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="最长服务年限>
+                    <el-form-item label="最长服务年限">
 
                       <el-input-number v-model="formData.maxServiceYears" :min="1" style="width: 100%" />
 
@@ -1418,9 +1418,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="月工资>
+                    <el-form-item label="月工资">
 
-                      <el-input v-model="formData.monthlySalary" placeholder="月工资 maxlength="50" />
+                      <el-input v-model="formData.monthlySalary" placeholder="月工资" maxlength="50" />
 
                     </el-form-item>
 
@@ -1512,7 +1512,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="报名与补录 name="exam">
+            <el-tab-pane label="报名与补录" name="exam">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1520,9 +1520,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="报名开始>
+                    <el-form-item label="报名开始">
 
-                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                     </el-form-item>
 
@@ -1544,7 +1544,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+                    <el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1572,9 +1572,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="联系人>
+                    <el-form-item label="联系人">
 
-                      <el-input v-model="formData.contactPerson" placeholder="联系人 maxlength="50" />
+                      <el-input v-model="formData.contactPerson" placeholder="联系人" maxlength="50" />
 
                     </el-form-item>
 
@@ -1648,7 +1648,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1662,7 +1662,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1682,7 +1682,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 

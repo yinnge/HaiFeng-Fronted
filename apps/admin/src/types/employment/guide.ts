@@ -69,10 +69,10 @@ export interface StatusDTO {
 }
 
 export const GuideCategoryLabel: Record<string, string> = {
-  civil: '公务�?,
-  institution: '事业�?,
+  civil: '公务员',
+  institution: '事业编',
   military: '部队文职',
-  selection: '选调�?,
+  selection: '选调生',
   teacher: '教师',
   healthcare: '医疗卫生',
   finance: '银行金融',
@@ -82,6 +82,6 @@ export const GuideCategoryLabel: Record<string, string> = {
 }
 
 export const GuideTypeOptions = [
-  '备考攻�?, '科目指导', '真题解析', '面试技�?,
+  '备考攻略', '科目指导', '真题解析', '面试技巧',
   '时事热点', '经验分享', '政策解读', '学习计划',
 ]

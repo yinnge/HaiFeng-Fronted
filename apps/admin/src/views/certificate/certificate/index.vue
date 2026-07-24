@@ -368,7 +368,7 @@ const handleSubmit = async () => {
 
   if (!formData.certName) {
 
-    ElMessage.warning('请填写证书名称)
+    ElMessage.warning('请填写证书名称')
 
     return
 
@@ -476,7 +476,7 @@ const handleSoftDelete = async (id: string, name: string) => {
 
     await ElMessageBox.confirm(
 
-      `确定要软删除证书{name}」吗？数据将保留可恢复。`,
+      `确定要软删除证书"${name}"吗？数据将保留可恢复。`,
 
       '提示'
 
@@ -486,7 +486,7 @@ const handleSoftDelete = async (id: string, name: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('软删除成功)
+      ElMessage.success('软删除成功')
 
       fetchData()
 
@@ -512,11 +512,11 @@ const handleHardDelete = async (id: string, name: string) => {
 
     await ElMessageBox.confirm(
 
-      `确定要硬删除证书{name}」吗？数据不可恢复！`,
+      `确定要硬删除证书"${name}"吗？数据不可恢复！`,
 
       '警告',
 
-      { type: 'warning', confirmButtonText: '确定硬删除, cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '确定硬删除', cancelButtonText: '取消' }
 
     )
 
@@ -524,7 +524,7 @@ const handleHardDelete = async (id: string, name: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('硬删除成功)
+      ElMessage.success('硬删除成功')
 
       fetchData()
 
@@ -644,7 +644,7 @@ onMounted(() => {
 
           >
 
-            <el-option label="IT value="IT />
+            <el-option label="IT" value="IT" />
 
             <el-option label="财会" value="财会" />
 
@@ -760,7 +760,7 @@ onMounted(() => {
 
         <el-table-column prop="examTime" label="考试时间" width="150" />
 
-        <el-table-column prop="examFee" label="考试费用(" width="110">
+        <el-table-column prop="examFee" label="考试费用(元)" width="110">
 
           <template #default="{ row }">
 
@@ -780,9 +780,9 @@ onMounted(() => {
 
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
 
-            <el-button type="info" link @click="handleSoftDelete(row.id, row.certName)">软删除/el-button>
+            <el-button type="info" link @click="handleSoftDelete(row.id, row.certName)">软删除</el-button>
 
-            <el-button type="danger" link @click="handleHardDelete(row.id, row.certName)">硬删除/el-button>
+            <el-button type="danger" link @click="handleHardDelete(row.id, row.certName)">硬删除</el-button>
 
           </template>
 
@@ -854,11 +854,11 @@ onMounted(() => {
 
             <el-descriptions-item label="考试时间">{{ detailData.examTime || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="考试费用(">{{ detailData.examFee ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="考试费用(元)">{{ detailData.examFee ?? '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="证书简介>{{ detailData.certIntro || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="证书简介">{{ detailData.certIntro || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报考条件>
+            <el-descriptions-item label="报考条件">
 
               <div v-if="detailData.examRequirements && detailData.examRequirements.length > 0">
 
@@ -906,7 +906,7 @@ onMounted(() => {
 
             <el-form-item label="证书名称" required>
 
-              <el-input v-model="formData.certName" placeholder="请输入证书名称 maxlength="150" show-word-limit />
+              <el-input v-model="formData.certName" placeholder="请输入证书名称" maxlength="150" show-word-limit />
 
             </el-form-item>
 
@@ -914,7 +914,7 @@ onMounted(() => {
 
               <el-select v-model="formData.category" placeholder="请选择分类" clearable style="width: 240px">
 
-                <el-option label="IT value="IT />
+            <el-option label="IT" value="IT" />
 
                 <el-option label="财会" value="财会" />
 
@@ -948,13 +948,13 @@ onMounted(() => {
 
             <el-form-item label="报名时间">
 
-              <el-input v-model="formData.registrationTime" placeholder="如：每年3月9月 maxlength="100" />
+              <el-input v-model="formData.registrationTime" placeholder="如：每年3月9月" maxlength="100" />
 
             </el-form-item>
 
             <el-form-item label="考试时间">
 
-              <el-input v-model="formData.examTime" placeholder="如：5月中旬11月上旬 maxlength="100" />
+              <el-input v-model="formData.examTime" placeholder="如：5月中旬11月上旬" maxlength="100" />
 
             </el-form-item>
 
@@ -964,17 +964,17 @@ onMounted(() => {
 
             </el-form-item>
 
-            <el-form-item label="证书简介>
+            <el-form-item label="证书简介">
 
-              <el-input v-model="formData.certIntro" type="textarea" :rows="3" placeholder="请输入证书简介 />
+              <el-input v-model="formData.certIntro" type="textarea" :rows="3" placeholder="请输入证书简介" />
 
             </el-form-item>
 
-            <el-form-item label="报考条件>
+            <el-form-item label="报考条件">
 
               <div class="flex gap-2 mb-2">
 
-                <el-input v-model="requirementInput" placeholder="输入报考条件 style="width: 300px" @keyup.enter="addRequirement" />
+                <el-input v-model="requirementInput" placeholder="输入报考条件" style="width: 300px" @keyup.enter="addRequirement" />
 
                 <el-button type="primary" @click="addRequirement">添加</el-button>
 

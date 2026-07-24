@@ -170,7 +170,7 @@ const handleIdQuery = async () => {
 
   if (!idQueryValue.value) {
 
-    ElMessage.warning(`请输入{idQueryType.value === 'competition' ? '竞赛' : '专业'}ID`)
+    ElMessage.warning(`请输入${idQueryType.value === 'competition' ? '竞赛' : '专业'}ID`)
 
     return
 
@@ -256,7 +256,7 @@ const handleAddSubmit = async () => {
 
   if (!addForm.competitionName) {
 
-    ElMessage.warning('请填写竞赛名称)
+    ElMessage.warning('请填写竞赛名称')
 
     return
 
@@ -264,7 +264,7 @@ const handleAddSubmit = async () => {
 
   if (!addForm.majorName) {
 
-    ElMessage.warning('请填写专业名称)
+    ElMessage.warning('请填写专业名称')
 
     return
 
@@ -310,7 +310,7 @@ const handleDelete = async (id: string, name: string) => {
 
     await ElMessageBox.confirm(
 
-      `确定要删除竞赛{name}」的关联吗？删除后数据保留可恢复。`,
+      `确定要删除竞赛"${name}"的关联吗？删除后数据保留可恢复。`,
 
       '提示'
 
@@ -466,7 +466,7 @@ onMounted(() => { fetchData() })
 
             <el-button type="primary" link @click="openDetailDialog(row)">详情</el-button>
 
-            <el-button type="danger" link @click="handleDelete(row.id, row.competitionName)">软删除/el-button>
+            <el-button type="danger" link @click="handleDelete(row.id, row.competitionName)">软删除</el-button>
 
           </template>
 

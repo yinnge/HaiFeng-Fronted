@@ -47,9 +47,9 @@ const formData = reactive<Record<string, any>>({
 })
 
 const confidenceOptions = [
-  { label: '�?, value: 'HIGH' },
-  { label: '�?, value: 'MEDIUM' },
-  { label: '�?, value: 'LOW' },
+  { label: '高', value: 'HIGH' },
+  { label: '中', value: 'MEDIUM' },
+  { label: '低', value: 'LOW' },
 ]
 
 const fetchData = async () => {
@@ -149,11 +149,11 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', level?: number) => {
 
 const handleSubmit = async () => {
   if (!formData.level || !formData.code || !formData.name || !formData.nameShort) {
-    ElMessage.warning('请填写等级编号、代码、名称和简�?)
+    ElMessage.warning('请填写等级编号、代码、名称和简称')
     return
   }
   if (formData.minCoefficient === null || formData.maxCoefficient === null) {
-    ElMessage.warning('请填写系数范�?)
+    ElMessage.warning('请填写系数范围')
     return
   }
   if (formData.minCoefficient >= formData.maxCoefficient) {
@@ -214,7 +214,7 @@ const handleSubmit = async () => {
 const handleDelete = async (level: number) => {
   try {
     await ElMessageBox.confirm(
-      '确定删除该安全系数等级吗？删除后可恢复�?,
+      '确定删除该安全系数等级吗？删除后可恢复。',
       '确认删除',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
@@ -237,7 +237,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量删除选中�?${selectedLevels.value.length} 个等级吗？删除后可恢复。`,
+      `确定批量删除选中的${selectedLevels.value.length} 个等级吗？删除后可恢复。`,
       '确认批量删除',
       { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
@@ -261,9 +261,9 @@ const confidenceTag = (val: string | null) => {
   return 'info'
 }
 const confidenceLabel = (val: string | null) => {
-  if (val === 'HIGH') return '�?
-  if (val === 'MEDIUM') return '�?
-  if (val === 'LOW') return '�?
+  if (val === 'HIGH') return '高'
+  if (val === 'MEDIUM') return '中'
+  if (val === 'LOW') return '低'
   return val || '-'
 }
 
@@ -288,13 +288,13 @@ onMounted(() => {
         <el-table-column prop="level" label="等级编号" width="90" align="center" />
         <el-table-column prop="code" label="代码" width="140" />
         <el-table-column prop="name" label="名称" width="120" />
-        <el-table-column prop="nameShort" label="简�? width="70" align="center" />
+        <el-table-column prop="nameShort" label="简称" width="70" align="center" />
         <el-table-column label="系数范围" width="160" align="center">
           <template #default="{ row }">
             {{ row.minCoefficient.toFixed(2) }} ~ {{ row.maxCoefficient.toFixed(2) }}
           </template>
         </el-table-column>
-        <el-table-column prop="confidence" label="置信�? width="100" align="center">
+        <el-table-column prop="confidence" label="置信度" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="confidenceTag(row.confidence)" size="small">{{ confidenceLabel(row.confidence) }}</el-tag>
           </template>
@@ -328,18 +328,18 @@ onMounted(() => {
             <el-descriptions-item label="等级编号">{{ detailData.level }}</el-descriptions-item>
             <el-descriptions-item label="代码">{{ detailData.code }}</el-descriptions-item>
             <el-descriptions-item label="名称">{{ detailData.name }}</el-descriptions-item>
-            <el-descriptions-item label="简�?>{{ detailData.nameShort }}</el-descriptions-item>
+            <el-descriptions-item label="简称">{{ detailData.nameShort }}</el-descriptions-item>
             <el-descriptions-item label="系数范围">
               {{ detailData.minCoefficient.toFixed(2) }} ~ {{ detailData.maxCoefficient.toFixed(2) }}
             </el-descriptions-item>
             <el-descriptions-item label="显示颜色">
-              <span v-if="detailData.color" :style="{ color: detailData.color }">�?/span>
+              <span v-if="detailData.color" :style="{ color: detailData.color }">●</span>
               {{ detailData.color || '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="置信�?>
+            <el-descriptions-item label="置信度">
               <el-tag :type="confidenceTag(detailData.confidence)" size="small">{{ confidenceLabel(detailData.confidence) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="置信度说�?>{{ detailData.confidenceReason || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="置信度说明">{{ detailData.confidenceReason || '-' }}</el-descriptions-item>
             <el-descriptions-item label="详细说明" :span="2">
               <div class="max-h-32 overflow-y-auto whitespace-pre-wrap">{{ detailData.description || '-' }}</div>
             </el-descriptions-item>
@@ -356,19 +356,19 @@ onMounted(() => {
               </el-col>
               <el-col :span="12">
                 <el-form-item label="代码" required>
-                  <el-input v-model="formData.code" placeholder="�?REACH_HIGH" maxlength="20" show-word-limit />
+                  <el-input v-model="formData.code" placeholder="如：REACH_HIGH" maxlength="20" show-word-limit />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="名称" required>
-                  <el-input v-model="formData.name" placeholder="�?大胆冲刺" maxlength="30" show-word-limit />
+                  <el-input v-model="formData.name" placeholder="如：大胆冲刺" maxlength="30" show-word-limit />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="简�? required>
-                  <el-input v-model="formData.nameShort" placeholder="�?�? maxlength="10" show-word-limit />
+                <el-form-item label="简称" required>
+                  <el-input v-model="formData.nameShort" placeholder="如：冲刺" maxlength="10" show-word-limit />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -391,15 +391,15 @@ onMounted(() => {
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="置信�?>
+                <el-form-item label="置信度">
                   <el-select v-model="formData.confidence" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in confidenceOptions" :key="item.value" :label="item.label" :value="item.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="置信度说�?>
-              <el-input v-model="formData.confidenceReason" placeholder="置信度说�? maxlength="150" show-word-limit />
+            <el-form-item label="置信度说明">
+              <el-input v-model="formData.confidenceReason" placeholder="置信度说明" maxlength="150" show-word-limit />
             </el-form-item>
             <el-form-item label="详细说明">
               <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="详细说明" />

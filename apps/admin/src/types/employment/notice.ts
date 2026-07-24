@@ -76,16 +76,16 @@ export interface NoticeUpdateDTO {
 }
 
 export const NoticeCategoryLabel: Record<string, string> = {
-  civil: '公务�?,
-  institution: '事业�?,
+  civil: '公务员',
+  institution: '事业编',
   military: '部队文职',
-  selection: '选调�?,
+  selection: '选调生',
   teacher: '教师',
   healthcare: '医疗卫生',
   finance: '银行金融',
   grassroots: '基层服务',
   community: '社区工作',
-  public_welfare: '公益性岗�?,
+  public_welfare: '公益性岗位',
   enterprise: '企业',
   general: '通用',
 }

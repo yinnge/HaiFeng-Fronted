@@ -144,7 +144,7 @@ const formData = reactive<Record<string, any>>({
 
   applyLink: '',
 
-  positionStatus: '报名中,
+  positionStatus: '报名中',
 
   remark: '',
 
@@ -164,23 +164,23 @@ const selectionTypeOptions = ['定向选调', '非定向选调', '急需紧缺�
 
 const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '不限']
 
-const positionStatusOptions = ['报名中, '笔试阶段', '面试阶段', '已结束, '即将开始]
+const positionStatusOptions = ['报名中', '笔试阶段', '面试阶段', '已结束', '即将开始']
 
-const educationOptions = ['本科', '硕士', '博士', '本科及以上, '硕士及以上]
+const educationOptions = ['本科', '硕士', '博士', '本科及以上', '硕士及以上']
 
 const degreeOptions = ['学士', '硕士', '博士']
 
 const positionStatusTag: Record<string, 'success' | 'warning' | 'info' | 'primary'> = {
 
-  '报名中: 'success',
+  '报名中': 'success',
 
   '笔试阶段': 'warning',
 
   '面试阶段': 'warning',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
-  '即将开始: 'primary',
+  '即将开始': 'primary',
 
 }
 
@@ -300,7 +300,7 @@ const resetForm = () => {
 
   })
 
-  formData.positionStatus = '报名中
+  formData.positionStatus = '报名中'
 
   formData.politicalStatus = '中共党员'
 
@@ -364,7 +364,7 @@ const fillForm = (d: SelectionDetailVO) => {
 
   formData.applyLink = d.applyLink || ''
 
-  formData.positionStatus = d.positionStatus || '报名中
+  formData.positionStatus = d.positionStatus || '报名中'
 
   formData.remark = d.remark || ''
 
@@ -392,7 +392,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   if (mode === 'edit' && id) {
 
-    dialogTitle.value = '修改选调生岗位
+    dialogTitle.value = '修改选调生岗位'
 
     formLoading.value = true
 
@@ -420,7 +420,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   } else if (mode === 'detail' && id) {
 
-    dialogTitle.value = '选调生岗位详情
+    dialogTitle.value = '选调生岗位详情'
 
     formLoading.value = true
 
@@ -514,7 +514,7 @@ const handleDelete = async (id: string) => {
 
   try {
 
-    await ElMessageBox.confirm('确定删除该选调生岗位吗, '提示')
+    await ElMessageBox.confirm('确定删除该选调生岗位吗？', '提示')
 
     const res = await deleteSelection(id)
 
@@ -588,7 +588,7 @@ const handleStatusChange = async (row: SelectionListVO, newStatus: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -804,7 +804,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="状态>
+        <el-form-item label="状态">
 
           <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 130px">
 
@@ -832,7 +832,7 @@ onMounted(() => { fetchData() })
 
       <div class="flex items-center gap-2">
 
-        <el-button type="warning" @click="openPreValidateDialog">Excel预览/el-button>
+        <el-button type="warning" @click="openPreValidateDialog">Excel预览</el-button>
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
@@ -870,11 +870,11 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="politicalStatus" label="政治面貌" width="100" />
 
-        <el-table-column prop="regStartDate" label="报名开始 width="180" />
+        <el-table-column prop="regStartDate" label="报名开始" width="180" />
 
         <el-table-column prop="regEndDate" label="报名截止" width="180" />
 
-        <el-table-column prop="positionStatus" label="状态 width="110" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="110" align="center">
 
           <template #default="{ row }">
 
@@ -1006,13 +1006,13 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="面试形式">{{ detailData.interviewForm || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名开始>{{ detailData.regStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="报名开始">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="报名截止">{{ detailData.regEndDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="考试时间">{{ detailData.examTime || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -1172,7 +1172,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="报考要求 name="requirements">
+            <el-tab-pane label="报考要求" name="requirements">
 
               <el-form :model="formData" label-width="140px" class="mt-2">
 
@@ -1216,7 +1216,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="专业大类">
 
-                  <el-select v-model="formData.majorCategories" multiple filterable allow-create placeholder="请输入专业大类 style="width: 100%" default-first-option :popper-append-to-body="false">
+                  <el-select v-model="formData.majorCategories" multiple filterable allow-create placeholder="请输入专业大类" style="width: 100%" default-first-option :popper-append-to-body="false">
 
                     <el-option v-for="item in formData.majorCategories" :key="item" :label="item" :value="item" />
 
@@ -1232,7 +1232,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="目标院校">
 
-                  <el-select v-model="formData.targetUniversities" multiple filterable allow-create placeholder="请输入目标院校 style="width: 100%" default-first-option :popper-append-to-body="false">
+                  <el-select v-model="formData.targetUniversities" multiple filterable allow-create placeholder="请输入目标院校" style="width: 100%" default-first-option :popper-append-to-body="false">
 
                     <el-option v-for="item in formData.targetUniversities" :key="item" :label="item" :value="item" />
 
@@ -1274,7 +1274,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="考试与时间 name="exam">
+            <el-tab-pane label="考试与时间" name="exam">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1294,9 +1294,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="8">
 
-                    <el-form-item label="报名开始>
+                    <el-form-item label="报名开始">
 
-                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                     </el-form-item>
 
@@ -1350,7 +1350,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+                    <el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1422,7 +1422,7 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="preValidateDialogVisible" title="Excel预览 width="500px">
+    <el-dialog v-model="preValidateDialogVisible" title="Excel预览" width="500px">
 
       <el-upload
 
@@ -1434,7 +1434,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1448,7 +1448,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1468,7 +1468,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 

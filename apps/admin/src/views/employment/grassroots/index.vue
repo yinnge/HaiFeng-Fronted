@@ -168,7 +168,7 @@ const formData = reactive<Record<string, any>>({
 
   applyLink: '',
 
-  positionStatus: '招募中,
+  positionStatus: '招募中',
 
   contactPhone: '',
 
@@ -182,23 +182,23 @@ const formData = reactive<Record<string, any>>({
 
 
 
-const projectTypeOptions = ['三支一扶, '西部计划']
+const projectTypeOptions = ['三支一扶', '西部计划']
 
 const serviceTypeOptions = ['支教', '支农', '支医', '帮扶乡村振兴', '基础教育', '服务三农', '医疗卫生', '基层青年工作', '基层社会管理', '服务新疆', '服务西藏']
 
-const educationOptions = ['大专', '本科', '硕士', '大专及以上, '本科及以上]
+const educationOptions = ['大专', '本科', '硕士', '大专及以上', '本科及以上']
 
-const positionStatusOptions = ['招募中, '已结束, '即将开始]
+const positionStatusOptions = ['招募中', '已结束', '即将开始']
 
 
 
 const positionStatusTag: Record<string, 'success' | 'info' | 'warning'> = {
 
-  '招募中: 'success',
+  '招募中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
-  '即将开始: 'warning',
+  '即将开始': 'warning',
 
 }
 
@@ -326,7 +326,7 @@ const resetForm = () => {
 
   })
 
-  formData.positionStatus = '招募中
+  formData.positionStatus = '招募中'
 
   formData.canTransferToCivil = false
 
@@ -412,7 +412,8 @@ const fillForm = (d: GrassrootsDetailVO) => {
 
   formData.applyLink = d.applyLink || ''
 
-  formData.positionStatus = d.positionStatus || '招募中
+      formData.positionStatus = d.positionStatus || '招募中'
+
 
   formData.contactPhone = d.contactPhone || ''
 
@@ -564,7 +565,7 @@ const handleDelete = async (id: string) => {
 
   try {
 
-    await ElMessageBox.confirm('确定删除该基层服务项目岗位吗, '提示')
+    await ElMessageBox.confirm('确定删除该基层服务项目岗位吗', '提示')
 
     const res = await deleteGrassroots(id)
 
@@ -608,7 +609,7 @@ const handleBatchDelete = async () => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('批量软删除成功)
+      ElMessage.success('批量软删除成功')
 
       selectedIds.value = []
 
@@ -616,7 +617,7 @@ const handleBatchDelete = async () => {
 
     } else {
 
-      ElMessage.error(res.data.msg || '批量软删除失败)
+      ElMessage.error(res.data.msg || '批量软删除失败')
 
     }
 
@@ -638,7 +639,7 @@ const handleStatusChange = async (row: GrassrootsListVO, newStatus: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -912,7 +913,7 @@ onMounted(() => { fetchData() })
 
           <el-col :span="6">
 
-            <el-form-item label="状态>
+            <el-form-item label="状态">
 
               <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -952,7 +953,7 @@ onMounted(() => { fetchData() })
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除/el-button>
+        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除</el-button>
 
       </div>
 
@@ -988,7 +989,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="county" label="区域" width="80" />
 
-        <el-table-column prop="positionStatus" label="状态 width="100" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -1098,7 +1099,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="服务期限">{{ detailData.servicePeriod || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="服务开始日期>{{ detailData.serviceStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="服务开始日期">{{ detailData.serviceStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="服务结束日期">{{ detailData.serviceEndDate || '-' }}</el-descriptions-item>
 
@@ -1124,7 +1125,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="面试形式">{{ detailData.interviewForm || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="月补贴标准>{{ detailData.monthlySubsidy || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="月补贴标准">{{ detailData.monthlySubsidy || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="社保缴纳">{{ detailData.socialInsurance || '-' }}</el-descriptions-item>
 
@@ -1144,7 +1145,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="考研加分">{{ detailData.postgradBonus || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名开始>{{ detailData.regStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="报名开始">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="报名截止">{{ detailData.regEndDate || '-' }}</el-descriptions-item>
 
@@ -1160,7 +1161,7 @@ onMounted(() => { fetchData() })
 
             </el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -1188,7 +1189,7 @@ onMounted(() => { fetchData() })
 
           <el-tabs v-model="activeTab">
 
-            <el-tab-pane label="项目与岗位信息 name="basic">
+            <el-tab-pane label="项目与岗位信息" name="basic">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1278,7 +1279,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="服务地点与要求 name="location">
+            <el-tab-pane label="服务地点与要求" name="location">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1344,9 +1345,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="服务开始日期>
+                    <el-form-item label="服务开始日期">
 
-                      <el-input v-model="formData.serviceStartDate" placeholder="服务开始日期 maxlength="30" />
+                      <el-input v-model="formData.serviceStartDate" placeholder="服务开始日期" maxlength="30" />
 
                     </el-form-item>
 
@@ -1458,7 +1459,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="待遇与期满政策 name="benefits">
+            <el-tab-pane label="待遇与期满政策" name="benefits">
 
               <el-form :model="formData" label-width="140px" class="mt-2">
 
@@ -1466,9 +1467,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="月补贴标准>
+                    <el-form-item label="月补贴标准">
 
-                      <el-input v-model="formData.monthlySubsidy" placeholder="月补贴标准 maxlength="50" />
+                      <el-input v-model="formData.monthlySubsidy" placeholder="月补贴标准" maxlength="50" />
 
                     </el-form-item>
 
@@ -1560,7 +1561,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="可转事业编>
+                    <el-form-item label="可转事业编">
 
                       <el-switch v-model="formData.canTransferToInstitution" />
 
@@ -1576,7 +1577,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="考试与报名 name="exam">
+            <el-tab-pane label="考试与报名" name="exam">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1614,9 +1615,9 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="8">
 
-                    <el-form-item label="报名开始>
+                    <el-form-item label="报名开始">
 
-                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                      <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                     </el-form-item>
 
@@ -1648,7 +1649,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+            <el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1726,7 +1727,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1740,7 +1741,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1760,7 +1761,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
