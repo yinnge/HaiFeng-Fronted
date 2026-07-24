@@ -17,12 +17,14 @@ export interface BasicMessage {
 
 /** 系统设置 VO */
 export interface SystemSettingsVO {
-  id: number
+  id: string
   siteName: string
   siteUrl: string
   siteIcp: string
   siteDescription: string
   apiNumber: number
+  providerName: string
+  modelName: string
   proPrice: number
   vipPrice: number
   proCommissionRate: number

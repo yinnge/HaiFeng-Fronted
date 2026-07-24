@@ -69,6 +69,7 @@ apps/admin/src/
 | **SEO配置** | seoTitle, seoKeywords, seoDescription | SEO三件套 |
 | **社交媒体** | contactUrl.wechat/weibo/zhihu/douyin/bilibili | 5个社交平台链接 |
 | **联系信息** | basicMessage.address/phone/email/consultationTime | 地址、电话、邮箱、咨询时间 |
+| **服务商与模型** | providerName, modelName | 服务商下拉 + 模型名称输入 |
 
 ### 交互逻辑
 
@@ -76,6 +77,19 @@ apps/admin/src/
 - 每张卡片底部一个「保存」按钮
 - 点击保存时只提交该卡片对应的字段（API 支持部分更新）
 - 保存成功后显示 ElMessage.success
+
+### 服务商与模型配置卡片 (ProviderCard)
+
+第6张卡片，位于联系信息卡片下方：
+
+| 区域 | 组件 | 说明 |
+|------|------|------|
+| 当前服务商 | el-tag 展示 | 读取 `settingsData.providerName` |
+| 当前模型 | el-tag 展示 | 读取 `settingsData.modelName` |
+| 编辑按钮 | "编辑" 切换行内编辑 |
+| 服务商下拉 | el-select | 数据源：`GET /settings/providers` 返回的 String[] |
+| 模型输入 | el-input | 手动输入模型名称 |
+| 保存按钮 | 调 `PUT /settings/provider-model` | body: `{providerName, modelName}` |
 
 ### API 定义
 
@@ -91,6 +105,16 @@ export const getSystemSettings = () => {
 /** 更新系统设置 */
 export const updateSystemSettings = (data: SystemSettingsUpdateDTO) => {
   return request.put<R<void>>(PREFIX, data)
+}
+
+/** 获取所有启用的服务商列表 */
+export const getEnabledProviders = () => {
+  return request.get<R<string[]>>(`${PREFIX}/providers`)
+}
+
+/** 更新服务商和模型 */
+export const updateProviderModel = (data: { providerName: string; modelName: string }) => {
+  return request.put<R<void>>(`${PREFIX}/provider-model`, data)
 }
 ```
 
@@ -120,6 +144,8 @@ export interface SystemSettingsVO {
   siteIcp: string
   siteDescription: string
   apiNumber: number
+  providerName: string
+  modelName: string
   proPrice: number
   vipPrice: number
   proCommissionRate: number
@@ -354,7 +380,7 @@ LogSearch + LogTable + LogDetailModal
 
 - "删除选中"需要至少勾选一条记录
 - "删除全部"需要二次确认弹窗
-- 调用 `DELETE /api/v1/admin/system/logs/batch`
+- 调用 `POST /api/v1/admin/system/logs/batch`
 
 ### LogDetailModal 设计
 
@@ -379,7 +405,7 @@ export const getLogDetail = (id: number) => {
 
 /** 批量删除操作日志 */
 export const batchDeleteLogs = (data: AdminLogBatchDeleteDTO) => {
-  return request.delete<R<number>>(`${PREFIX}/batch`, { data })
+  return request.post<R<number>>(`${PREFIX}/batch`, data)
 }
 ```
 
@@ -436,13 +462,13 @@ const systemRoutes: RouteRecordRaw = {
       path: 'settings',
       name: 'SystemSettings',
       component: () => import('@/views/system/settings/index.vue'),
-      meta: { title: '系统设置', icon: 'Tools' },
+      meta: { title: '系统设置', icon: 'Tools', moduleCode: 'system_setting' },
     },
     {
       path: 'log',
       name: 'SystemLog',
       component: () => import('@/views/system/log/index.vue'),
-      meta: { title: '操作日志', icon: 'Document' },
+      meta: { title: '操作日志', icon: 'Document', moduleCode: 'system_log' },
     },
   ],
 }
@@ -466,7 +492,7 @@ const userRoutes: RouteRecordRaw = {
       path: 'list',
       name: 'UserList',
       component: () => import('@/views/user/list/index.vue'),
-      meta: { title: '用户列表', icon: 'UserFilled' },
+      meta: { title: '用户列表', icon: 'UserFilled', moduleCode: 'user_member' },
     },
   ],
 }

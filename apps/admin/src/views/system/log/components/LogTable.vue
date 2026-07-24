@@ -16,11 +16,11 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
-  (e: 'detail', id: number): void
+  (e: 'detail', id: string): void
   (e: 'refresh'): void
 }>()
 
-const selectedIds = ref<number[]>([])
+const selectedIds = ref<string[]>([])
 
 const handleSelectionChange = (rows: AdminLogListVO[]) => {
   selectedIds.value = rows.map((row) => row.id)
@@ -35,7 +35,7 @@ const handleBatchDelete = async (type: 'ids' | 'lastMonth' | 'all') => {
   const messages: Record<string, string> = {
     ids: `确定要删除选中的 ${selectedIds.value.length} 条记录吗？`,
     lastMonth: '确定要删除一个月前的所有日志吗？',
-    all: '确定要删除全部日志吗？此操作不可恢复！',
+    all: '确定要删除全部日志吗？此操作不可恢复？',
   }
 
   try {
@@ -59,15 +59,15 @@ const handleBatchDelete = async (type: 'ids' | 'lastMonth' | 'all') => {
   }
 }
 
-const getMethodTagType = (method: string) => {
-  const map: Record<string, string> = {
-    GET: 'info',
-    POST: 'success',
-    PUT: 'warning',
-    DELETE: 'danger',
-  }
-  return map[method] || 'info'
+const tagTypeMap: Record<string, 'info' | 'success' | 'warning' | 'danger'> = {
+  GET: 'info',
+  POST: 'success',
+  PUT: 'warning',
+  DELETE: 'danger',
 }
+
+const getMethodTagType = (method: string): 'info' | 'success' | 'warning' | 'danger' =>
+  tagTypeMap[method] || 'info'
 
 const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 </script>
@@ -121,8 +121,8 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 
     <div class="flex justify-end mt-4">
       <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
+        :current-page="page"
+        :page-size="size"
         :page-sizes="pageSizes"
         :total="total"
         layout="total, sizes, prev, pager, next"

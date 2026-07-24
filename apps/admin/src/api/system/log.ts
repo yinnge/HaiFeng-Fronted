@@ -15,11 +15,11 @@ export const getLogPage = (params: AdminLogQueryDTO) => {
 }
 
 /** 获取操作日志详情 */
-export const getLogDetail = (id: number) => {
+export const getLogDetail = (id: string) => {
   return request.get<R<AdminLogDetailVO>>(`${PREFIX}/${id}`)
 }
 
 /** 批量删除操作日志 */
 export const batchDeleteLogs = (data: AdminLogBatchDeleteDTO) => {
-  return request.delete<R<number>>(`${PREFIX}/batch`, { data })
+  return request.post<R<number>>(`${PREFIX}/batch`, data)
 }

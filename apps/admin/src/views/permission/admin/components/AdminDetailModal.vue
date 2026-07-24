@@ -28,7 +28,7 @@ const roleOptions = ref<RoleVO[]>([])
 const isEdit = computed(() => !!props.adminId)
 const title = computed(() => (isEdit.value ? '编辑管理员' : '新增管理员'))
 
-const form = reactive<AdminAddDTO & { id?: number; status?: number }>({
+const form = reactive<AdminAddDTO & { id?: string; status?: number }>({
   username: '',
   password: '',
   realName: '',

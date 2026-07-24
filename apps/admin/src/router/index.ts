@@ -14,6 +14,7 @@ import certificateRoutes from './modules/certificate'
 import algorithmRoutes from './modules/algorithm'
 import specialRoutes from './modules/special'
 import companyRoutes from './modules/company'
+import employmentRoutes from './modules/employment'
 
 // 静态路由 (无需权限)
 const constantRoutes: RouteRecordRaw[] = [
@@ -64,6 +65,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
       algorithmRoutes,
       specialRoutes,
       companyRoutes,
+      employmentRoutes,
       {
         path: 'profile',
         name: 'Profile',

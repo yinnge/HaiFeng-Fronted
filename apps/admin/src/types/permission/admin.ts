@@ -1,14 +1,14 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
-/** 管理员列表 VO */
+/** 管理员列�?VO */
 export interface AdminVO {
-  id: number
+  id: string
   username: string
   realName?: string
   phone: string
   email?: string
   avatar?: string
-  roleId: number
+  roleId: string
   roleName: string
   status: number
   isTotpEnabled: boolean
@@ -17,7 +17,7 @@ export interface AdminVO {
   updatedAt: string
 }
 
-/** 管理员查询 DTO */
+/** 管理员查�?DTO */
 export interface AdminQueryDTO extends BasePageQuery {
   username?: string
   phone?: string
@@ -25,7 +25,7 @@ export interface AdminQueryDTO extends BasePageQuery {
   status?: number
 }
 
-/** 管理员新增 DTO */
+/** 管理员新�?DTO */
 export interface AdminAddDTO {
   username: string
   password: string
@@ -33,10 +33,10 @@ export interface AdminAddDTO {
   phone: string
   email?: string
   avatar?: string
-  roleId: number
+  roleId: string
 }
 
-/** 管理员更新 DTO */
+/** 管理员更�?DTO */
 export interface AdminUpdateDTO {
   username: string
   password?: string
@@ -44,6 +44,6 @@ export interface AdminUpdateDTO {
   phone: string
   email?: string
   avatar?: string
-  roleId: number
+  roleId: string
   status?: number
 }

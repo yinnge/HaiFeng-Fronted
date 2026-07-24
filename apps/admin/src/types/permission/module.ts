@@ -1,6 +1,6 @@
 /** 模块 VO */
 export interface ModuleVO {
-  id: number
+  id: string
   moduleName: string
   moduleCode: string
   parentId?: number

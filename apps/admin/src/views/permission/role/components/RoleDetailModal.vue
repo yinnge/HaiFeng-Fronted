@@ -9,7 +9,7 @@ import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
-  roleId?: number
+  roleId?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,7 +25,7 @@ const originalData = ref<string>('')
 const isEdit = computed(() => !!props.roleId)
 const title = computed(() => (isEdit.value ? '编辑角色' : '新增角色'))
 
-const form = reactive<RoleAddDTO & { id?: number }>({
+const form = reactive<RoleAddDTO & { id?: string }>({
   roleName: '',
   roleCode: '',
   description: '',

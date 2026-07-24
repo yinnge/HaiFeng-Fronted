@@ -10,32 +10,32 @@ import type {
 
 const PREFIX = '/api/v1/admin/permission/admins'
 
-/** 管理员列表（分页） */
+/** 管理员列表（分页�?*/
 export const getAdminPage = (params: AdminQueryDTO) => {
   return request.get<R<PageResult<AdminVO>>>(PREFIX, { params })
 }
 
-/** 管理员详情 */
-export const getAdminDetail = (id: number) => {
+/** 管理员详�?*/
+export const getAdminDetail = (id: string) => {
   return request.get<R<AdminVO>>(`${PREFIX}/${id}`)
 }
 
-/** 新增管理员 */
+/** 新增管理�?*/
 export const addAdmin = (data: AdminAddDTO) => {
   return request.post<R<void>>(PREFIX, data)
 }
 
-/** 更新管理员 */
-export const updateAdmin = (id: number, data: AdminUpdateDTO) => {
+/** 更新管理�?*/
+export const updateAdmin = (id: string, data: AdminUpdateDTO) => {
   return request.put<R<void>>(`${PREFIX}/${id}`, data)
 }
 
-/** 删除管理员 */
-export const deleteAdmin = (id: number) => {
+/** 删除管理�?*/
+export const deleteAdmin = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/${id}`)
 }
 
-/** 切换管理员状态 */
-export const toggleAdminStatus = (id: number) => {
+/** 切换管理员状�?*/
+export const toggleAdminStatus = (id: string) => {
   return request.put<R<void>>(`${PREFIX}/${id}/toggle-status`)
 }

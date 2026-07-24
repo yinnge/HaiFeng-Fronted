@@ -21,7 +21,7 @@ const queryParams = reactive<AdminQueryDTO>({
 })
 
 const showDetailModal = ref(false)
-const currentAdminId = ref<number | undefined>()
+const currentAdminId = ref<string | undefined>()
 
 const fetchData = async () => {
   loading.value = true
@@ -32,7 +32,7 @@ const fetchData = async () => {
       total.value = res.data.data.total
     }
   } catch (error) {
-    console.error('获取管理员列表失败:', error)
+    console.error('获取管理员列表失败', error)
   } finally {
     loading.value = false
   }
@@ -72,7 +72,7 @@ const handleAdd = () => {
   showDetailModal.value = true
 }
 
-const handleDetail = (id: number) => {
+const handleDetail = (id: string) => {
   currentAdminId.value = id
   showDetailModal.value = true
 }

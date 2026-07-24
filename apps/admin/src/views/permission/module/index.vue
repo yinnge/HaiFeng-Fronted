@@ -15,7 +15,7 @@ const queryParams = reactive<ModuleQueryDTO>({
 })
 
 const showDetailModal = ref(false)
-const currentModuleId = ref<number | undefined>()
+const currentModuleId = ref<string | undefined>()
 const currentModule = ref<ModuleTreeVO | undefined>()
 
 const fetchData = async () => {

@@ -17,7 +17,7 @@ export const getRolePage = (params: RoleQueryDTO) => {
 }
 
 /** 角色详情 */
-export const getRoleDetail = (id: number) => {
+export const getRoleDetail = (id: string) => {
   return request.get<R<RoleVO>>(`${PREFIX}/${id}`)
 }
 
@@ -27,21 +27,21 @@ export const addRole = (data: RoleAddDTO) => {
 }
 
 /** 更新角色 */
-export const updateRole = (id: number, data: RoleUpdateDTO) => {
+export const updateRole = (id: string, data: RoleUpdateDTO) => {
   return request.put<R<void>>(`${PREFIX}/${id}`, data)
 }
 
 /** 删除角色 */
-export const deleteRole = (id: number) => {
+export const deleteRole = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/${id}`)
 }
 
-/** 切换角色状态 */
-export const toggleRoleStatus = (id: number) => {
+/** 切换角色状�?*/
+export const toggleRoleStatus = (id: string) => {
   return request.put<R<void>>(`${PREFIX}/${id}/toggle-status`)
 }
 
 /** 角色绑定模块 */
-export const bindRoleModules = (id: number, data: RoleBindModulesDTO) => {
+export const bindRoleModules = (id: string, data: RoleBindModulesDTO) => {
   return request.post<R<void>>(`${PREFIX}/${id}/modules`, data)
 }

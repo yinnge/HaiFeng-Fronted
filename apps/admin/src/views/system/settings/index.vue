@@ -7,6 +7,7 @@ import PricingCard from './components/PricingCard.vue'
 import SeoCard from './components/SeoCard.vue'
 import SocialCard from './components/SocialCard.vue'
 import ContactCard from './components/ContactCard.vue'
+import ProviderCard from './components/ProviderCard.vue'
 
 const loading = ref(false)
 const settingsData = ref<SystemSettingsVO | null>(null)
@@ -37,5 +38,6 @@ onMounted(() => {
     <SeoCard :data="settingsData" @refresh="fetchData" />
     <SocialCard :data="settingsData" @refresh="fetchData" />
     <ContactCard :data="settingsData" @refresh="fetchData" />
+    <ProviderCard :data="settingsData" @refresh="fetchData" />
   </div>
 </template>

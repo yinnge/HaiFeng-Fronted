@@ -19,7 +19,7 @@ const queryParams = reactive<AdminLogQueryDTO>({
 })
 
 const showDetailModal = ref(false)
-const currentLogId = ref<number | undefined>()
+const currentLogId = ref<string | undefined>()
 
 const fetchData = async () => {
   loading.value = true
@@ -63,7 +63,7 @@ const handleSizeChange = (size: number) => {
   fetchData()
 }
 
-const handleDetail = (id: number) => {
+const handleDetail = (id: string) => {
   currentLogId.value = id
   showDetailModal.value = true
 }
