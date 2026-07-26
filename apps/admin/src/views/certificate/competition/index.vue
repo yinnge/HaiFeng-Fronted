@@ -418,7 +418,7 @@ const handleSubmit = async () => {
 
   if (!formData.compName) {
 
-    ElMessage.warning('请填写竞赛名称)
+    ElMessage.warning('请填写竞赛名称')
 
     return
 
@@ -524,13 +524,13 @@ const handleSoftDelete = async (id: string, name: string) => {
 
   try {
 
-    await ElMessageBox.confirm(`确定要软删除竞赛{name}」吗？关联数据将保留可恢复。`, '提示')
+    await ElMessageBox.confirm(`确定要软删除竞赛"${name}"吗？关联数据将保留可恢复。`, '提示')
 
     const res = await softDeleteCompetition(id)
 
     if (res.data.code === 200) {
 
-      ElMessage.success('软删除成功)
+      ElMessage.success('软删除成功')
 
       fetchData()
 
@@ -552,11 +552,11 @@ const handleHardDelete = async (id: string, name: string) => {
 
     await ElMessageBox.confirm(
 
-      `确定要硬删除竞赛{name}」吗？关联数据将同步删除，不可恢复！`,
+      `确定要硬删除竞赛"${name}"吗？关联数据将同步删除，不可恢复！`,
 
       '警告',
 
-      { type: 'warning', confirmButtonText: '确定硬删除, cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '确定硬删除', cancelButtonText: '取消' }
 
     )
 
@@ -564,7 +564,7 @@ const handleHardDelete = async (id: string, name: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('硬删除成功)
+      ElMessage.success('硬删除成功')
 
       fetchData()
 
@@ -680,7 +680,7 @@ onMounted(() => { fetchData() })
 
       <el-button type="primary" @click="openDialog('add')">新增竞赛</el-button>
 
-      <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchDelete">批量硬删除/el-button>
+      <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchDelete">批量硬删除</el-button>
 
       <el-button @click="fetchData">刷新</el-button>
 
@@ -714,9 +714,9 @@ onMounted(() => { fetchData() })
 
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
 
-            <el-button type="info" link @click="handleSoftDelete(row.id, row.compName)">软删除/el-button>
+            <el-button type="info" link @click="handleSoftDelete(row.id, row.compName)">软删除</el-button>
 
-            <el-button type="danger" link @click="handleHardDelete(row.id, row.compName)">硬删除/el-button>
+            <el-button type="danger" link @click="handleHardDelete(row.id, row.compName)">硬删除</el-button>
 
           </template>
 
@@ -818,7 +818,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-collapse-item title="竞赛背景与意义 name="background">
+            <el-collapse-item title="竞赛背景与意义" name="background">
 
               <div v-if="detailData.background">{{ detailData.background }}</div>
 
@@ -930,7 +930,7 @@ onMounted(() => { fetchData() })
 
             <el-form-item label="竞赛名称" required>
 
-              <el-input v-model="formData.compName" placeholder="请输入竞赛名称 maxlength="200" show-word-limit />
+              <el-input v-model="formData.compName" placeholder="请输入竞赛名称" maxlength="200" show-word-limit />
 
             </el-form-item>
 
@@ -950,7 +950,7 @@ onMounted(() => { fetchData() })
 
             <el-form-item label="报名时间">
 
-              <el-input v-model="formData.registrationTime" placeholder="如：每年6月9月 maxlength="100" />
+              <el-input v-model="formData.registrationTime" placeholder="如：每年6月9月" maxlength="100" />
 
             </el-form-item>
 
@@ -960,7 +960,7 @@ onMounted(() => { fetchData() })
 
             <el-collapse class="mt-4">
 
-              <el-collapse-item title="竞赛详情（选填） name="detail">
+              <el-collapse-item title="竞赛详情（选填）" name="detail">
 
                 <!-- basicInfo -->
 
@@ -968,9 +968,9 @@ onMounted(() => { fetchData() })
 
                   <div class="flex gap-2 mb-2">
 
-                    <el-input v-model="basicInfoKey" placeholder="字段 style="width: 150px" />
+                    <el-input v-model="basicInfoKey" placeholder="字段" style="width: 150px" />
 
-                    <el-input v-model="basicInfoValue" placeholder="字段 style="width: 200px" />
+                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" />
 
                     <el-button type="primary" @click="addBasicInfo">添加</el-button>
 
@@ -1012,7 +1012,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="竞赛背景">
 
-                  <el-input v-model="formData.detail!.background" type="textarea" :rows="3" placeholder="竞赛背景与意义 />
+                  <el-input v-model="formData.detail!.background" type="textarea" :rows="3" placeholder="竞赛背景与意义" />
 
                 </el-form-item>
 

@@ -416,7 +416,7 @@ const handleToggleStatus = async (row: NoticeListVO) => {
 
   try {
 
-    await ElMessageBox.confirm('确定禁用该公告？禁用后将从列表隐藏, '提示', {
+    await ElMessageBox.confirm('确定禁用该公告？禁用后将从列表隐藏？', '提示', {
 
       confirmButtonText: '确定禁用',
 
@@ -452,7 +452,7 @@ const handleDelete = async (id: string) => {
 
   try {
 
-    await ElMessageBox.confirm('确定要永久删除该公告？此操作不可恢复, '警告', {
+    await ElMessageBox.confirm('确定要永久删除该公告？此操作不可恢复！', '警告', {
 
       type: 'warning',
 
@@ -654,7 +654,7 @@ onMounted(() => {
 
       <el-button @click="fetchData">刷新</el-button>
 
-      <el-button v-if="selectedIds.length > 0" type="danger" @click="handleBatchDelete">批量硬删除/el-button>
+      <el-button v-if="selectedIds.length > 0" type="danger" @click="handleBatchDelete">批量硬删除</el-button>
 
     </div>
 
@@ -730,7 +730,7 @@ onMounted(() => {
 
             <el-button type="info" link @click="handleToggleStatus(row)">禁用</el-button>
 
-            <el-button type="danger" link @click="handleDelete(row.id)">硬删除/el-button>
+            <el-button type="danger" link @click="handleDelete(row.id)">硬删除</el-button>
 
           </template>
 
@@ -802,7 +802,7 @@ onMounted(() => {
 
             <el-descriptions-item label="发布日期" :span="1">{{ detailData.publishDate || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="报名开始 :span="1">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="报名开始" :span="1">{{ detailData.regStartDate || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="报名结束" :span="1">{{ detailData.regEndDate || '-' }}</el-descriptions-item>
 
@@ -826,7 +826,7 @@ onMounted(() => {
 
             </el-descriptions-item>
 
-            <el-descriptions-item label="阅读量 :span="1">{{ detailData.viewCount }}</el-descriptions-item>
+            <el-descriptions-item label="阅读量" :span="1">{{ detailData.viewCount }}</el-descriptions-item>
 
             <el-descriptions-item label="排序" :span="1">{{ detailData.sortOrder }}</el-descriptions-item>
 
@@ -894,19 +894,19 @@ onMounted(() => {
 
             <el-form-item label="标题" required>
 
-              <el-input v-model="formData.title" placeholder="请输入标题 maxlength="500" show-word-limit />
+              <el-input v-model="formData.title" placeholder="请输入标题" maxlength="500" show-word-limit />
 
             </el-form-item>
 
             <el-form-item label="摘要">
 
-              <el-input v-model="formData.summary" type="textarea" :rows="2" placeholder="请输入摘要 />
+              <el-input v-model="formData.summary" type="textarea" :rows="2" placeholder="请输入摘要" />
 
             </el-form-item>
 
             <el-form-item label="内容" required>
 
-              <el-input v-model="formData.content" type="textarea" :rows="10" placeholder="请输入公告内容（支持 HTML />
+              <el-input v-model="formData.content" type="textarea" :rows="10" placeholder="请输入公告内容（支持 HTML）" />
 
             </el-form-item>
 
@@ -996,9 +996,9 @@ onMounted(() => {
 
               <el-col :span="8">
 
-                <el-form-item label="报名开始>
+                <el-form-item label="报名开始">
 
-                  <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始 style="width: 100%" />
+                  <el-date-picker v-model="formData.regStartDate" type="datetime" placeholder="报名开始" style="width: 100%" />
 
                 </el-form-item>
 
@@ -1052,7 +1052,7 @@ onMounted(() => {
 
             <el-form-item label="标签">
 
-              <el-select v-model="formData.tags" multiple filterable allow-create default-first-option placeholder="输入标签后回车 style="width: 100%">
+              <el-select v-model="formData.tags" multiple filterable allow-create default-first-option placeholder="输入标签后回车" style="width: 100%">
 
                 <el-option v-for="tag in formData.tags" :key="tag" :label="tag" :value="tag" />
 

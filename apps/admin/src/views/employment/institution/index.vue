@@ -132,7 +132,7 @@ const formData = reactive<Record<string, any>>({
 
   supervisionPhone: '',
 
-  positionStatus: '招聘中,
+  positionStatus: '招聘中',
 
   positionTag: '是',
 
@@ -144,19 +144,19 @@ const formData = reactive<Record<string, any>>({
 
 
 
-const positionStatusOptions = ['招聘中, '已结束]
+const positionStatusOptions = ['招聘中', '已结束']
 
-const educationOptions = ['无要求, '大专', '本科', '硕士', '博士']
+const educationOptions = ['无要求', '大专', '本科', '硕士', '博士']
 
-const degreeOptions = ['无要求, '学士', '硕士', '博士']
+const degreeOptions = ['无要求', '学士', '硕士', '博士']
 
 const positionTagOptions = ['热门', '急招']
 
 const positionStatusTag: Record<string, 'success' | 'info'> = {
 
-  '招聘中: 'success',
+  '招聘中': 'success',
 
-  '已结束: 'info',
+  '已结束': 'info',
 
 }
 
@@ -272,9 +272,9 @@ const resetForm = () => {
 
   })
 
-  formData.positionStatus = '招聘中
+  formData.positionStatus = '招聘中'
 
-  formData.positionTag = '是
+  formData.positionTag = '是'
 
   formData.majorRequirements = []
 
@@ -328,9 +328,9 @@ const fillForm = (d: InstitutionDetailVO) => {
 
   formData.supervisionPhone = d.supervisionPhone || ''
 
-  formData.positionStatus = d.positionStatus || '招聘中
+  formData.positionStatus = d.positionStatus || '招聘中'
 
-  formData.positionTag = d.positionTag || '是
+  formData.positionTag = d.positionTag || '是'
 
   formData.tagText = d.tagText || ''
 
@@ -352,7 +352,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   if (mode === 'edit' && id) {
 
-    dialogTitle.value = '修改事业编职位
+    dialogTitle.value = '修改事业编职位'
 
     formLoading.value = true
 
@@ -380,7 +380,7 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
   } else if (mode === 'detail' && id) {
 
-    dialogTitle.value = '事业编职位详情
+    dialogTitle.value = '事业编职位详情'
 
     formLoading.value = true
 
@@ -546,13 +546,13 @@ const handleStatusChange = async (row: InstitutionListVO, newStatus: string) => 
 
   try {
 
-    const statusVal = newStatus === '招聘中 ? 0 : 1
+    const statusVal = newStatus === '招聘中' ? 0 : 1
 
     const res = await updateInstitutionStatus(row.id, { status: statusVal })
 
     if (res.data.code === 200) {
 
-      ElMessage.success('状态更新成功)
+      ElMessage.success('状态更新成功')
 
       fetchData()
 
@@ -752,7 +752,7 @@ onMounted(() => { fetchData() })
 
         </el-form-item>
 
-        <el-form-item label="状态>
+        <el-form-item label="状态">
 
           <el-select v-model="queryParams.positionStatus" placeholder="全部" clearable style="width: 110px">
 
@@ -780,7 +780,7 @@ onMounted(() => { fetchData() })
 
       <div class="flex items-center gap-2">
 
-        <el-button type="warning" @click="openPreValidateDialog">Excel预览/el-button>
+        <el-button type="warning" @click="openPreValidateDialog">Excel预览</el-button>
 
         <el-button type="success" @click="openImportDialog">Excel导入</el-button>
 
@@ -814,11 +814,11 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="positionType" label="岗位类型" width="100" />
 
-        <el-table-column prop="subCategory" label="子分类 width="100" />
+        <el-table-column prop="subCategory" label="子分类" width="100" />
 
         <el-table-column prop="salaryRange" label="薪资范围" width="120" />
 
-        <el-table-column prop="positionStatus" label="状态 width="100" align="center">
+        <el-table-column prop="positionStatus" label="状态" width="100" align="center">
 
           <template #default="{ row }">
 
@@ -918,7 +918,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="岗位类型">{{ detailData.positionType || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="子分类>{{ detailData.subCategory || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="子分类">{{ detailData.subCategory || '-' }}</el-descriptions-item>
 
             <el-descriptions-item label="学历要求">{{ detailData.educationRequirement || '-' }}</el-descriptions-item>
 
@@ -948,7 +948,7 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="监督电话">{{ detailData.supervisionPhone || '-' }}</el-descriptions-item>
 
-            <el-descriptions-item label="状态>
+            <el-descriptions-item label="状态">
 
               <el-tag :type="positionStatusTag[detailData.positionStatus] || 'info'" size="small">{{ detailData.positionStatus }}</el-tag>
 
@@ -1060,9 +1060,9 @@ onMounted(() => { fetchData() })
 
                 </el-row>
 
-                <el-form-item label="子分类>
+                <el-form-item label="子分类">
 
-                  <el-input v-model="formData.subCategory" placeholder="子分类 maxlength="50" />
+                  <el-input v-model="formData.subCategory" placeholder="子分类" maxlength="50" />
 
                 </el-form-item>
 
@@ -1072,7 +1072,7 @@ onMounted(() => { fetchData() })
 
 
 
-            <el-tab-pane label="报考要求 name="requirements">
+            <el-tab-pane label="报考要求" name="requirements">
 
               <el-form :model="formData" label-width="120px" class="mt-2">
 
@@ -1158,7 +1158,7 @@ onMounted(() => { fetchData() })
 
                 <el-form-item label="专业要求">
 
-                  <el-select v-model="formData.majorRequirements" multiple placeholder="输入专业，回车添加 filterable allow-create default-first-option style="width: 100%">
+                  <el-select v-model="formData.majorRequirements" multiple placeholder="输入专业，回车添加" filterable allow-create default-first-option style="width: 100%">
 
                     <el-option v-for="item in formData.majorRequirements" :key="item" :label="item" :value="item" />
 
@@ -1268,7 +1268,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="状态>
+<el-form-item label="状态">
 
                       <el-select v-model="formData.positionStatus" placeholder="请选择" style="width: 100%">
 
@@ -1344,7 +1344,7 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="preValidateDialogVisible" title="Excel预览 width="500px">
+    <el-dialog v-model="preValidateDialogVisible" title="Excel预览" width="500px">
 
       <el-upload
 
@@ -1356,7 +1356,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
@@ -1370,7 +1370,7 @@ onMounted(() => { fetchData() })
 
         <el-button @click="preValidateDialogVisible = false">取消</el-button>
 
-        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验/el-button>
+        <el-button type="warning" :loading="preValidateLoading" @click="handlePreValidateSubmit">开始校验</el-button>
 
       </template>
 
@@ -1390,7 +1390,7 @@ onMounted(() => { fetchData() })
 
         <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
 
-        <div class="el-upload__text">将文件拖到此处，或em>点击上传</em></div>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 
         <template #tip>
 
