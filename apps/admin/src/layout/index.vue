@@ -45,7 +45,6 @@ const isCollapsed = computed(() => appStore.sidebarCollapsed)
 }
 
 :deep(.el-aside) {
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 </style>

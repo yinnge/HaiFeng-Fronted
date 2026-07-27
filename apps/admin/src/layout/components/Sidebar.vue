@@ -150,28 +150,8 @@ function handleMenuSelect(index: string) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #F97316;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-}
-
-.sidebar-root::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-root::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-root::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-.sidebar-root::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background-color: #FFFFFF;
+  overflow: visible;
 }
 
 .sidebar-brand {
@@ -211,8 +191,27 @@ function handleMenuSelect(index: string) {
 .sidebar-menu {
   flex: 1;
   border-right: none;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 136, 229, 0.5) transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(30, 136, 229, 0.5);
+  border-radius: 3px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 136, 229, 0.7);
 }
 
 .sidebar-menu :deep(.el-sub-menu__title .el-sub-menu__icon-arrow) {
@@ -223,13 +222,19 @@ function handleMenuSelect(index: string) {
 .sidebar-menu :deep(.el-sub-menu__title) {
   transition: background-color 200ms ease;
   color: rgba(255, 255, 255, 0.75);
-  font-size: 14px;
+  font-size: 15px;
   height: 48px;
   line-height: 48px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin: 4px 8px;
   border-radius: 8px;
   width: calc(100% - 16px);
+}
+
+.sidebar-menu :deep(.el-menu-item span),
+.sidebar-menu :deep(.el-sub-menu__title span) {
+  text-align: center;
+  padding-left: 5px;
 }
 
 .sidebar-menu :deep(.el-menu-item:hover),
