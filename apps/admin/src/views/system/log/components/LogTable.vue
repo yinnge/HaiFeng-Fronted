@@ -300,7 +300,7 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 }
 
 .custom-pagination :deep(.btn-prev:hover),
-.custom-pagination :deep(.btn-next:hover)) {
+.custom-pagination :deep(.btn-next:hover) {
   color: #F97316;
 }
 </style>
