@@ -8,6 +8,9 @@ import {
   restoreCommission,
 } from '@/api/user/commission'
 import type { CommissionListVO, CommissionQueryDTO } from '@/types/user/commission'
+import CommissionSearch from './components/CommissionSearch.vue'
+import CommissionTable from './components/CommissionTable.vue'
+import CommissionDetailModal from './components/CommissionDetailModal.vue'
 
 const loading = ref(false)
 const tableData = ref<CommissionListVO[]>([])
@@ -129,93 +132,111 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 rounded-lg bg-white p-5">
-      <el-form :model="queryParams" inline>
-        <el-form-item label="推荐人手机号">
-          <el-input v-model="queryParams.referrerPhone" placeholder="前缀匹配" clearable style="width: 150px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="推荐人名称">
-          <el-input v-model="queryParams.referrerName" placeholder="模糊搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="被推荐人手机号">
-          <el-input v-model="queryParams.refereePhone" placeholder="前缀匹配" clearable style="width: 150px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="被推荐人名称">
-          <el-input v-model="queryParams.refereeName" placeholder="模糊搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="订单号">
-          <el-input v-model="queryParams.orderNo" placeholder="模糊搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="page-wrapper">
+    <div class="watermark-top-right">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+    <div class="watermark-bottom-left">
+      <img src="@/assets/images/logo-main.png" alt="" />
     </div>
 
-    <div class="mb-4">
-      <el-button @click="fetchData">刷新</el-button>
-    </div>
-
-    <div class="rounded-lg bg-white p-5">
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="140" />
-        <el-table-column prop="referrerName" label="推荐人" min-width="100" />
-        <el-table-column prop="referrerPhone" label="推荐人手机号" width="130" />
-        <el-table-column prop="refereeName" label="被推荐人" min-width="100" />
-        <el-table-column prop="refereePhone" label="被推荐人手机号" width="130" />
-        <el-table-column prop="orderAmount" label="订单金额" width="100" align="right">
-          <template #default="{ row }">¥{{ row.orderAmount?.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column prop="commissionRate" label="佣金比例" width="100" align="center">
-          <template #default="{ row }">{{ row.commissionRate }}%</template>
-        </el-table-column>
-        <el-table-column prop="commissionAmount" label="佣金金额" width="100" align="right">
-          <template #default="{ row }">¥{{ row.commissionAmount?.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="260" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="openDetail(row)">详情</el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">禁用</el-button>
-            <el-button type="success" link @click="handleRestore(row.id)">恢复</el-button>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">硬删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="mt-4 flex justify-end">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.size"
-          :page-sizes="[10, 20, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">佣金管理</h1>
+        <p class="page-subtitle">查看和管理用户推荐佣金记录</p>
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="佣金详情" width="600px" :close-on-click-modal="false">
-      <template v-if="detailData">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
-          <el-descriptions-item label="推荐人">{{ detailData.referrerName }}</el-descriptions-item>
-          <el-descriptions-item label="推荐人手机号">{{ detailData.referrerPhone }}</el-descriptions-item>
-          <el-descriptions-item label="被推荐人">{{ detailData.refereeName }}</el-descriptions-item>
-          <el-descriptions-item label="被推荐人手机号">{{ detailData.refereePhone }}</el-descriptions-item>
-          <el-descriptions-item label="关联订单ID">{{ detailData.orderId }}</el-descriptions-item>
-          <el-descriptions-item label="订单金额">¥{{ detailData.orderAmount?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="佣金比例">{{ detailData.commissionRate }}%</el-descriptions-item>
-          <el-descriptions-item label="佣金金额">¥{{ detailData.commissionAmount?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
-        </el-descriptions>
-      </template>
-      <template #footer>
-        <el-button @click="dialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <CommissionSearch
+      :model-value="queryParams"
+      @update:model-value="Object.assign(queryParams, $event)"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
+
+    <CommissionTable
+      :data="tableData"
+      :loading="loading"
+      :total="total"
+      :page="queryParams.page"
+      :size="queryParams.size"
+      @detail="openDetail"
+      @disable="handleDelete"
+      @restore="handleRestore"
+      @hard-delete="handleHardDelete"
+      @refresh="fetchData"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
+
+    <CommissionDetailModal
+      v-model:visible="dialogVisible"
+      :data="detailData"
+    />
   </div>
 </template>
+
+<style scoped>
+.page-wrapper {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px 32px 40px;
+  overflow: hidden;
+}
+
+.watermark-top-right {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-bottom-left {
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-top-right img,
+.watermark-bottom-left img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.4;
+}
+</style>

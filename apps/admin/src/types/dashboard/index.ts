@@ -27,3 +27,9 @@ export interface DashboardStatsVO {
   orderStats: OrderStats
   entityStats: EntityStats
 }
+
+/** 趋势数据 VO */
+export interface TrendDataVO {
+  dates: string[]
+  values: number[]
+}

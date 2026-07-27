@@ -1,4 +1,3 @@
-<!-- apps/admin/src/views/permission/admin/components/AdminDetailModal.vue -->
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -10,7 +9,7 @@ import type { RoleVO } from '@/types/permission/role'
 
 const props = defineProps<{
   visible: boolean
-  adminId?: number
+  adminId?: string
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +31,7 @@ const form = reactive<AdminAddDTO & { id?: string; status?: number }>({
   phone: '',
   email: '',
   avatar: '',
-  roleId: 0,
+  roleId: '',
   status: 1,
 })
 
@@ -111,7 +110,7 @@ const resetForm = () => {
   form.phone = ''
   form.email = ''
   form.avatar = ''
-  form.roleId = 0
+  form.roleId = ''
   form.status = 1
   formRef.value?.resetFields()
 }
@@ -196,6 +195,7 @@ onMounted(() => {
     :title="title"
     width="500px"
     :close-on-click-modal="false"
+    class="detail-dialog"
     @update:model-value="handleClose"
   >
     <el-form
@@ -243,8 +243,163 @@ onMounted(() => {
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="handleClose">退出</el-button>
-      <el-button type="primary" :loading="loading" @click="handleSave">保存</el-button>
+      <div class="dialog-footer">
+        <button type="button" class="exit-btn" @click="handleClose">退出</button>
+        <button type="button" class="save-btn" :disabled="loading" @click="handleSave">
+          <svg v-if="!loading" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span v-if="loading" class="loading-spinner"></span>
+          保存
+        </button>
+      </div>
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.detail-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.detail-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.detail-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.detail-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.detail-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+
+.detail-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.detail-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.detail-dialog :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.detail-dialog :deep(.el-textarea__inner) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.detail-dialog :deep(.el-textarea__inner:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.detail-dialog :deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.detail-dialog :deep(.el-select) {
+  width: 100%;
+}
+
+.detail-dialog :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.detail-dialog :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.detail-dialog :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.detail-dialog :deep(.el-radio__input.is-checked .el-radio__inner) {
+  background-color: #F97316;
+  border-color: #F97316;
+}
+
+.detail-dialog :deep(.el-radio__input.is-checked + .el-radio__label) {
+  color: #F97316;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.exit-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

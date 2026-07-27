@@ -1,18 +1,47 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getDashboardStats } from '@/api/dashboard'
-import type { DashboardStatsVO } from '@/types/dashboard'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { getDashboardStats, getMemberTrend, getOrderTrend } from '@/api/dashboard'
+import type { DashboardStatsVO, TrendDataVO } from '@/types/dashboard'
+import { Line, Column } from '@antv/g2plot'
 
 const loading = ref(true)
 const errorMsg = ref('')
 const stats = ref<DashboardStatsVO | null>(null)
+const activeDays = ref(7)
 
+// 图表实例
+let memberTrendChart: Line | null = null
+let orderTrendChart: Line | null = null
+let entityCompareChart: Column | null = null
+let memberTypeChart: Column | null = null
+
+// 图表容器 ref
+const memberTrendRef = ref<HTMLDivElement>()
+const orderTrendRef = ref<HTMLDivElement>()
+const entityCompareRef = ref<HTMLDivElement>()
+const memberTypeRef = ref<HTMLDivElement>()
+
+// 品牌色
+const BRAND_ORANGE = '#F97316'
+const BRAND_ORANGE_LIGHT = '#FB923C'
+const BRAND_BLUE = '#1e88e5'
+const BRAND_GREEN = '#10b981'
+const BRAND_GOLD = '#f5a54a'
+
+// 统计卡片配置
 const statCards = ref<{
   title: string
   value: number | string
   icon: string
   color: string
+  gradient: string
 }[]>([])
+
+// 实体对比数据
+const entityCards = ref<{ label: string; value: number; color: string }[]>([])
+
+// 会员类型分布数据
+const memberTypeCards = ref<{ label: string; value: number; color: string }[]>([])
 
 async function fetchStats() {
   loading.value = true
@@ -22,6 +51,9 @@ async function fetchStats() {
     if (res.data.code === 200 && res.data.data) {
       stats.value = res.data.data
       buildStatCards()
+      await nextTick()
+      renderMemberTypeChart()
+      renderEntityCompareChart()
     } else {
       errorMsg.value = res.data.msg || '获取数据失败'
     }
@@ -32,35 +64,379 @@ async function fetchStats() {
   }
 }
 
+async function fetchTrends() {
+  try {
+    const [memberRes, orderRes] = await Promise.all([
+      getMemberTrend(activeDays.value),
+      getOrderTrend(activeDays.value),
+    ])
+
+    if (memberRes.data.code === 200 && memberRes.data.data) {
+      renderMemberTrendChart(memberRes.data.data)
+    }
+    if (orderRes.data.code === 200 && orderRes.data.data) {
+      renderOrderTrendChart(orderRes.data.data)
+    }
+  } catch (e: any) {
+    console.error('获取趋势数据失败:', e)
+  }
+}
+
 function buildStatCards() {
   if (!stats.value) return
-  const { memberStats, orderStats, entityStats } = stats.value
+  const { memberStats, orderStats } = stats.value
   statCards.value = [
-    { title: '用户总数', value: memberStats.totalMembers, icon: 'User', color: '#409eff' },
-    { title: 'Pro 会员', value: memberStats.proMembers, icon: 'Star', color: '#e6a23c' },
-    { title: 'VIP 会员', value: memberStats.vipMembers, icon: 'Medal', color: '#f56c6c' },
-    { title: '待处理订单', value: orderStats.pendingOrders, icon: 'ShoppingCart', color: '#909399' },
-    { title: '总金额', value: `¥${orderStats.totalAmount}`, icon: 'Money', color: '#67c23a' },
-    { title: '院校数量', value: entityStats.universityCount, icon: 'School', color: '#409eff' },
-    { title: '专业数量', value: entityStats.majorCount, icon: 'Reading', color: '#e6a23c' },
-    { title: '行业数量', value: entityStats.industryCount, icon: 'Suitcase', color: '#67c23a' },
-    { title: '企业数量', value: entityStats.enterpriseCount, icon: 'OfficeBuilding', color: '#409eff' },
-    { title: '录取组数', value: entityStats.admissionGroupCount, icon: 'Document', color: '#e6a23c' },
-    { title: '专业分数记录', value: entityStats.admissionMajorScoreCount, icon: 'DataLine', color: '#67c23a' },
+    {
+      title: '用户总数',
+      value: memberStats.totalMembers.toLocaleString(),
+      icon: 'User',
+      color: BRAND_BLUE,
+      gradient: `linear-gradient(135deg, ${BRAND_BLUE}, #64b5f6)`,
+    },
+    {
+      title: 'Pro 会员',
+      value: memberStats.proMembers.toLocaleString(),
+      icon: 'Star',
+      color: BRAND_GOLD,
+      gradient: `linear-gradient(135deg, ${BRAND_GOLD}, #fbbf24)`,
+    },
+    {
+      title: 'VIP 会员',
+      value: memberStats.vipMembers.toLocaleString(),
+      icon: 'Medal',
+      color: BRAND_ORANGE,
+      gradient: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_ORANGE_LIGHT})`,
+    },
+    {
+      title: '待处理订单',
+      value: orderStats.pendingOrders.toLocaleString(),
+      icon: 'ShoppingCart',
+      color: '#ef4444',
+      gradient: 'linear-gradient(135deg, #ef4444, #f87171)',
+    },
+  ]
+
+  // 实体对比数据
+  const { entityStats } = stats.value
+  entityCards.value = [
+    { label: '院校', value: entityStats.universityCount, color: BRAND_BLUE },
+    { label: '专业', value: entityStats.majorCount, color: BRAND_ORANGE },
+    { label: '行业', value: entityStats.industryCount, color: BRAND_GREEN },
+    { label: '企业', value: entityStats.enterpriseCount, color: BRAND_GOLD },
+    { label: '录取组', value: entityStats.admissionGroupCount, color: '#8b5cf6' },
+    { label: '分数记录', value: entityStats.admissionMajorScoreCount, color: '#ec4899' },
+  ]
+
+  // 会员类型分布
+  memberTypeCards.value = [
+    { label: '普通会员', value: memberStats.totalMembers - memberStats.proMembers - memberStats.vipMembers, color: '#9ca3af' },
+    { label: 'Pro 会员', value: memberStats.proMembers, color: BRAND_GOLD },
+    { label: 'VIP 会员', value: memberStats.vipMembers, color: BRAND_ORANGE },
   ]
 }
 
-onMounted(() => {
-  fetchStats()
+function renderMemberTrendChart(data: TrendDataVO) {
+  if (!memberTrendRef.value) return
+  memberTrendChart?.destroy()
+
+  memberTrendChart = new Line(memberTrendRef.value, {
+    data: data.dates.map((date, i) => ({ date, value: data.values[i] })),
+    xField: 'date',
+    yField: 'value',
+    smooth: true,
+    color: BRAND_ORANGE,
+    area: {
+      style: {
+        fill: `l(270) 0:${BRAND_ORANGE_LIGHT}80 1:${BRAND_ORANGE}10`,
+      },
+    },
+    point: {
+      size: 3,
+      shape: 'circle',
+      style: {
+        fill: '#fff',
+        stroke: BRAND_ORANGE,
+        lineWidth: 2,
+      },
+    },
+    xAxis: {
+      tickCount: activeDays.value <= 7 ? 7 : activeDays.value <= 30 ? 10 : 12,
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      line: null,
+      tickLine: null,
+    },
+    yAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      grid: {
+        line: {
+          style: {
+            stroke: '#f3f4f6',
+          },
+        },
+      },
+    },
+    tooltip: {
+      showCrosshairs: true,
+      crosshairs: {
+        style: {
+          stroke: BRAND_ORANGE,
+          strokeDash: [4, 4],
+        },
+      },
+    },
+    animation: {
+      appear: {
+        animation: 'wave-in',
+        duration: 800,
+      },
+    },
+  })
+
+  memberTrendChart.render()
+}
+
+function renderOrderTrendChart(data: TrendDataVO) {
+  if (!orderTrendRef.value) return
+  orderTrendChart?.destroy()
+
+  orderTrendChart = new Line(orderTrendRef.value, {
+    data: data.dates.map((date, i) => ({ date, value: data.values[i] })),
+    xField: 'date',
+    yField: 'value',
+    smooth: true,
+    color: BRAND_BLUE,
+    area: {
+      style: {
+        fill: `l(270) 0:#64b5f680 1:${BRAND_BLUE}10`,
+      },
+    },
+    point: {
+      size: 3,
+      shape: 'circle',
+      style: {
+        fill: '#fff',
+        stroke: BRAND_BLUE,
+        lineWidth: 2,
+      },
+    },
+    xAxis: {
+      tickCount: activeDays.value <= 7 ? 7 : activeDays.value <= 30 ? 10 : 12,
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      line: null,
+      tickLine: null,
+    },
+    yAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      grid: {
+        line: {
+          style: {
+            stroke: '#f3f4f6',
+          },
+        },
+      },
+    },
+    tooltip: {
+      showCrosshairs: true,
+      crosshairs: {
+        style: {
+          stroke: BRAND_BLUE,
+          strokeDash: [4, 4],
+        },
+      },
+    },
+    animation: {
+      appear: {
+        animation: 'wave-in',
+        duration: 800,
+      },
+    },
+  })
+
+  orderTrendChart.render()
+}
+
+function renderEntityCompareChart() {
+  if (!entityCompareRef.value || !entityCards.value.length) return
+  entityCompareChart?.destroy()
+
+  entityCompareChart = new Column(entityCompareRef.value, {
+    data: entityCards.value.map((item) => ({ type: item.label, value: item.value })),
+    xField: 'type',
+    yField: 'value',
+    colorField: 'type',
+    color: entityCards.value.map((item) => item.color),
+    columnWidthRatio: 0.6,
+    label: {
+      position: 'top',
+      style: {
+        fontSize: 11,
+        fill: '#6b7280',
+      },
+    },
+    xAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      line: null,
+      tickLine: null,
+    },
+    yAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      grid: {
+        line: {
+          style: {
+            stroke: '#f3f4f6',
+          },
+        },
+      },
+    },
+    animation: {
+      appear: {
+        animation: 'zoom-in',
+        duration: 600,
+      },
+    },
+  })
+
+  entityCompareChart.render()
+}
+
+function renderMemberTypeChart() {
+  if (!memberTypeRef.value || !memberTypeCards.value.length) return
+  memberTypeChart?.destroy()
+
+  memberTypeChart = new Column(memberTypeRef.value, {
+    data: memberTypeCards.value.map((item) => ({ type: item.label, value: item.value })),
+    xField: 'type',
+    yField: 'value',
+    colorField: 'type',
+    color: memberTypeCards.value.map((item) => item.color),
+    columnWidthRatio: 0.5,
+    label: {
+      position: 'top',
+      style: {
+        fontSize: 11,
+        fill: '#6b7280',
+      },
+    },
+    xAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      line: null,
+      tickLine: null,
+    },
+    yAxis: {
+      label: {
+        style: {
+          fontSize: 11,
+          fill: '#9ca3af',
+        },
+      },
+      grid: {
+        line: {
+          style: {
+            stroke: '#f3f4f6',
+          },
+        },
+      },
+    },
+    animation: {
+      appear: {
+        animation: 'zoom-in',
+        duration: 600,
+      },
+    },
+  })
+
+  memberTypeChart.render()
+}
+
+function handleDaysChange(days: number) {
+  activeDays.value = days
+  fetchTrends()
+}
+
+function handleResize() {
+  memberTrendChart?.resize()
+  orderTrendChart?.resize()
+  entityCompareChart?.resize()
+  memberTypeChart?.resize()
+}
+
+onMounted(async () => {
+  await fetchStats()
+  await fetchTrends()
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  memberTrendChart?.destroy()
+  orderTrendChart?.destroy()
+  entityCompareChart?.destroy()
+  memberTypeChart?.destroy()
 })
 </script>
 
 <template>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold text-gray-800">控制面板</h2>
+  <div class="dashboard-container">
+    <!-- 页面背景装饰 -->
+    <div class="brand-watermark brand-watermark--top-right" />
+    <div class="brand-watermark brand-watermark--bottom-left" />
+
+    <!-- 页面标题 -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">控制面板</h2>
+        <p class="mt-1 text-sm text-gray-500">系统数据概览与趋势分析</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          v-for="days in [7, 30, 90]"
+          :key="days"
+          class="time-btn"
+          :class="{ 'time-btn--active': activeDays === days }"
+          @click="handleDaysChange(days)"
+        >
+          {{ days }}天
+        </button>
+      </div>
+    </div>
 
     <!-- 加载中 -->
-    <div v-loading="loading" class="min-h-[200px] rounded-lg bg-white p-5" />
+    <div v-loading="loading" class="min-h-[400px] rounded-xl bg-white p-6" />
 
     <!-- 错误提示 -->
     <el-alert
@@ -69,27 +445,295 @@ onMounted(() => {
       type="error"
       show-icon
       :closable="false"
+      class="mb-4"
     />
 
-    <!-- 统计卡片 -->
-    <div v-if="!loading && stats" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div
-        v-for="card in statCards"
-        :key="card.title"
-        class="rounded-lg bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-gray-500">{{ card.title }}</p>
-            <p class="mt-1 text-2xl font-bold" :style="{ color: card.color }">
-              {{ card.value }}
-            </p>
+    <!-- Bento Grid 内容 -->
+    <div v-if="!loading && stats" class="bento-grid">
+      <!-- 左上：统计卡片区域 (2x2) -->
+      <div class="bento-cell bento-cell--stats">
+        <div class="stats-grid">
+          <div
+            v-for="card in statCards"
+            :key="card.title"
+            class="stat-card"
+          >
+            <div class="stat-card__icon" :style="{ background: card.gradient }">
+              <el-icon :size="20" color="#fff">
+                <component :is="card.icon" />
+              </el-icon>
+            </div>
+            <div class="stat-card__content">
+              <p class="stat-card__label">{{ card.title }}</p>
+              <p class="stat-card__value" :style="{ color: card.color }">{{ card.value }}</p>
+            </div>
           </div>
-          <el-icon :size="40" :style="{ color: card.color }">
-            <component :is="card.icon" />
-          </el-icon>
         </div>
+      </div>
+
+      <!-- 右上：用户增长趋势 -->
+      <div class="bento-cell bento-cell--trend">
+        <div class="chart-header">
+          <h3 class="chart-title">用户增长趋势</h3>
+          <span class="chart-badge">折线图</span>
+        </div>
+        <div ref="memberTrendRef" class="chart-container" />
+      </div>
+
+      <!-- 左下：订单趋势 -->
+      <div class="bento-cell bento-cell--chart">
+        <div class="chart-header">
+          <h3 class="chart-title">订单趋势</h3>
+          <span class="chart-badge chart-badge--blue">折线图</span>
+        </div>
+        <div ref="orderTrendRef" class="chart-container" />
+      </div>
+
+      <!-- 中下：实体数据对比 -->
+      <div class="bento-cell bento-cell--chart">
+        <div class="chart-header">
+          <h3 class="chart-title">实体数据对比</h3>
+          <span class="chart-badge chart-badge--green">柱状图</span>
+        </div>
+        <div ref="entityCompareRef" class="chart-container" />
+      </div>
+
+      <!-- 右下：会员类型分布 -->
+      <div class="bento-cell bento-cell--chart">
+        <div class="chart-header">
+          <h3 class="chart-title">会员类型分布</h3>
+          <span class="chart-badge chart-badge--gold">柱状图</span>
+        </div>
+        <div ref="memberTypeRef" class="chart-container" />
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-container {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.6) 0%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 247, 237, 0.3) 100%);
+}
+
+/* 品牌水印 */
+.brand-watermark {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background-image: url('@/assets/images/logo-main.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+.brand-watermark--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.brand-watermark--bottom-left {
+  bottom: 20px;
+  left: 20px;
+  transform: rotate(180deg);
+}
+
+/* 时间筛选按钮 */
+.time-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-btn:hover {
+  color: #F97316;
+  border-color: #F97316;
+}
+
+.time-btn--active {
+  color: #fff;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.time-btn--active:hover {
+  color: #fff;
+}
+
+/* Bento Grid 布局 */
+.bento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+}
+
+.bento-cell {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.08);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
+}
+
+.bento-cell:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 左上：统计卡片区域 */
+.bento-cell--stats {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* 右上：用户增长趋势 */
+.bento-cell--trend {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 320px;
+}
+
+/* 下方图表 */
+.bento-cell--chart {
+  min-height: 280px;
+}
+
+/* 统计卡片网格 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 100%;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(249, 115, 22, 0.06);
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.06);
+}
+
+.stat-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.stat-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-card__label {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.stat-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* 图表头部 */
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.chart-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #F97316;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 146, 60, 0.1));
+  border-radius: 12px;
+}
+
+.chart-badge--blue {
+  color: #1e88e5;
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.1), rgba(100, 181, 246, 0.1));
+}
+
+.chart-badge--green {
+  color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.1));
+}
+
+.chart-badge--gold {
+  color: #f5a54a;
+  background: linear-gradient(135deg, rgba(245, 165, 74, 0.1), rgba(251, 191, 36, 0.1));
+}
+
+/* 图表容器 */
+.chart-container {
+  width: 100%;
+  height: calc(100% - 40px);
+  min-height: 220px;
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bento-cell--stats,
+  .bento-cell--trend {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card__value {
+    font-size: 18px;
+  }
+}
+</style>

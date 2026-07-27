@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { AdminLogQueryDTO } from '@/types/system/log'
+import type { OrderQueryDTO } from '@/types/user/order'
 
 const emit = defineEmits<{
-  (e: 'search', params: AdminLogQueryDTO): void
+  (e: 'search', params: OrderQueryDTO): void
   (e: 'reset'): void
 }>()
 
-const searchForm = reactive<Omit<AdminLogQueryDTO, 'page' | 'size'>>({
-  adminName: '',
-  result: undefined,
-  requestMethod: undefined,
+const searchForm = reactive<Omit<OrderQueryDTO, 'page' | 'size'>>({
+  phone: '',
+  wechatId: '',
+  operatorName: '',
+  orderType: undefined,
 })
 
 const handleSearch = () => {
@@ -18,9 +19,10 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  searchForm.adminName = ''
-  searchForm.result = undefined
-  searchForm.requestMethod = undefined
+  searchForm.phone = ''
+  searchForm.wechatId = ''
+  searchForm.operatorName = ''
+  searchForm.orderType = undefined
   emit('reset')
 }
 </script>
@@ -38,37 +40,42 @@ const handleReset = () => {
     </div>
     <el-form :model="searchForm" inline class="search-form">
       <div class="filter-fields">
-        <el-form-item label="管理员">
+        <el-form-item label="手机号">
           <el-input
-            v-model="searchForm.adminName"
-            placeholder="请输入管理员姓名"
+            v-model="searchForm.phone"
+            placeholder="模糊搜索"
             clearable
-            style="width: 180px"
+            style="width: 160px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="操作结果">
-          <el-select
-            v-model="searchForm.result"
-            placeholder="全部"
+        <el-form-item label="微信号">
+          <el-input
+            v-model="searchForm.wechatId"
+            placeholder="精准匹配"
             clearable
-            style="width: 130px"
-          >
-            <el-option label="成功" value="SUCCESS" />
-            <el-option label="失败" value="FAIL" />
-          </el-select>
+            style="width: 150px"
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
-        <el-form-item label="请求方法">
+        <el-form-item label="操作人">
+          <el-input
+            v-model="searchForm.operatorName"
+            placeholder="模糊搜索"
+            clearable
+            style="width: 140px"
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="订单类型">
           <el-select
-            v-model="searchForm.requestMethod"
+            v-model="searchForm.orderType"
             placeholder="全部"
             clearable
-            style="width: 130px"
+            style="width: 120px"
           >
-            <el-option label="GET" value="GET" />
-            <el-option label="POST" value="POST" />
-            <el-option label="PUT" value="PUT" />
-            <el-option label="DELETE" value="DELETE" />
+            <el-option label="新开通" value="new" />
+            <el-option label="续费升级" value="renewal" />
           </el-select>
         </el-form-item>
       </div>
