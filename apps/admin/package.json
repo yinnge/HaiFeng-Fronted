@@ -2,7 +2,7 @@
   "name": "@haifeng/admin",
   "version": "1.0.0",
   "private": true,
-  "description": "海峰未来规划院 - 管理后台",
+  "description": "海枫未来规划院 - 管理后台",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,6 +14,7 @@
     "@element-plus/icons-vue": "^2.3.1",
     "@haifeng/shared": "workspace:*",
     "axios": "^1.6.8",
+    "china-area-data": "^5.0.1",
     "element-plus": "^2.7.3",
     "pinia": "^2.1.7",
     "vue": "^3.4.27",

@@ -181,7 +181,7 @@ export interface ResetPasswordDTO {
 
 - **背景**：`bg-gradient-to-b from-slate-50 to-white`（与首页一致）
 - **容器**：白色圆角卡片 `rounded-2xl bg-white p-8 shadow-lg`
-- **Logo**：居中海峰 Logo + 标题
+- **Logo**：居中海枫 Logo + 标题
 - **输入框**：`rounded-lg border border-gray-200 px-4 py-3 focus:border-orange-400`
 - **主按钮**：`bg-gradient-to-r from-orange-500 to-amber-500` 渐变
 - **文本链接**：`text-orange-500 hover:text-orange-600`

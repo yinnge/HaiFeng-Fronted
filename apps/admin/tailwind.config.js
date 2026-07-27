@@ -8,7 +8,7 @@ export default {
   ],
   theme: {
     extend: {
-      // 海峰品牌色彩系统
+      // 海枫品牌色彩系统
       colors: {
         brand: {
           orange: '#e8722a',

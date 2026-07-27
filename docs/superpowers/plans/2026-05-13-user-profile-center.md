@@ -698,7 +698,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
-  document.title = `${to.meta.title || '海峰未来规划院'}`
+  document.title = `${to.meta.title || '海枫未来规划院'}`
 
   // 检查是否需要登录
   if (to.meta.requiresAuth) {

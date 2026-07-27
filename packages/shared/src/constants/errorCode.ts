@@ -17,6 +17,7 @@ export const ErrorCode = {
   MEMBER_EXPIRED: 1003,
   REQUIRE_PRO: 1004,       // 需要专业版及以上
   REQUIRE_VIP: 1005,       // 需要旗舰版
+  TOTP_REQUIRED: 20001,    // TOTP 二次验证
 } as const
 
 export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode]

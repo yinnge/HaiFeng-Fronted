@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import SiteFooter from '@/components/SiteFooter.vue'
-import logoMain from '@/assets/images/logo-main.png'
+import AppHeader from '@/components/AppHeader.vue'
 import { ProvinceOptions } from '@haifeng/shared'
 import { getTeacherList } from '@/api/employment/teacher'
 import type { TeacherPositionListVO, TeacherQueryDTO } from '@/types/employment/teacher'
@@ -108,14 +108,6 @@ function onPageSizeChange(newSize: number) {
   fetchList()
 }
 
-function goLogin() {
-  router.push('/login')
-}
-
-function goProfile() {
-  router.push('/profile')
-}
-
 async function goDetail(id: number) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
@@ -149,25 +141,7 @@ onMounted(fetchList)
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center justify-between px-6 py-4">
-        <div class="flex items-center gap-3">
-          <img :src="logoMain" alt="海枫未来规划院" class="h-10 w-10 object-contain" />
-          <h1 class="text-xl font-bold text-gray-800">海枫未来规划院</h1>
-        </div>
-        <div class="flex items-center gap-6">
-          <router-link to="/employment/jobs" class="text-orange-500 font-semibold border-b-2 border-orange-500 pb-0.5">
-            岗位搜索
-          </router-link>
-          <button class="text-gray-600 hover:text-orange-500 transition-colors font-medium" @click="goProfile">
-            个人中心
-          </button>
-          <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-orange-300" @click="goLogin">
-            登录
-          </button>
-        </div>
-      </div>
-    </header>
+    <AppHeader :show-nav-links="true" />
 
     <main class="flex-1">
       <div class="container mx-auto px-6 py-6 flex gap-6">

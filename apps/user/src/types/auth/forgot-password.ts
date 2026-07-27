@@ -1,7 +1,6 @@
-export interface CaptchaVO {
-  uuid: string
-  image: string
-}
+import type { CaptchaVO } from './index'
+
+export type { CaptchaVO }
 
 export interface SendCodeDTO {
   phone: string

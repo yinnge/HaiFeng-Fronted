@@ -4,15 +4,13 @@ import { ref } from 'vue'
 import BrandSection from './components/BrandSection.vue'
 import LoginCard from './components/LoginCard.vue'
 import TotpModal from './components/TotpModal.vue'
-import ForgotPasswordModal from './components/ForgotPasswordModal.vue'
 import AgreementModal from './components/AgreementModal.vue'
 import DotPattern from '@/components/ui/DotPattern.vue'
 import Particles from '@/components/ui/Particles.vue'
 import { useAuth } from './composables/useAuth'
 
-const { loading, showTotpModal, totpVerify, closeTotpModal } = useAuth()
+const { loading, showTotpModal, adminLoginHandler, totpVerify, closeTotpModal } = useAuth()
 
-const showForgotPassword = ref(false)
 const showAgreement = ref(false)
 const agreementType = ref<'user' | 'privacy'>('user')
 
@@ -50,14 +48,15 @@ const handleShowAgreement = (type: 'user' | 'privacy') => {
     />
 
     <!-- 左侧品牌区域 - 更往右偏移 -->
-    <div class="flex-1 flex items-center justify-center relative z-10 pl-20 lg:pl-32">
+    <div class="flex-1 flex items-center justify-center relative z-10 pl-20 lg:pl-32 animate-fade-in">
       <BrandSection />
     </div>
 
     <!-- 右侧登录卡片 -->
-    <div class="flex-1 flex items-center justify-center relative z-10 pr-8 lg:pr-16">
+    <div class="flex-1 flex items-center justify-center relative z-10 pr-8 lg:pr-16 animate-slide-in-right">
       <LoginCard
-        @forgot-password="showForgotPassword = true"
+        :loading="loading"
+        :admin-login-handler="adminLoginHandler"
         @need-totp="showTotpModal = true"
       />
     </div>
@@ -77,9 +76,6 @@ const handleShowAgreement = (type: 'user' | 'privacy') => {
       @confirm="totpVerify"
       @update:visible="closeTotpModal"
     />
-
-    <!-- 忘记密码弹窗 -->
-    <ForgotPasswordModal v-model:visible="showForgotPassword" />
 
     <!-- 协议弹窗 -->
     <AgreementModal v-model:visible="showAgreement" :type="agreementType" />
@@ -102,5 +98,23 @@ const handleShowAgreement = (type: 'user' | 'privacy') => {
     radial-gradient(ellipse 90% 80% at 20% 30%, rgba(251, 191, 36, 0.1) 0%, rgba(254, 243, 226, 0.05) 50%, transparent 90%),
     /* 底部渐变 - 保持浅色 */
     linear-gradient(to bottom right, #fef7ed 0%, #fef3e2 30%, #fefbf6 60%, #ffffff 100%);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 1.6s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 1.6s ease-out 0.6s both;
 }
 </style>

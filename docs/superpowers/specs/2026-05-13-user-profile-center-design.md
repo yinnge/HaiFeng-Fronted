@@ -415,7 +415,7 @@ const routes: RouteRecordRaw[] = [
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
 
-  document.title = `${to.meta.title || '海峰未来规划院'}`
+  document.title = `${to.meta.title || '海枫未来规划院'}`
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn()) {
     // 存储目标路由，登录后跳回

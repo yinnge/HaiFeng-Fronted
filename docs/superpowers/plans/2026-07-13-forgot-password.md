@@ -233,8 +233,8 @@ function goHome() {
 
       <!-- Logo -->
       <div class="mb-2 flex cursor-pointer items-center justify-center" @click="goHome">
-        <img :src="logoImage" alt="海峰未来规划院" class="h-16 w-16 object-contain" />
-        <h1 class="ml-2 text-xl font-bold text-gray-800">海峰未来规划院</h1>
+        <img :src="logoImage" alt="海枫未来规划院" class="h-16 w-16 object-contain" />
+        <h1 class="ml-2 text-xl font-bold text-gray-800">海枫未来规划院</h1>
       </div>
       <p class="mb-6 text-center text-gray-500">重置密码</p>
 

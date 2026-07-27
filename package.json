@@ -2,7 +2,7 @@
   "name": "haifeng-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "海峰未来规划院 - 前端 Monorepo",
+  "description": "海枫未来规划院 - 前端 Monorepo",
   "scripts": {
     "dev:admin": "pnpm --filter @haifeng/admin dev",
     "dev:user": "pnpm --filter @haifeng/user dev",

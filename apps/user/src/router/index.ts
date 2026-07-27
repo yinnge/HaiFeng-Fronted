@@ -10,6 +10,48 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' },
   },
   {
+    path: '/gaokao',
+    name: 'GaokaoEntry',
+    component: () => import('@/views/gaokao/index.vue'),
+    meta: { title: '高考报志愿', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/archive',
+    name: 'GaokaoArchive',
+    component: () => import('@/views/gaokao/Archive.vue'),
+    meta: { title: '高考档案', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/groups',
+    name: 'GaokaoGroups',
+    component: () => import('@/views/gaokao/Groups.vue'),
+    meta: { title: '专业组查询', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/plans',
+    name: 'GaokaoPlans',
+    component: () => import('@/views/gaokao/PlansList.vue'),
+    meta: { title: '志愿表', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/plans/:id',
+    name: 'GaokaoPlanDetail',
+    component: () => import('@/views/gaokao/PlanDetail.vue'),
+    meta: { title: '志愿表详情', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/pdf-history/:planId',
+    name: 'PdfHistory',
+    component: () => import('@/views/gaokao/PdfHistory.vue'),
+    meta: { title: 'AI报告记录', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/pdf-report/:recordId',
+    name: 'PdfReportDetail',
+    component: () => import('@/views/gaokao/PdfReportDetail.vue'),
+    meta: { title: 'AI分析报告', requiresAuth: true },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login/index.vue'),
@@ -331,7 +373,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
-  document.title = `${to.meta.title || '海峰未来规划院'}`
+  document.title = `${to.meta.title || '海枫未来规划院'}`
 
   // 检查是否需要登录
   if (to.meta.requiresAuth) {

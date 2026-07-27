@@ -39,11 +39,13 @@ const createRequest = (baseURL: string): AxiosInstance => {
 
       // 业务错误处理
       if (data.code !== ErrorCode.SUCCESS) {
+        // 20001: TOTP 二次验证，不是错误，放行给调用方处理
+        if (data.code === ErrorCode.TOTP_REQUIRED) {
+          return response
+        }
+
         const message = data.msg || ErrorMessage[data.code] || '请求失败'
-
-        // 可以在这里添加全局错误提示 (如 ElMessage)
         console.error(`[API Error] ${data.code}: ${message}`)
-
         return Promise.reject(new Error(message))
       }
 
@@ -115,7 +117,7 @@ const createRequest = (baseURL: string): AxiosInstance => {
       const message = error.response?.data?.msg || error.message || '网络错误'
       console.error(`[HTTP Error] ${error.response?.status}: ${message}`)
 
-      return Promise.reject(error)
+      return Promise.reject(new Error(message))
     }
   )
 

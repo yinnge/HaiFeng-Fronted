@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import SiteFooter from '@/components/SiteFooter.vue'
-import logoMain from '@/assets/images/logo-main.png'
+import AppHeader from '@/components/AppHeader.vue'
 import { getAnnouncements, getPlanners, getInstitutions } from '@/api/home'
 import type { AnnouncementListVO, PlannerListVO, InstitutionListVO } from '@/types/home'
 import { ProvinceOptions } from '@haifeng/shared'
@@ -58,14 +58,6 @@ const animateStats = () => {
 let observer: IntersectionObserver | null = null
 
 const router = useRouter()
-
-function goLogin() {
-  router.push('/login')
-}
-
-function goProfile() {
-  router.push('/profile')
-}
 
 // ===== Announcement =====
 const announcements = ref<AnnouncementListVO[]>([])
@@ -213,44 +205,7 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center justify-between px-6 py-4">
-        <div class="flex items-center gap-3">
-          <img
-            :src="logoMain"
-            alt="海枫未来规划院"
-            class="h-10 w-10 object-contain"
-          />
-          <h1 class="text-xl font-bold text-gray-800">海枫未来规划院</h1>
-        </div>
-        <div class="flex items-center gap-6">
-          <router-link
-            to="/employment/jobs"
-            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
-          >
-            岗位搜索
-          </router-link>
-          <router-link
-            to="/special"
-            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
-          >
-            特殊通道
-          </router-link>
-          <button
-            class="text-gray-600 hover:text-orange-500 transition-colors font-medium"
-            @click="goProfile"
-          >
-            个人中心
-          </button>
-          <button
-            class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-orange-300"
-            @click="goLogin"
-          >
-            登录
-          </button>
-        </div>
-      </div>
-    </header>
+    <AppHeader :show-nav-links="true" />
 
     <main class="flex-1">
       <div class="container mx-auto px-6 py-20 text-center">
@@ -266,12 +221,15 @@ onUnmounted(() => {
           基于大数据分析和AI算法，为您提供科学、精准的高考志愿填报方案，助您圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
         </p>
         <div class="flex flex-col items-center justify-center gap-4 md:flex-row">
-          <button class="group w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-4 text-lg font-semibold text-white hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 md:w-auto flex items-center justify-center gap-2">
-            开始规划
+          <router-link
+            to="/gaokao"
+            class="group w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-4 text-lg font-semibold text-white hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 md:w-auto flex items-center justify-center gap-2"
+          >
+            高考报志愿
             <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
-          </button>
+          </router-link>
           <button class="w-full rounded-xl border-2 border-gray-200 px-8 py-4 text-lg font-semibold text-gray-700 hover:border-orange-300 hover:text-orange-500 transition-all md:w-auto">
             了解更多
           </button>
