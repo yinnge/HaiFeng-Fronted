@@ -31,7 +31,7 @@ const queryParams = reactive<CityQueryDTO>({
   cityName: '',
   province: '',
   region: '',
-  isDeleted: false,
+  isDeleted: null,
 })
 
 const dialogVisible = ref(false)
@@ -121,7 +121,7 @@ const handleReset = () => {
   queryParams.cityName = ''
   queryParams.province = ''
   queryParams.region = ''
-  queryParams.isDeleted = false
+  queryParams.isDeleted = null
   queryParams.page = 1
   fetchData()
 }

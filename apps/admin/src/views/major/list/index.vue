@@ -454,18 +454,10 @@ onMounted(() => { fetchData() })
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
             <el-button type="success" link @click="openDialog('editDetail', row.id)">修改详情</el-button>
             <el-button
-              v-if="row.status === 1"
-              type="info"
+              :type="row.status === 1 ? 'info' : 'success'"
               link
               @click="handleToggleStatus(row)"
-            >禁用</el-button>
-            <el-button
-              v-else
-              type="success"
-              link
-              @click="handleRestore(row.id)"
-            >恢复</el-button>
-            <el-button type="warning" link @click="handleDelete(row.id)">软删除</el-button>
+            >{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>

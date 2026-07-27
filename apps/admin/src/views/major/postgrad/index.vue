@@ -392,13 +392,12 @@ onMounted(() => { fetchData() })
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="320" align="center" fixed="right">
+        <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
             <el-button v-if="row.status === 1" type="info" link @click="handleToggleStatus(row)">禁用</el-button>
             <el-button v-else type="success" link @click="handleRestore(row.id)">恢复</el-button>
-            <el-button type="warning" link @click="handleDelete(row.id)">软删除</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>

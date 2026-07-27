@@ -44,7 +44,7 @@ const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const detailData = ref<DepartmentDetailVO | null>(null)
 const formData = reactive<DepartmentAddDTO>({
-  universityId: 0,
+  universityId: '',
   departmentName: '',
   departmentType: '',
   pageTitle: '',
@@ -60,10 +60,11 @@ const editFormData = reactive<DepartmentUpdateDTO>({
   sortOrder: undefined,
   status: 1,
 })
-const fetchUniversityOptions = async () => {
+const fetchUniversityOptions = async (name?: string) => {
   try {
-    const res = await getUniversityPage({ page: 1, size: 1000 } as any)
-    console.log('院校列表响应:', res.data)
+    const params: Record<string, any> = { page: 1, size: 100 }
+    if (name) params.name = name
+    const res = await getUniversityPage(params as any)
     if (res.data.code === 200) {
       universityOptions.value = res.data.data.records.map((r: any) => ({
         label: r.name,
@@ -76,6 +77,14 @@ const fetchUniversityOptions = async () => {
     console.error('获取院校列表失败:', e)
     ElMessage.error('获取院校列表失败，请检查网络或登录状态')
   }
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    fetchUniversityOptions(query || undefined)
+  }, 300)
 }
 const fetchData = async () => {
   loading.value = true
@@ -127,7 +136,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
   currentId.value = id || null
   if (mode === 'add') {
     dialogTitle.value = '新增院系'
-    formData.universityId = 0
+    formData.universityId = ''
     formData.departmentName = ''
     formData.departmentType = ''
     formData.pageTitle = ''
@@ -350,8 +359,8 @@ onMounted(() => {
             clearable
             style="width: 120px"
           >
-            <el-option label="展示" :value="1" />
-            <el-option label="下架" :value="0" />
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -393,7 +402,7 @@ onMounted(() => {
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '展示' : '禁用' }}
+              {{ row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -452,7 +461,7 @@ onMounted(() => {
             </el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="detailData.status === 1 ? 'success' : 'info'" size="small">
-                {{ detailData.status === 1 ? '展示' : '下架' }}
+                {{ detailData.status === 1 ? '启用' : '禁用' }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
@@ -554,8 +563,11 @@ onMounted(() => {
             <el-form-item label="院校" required>
               <el-select
                 v-model="formData.universityId"
-                placeholder="请选择院校"
+                placeholder="请输入院校名称搜索"
                 filterable
+                remote
+                :remote-method="handleUniversitySearch"
+                :loading="formLoading"
                 style="width: 100%"
               >
                 <el-option
@@ -602,8 +614,11 @@ onMounted(() => {
             <el-form-item label="院校" required>
               <el-select
                 v-model="editFormData.universityId"
-                placeholder="请选择院校"
+                placeholder="请输入院校名称搜索"
                 filterable
+                remote
+                :remote-method="handleUniversitySearch"
+                :loading="formLoading"
                 style="width: 100%"
               >
                 <el-option

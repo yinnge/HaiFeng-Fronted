@@ -7,6 +7,7 @@ export interface CertificateListVO {
   registrationTime: string | null
   examTime: string | null
   examFee: number | null
+  isDeleted: boolean
   updatedAt: string
 }
 
@@ -32,6 +33,7 @@ export interface CertificateQueryDTO {
   category?: string
   certLevel?: string
   applicableMajor?: string
+  isDeleted?: boolean
   page: number
   size: number
 }

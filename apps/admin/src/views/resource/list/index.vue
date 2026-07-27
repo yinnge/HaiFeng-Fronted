@@ -16,8 +16,6 @@ import {
 
   updateResourceStatus,
 
-  deleteResource,
-
   batchDeleteResource,
 
   importResource,
@@ -388,45 +386,23 @@ const handleToggleStatus = async (row: ResourceListVO) => {
 
 
 
-const handleDelete = async (id: string) => {
-
-  try {
-
-    await ElMessageBox.confirm('确定要下架该资源吗？下架后可恢复。', '提示', {
-
-      type: 'warning', confirmButtonText: '确定下架', cancelButtonText: '取消',
-
-    })
-
-    const res = await deleteResource(id)
-
-    if (res.data.code === 200) { ElMessage.success('下架成功'); fetchData() }
-
-    else { ElMessage.error(res.data.msg || '下架失败') }
-
-  } catch { /* cancel */ }
-
-}
-
-
-
 const handleBatchDelete = async () => {
 
-  if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要下架的资源'); return }
+  if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要禁用的资源'); return }
 
   try {
 
-    await ElMessageBox.confirm(`确定要批量下架选中的${selectedIds.value.length} 条资源吗？下架后可恢复。`, '提示', {
+    await ElMessageBox.confirm(`确定要批量禁用选中的${selectedIds.value.length} 条资源吗？`, '提示', {
 
-      type: 'warning', confirmButtonText: '确定批量下架', cancelButtonText: '取消',
+      type: 'warning', confirmButtonText: '确定批量禁用', cancelButtonText: '取消',
 
     })
 
     const res = await batchDeleteResource(selectedIds.value)
 
-    if (res.data.code === 200) { ElMessage.success('批量下架成功'); selectedIds.value = []; fetchData() }
+    if (res.data.code === 200) { ElMessage.success('批量禁用成功'); selectedIds.value = []; fetchData() }
 
-    else { ElMessage.error(res.data.msg || '批量下架失败') }
+    else { ElMessage.error(res.data.msg || '批量禁用失败') }
 
   } catch { /* cancel */ }
 
@@ -520,7 +496,7 @@ onMounted(() => { fetchData() })
 
         <el-button type="success" @click="importDialogVisible = true">Excel导入</el-button>
 
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量下架</el-button>
+        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量禁用</el-button>
 
       </div>
 
@@ -558,7 +534,7 @@ onMounted(() => { fetchData() })
 
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
 
-        <el-table-column label="操作" width="260" align="center" fixed="right">
+        <el-table-column label="操作" width="200" align="center" fixed="right">
 
           <template #default="{ row }">
 
@@ -571,8 +547,6 @@ onMounted(() => { fetchData() })
               {{ row.isDeleted ? '启用' : '禁用' }}
 
             </el-button>
-
-            <el-button type="danger" link @click="handleDelete(row.id)">下架</el-button>
 
           </template>
 

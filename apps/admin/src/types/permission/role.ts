@@ -9,6 +9,7 @@ export interface RoleVO {
   status: number
   createdAt: string
   updatedAt: string
+  moduleIds?: string[]
 }
 
 /** 角色查询 DTO */

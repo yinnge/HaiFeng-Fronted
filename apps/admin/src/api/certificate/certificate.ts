@@ -26,6 +26,10 @@ export const updateCertificate = (data: CertificateUpdateDTO) => {
   return request.put<R<void>>(`${PREFIX}/update`, data)
 }
 
+export const updateCertificateStatus = (id: string, isDeleted: boolean) => {
+  return request.put<R<void>>(`${PREFIX}/${id}/status`, { isDeleted })
+}
+
 export const softDeleteCertificate = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/soft/${id}`)
 }
@@ -36,4 +40,8 @@ export const hardDeleteCertificate = (id: string) => {
 
 export const batchDeleteCertificate = (ids: number[]) => {
   return request.post<R<void>>(`${PREFIX}/batch/delete`, { ids })
+}
+
+export const batchUpdateCertificateStatus = (ids: number[], isDeleted: boolean) => {
+  return request.put<R<void>>(`${PREFIX}/batch/status`, { ids, isDeleted })
 }
