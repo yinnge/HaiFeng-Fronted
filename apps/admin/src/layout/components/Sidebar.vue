@@ -215,33 +215,54 @@ function handleMenuSelect(index: string) {
 }
 
 .sidebar-menu :deep(.el-sub-menu__title .el-sub-menu__icon-arrow) {
-  color: rgba(255, 255, 255, 0.75);
+  color: #FFFFFF;
+}
+
+/* 1级菜单：右移50px */
+.sidebar-menu > .el-sub-menu > .el-sub-menu__title {
+  padding-left: 50px !important;
 }
 
 .sidebar-menu :deep(.el-menu-item),
 .sidebar-menu :deep(.el-sub-menu__title) {
   transition: background-color 200ms ease;
-  color: rgba(255, 255, 255, 0.75);
+  color: #FFFFFF;
   font-size: 15px;
   height: 48px;
   line-height: 48px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
   margin: 4px 8px;
   border-radius: 8px;
   width: calc(100% - 16px);
-  padding-left: 50px;
 }
 
 .sidebar-menu :deep(.el-menu-item span),
 .sidebar-menu :deep(.el-sub-menu__title span) {
-  text-align: center;
   padding-left: 5px;
+}
+
+/* 2级 sub-menu 标题居中 */
+.sidebar-menu .el-sub-menu .el-menu .el-sub-menu .el-sub-menu__title {
+  display: flex;
+  justify-content: center;
+}
+
+/* 2级 menu-item 居中 */
+.sidebar-menu .el-sub-menu .el-menu .el-menu-item {
+  display: flex;
+  justify-content: center;
+}
+
+/* 3级 menu-item 居中 */
+.sidebar-menu .el-sub-menu .el-sub-menu .el-menu .el-menu-item {
+  display: flex;
+  justify-content: center;
 }
 
 .sidebar-menu :deep(.el-menu-item:hover),
 .sidebar-menu :deep(.el-sub-menu__title:hover) {
   background-color: rgba(255, 255, 255, 0.12) !important;
-  color: rgba(255, 255, 255, 0.95);
+  color: #FFFFFF;
 }
 
 .sidebar-menu :deep(.el-menu-item.is-active) {
