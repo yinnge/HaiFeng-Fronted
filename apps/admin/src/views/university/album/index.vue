@@ -46,7 +46,7 @@ const currentId = ref<string | null>(null)
 const detailData = ref<CampusGalleryDetailVO | null>(null)
 
 const formData = reactive<CampusGalleryAddDTO>({
-  universityId: 0,
+  universityId: '',
   imageType: '',
   imageUrl: '',
   sortOrder: undefined,
@@ -59,10 +59,11 @@ const editFormData = reactive<CampusGalleryUpdateDTO>({
   status: 1,
 })
 
-const fetchUniversityOptions = async () => {
+const fetchUniversityOptions = async (name?: string) => {
   try {
-    const res = await getUniversityPage({ page: 1, size: 1000 } as any)
-    console.log('院校列表响应:', res.data)
+    const params: Record<string, any> = { page: 1, size: 100 }
+    if (name) params.name = name
+    const res = await getUniversityPage(params as any)
     if (res.data.code === 200) {
       universityOptions.value = res.data.data.records.map((r: any) => ({
         label: r.name,
@@ -75,6 +76,14 @@ const fetchUniversityOptions = async () => {
     console.error('获取院校列表失败:', e)
     ElMessage.error('获取院校列表失败，请检查网络或登录状态')
   }
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    fetchUniversityOptions(query || undefined)
+  }, 300)
 }
 
 const fetchData = async () => {
@@ -132,7 +141,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
   if (mode === 'add') {
     dialogTitle.value = '新增校园图片'
-    formData.universityId = 0
+    formData.universityId = ''
     formData.imageType = ''
     formData.imageUrl = ''
     formData.sortOrder = undefined
@@ -464,8 +473,11 @@ onMounted(() => {
             <el-form-item label="院校" required>
               <el-select
                 v-model="formData.universityId"
-                placeholder="请选择院校"
+                placeholder="请输入院校名称搜索"
                 filterable
+                remote
+                :remote-method="handleUniversitySearch"
+                :loading="formLoading"
                 style="width: 100%"
               >
                 <el-option

@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getModuleTree } from '@/api/permission/module'
-import { bindRoleModules } from '@/api/permission/role'
+import { bindRoleModules, getRoleDetail } from '@/api/permission/role'
 import type { ModuleTreeVO } from '@/types/permission/module'
 
 const props = defineProps<{
@@ -24,9 +24,15 @@ const treeRef = ref()
 const fetchModuleTree = async () => {
   loading.value = true
   try {
-    const res = await getModuleTree()
-    if (res.data.code === 200) {
-      treeData.value = res.data.data
+    const [treeRes, roleRes] = await Promise.all([
+      getModuleTree(),
+      props.roleId ? getRoleDetail(props.roleId) : Promise.resolve(null),
+    ])
+    if (treeRes.data.code === 200) {
+      treeData.value = treeRes.data.data
+    }
+    if (roleRes?.data.code === 200) {
+      defaultCheckedKeys.value = roleRes.data.data.moduleIds || []
     }
   } catch {
     ElMessage.error('获取模块树失败')
@@ -88,7 +94,7 @@ watch(
       show-checkbox
       node-key="id"
       :default-checked-keys="defaultCheckedKeys"
-      :default-expand-all="true"
+      :default-expand-all="false"
       highlight-current
       v-loading="loading"
     />

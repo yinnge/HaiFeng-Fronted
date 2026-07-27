@@ -40,7 +40,7 @@ export const deleteIndustry = (id: string) => {
 }
 
 export const batchDeleteIndustry = (ids: number[]) => {
-  return request.post<R<void>>(`${PREFIX}/batch/delete`, ids)
+  return request.post<R<void>>(`${PREFIX}/batch/delete`, { ids })
 }
 
 export const importIndustry = (file: File) => {

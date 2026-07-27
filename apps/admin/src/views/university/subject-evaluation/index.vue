@@ -50,7 +50,7 @@ const currentId = ref<string | null>(null)
 const detailData = ref<SubjectEvaluationDetailVO | null>(null)
 
 const formData = reactive<SubjectEvaluationAddDTO>({
-  universityId: 0,
+  universityId: '',
   disciplineCode: '',
   disciplineName: '',
   evaluationRound: '',
@@ -73,9 +73,11 @@ const getGradeTagType = (grade: string) => {
   return 'info'
 }
 
-const fetchUniversityOptions = async () => {
+const fetchUniversityOptions = async (name?: string) => {
   try {
-    const res = await getUniversityPage({ page: 1, size: 1000 } as any)
+    const params: Record<string, any> = { page: 1, size: 100 }
+    if (name) params.name = name
+    const res = await getUniversityPage(params as any)
     if (res.data.code === 200) {
       universityOptions.value = res.data.data.records.map((r: any) => ({
         label: r.name,
@@ -85,6 +87,14 @@ const fetchUniversityOptions = async () => {
   } catch {
     // silent
   }
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    fetchUniversityOptions(query || undefined)
+  }, 300)
 }
 
 const fetchData = async () => {
@@ -148,7 +158,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
   if (mode === 'add') {
     dialogTitle.value = '新增评估'
-    formData.universityId = 0
+    formData.universityId = ''
     formData.disciplineCode = ''
     formData.disciplineName = ''
     formData.evaluationRound = ''
@@ -489,7 +499,6 @@ onMounted(() => {
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">禁用</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">永久删除</el-button>
           </template>
         </el-table-column>
@@ -546,8 +555,11 @@ onMounted(() => {
             <el-form-item label="院校" required>
               <el-select
                 v-model="formData.universityId"
-                placeholder="请选择院校"
+                placeholder="请输入院校名称搜索"
                 filterable
+                remote
+                :remote-method="handleUniversitySearch"
+                :loading="formLoading"
                 style="width: 100%"
               >
                 <el-option

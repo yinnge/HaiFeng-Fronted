@@ -7,7 +7,6 @@ import { getAdminDetail, addAdmin, updateAdmin } from '@/api/permission/admin'
 import { getRolePage } from '@/api/permission/role'
 import type { AdminAddDTO, AdminUpdateDTO } from '@/types/permission/admin'
 import type { RoleVO } from '@/types/permission/role'
-import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -21,8 +20,6 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const showExitConfirm = ref(false)
-const originalData = ref<string>('')
 const roleOptions = ref<RoleVO[]>([])
 
 const isEdit = computed(() => !!props.adminId)
@@ -71,13 +68,9 @@ const rules: FormRules = {
   ],
 }
 
-const hasChanges = computed(() => {
-  return JSON.stringify(form) !== originalData.value
-})
-
 const fetchRoleOptions = async () => {
   try {
-    const res = await getRolePage({ page: 1, size: 1000, status: 1 })
+    const res = await getRolePage({ page: 1, size: 100, status: 1 })
     if (res.data.code === 200) {
       roleOptions.value = res.data.data.records
     }
@@ -102,7 +95,6 @@ const fetchDetail = async () => {
       form.avatar = data.avatar || ''
       form.roleId = data.roleId
       form.status = data.status
-      originalData.value = JSON.stringify(form)
     }
   } catch (error) {
     ElMessage.error('获取管理员详情失败')
@@ -121,21 +113,10 @@ const resetForm = () => {
   form.avatar = ''
   form.roleId = 0
   form.status = 1
-  originalData.value = ''
   formRef.value?.resetFields()
 }
 
 const handleClose = () => {
-  if (hasChanges.value) {
-    showExitConfirm.value = true
-  } else {
-    emit('update:visible', false)
-    resetForm()
-  }
-}
-
-const handleDiscard = () => {
-  showExitConfirm.value = false
   emit('update:visible', false)
   resetForm()
 }
@@ -162,7 +143,6 @@ const handleSave = async () => {
       const res = await updateAdmin(props.adminId, data)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
-        showExitConfirm.value = false
         emit('update:visible', false)
         emit('success')
         resetForm()
@@ -196,17 +176,11 @@ const handleSave = async () => {
   }
 }
 
-const handleSaveAndClose = async () => {
-  await handleSave()
-}
-
 watch(
   () => props.visible,
   (val) => {
     if (val && props.adminId) {
       fetchDetail()
-    } else if (val) {
-      originalData.value = JSON.stringify(form)
     }
   }
 )
@@ -273,11 +247,4 @@ onMounted(() => {
       <el-button type="primary" :loading="loading" @click="handleSave">保存</el-button>
     </template>
   </el-dialog>
-
-  <ExitConfirmModal
-    v-model:visible="showExitConfirm"
-    @cancel="showExitConfirm = false"
-    @discard="handleDiscard"
-    @save="handleSaveAndClose"
-  />
 </template>

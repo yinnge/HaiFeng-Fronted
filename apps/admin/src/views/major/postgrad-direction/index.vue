@@ -40,8 +40,8 @@ const currentId = ref<string | null>(null)
 const detailData = ref<MajorPostgradDirectionDetailVO | null>(null)
 
 const formData = reactive<MajorPostgradDirectionAddDTO>({
-  majorId: 0,
-  postgradMajorId: 0,
+  majorId: '',
+  postgradMajorId: '',
   sortOrder: 0,
 })
 
@@ -110,8 +110,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
   if (mode === 'add') {
     dialogTitle.value = '新增关联'
-    formData.majorId = 0
-    formData.postgradMajorId = 0
+    formData.majorId = ''
+    formData.postgradMajorId = ''
     formData.sortOrder = 0
     majorOptions.value = []
     postgradMajorOptions.value = []
@@ -340,7 +340,7 @@ onMounted(() => { fetchData() })
                 filterable
                 remote
                 reserve-keyword
-                placeholder="输入关键字搜索专业"
+                placeholder="请输入专业搜索"
                 :remote-method="searchMajor"
                 style="width: 100%"
               >
@@ -353,7 +353,7 @@ onMounted(() => { fetchData() })
                 filterable
                 remote
                 reserve-keyword
-                placeholder="输入关键字搜索专业"
+                placeholder="请输入专业搜索"
                 :remote-method="searchPostgradMajor"
                 style="width: 100%"
               >

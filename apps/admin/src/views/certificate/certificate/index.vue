@@ -14,11 +14,15 @@ import {
 
   updateCertificate,
 
+  updateCertificateStatus,
+
   softDeleteCertificate,
 
   hardDeleteCertificate,
 
   batchDeleteCertificate,
+
+  batchUpdateCertificateStatus,
 
 } from '@/api/certificate/certificate'
 
@@ -61,6 +65,8 @@ const queryParams = reactive<CertificateQueryDTO>({
   certLevel: undefined,
 
   applicableMajor: '',
+
+  isDeleted: undefined,
 
 })
 
@@ -128,6 +134,8 @@ const fetchData = async () => {
 
     if (queryParams.applicableMajor) params.applicableMajor = queryParams.applicableMajor
 
+    if (queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
+
     const res = await getCertificatePage(params as CertificateQueryDTO)
 
     if (res.data.code === 200) {
@@ -175,6 +183,8 @@ const handleReset = () => {
   queryParams.certLevel = undefined
 
   queryParams.applicableMajor = ''
+
+  queryParams.isDeleted = undefined
 
   queryParams.page = 1
 
@@ -470,23 +480,21 @@ const handleSubmit = async () => {
 
 
 
-const handleSoftDelete = async (id: string, name: string) => {
+const handleToggleStatus = async (row: CertificateListVO) => {
+
+  const newStatus = !row.isDeleted
+
+  const actionText = newStatus ? '启用' : '禁用'
 
   try {
 
-    await ElMessageBox.confirm(
+    await ElMessageBox.confirm(`确定${actionText}该证书吗？`, '提示')
 
-      `确定要软删除证书"${name}"吗？数据将保留可恢复。`,
-
-      '提示'
-
-    )
-
-    const res = await softDeleteCertificate(id)
+    const res = await updateCertificateStatus(row.id, newStatus)
 
     if (res.data.code === 200) {
 
-      ElMessage.success('软删除成功')
+      ElMessage.success(`${actionText}成功`)
 
       fetchData()
 
@@ -512,11 +520,11 @@ const handleHardDelete = async (id: string, name: string) => {
 
     await ElMessageBox.confirm(
 
-      `确定要硬删除证书"${name}"吗？数据不可恢复！`,
+      `确定要删除证书"${name}"吗？数据不可恢复！`,
 
       '警告',
 
-      { type: 'warning', confirmButtonText: '确定硬删除', cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
 
     )
 
@@ -524,7 +532,7 @@ const handleHardDelete = async (id: string, name: string) => {
 
     if (res.data.code === 200) {
 
-      ElMessage.success('硬删除成功')
+      ElMessage.success('删除成功')
 
       fetchData()
 
@@ -558,7 +566,7 @@ const handleBatchDelete = async () => {
 
     await ElMessageBox.confirm(
 
-      `确定要批量硬删除选中的${selectedIds.value.length} 条证书记录吗？数据不可恢复！`,
+      `确定要批量删除选中的${selectedIds.value.length} 条证书记录吗？数据不可恢复！`,
 
       '警告',
 
@@ -571,6 +579,54 @@ const handleBatchDelete = async () => {
     if (res.data.code === 200) {
 
       ElMessage.success('批量删除成功')
+
+      selectedIds.value = []
+
+      fetchData()
+
+    } else {
+
+      ElMessage.error(res.data.msg || '操作失败')
+
+    }
+
+  } catch {
+
+    // 取消
+
+  }
+
+}
+
+
+
+const handleBatchDisable = async () => {
+
+  if (selectedIds.value.length === 0) {
+
+    ElMessage.warning('请选择要禁用的证书')
+
+    return
+
+  }
+
+  try {
+
+    await ElMessageBox.confirm(
+
+      `确定要批量禁用选中的${selectedIds.value.length} 条证书吗？`,
+
+      '提示',
+
+      { type: 'warning', confirmButtonText: '确定批量禁用', cancelButtonText: '取消' }
+
+    )
+
+    const res = await batchUpdateCertificateStatus(selectedIds.value, true)
+
+    if (res.data.code === 200) {
+
+      ElMessage.success('批量禁用成功')
 
       selectedIds.value = []
 
@@ -698,6 +754,28 @@ onMounted(() => {
 
         </el-form-item>
 
+        <el-form-item label="状态">
+
+          <el-select
+
+            v-model="queryParams.isDeleted"
+
+            placeholder="全部"
+
+            clearable
+
+            style="width: 100px"
+
+          >
+
+            <el-option label="启用" :value="false" />
+
+            <el-option label="禁用" :value="true" />
+
+          </el-select>
+
+        </el-form-item>
+
         <el-form-item>
 
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -718,9 +796,13 @@ onMounted(() => {
 
       <el-button type="primary" @click="openDialog('add')">新增证书</el-button>
 
+      <el-button :disabled="selectedIds.length === 0" type="warning" @click="handleBatchDisable">
+
+        批量禁用      </el-button>
+
       <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchDelete">
 
-        批量硬删除      </el-button>
+        批量删除      </el-button>
 
       <el-button @click="fetchData">刷新</el-button>
 
@@ -772,6 +854,20 @@ onMounted(() => {
 
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
 
+        <el-table-column prop="isDeleted" label="状态" width="80" align="center">
+
+          <template #default="{ row }">
+
+            <el-tag :type="row.isDeleted ? 'info' : 'success'" size="small">
+
+              {{ row.isDeleted ? '禁用' : '启用' }}
+
+            </el-tag>
+
+          </template>
+
+        </el-table-column>
+
         <el-table-column label="操作" width="280" align="center" fixed="right">
 
           <template #default="{ row }">
@@ -780,9 +876,13 @@ onMounted(() => {
 
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
 
-            <el-button type="info" link @click="handleSoftDelete(row.id, row.certName)">软删除</el-button>
+            <el-button :type="row.isDeleted ? 'success' : 'info'" link @click="handleToggleStatus(row)">
 
-            <el-button type="danger" link @click="handleHardDelete(row.id, row.certName)">硬删除</el-button>
+              {{ row.isDeleted ? '启用' : '禁用' }}
+
+            </el-button>
+
+            <el-button type="danger" link @click="handleHardDelete(row.id, row.certName)">删除</el-button>
 
           </template>
 

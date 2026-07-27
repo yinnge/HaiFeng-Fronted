@@ -5,7 +5,6 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { getRoleDetail, addRole, updateRole } from '@/api/permission/role'
 import type { RoleAddDTO, RoleUpdateDTO } from '@/types/permission/role'
-import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -19,8 +18,6 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const showExitConfirm = ref(false)
-const originalData = ref<string>('')
 
 const isEdit = computed(() => !!props.roleId)
 const title = computed(() => (isEdit.value ? '编辑角色' : '新增角色'))
@@ -45,10 +42,6 @@ const rules: FormRules = {
   ],
 }
 
-const hasChanges = computed(() => {
-  return JSON.stringify(form) !== originalData.value
-})
-
 const fetchDetail = async () => {
   if (!props.roleId) return
   loading.value = true
@@ -60,7 +53,6 @@ const fetchDetail = async () => {
       form.roleName = data.roleName
       form.roleCode = data.roleCode
       form.description = data.description || ''
-      originalData.value = JSON.stringify(form)
     }
   } catch (error) {
     ElMessage.error('获取角色详情失败')
@@ -74,21 +66,10 @@ const resetForm = () => {
   form.roleName = ''
   form.roleCode = ''
   form.description = ''
-  originalData.value = ''
   formRef.value?.resetFields()
 }
 
 const handleClose = () => {
-  if (hasChanges.value) {
-    showExitConfirm.value = true
-  } else {
-    emit('update:visible', false)
-    resetForm()
-  }
-}
-
-const handleDiscard = () => {
-  showExitConfirm.value = false
   emit('update:visible', false)
   resetForm()
 }
@@ -108,7 +89,6 @@ const handleSave = async () => {
       const res = await updateRole(props.roleId, data)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
-        showExitConfirm.value = false
         emit('update:visible', false)
         emit('success')
         resetForm()
@@ -138,17 +118,11 @@ const handleSave = async () => {
   }
 }
 
-const handleSaveAndClose = async () => {
-  await handleSave()
-}
-
 watch(
   () => props.visible,
   (val) => {
     if (val && props.roleId) {
       fetchDetail()
-    } else if (val) {
-      originalData.value = JSON.stringify(form)
     }
   }
 )
@@ -189,11 +163,4 @@ watch(
       <el-button type="primary" :loading="loading" @click="handleSave">保存</el-button>
     </template>
   </el-dialog>
-
-  <ExitConfirmModal
-    v-model:visible="showExitConfirm"
-    @cancel="showExitConfirm = false"
-    @discard="handleDiscard"
-    @save="handleSaveAndClose"
-  />
 </template>
