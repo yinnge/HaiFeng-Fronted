@@ -276,7 +276,7 @@ Authorization: Bearer {accessToken}
   "msg": "success",
   "data": {
     "id": 1,
-    "siteName": "海峰未来规划院",
+    "siteName": "海枫未来规划院",
     "siteUrl": "https://haifeng.com",
     "siteIcp": "京ICP备12345678号",
     "siteDescription": "专业的高考志愿填报平台",
@@ -285,9 +285,9 @@ Authorization: Bearer {accessToken}
     "vipPrice": 599,
     "proCommissionRate": 10,
     "vipCommissionRate": 15,
-    "seoTitle": "海峰未来规划院 - 高考志愿填报专家",
+    "seoTitle": "海枫未来规划院 - 高考志愿填报专家",
     "seoKeywords": "高考,志愿填报,大学,专业",
-    "seoDescription": "海峰未来规划院为您提供专业的高考志愿填报服务",
+    "seoDescription": "海枫未来规划院为您提供专业的高考志愿填报服务",
     "contactUrl": {
       "wechat": "https://example.com/wechat-qr.jpg",
       "weibo": "https://weibo.com/haifeng",
@@ -354,7 +354,7 @@ Authorization: Bearer {accessToken}
 **请求示例：**
 ```json
 {
-  "siteName": "海峰未来规划院",
+  "siteName": "海枫未来规划院",
   "proPrice": 299,
   "contactUrl": {
     "wechat": "https://example.com/new-wechat-qr.jpg",

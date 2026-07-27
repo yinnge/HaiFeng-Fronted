@@ -1,5 +1,14 @@
 <script setup lang="ts">
-// 用户端根组件
+import { onMounted } from 'vue'
+import { useUserStore } from '@/store'
+
+const userStore = useUserStore()
+
+onMounted(async () => {
+  if (userStore.isLoggedIn() && !userStore.userInfo) {
+    await userStore.fetchUserInfo()
+  }
+})
 </script>
 
 <template>

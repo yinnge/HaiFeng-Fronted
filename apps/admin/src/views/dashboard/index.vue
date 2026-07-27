@@ -102,7 +102,7 @@ const stats = ref([
 
     <!-- 欢迎信息 -->
     <el-card shadow="never">
-      <el-result icon="success" title="欢迎使用海峰未来规划院管理后台" sub-title="系统已准备就绪">
+      <el-result icon="success" title="欢迎使用海枫未来规划院管理后台" sub-title="系统已准备就绪">
         <template #extra>
           <el-button type="primary" @click="goToUserList">开始使用</el-button>
         </template>

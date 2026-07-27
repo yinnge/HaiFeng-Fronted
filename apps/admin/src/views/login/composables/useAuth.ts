@@ -48,7 +48,7 @@ export function useAuth() {
         return false
       }
     } catch (error: any) {
-      ElMessage.error(error.response?.data?.msg || '登录失败')
+      ElMessage.error(error.message || error.response?.data?.msg || '登录失败')
       return false
     } finally {
       loading.value = false
@@ -68,7 +68,7 @@ export function useAuth() {
         return false
       }
     } catch (error: any) {
-      ElMessage.error(error.response?.data?.msg || '注册失败')
+      ElMessage.error(error.message || error.response?.data?.msg || '注册失败')
       return false
     } finally {
       loading.value = false
@@ -79,7 +79,9 @@ export function useAuth() {
   const adminLoginHandler = async (data: LoginDTO) => {
     loading.value = true
     try {
+      console.log('[Login] 发送登录请求:', { phone: data.phone })
       const res = await adminLogin(data)
+      console.log('[Login] 服务端响应:', res.data)
       if (res.data.code === 200) {
         const responseData = res.data.data
         if (isPreAuthResponse(responseData)) {
@@ -88,7 +90,7 @@ export function useAuth() {
           showTotpModal.value = true
           return 'totp'
         } else {
-          handleLoginSuccess(responseData)
+          await handleLoginSuccess(responseData)
           return true
         }
       } else if (res.data.code === 20001) {
@@ -101,7 +103,8 @@ export function useAuth() {
         return false
       }
     } catch (error: any) {
-      const msg = error.response?.data?.msg || '登录失败'
+      console.error('[Login] 请求异常:', error)
+      const msg = error.message || error.response?.data?.msg || '登录失败'
       ElMessage.error(msg)
       return false
     } finally {
@@ -127,7 +130,7 @@ export function useAuth() {
         return false
       }
     } catch (error: any) {
-      ElMessage.error(error.response?.data?.msg || 'TOTP 验证失败')
+      ElMessage.error(error.message || error.response?.data?.msg || 'TOTP 验证失败')
       return false
     } finally {
       loading.value = false

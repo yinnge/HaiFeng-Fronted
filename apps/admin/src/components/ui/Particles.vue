@@ -137,11 +137,11 @@ const animate = () => {
     p.x += p.vx
     p.y += p.vy
 
-    // 边界处理
-    if (p.x < 0) p.x = width
-    if (p.x > width) p.x = 0
-    if (p.y < 0) p.y = height
-    if (p.y > height) p.y = 0
+    // 边界反弹
+    if (p.x < 0) { p.x = 0; p.vx *= -1 }
+    if (p.x > width) { p.x = width; p.vx *= -1 }
+    if (p.y < 0) { p.y = 0; p.vy *= -1 }
+    if (p.y > height) { p.y = height; p.vy *= -1 }
 
     // 绘制粒子
     ctx.beginPath()

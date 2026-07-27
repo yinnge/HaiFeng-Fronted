@@ -3,17 +3,19 @@
 import { reactive, ref, onMounted } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useCaptcha } from '../composables/useCaptcha'
-import { useAuth } from '../composables/useAuth'
 import type { LoginDTO } from '@/types/auth'
 
+const props = defineProps<{
+  loading: boolean
+  adminLoginHandler: (data: LoginDTO) => Promise<any>
+}>()
+
 const emit = defineEmits<{
-  (e: 'forgot-password'): void
   (e: 'need-totp'): void
 }>()
 
 const formRef = ref<FormInstance>()
 const { captchaData, fetchCaptcha, refreshCaptcha } = useCaptcha()
-const { loading, adminLoginHandler } = useAuth()
 
 const form = reactive<LoginDTO>({
   phone: '',
@@ -39,7 +41,7 @@ const handleSubmit = async () => {
   await formRef.value.validate()
 
   form.uuid = captchaData.value?.uuid || ''
-  const result = await adminLoginHandler(form)
+  const result = await props.adminLoginHandler(form)
 
   if (result === 'totp') {
     emit('need-totp')
@@ -118,22 +120,15 @@ onMounted(() => {
       </div>
     </el-form-item>
 
-    <!-- 忘记密码 -->
-    <div class="flex justify-end mb-5">
-      <span class="forgot-link" @click="emit('forgot-password')">
-        忘记密码？
-      </span>
-    </div>
-
     <!-- 登录按钮 -->
     <el-form-item class="form-item">
       <button
         type="button"
         class="login-btn"
-        :disabled="loading"
+        :disabled="props.loading"
         @click="handleSubmit"
       >
-        <span v-if="loading" class="loading-spinner"></span>
+        <span v-if="props.loading" class="loading-spinner"></span>
         <span>登 录</span>
       </button>
     </el-form-item>
@@ -175,7 +170,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
+  width: 40px;
   color: #9ca3af;
   flex-shrink: 0;
 }
@@ -192,7 +187,7 @@ onMounted(() => {
 
 .custom-input :deep(.el-input__inner) {
   color: #374151;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .custom-input :deep(.el-input__inner::placeholder) {
@@ -241,17 +236,6 @@ onMounted(() => {
   justify-content: center;
   font-size: 0.75rem;
   color: #9ca3af;
-}
-
-.forgot-link {
-  font-size: 0.8rem;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.forgot-link:hover {
-  color: var(--gold-primary);
 }
 
 .login-btn {

@@ -1,26 +1,16 @@
 <!-- apps/admin/src/views/login/components/LoginCard.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
-import UserLoginForm from './UserLoginForm.vue'
-import UserRegisterForm from './UserRegisterForm.vue'
 import AdminLoginForm from './AdminLoginForm.vue'
 import BorderBeam from '@/components/ui/BorderBeam.vue'
 
-type TabType = 'user' | 'admin'
-type FormType = 'login' | 'register'
-
-const emit = defineEmits<{
-  (e: 'forgot-password'): void
-  (e: 'need-totp'): void
+const props = defineProps<{
+  loading: boolean
+  adminLoginHandler: (data: any) => Promise<any>
 }>()
 
-const activeTab = ref<TabType>('user')
-const formType = ref<FormType>('login')
-
-const handleTabChange = (tab: TabType) => {
-  activeTab.value = tab
-  formType.value = 'login'
-}
+const emit = defineEmits<{
+  (e: 'need-totp'): void
+}>()
 </script>
 
 <template>
@@ -54,41 +44,23 @@ const handleTabChange = (tab: TabType) => {
         <div class="absolute top-0 left-0 bottom-0 w-20 bg-gradient-to-r from-white/30 to-transparent" />
       </div>
 
-      <!-- Tab 切换 -->
-      <div class="flex gap-8 mb-8 pb-4 relative z-10 border-b border-brand-gold/20">
-        <span
-          class="tab-item cursor-pointer transition-all duration-300"
-          :class="activeTab === 'user' ? 'tab-active' : 'tab-inactive'"
-          @click="handleTabChange('user')"
-        >
-          用户登录
-        </span>
-        <span
-          class="tab-item cursor-pointer transition-all duration-300"
-          :class="activeTab === 'admin' ? 'tab-active' : 'tab-inactive'"
-          @click="handleTabChange('admin')"
-        >
-          管理员
-        </span>
+      <!-- 标题 -->
+      <div class="mb-8 pb-6 relative z-10 text-center">
+        <div class="inline-flex items-center justify-center gap-2 mb-2">
+          <svg class="w-5 h-5 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h2 class="card-title text-xl font-bold">管理员登录</h2>
+        </div>
+        <p class="mt-2 text-sm text-gray-400">请使用管理员账号登录系统</p>
+        <div class="mt-4 h-[1px] bg-gradient-to-r from-transparent via-brand-gold/50 to-transparent" />
       </div>
 
       <!-- 表单区域 -->
       <div class="relative z-10">
-        <template v-if="activeTab === 'user'">
-          <UserLoginForm
-            v-if="formType === 'login'"
-            @forgot-password="emit('forgot-password')"
-            @switch-to-register="formType = 'register'"
-          />
-          <UserRegisterForm
-            v-else
-            @switch-to-login="formType = 'login'"
-          />
-        </template>
-
         <AdminLoginForm
-          v-else
-          @forgot-password="emit('forgot-password')"
+          :loading="props.loading"
+          :admin-login-handler="props.adminLoginHandler"
           @need-totp="emit('need-totp')"
         />
       </div>
@@ -116,24 +88,24 @@ const handleTabChange = (tab: TabType) => {
   border: 1px solid rgba(212, 168, 90, 0.3);
 }
 
-/* Tab 样式 */
-.tab-item {
-  font-size: 1rem;
-  font-weight: 600;
-  padding-bottom: 0.5rem;
+.card-title {
+  background: linear-gradient(
+    135deg,
+    #9a7a2e 0%,
+    #bf8a30 25%,
+    #d4a85a 50%,
+    #fbbf24 75%,
+    #d4a85a 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: title-gradient 4s ease infinite;
 }
 
-.tab-active {
-  color: #bf8a30;
-  text-shadow: 0 1px 2px rgba(191, 138, 48, 0.3);
-  border-bottom: 2px solid #bf8a30;
-  margin-bottom: -4px;
-}
-
-.tab-inactive {
-  color: #9ca3af;
-}
-.tab-inactive:hover {
-  color: #6b7280;
+@keyframes title-gradient {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
 }
 </style>

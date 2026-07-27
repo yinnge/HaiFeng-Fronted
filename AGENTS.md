@@ -1,134 +1,105 @@
-# 海峰未来规划院 (前端工程) - 管理端开发规范补充
+提示词:「海枫未来规划院」个人资料页 UI 重设计(Vue 3 + design-taste-frontend)
 
----
+使用方式:项目里已经导入了 design-taste-frontend 这个 skill,把下面全部内容直接复制粘贴给 opencode 即可。
 
-## 管理员前端权限体系
+你是一名资深前端 UI/UX 设计师,请帮我重新设计并实现一个 Vue 3 页面的视觉样式和布局结构。请保留全部现有功能和数据字段,重点改造视觉设计与页面结构。
 
-### 权限模型
-- RBAC: `管理员 → 角色 → 模块(三级树形) → 接口`
-- 后端每个 Controller 用 `@RequireAdminModule("module_code")` 注解校验接口权限
-- 前端从 `GET /api/v1/admin/profile` 返回的 `moduleCodes: string[]` 获取当前管理员的全部模块编码
-- 后端查询: `SysAdminMapper.selectModuleCodesByAdminId()` 通过 `sys_admin → role_id → sys_role_module → sys_module.module_code` 链路获取
+Design Read(先读一遍这个,再动手)
 
-### 前端实现规则
+Reading this as: 教育规划类产品的账号设置页(不是营销落地页),面向正在做学业/生涯规划的学生用户,视觉语言要取材于产品自身的金橙黄暖色品牌识别 + 墨蓝点缀,信息密度中等偏低,应该用真实的业务组件(分组卡片、表单、状态标签)来做丰富感,而不是套营销页的 Hero / Bento 那一套。
 
-1. **路由定义**: 每个需要权限的路由在 `meta.moduleCode` 中声明，值与后端 `module_code` 一一对应
-   ```ts
-   meta: { title: '公告管理', icon: 'Warning', moduleCode: 'home_announcement' }
-   ```
+范围说明(重要): design-taste-frontend 这套 skill 的第 13 节写明了它主要是给落地页 / 作品集 / 营销页用的,明确把 dashboard / 后台面板列为 out of scope。这个"个人资料 - 账号安全 - 佣金提现"页面严格来说更接近账号设置类的产品内页,所以:
 
-2. **路由守卫** (`router.beforeEach`): 检查目标路由的 `meta.moduleCode`，若用户 `moduleCodes` 中不包含则重定向到 403 页面
+不需要套用 Hero、Bento Grid、Block Library 那套营销页机制,也不需要纠结 DESIGN_VARIANCE / MOTION_INTENSITY / VISUAL_DENSITY 三个刻度盘的取值
+但 skill 里"避免 AI 套路"(第 9 节 AI Tells,比如别用纯黑、别用生硬的荧光描边、别用假的通用头像图标)、"品牌真实取材做重设计"(第 11 节)、"诚实使用真实组件库而不是瞎编样式"这些原则完全适用,请照做
+品牌参考(重要:只借鉴配色和材质,不要照抄装饰元素)
 
-3. **侧边栏菜单**: Sidebar 根据 `userStore.moduleCodes` 动态过滤; 父级菜单有可见子菜单时才显示
+登录页(见参考图)已经把品牌视觉定下来了:枫叶橙金渐变 logo + 墨蓝色点缀,大面积暖白/米色渐变背景。这次改造请只借鉴它的配色、渐变材质和字体调性,不要把登录页背景里那些漂浮的圆点气泡、暗纹点阵搬到这个页面上。 那一套装饰是入口/营销页专属的,像"个人资料"这种产品内页,应该靠组件本身(分组卡片、标签色块、图标、进度指示)去营造丰富感,而不是靠背景装饰画面。
 
-4. **应用启动流程**: 登录 → 获取 Profile(含 moduleCodes) → 存入 userStore → 生成动态路由 → 渲染侧边栏
+更新后的色板
+角色	色值参考	用途
+品牌主色 · 枫金渐变
+#D9962F →
+#E8720F	主按钮、关键强调背景、选中态
+品牌辅色 · 亮黄
+#F0B429	次级强调、标签、hover 高光
+品牌辅色 · 墨蓝
+#1F4E79	图标、数据类文字、次级按钮/链接
+基础背景
+#FFFFFF	页面主背景(按你的要求,白色打底)
+分组浅底
+#FBF7F0(暖米)或
+#F4F8FC(浅蓝)	卡片内部分组背景,避免大片纯白
+主文本
+#22262E(不用纯黑)	标题、正文
+次文本
+#6B7280	说明文字、placeholder
+描边
+#EDE6DA	卡片、输入框边框
 
-5. **新建模块步骤**:
-   - 后端: 在 `V26__seed_admin_module_data.sql` 添加模块记录（注意 level、parent_id、path）
-   - 后端: 创建 Controller 并加 `@RequireAdminModule("新模块_code")`
-   - 前端: 定义路由，加 `meta.moduleCode`
-   - 前端: 在配置角色的页面，该模块会自动出现在模块树中供勾选
+设计要点: 白色是主背景,但金 / 橙 / 黄 / 蓝要通过组件本身大量出现——按钮渐变、标签色块、分组卡片的浅色底、图标颜色、选中态描边——让页面看起来"丰富"，而不是靠额外的装饰图形去填空白。
 
-### 模块层级规则 (来自 sys_module.level)
-```
-level=1: 顶级父模块（14个）
-level=2: 子模块（42个）
-level=3: 三级子模块（25个）
-总计: 81个模块
-```
-- 新建父模块: `level=1, parent_id=NULL`
-- 新建子模块: `level=2, parent_id=父模块ID`
-- 新建三级模块: `level=3, parent_id=二级模块ID`
-- `path` 字段对应前端路由路径
+现状问题
+输入框统一用同一种描边,没有 hover / focus 状态区分
+表单字段一字排开,9 个字段从上到下堆成一竖列,视觉单薄、缺乏分组
+布局结构不对:用户信息(头像/姓名/手机号)目前只是页面顶部的一条装饰性横幅,和下面的 Tab 切换没有从属关系(见下一节的结构调整)
+按钮、下拉框的圆角/阴影/配色不统一,还在用系统默认蓝色,没体现品牌色
+新的布局结构(重点,请严格按此实现)
 
-### 完整模块代码参考
+顶部品牌导航条(logo + 消息 + 退出登录)已经实现,是全局共用的,这次不需要动。
 
-```
-顶级父模块（level=1）:
-  system             系统管理
-  permission         权限管理
-  user               用户管理
-  home               首页管理
-  university         院校管理
-  major              专业管理
-  city               城市管理
-  algorithm          高考算法
-  special            特殊通道
-  certificate        证书竞赛
-  resource           资源管理
-  industry           行业管理
-  company            企业管理
-  employment         就业管理
+从导航条往下,整个页面按以下结构重新组织:
 
-子模块（level=2）:
-  system_setting     系统设置
-  system_provider    模型供应商配置
-  system_log         操作日志记录
-  permission_admin   管理员账号管理
-  permission_role    角色管理
-  permission_module  模块菜单管理
-  user_member        用户信息管理
-  user_order         会员订单管理
-  user_withdraw      提现审核管理
-  user_commission    佣金记录管理
-  user_notification  通知消息管理
-  home_announcement  公告管理
-  home_planner       规划师管理
-  home_institution   培训机构管理
-  university_album   校园图册管理
-  university_info    院校管理
-  university_dept    院系管理
-  university_lab     实验室管理
-  university_eval    学科评估管理
-  university_guide   院校适应指南管理
-  major_info         专业管理
-  major_subject      考研专业管理
-  major_postgraduate 专业考研关联管理
-  major_univ         考研专业大学关联管理
-  city_info          城市管理
-  algo_admission     专业组管理
-  algo_score         分数位次管理
-  algo_config        算法配置管理
-  algo_constraint    约束管理
-  algo_safety        安全系数管理
-  special_admission  招生通道管理
-  special_adm_univ   通道院校关联管理
-  special_sbs_score  强基计划分数管理
-  special_sbs_config 强基计划院校配置
-  certificate_info   证书管理
-  certificate_comp   竞赛管理
-  cert_comp_major    竞赛专业关联管理
-  resource_info      资源管理
-  industry_info      行业管理
-  company_info       企业管理
-  company_industry   企业行业关联管理
-  emp_content        招聘内容管理
-  emp_civil          体制内招录管理
-  emp_grassroots     基层服务管理
-  emp_industry       行业专项招聘管理
+┌────────────────────────────────────────────────────────────┐
+│ [已实现的全局顶部导航,跳过不处理]                                │
+├────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────┐  │
+│ │ (头像) 莺歌 [普通用户]     📱手机号         我的收藏 0    │  │ ← 全局用户信息卡
+│ └────────────────────────────────────────────────────────┘  │   横跨整行,不随Tab变化
+├───────────────┬────────────────────────────────────────────┤
+│ ┃个人资料       │  (右侧内容区随左侧选中的 Tab 切换)              │
+│  账号安全       │  ┌──────────────────────────────────────┐  │
+│  佣金提现       │  │  基本信息                              │  │
+│               │  │  真实姓名 [_______]   邮箱 [_______]    │  │
+│ + 敬请期待      │  │  性别    [▾____]    身份 [▾____]       │  │
+│               │  │  ─────────────────────────────────    │  │
+│               │  │  教育背景                              │  │
+│               │  │  省份/城市 [▾___][_____]  专业 [_____]  │  │
+│               │  │  年级 [_____]   学历层次 [_____]        │  │
+│               │  │               [ 保存修改 ]             │  │
+└───────────────┴────────────────────────────────────────────┘
 
-三级子模块（level=3）:
-  algo_admission_grp  专业组管理
-  algo_admission_dtl  专业明细管理
-  algo_score_rank     分数排名管理
-  algo_score_baseline 批次基线管理
-  algo_score_prov     改革省份管理
-  algo_config_gaokao  算法配置管理
-  algo_config_prov    省份配置管理
-  algo_constraint_dict 约束字典管理
-  algo_constraint_mjr 约束专业关联管理
-  algo_safety_level   安全系数管理
-  emp_content_guide   备考指南管理
-  emp_content_notice  公告管理
-  emp_civil_servant   公务员职位管理
-  emp_civil_institution 事业编职位管理
-  emp_civil_military  部队文职岗位管理
-  emp_civil_selected  选调生岗位管理
-  emp_grassroots_comm 社区工作者岗位管理
-  emp_grassroots_3s   三支一扶西部计划
-  emp_grassroots_welfare 公益性岗位管理
-  emp_industry_bank   银行/金融岗位管理
-  emp_industry_medical 医疗卫生岗位管理
-  emp_industry_teacher 教师招聘岗位管理
-```
+关键点(和现在的实现相比,这是本次改造最核心的部分):
 
+"莺歌"这一行(头像 + 姓名 + 身份标签 + 手机号 + 我的收藏)现在是全局用户信息卡,横向撑满整行宽度,不再只属于"个人资料"这一个 Tab
+这张全局卡片下方才是"左侧 Tab 导航 + 右侧内容"的两栏结构;左侧 Tab(个人资料 / 账号安全 / 佣金提现 / 敬请期待)从原来紧贴页面顶部,改成写在全局用户卡片的下方
+点击左侧任意 Tab,只切换右侧内容区(个人资料表单 / 账号安全设置 / 佣金提现内容),全局用户信息卡始终保持不变,不会跟着切换或消失
+这样"账号安全""佣金提现"等其它 Tab 页面天然复用同一张用户信息卡,不用在每个 Tab 里重复写头像和用户名的代码
+中间内容区(表单)重新设计要求
+
+现在的表单把 9 个字段一竖排到底,显得很单薄空洞,请:
+
+按语义把字段分成两组,每组一个小标题:「基本信息」(真实姓名、邮箱、性别、身份)和「教育背景」(省份、城市、专业、年级、学历层次),组间用细分隔线或浅色分组底区分
+宽屏(桌面端)下,每组内用两列网格排列输入框,而不是单列一竖到底;窄屏自动收成单列
+输入框可以带简单的语义化图标(姓名用人形图标、邮箱用信封图标等),用项目已引入的图标库或组件库自带图标,不要手绘 SVG
+下拉框(性别 / 身份 / 省份)统一样式,选中态用金橙色高亮,不用系统默认蓝色
+"保存修改"按钮用品牌渐变色(枫金 → 橙),hover 态加深,不用系统默认蓝色按钮
+输入框默认态细描边 → hover 描边加深 → focus 态描边变品牌橙色 + 轻微阴影反馈
+需要保留的字段与交互(不能丢)
+全局用户信息卡:头像、姓名"莺歌"、身份标签"普通用户"、手机号、"我的收藏"计数
+左侧 Tab:个人资料 / 账号安全 / 佣金提现 / 敬请期待(禁用态)
+表单字段:真实姓名(文本)、邮箱(文本)、性别(下拉)、身份(下拉)、省份(下拉)、城市(文本)、专业(文本)、年级(文本,placeholder"如:高一、大三、研一")、学历层次(文本,placeholder"如:本科、硕士")
+底部"保存修改"主按钮
+原有的表单校验、下拉选择、提交逻辑全部保留,只改样式和布局结构
+技术要求
+Vue 3 + <script setup> 组合式 API
+先检查项目里已经用了什么方案(Element Plus / Ant Design Vue / Naive UI / 纯 Tailwind / 原生 SCSS),沿用现有组件库和主题变量,不要为了好看引入和项目风格冲突的新依赖(这也是 design-taste-frontend 技能里"诚实使用真实组件库"的原则)
+全局用户信息卡建议单独拆成一个组件(如 ProfileBanner.vue),被"个人资料 / 账号安全 / 佣金提现"这几个 Tab 页面共用,而不是在每个 Tab 里各写一份
+响应式:桌面端(≥1024px)用上面的两栏布局;移动端(<768px)可以把左侧 Tab 收成横向滚动的标签条,放在全局用户卡片下方,内容区仍然在其下方纵向排列
+无障碍:所有可交互元素要有清晰可见的 focus 态,颜色对比度达到 WCAG AA,表单校验失败要有明确文案提示
+交付要求
+
+请输出:
+
+完整可运行的 Vue 组件代码,建议拆分为 ProfileBanner.vue(全局用户信息卡)、ProfileSidebarTabs.vue(左侧 Tab)、ProfileForm.vue(个人资料表单内容)+ 一个父级页面组件把三者组合起来
+简要设计说明:说明色板选择的理由、表单分组的逻辑、以及为什么没有照搬登录页的背景装饰

@@ -1,6 +1,6 @@
 // apps/admin/src/types/profile/index.ts
 
-/** 管理员个人信�?VO */
+/** 管理员个人信�?VO */
 export interface ProfileVO {
   id: string
   username: string
@@ -29,7 +29,7 @@ export interface PasswordUpdateDTO {
   newPassword: string
 }
 
-/** TOTP 开启响�?VO */
+/** TOTP 开启响�?VO */
 export interface TotpEnableVO {
   secret: string
   qrCodeImage: string
@@ -38,9 +38,11 @@ export interface TotpEnableVO {
 /** TOTP 验证 DTO */
 export interface TotpVerifyDTO {
   code: string
+  secret: string
 }
 
 /** TOTP 关闭 DTO */
 export interface TotpDisableDTO {
   password: string
+  code: string
 }
