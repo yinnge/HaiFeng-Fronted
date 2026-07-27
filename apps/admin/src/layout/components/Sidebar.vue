@@ -229,6 +229,7 @@ function handleMenuSelect(index: string) {
   margin: 4px 8px;
   border-radius: 8px;
   width: calc(100% - 16px);
+  padding-left: 50px;
 }
 
 .sidebar-menu :deep(.el-menu-item span),
