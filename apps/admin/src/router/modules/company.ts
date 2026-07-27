@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 const companyRoutes: RouteRecordRaw = {
   path: '/company',
   name: 'Company',
-  meta: { title: '企业管理', icon: 'Briefcase' },
+  meta: { title: '企业管理', icon: 'OfficeBuilding' },
   redirect: '/company/info',
   children: [
     {

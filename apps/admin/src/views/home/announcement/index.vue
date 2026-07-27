@@ -14,8 +14,11 @@ import type {
   AnnouncementDetailVO,
   AnnouncementQueryDTO,
   AnnouncementAddDTO,
-  AnnouncementUpdateDTO,
 } from '@/types/home/announcement'
+import AnnouncementSearch from './components/AnnouncementSearch.vue'
+import AnnouncementTable from './components/AnnouncementTable.vue'
+import AnnouncementDetailModal from './components/AnnouncementDetailModal.vue'
+import AnnouncementFormModal from './components/AnnouncementFormModal.vue'
 
 const loading = ref(false)
 const tableData = ref<AnnouncementListVO[]>([])
@@ -28,18 +31,17 @@ const queryParams = reactive<AnnouncementQueryDTO>({
   status: undefined,
 })
 
-const dialogVisible = ref(false)
-const dialogMode = ref<'detail' | 'add' | 'edit'>('detail')
-const dialogTitle = ref('')
-const formLoading = ref(false)
-const currentId = ref<string | null>(null)
+// 详情弹窗
+const detailVisible = ref(false)
+const detailLoading = ref(false)
 const detailData = ref<AnnouncementDetailVO | null>(null)
 
-const formData = reactive<AnnouncementAddDTO>({
-  title: '',
-  content: '',
-  tag: '',
-})
+// 新增/修改弹窗
+const formVisible = ref(false)
+const formMode = ref<'add' | 'edit'>('add')
+const formLoading = ref(false)
+const currentId = ref<string | null>(null)
+const initialFormData = ref<AnnouncementAddDTO | null>(null)
 
 const fetchData = async () => {
   loading.value = true
@@ -61,7 +63,9 @@ const fetchData = async () => {
   }
 }
 
-const handleSearch = () => {
+const handleSearch = (params: Pick<AnnouncementQueryDTO, 'title' | 'status'>) => {
+  queryParams.title = params.title
+  queryParams.status = params.status
   queryParams.page = 1
   fetchData()
 }
@@ -84,80 +88,86 @@ const handleSizeChange = (size: number) => {
   fetchData()
 }
 
-const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
-  dialogMode.value = mode
-  currentId.value = id || null
-
-  if (mode === 'add') {
-    dialogTitle.value = '新增公告'
-    formData.title = ''
-    formData.content = ''
-    formData.tag = ''
-    detailData.value = null
-  } else if (mode === 'edit' && id) {
-    dialogTitle.value = '修改公告'
-    formLoading.value = true
-    try {
-      const res = await getAnnouncementDetail(id)
-      if (res.data.code === 200) {
-        const d = res.data.data
-        formData.title = d.title
-        formData.content = d.content
-        formData.tag = d.tag || ''
-      }
-    } catch {
-      ElMessage.error('获取详情失败')
-    } finally {
-      formLoading.value = false
+// 详情
+const handleDetail = async (id: string) => {
+  detailVisible.value = true
+  detailLoading.value = true
+  detailData.value = null
+  try {
+    const res = await getAnnouncementDetail(id)
+    if (res.data.code === 200) {
+      detailData.value = res.data.data
+    } else {
+      ElMessage.error(res.data.msg || '获取详情失败')
     }
-    detailData.value = null
-  } else if (mode === 'detail' && id) {
-    dialogTitle.value = '公告详情'
-    formLoading.value = true
-    try {
-      const res = await getAnnouncementDetail(id)
-      if (res.data.code === 200) {
-        detailData.value = res.data.data
-      }
-    } catch {
-      ElMessage.error('获取详情失败')
-    } finally {
-      formLoading.value = false
-    }
+  } catch {
+    ElMessage.error('获取详情失败')
+  } finally {
+    detailLoading.value = false
   }
-
-  dialogVisible.value = true
 }
 
-const handleSubmit = async () => {
-  if (!formData.title || !formData.content) {
+const handleDetailClose = () => {
+  detailData.value = null
+}
+
+// 新增
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  initialFormData.value = { title: '', content: '', tag: '' }
+  formVisible.value = true
+}
+
+// 修改
+const handleEdit = async (id: string) => {
+  formMode.value = 'edit'
+  currentId.value = id
+  formLoading.value = true
+  formVisible.value = true
+  try {
+    const res = await getAnnouncementDetail(id)
+    if (res.data.code === 200) {
+      const d = res.data.data
+      initialFormData.value = {
+        title: d.title,
+        content: d.content,
+        tag: d.tag || '',
+      }
+    } else {
+      ElMessage.error(res.data.msg || '获取详情失败')
+    }
+  } catch {
+    ElMessage.error('获取详情失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+// 提交新增/修改
+const handleSubmit = async (data: AnnouncementAddDTO) => {
+  if (!data.title || !data.content) {
     ElMessage.warning('请填写标题和内容')
     return
   }
 
   try {
     let res: any
-    if (dialogMode.value === 'add') {
-      const data: AnnouncementAddDTO = {
-        title: formData.title,
-        content: formData.content,
-      }
-      if (formData.tag) data.tag = formData.tag
-      res = await addAnnouncement(data)
-    } else if (dialogMode.value === 'edit' && currentId.value) {
-      const data: AnnouncementUpdateDTO = {
-        title: formData.title,
-        content: formData.content,
-      }
-      if (formData.tag) data.tag = formData.tag
-      res = await updateAnnouncement(currentId.value, data)
+    if (formMode.value === 'add') {
+      const payload: AnnouncementAddDTO = { title: data.title, content: data.content }
+      if (data.tag) payload.tag = data.tag
+      res = await addAnnouncement(payload)
+    } else if (formMode.value === 'edit' && currentId.value) {
+      const payload: AnnouncementAddDTO = { title: data.title, content: data.content }
+      if (data.tag) payload.tag = data.tag
+      res = await updateAnnouncement(currentId.value, payload)
     } else {
       return
     }
 
     if (res.data.code === 200) {
-      ElMessage.success(dialogMode.value === 'add' ? '新增成功' : '修改成功')
-      dialogVisible.value = false
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
+      formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -167,6 +177,7 @@ const handleSubmit = async () => {
   }
 }
 
+// 启用/禁用切换
 const handleToggleStatus = async (row: AnnouncementListVO) => {
   const newStatus = row.status === 1 ? 0 : 1
   const actionText = newStatus === 1 ? '启用' : '禁用'
@@ -184,6 +195,7 @@ const handleToggleStatus = async (row: AnnouncementListVO) => {
   }
 }
 
+// 删除
 const handleDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm('确定要删除该公告吗？此操作不可恢复！', '警告', {
@@ -203,155 +215,187 @@ const handleDelete = async (id: string) => {
   }
 }
 
-const statusTag = (status: number) => (status === 1 ? 'success' : 'info')
-const statusLabel = (status: number) => (status === 1 ? '展示' : '下架')
-
 onMounted(() => {
   fetchData()
 })
 </script>
 
 <template>
-  <div>
-    <!-- 搜索区 -->
-    <div class="mb-4 rounded-lg bg-white p-5">
-      <el-form :model="queryParams" inline>
-        <el-form-item label="标题">
-          <el-input
-            v-model="queryParams.title"
-            placeholder="标题模糊搜索"
-            clearable
-            style="width: 180px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select
-            v-model="queryParams.status"
-            placeholder="全部"
-            clearable
-            style="width: 120px"
-          >
-            <el-option label="展示" :value="1" />
-            <el-option label="下架" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="announcement-page">
+    <!-- 枫叶装饰 -->
+    <div class="watermark-left">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+    <div class="watermark-right">
+      <img src="@/assets/images/logo-main.png" alt="" />
     </div>
 
-    <!-- 操作区 -->
-    <div class="mb-4">
-      <el-button type="primary" @click="openDialog('add')">新增公告</el-button>
-      <el-button @click="fetchData">刷新</el-button>
+    <div class="page-header">
+      <div class="page-title">公告管理</div>
+      <div class="page-subtitle">管理首页公告内容，支持新增、修改、上下架与删除</div>
     </div>
 
-    <!-- 表格 -->
-    <div class="rounded-lg bg-white p-5">
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="140" />
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="tag" label="标签" width="120">
-          <template #default="{ row }">
-            <el-tag v-if="row.tag" size="small">{{ row.tag }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="statusTag(row.status)" size="small">
-              {{ statusLabel(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
-        <el-table-column label="操作" width="260" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button
-              :type="row.status === 1 ? 'info' : 'success'"
-              link
-              @click="handleToggleStatus(row)"
-            >
-              {{ row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="mt-4 flex justify-end">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.size"
-          :page-sizes="[10, 20, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
-      </div>
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button type="button" class="primary-btn" @click="handleAdd">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        新增公告
+      </button>
+      <button type="button" class="refresh-btn" @click="fetchData">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        刷新
+      </button>
     </div>
 
-    <!-- Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="700px"
-      :close-on-click-modal="false"
-    >
-      <div v-loading="formLoading">
-        <!-- 详情模式 -->
-        <template v-if="dialogMode === 'detail' && detailData">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
-            <el-descriptions-item label="标题">{{ detailData.title }}</el-descriptions-item>
-            <el-descriptions-item label="标签">{{ detailData.tag || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="statusTag(detailData.status)" size="small">
-                {{ statusLabel(detailData.status) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="内容">
-              <div class="max-h-60 overflow-y-auto" v-html="detailData.content"></div>
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
-            <el-descriptions-item label="更新时间">{{ detailData.updatedAt }}</el-descriptions-item>
-          </el-descriptions>
-        </template>
+    <AnnouncementSearch
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
-        <!-- 新增/修改模式 -->
-        <template v-if="dialogMode !== 'detail'">
-          <el-form :model="formData" label-width="80px">
-            <el-form-item label="标题" required>
-              <el-input v-model="formData.title" placeholder="请输入标题" maxlength="100" show-word-limit />
-            </el-form-item>
-            <el-form-item label="标签">
-              <el-input v-model="formData.tag" placeholder="请输入标签" maxlength="20" style="width: 200px" />
-            </el-form-item>
-            <el-form-item label="内容" required>
-              <el-input
-                v-model="formData.content"
-                type="textarea"
-                :rows="8"
-                placeholder="请输入公告内容（支持 HTML）"
-              />
-            </el-form-item>
-          </el-form>
-        </template>
-      </div>
+    <AnnouncementTable
+      :data="tableData"
+      :loading="loading"
+      :total="total"
+      :page="queryParams.page"
+      :size="queryParams.size"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+      @detail="handleDetail"
+      @edit="handleEdit"
+      @toggle-status="handleToggleStatus"
+      @delete="handleDelete"
+    />
 
-      <template #footer>
-        <el-button @click="dialogVisible = false">
-          {{ dialogMode === 'detail' ? '关闭' : '取消' }}
-        </el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">
-          确定
-        </el-button>
-      </template>
-    </el-dialog>
+    <AnnouncementDetailModal
+      v-model:visible="detailVisible"
+      :detail-data="detailData"
+      :form-loading="detailLoading"
+      @close="handleDetailClose"
+    />
+
+    <AnnouncementFormModal
+      v-model:visible="formVisible"
+      :mode="formMode"
+      :form-loading="formLoading"
+      :initial-data="initialFormData"
+      @submit="handleSubmit"
+    />
   </div>
 </template>
+
+<style scoped>
+.announcement-page {
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 枫叶水印 */
+.watermark-left,
+.watermark-right {
+  position: absolute;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+.watermark-left {
+  top: -60px;
+  right: 40px;
+  transform: rotate(18deg);
+}
+.watermark-right {
+  bottom: -40px;
+  left: 30px;
+  transform: rotate(-12deg);
+}
+.watermark-left img,
+.watermark-right img {
+  width: 180px;
+  height: auto;
+}
+
+/* 页面标题 */
+.page-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* 操作栏 */
+.action-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.refresh-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.refresh-btn:active {
+  background: #f3f4f6;
+}
+</style>

@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 const specialRoutes: RouteRecordRaw = {
   path: '/special',
   name: 'Special',
-  meta: { title: '特殊通道', icon: 'School' },
+  meta: { title: '特殊通道', icon: 'Promotion' },
   redirect: '/special/admission',
   children: [
     {

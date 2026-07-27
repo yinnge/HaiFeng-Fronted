@@ -31,7 +31,7 @@ const queryParams = reactive<CityQueryDTO>({
   cityName: '',
   province: '',
   region: '',
-  isDeleted: null,
+  isDeleted: null!,
 })
 
 const dialogVisible = ref(false)
@@ -121,7 +121,7 @@ const handleReset = () => {
   queryParams.cityName = ''
   queryParams.province = ''
   queryParams.region = ''
-  queryParams.isDeleted = null
+  queryParams.isDeleted = null!
   queryParams.page = 1
   fetchData()
 }
@@ -394,7 +394,7 @@ const handleBatchDelete = async () => {
       '警告',
       { type: 'warning', confirmButtonText: '确定批量永久删除', cancelButtonText: '取消' }
     )
-    const res = await batchDeleteCity(selectedIds.value)
+    const res = await batchDeleteCity(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量删除成功')
       selectedIds.value = []
@@ -458,9 +458,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- Search -->
-    <div class="mb-4 rounded-lg bg-white p-5">
+  <div class="page-wrap">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2 class="page-title">城市列表管理</h2>
+      <p class="page-subtitle">管理所有城市的基本信息与详细数据，支持增删改查和批量导入导出</p>
+    </div>
+
+    <!-- Search Card -->
+    <div class="search-card">
+      <span class="section-label">搜索筛选</span>
       <el-form :model="queryParams" inline>
         <el-form-item label="城市名称">
           <el-input v-model="queryParams.cityName" placeholder="城市名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
@@ -478,32 +485,40 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button class="search-btn" @click="handleSearch">查询</el-button>
+          <el-button class="reset-btn" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- Toolbar -->
-    <div class="mb-4 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openDialog('add')">新增城市</el-button>
-        <el-dropdown split-button type="success" @click="openImportDialog('main')">
-          Excel导入
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <div class="action-bar-left">
+        <el-button class="btn-add" @click="openDialog('add')">
+          <span class="btn-icon">+</span> 新增城市
+        </el-button>
+        <el-dropdown class="btn-import" @command="(cmd: string) => openImportDialog(cmd as 'main' | 'detail')">
+          <el-button class="btn-outline">
+            Excel导入 <span class="btn-arrow">&#9662;</span>
+          </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item @click="openImportDialog('main')">导入城市主表</el-dropdown-item>
-              <el-dropdown-item @click="openImportDialog('detail')">导入城市详情</el-dropdown-item>
+              <el-dropdown-item command="main">导入城市主表</el-dropdown-item>
+              <el-dropdown-item command="detail">导入城市详情</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量永久删除</el-button>
+        <el-button class="btn-batch-delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+          批量永久删除
+        </el-button>
       </div>
-      <el-button @click="fetchData">刷新</el-button>
+      <el-button class="btn-refresh" @click="fetchData">
+        <span class="btn-icon-refresh">&#8635;</span> 刷新
+      </el-button>
     </div>
 
-    <!-- Table -->
-    <div class="rounded-lg bg-white p-5">
+    <!-- Table Card -->
+    <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="140" />
@@ -514,23 +529,25 @@ onMounted(() => {
         <el-table-column prop="residentPopulation" label="常住人口(万)" width="120" align="right" />
         <el-table-column prop="isDeleted" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTag(row.isDeleted)" size="small">{{ statusLabel(row.isDeleted) }}</el-tag>
+            <span class="status-pill" :class="row.isDeleted ? 'status-disabled' : 'status-active'">
+              {{ statusLabel(row.isDeleted) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
         <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button :type="row.isDeleted ? 'success' : 'info'" link @click="handleToggleStatus(row)">
+            <span class="action-pill action-detail" @click="openDialog('detail', row.id)">详情</span>
+            <span class="action-pill action-edit" @click="openDialog('edit', row.id)">修改</span>
+            <span class="action-pill" :class="row.isDeleted ? 'action-enable' : 'action-disable'" @click="handleToggleStatus(row)">
               {{ row.isDeleted ? '启用' : '禁用' }}
-            </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">永久删除</el-button>
+            </span>
+            <span class="action-pill action-delete" @click="handleDelete(row.id)">永久删除</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -544,10 +561,10 @@ onMounted(() => {
     </div>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="850px" :close-on-click-modal="false" :destroy-on-close="true">
+    <el-dialog class="uni-dialog" v-model="dialogVisible" :title="dialogTitle" width="850px" :close-on-click-modal="false" :destroy-on-close="true">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
-          <el-descriptions :column="2" border>
+          <el-descriptions :column="2" border :label-class-name="'desc-label'">
             <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="城市名称">{{ detailData.cityName }}</el-descriptions-item>
             <el-descriptions-item label="省份">{{ detailData.province }}</el-descriptions-item>
@@ -557,7 +574,9 @@ onMounted(() => {
             <el-descriptions-item label="常住人口(万)">{{ detailData.residentPopulation }}</el-descriptions-item>
             <el-descriptions-item label="GDP(亿元)">{{ detailData.gdp }}</el-descriptions-item>
             <el-descriptions-item label="状态" :span="2">
-              <el-tag :type="statusTag(detailData.isDeleted)" size="small">{{ statusLabel(detailData.isDeleted) }}</el-tag>
+              <span class="status-pill" :class="detailData.isDeleted ? 'status-disabled' : 'status-active'">
+                {{ statusLabel(detailData.isDeleted) }}
+              </span>
             </el-descriptions-item>
             <el-descriptions-item label="城市简介" :span="2">
               <div class="max-h-40 overflow-y-auto whitespace-pre-wrap">{{ detailData.cityIntro || '-' }}</div>
@@ -632,7 +651,7 @@ onMounted(() => {
 
             <el-tab-pane label="详细信息" name="detail">
               <el-form :model="detailForm" label-width="140px" class="mt-2">
-                <div class="mb-2 text-sm font-medium text-gray-500">基础数据</div>
+                <div class="mb-2 mt-4 text-sm font-medium section-subtitle">基础数据</div>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="面积(km²)">
@@ -703,7 +722,7 @@ onMounted(() => {
                   </el-col>
                 </el-row>
 
-                <div class="mb-2 mt-4 text-sm font-medium text-gray-500">产业信息</div>
+                <div class="mb-2 mt-4 text-sm font-medium section-subtitle">产业信息</div>
                 <el-form-item label="产业描述">
                   <el-input v-model="detailForm.industryDescription" type="textarea" :rows="3" />
                 </el-form-item>
@@ -720,7 +739,7 @@ onMounted(() => {
                   </el-col>
                 </el-row>
 
-                <div class="mb-2 mt-4 text-sm font-medium text-gray-500">JSONB 数据（请输入合法JSON）</div>
+                <div class="mb-2 mt-4 text-sm font-medium section-subtitle">JSONB 数据（请输入合法JSON）</div>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="产业结构">
@@ -831,3 +850,476 @@ onMounted(() => {
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+/* ===========================
+   Page Wrapper
+   =========================== */
+.page-wrap {
+  background: linear-gradient(135deg, #fff5f0 0%, #fff7ed 50%, #fff1f2 100%);
+  min-height: 100vh;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Maple leaf watermarks */
+.page-wrap::before,
+.page-wrap::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  background: url('@/assets/images/logo-main.png') center / contain no-repeat;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page-wrap::before {
+  top: -60px;
+  right: -60px;
+  transform: rotate(18deg);
+}
+
+.page-wrap::after {
+  bottom: -60px;
+  left: -60px;
+  transform: rotate(-12deg);
+}
+
+/* ===========================
+   Page Header
+   =========================== */
+.page-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #F97316;
+  letter-spacing: 1px;
+}
+
+.page-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* ===========================
+   Search Card
+   =========================== */
+.search-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid #FB923C;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(249, 115, 22, 0.06);
+}
+
+.section-label {
+  display: inline-block;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+.search-card :deep(.el-form) {
+  margin-top: 4px;
+}
+
+.search-card :deep(.el-input__wrapper),
+.search-card :deep(.el-select .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #fed7aa inset;
+  border-radius: 8px;
+}
+
+.search-card :deep(.el-input__wrapper:hover),
+.search-card :deep(.el-select:hover .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #FB923C inset;
+}
+
+.search-card :deep(.el-input.is-focus .el-input__wrapper),
+.search-card :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  padding: 8px 22px !important;
+  font-weight: 500;
+}
+
+.search-btn:hover {
+  opacity: 0.9;
+}
+
+.reset-btn {
+  border: 1px solid #fdba74 !important;
+  color: #F97316 !important;
+  background: #fff7ed !important;
+  border-radius: 8px !important;
+  padding: 8px 22px !important;
+  font-weight: 500;
+}
+
+.reset-btn:hover {
+  background: #fff1f2 !important;
+  border-color: #F97316 !important;
+}
+
+/* ===========================
+   Action Bar
+   =========================== */
+.action-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.action-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #F97316, #EA580C) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.btn-add:hover {
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+  opacity: 0.95;
+}
+
+.btn-icon {
+  font-size: 16px;
+  margin-right: 2px;
+  font-weight: 700;
+}
+
+.btn-outline {
+  border: 1px solid #F97316 !important;
+  color: #F97316 !important;
+  background: #fff7ed !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+}
+
+.btn-outline:hover {
+  background: #fff1f2 !important;
+  border-color: #EA580C !important;
+  color: #EA580C !important;
+}
+
+.btn-arrow {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.btn-batch-delete {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.btn-batch-delete:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.btn-batch-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-refresh {
+  border: 1px solid #d1d5db !important;
+  color: #6b7280 !important;
+  background: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+}
+
+.btn-refresh:hover {
+  border-color: #F97316 !important;
+  color: #F97316 !important;
+  background: #fff7ed !important;
+}
+
+.btn-icon-refresh {
+  font-size: 15px;
+  margin-right: 2px;
+}
+
+/* ===========================
+   Table Card
+   =========================== */
+.table-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(249, 115, 22, 0.06);
+  border: 1px solid #fed7aa;
+}
+
+.table-card :deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-card :deep(.el-table thead) {
+  color: #F97316;
+}
+
+.table-card :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #fff7ed, #fff1f2) !important;
+  color: #F97316 !important;
+  font-weight: 700;
+  border-bottom: 2px solid #FB923C !important;
+}
+
+.table-card :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
+  background-color: #fefaf5 !important;
+}
+
+.table-card :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background-color: #fff5f0 !important;
+}
+
+/* Status Pills */
+.status-pill {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-active {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.status-disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 1px solid #e5e7eb;
+}
+
+/* Action Pills */
+.action-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 2px;
+  user-select: none;
+}
+
+.action-pill:hover {
+  transform: translateY(-1px);
+}
+
+.action-detail {
+  color: #F97316;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.action-detail:hover {
+  background: #F97316;
+  color: #fff;
+}
+
+.action-edit {
+  color: #8b5cf6;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+
+.action-edit:hover {
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.action-enable {
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.action-enable:hover {
+  background: #059669;
+  color: #fff;
+}
+
+.action-disable {
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.action-disable:hover {
+  background: #6b7280;
+  color: #fff;
+}
+
+.action-delete {
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.action-delete:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* ===========================
+   Custom Pagination
+   =========================== */
+.custom-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.custom-pagination :deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  border-radius: 6px;
+  border: none;
+}
+
+.custom-pagination :deep(.el-pagination .el-pager li:hover) {
+  color: #F97316;
+}
+
+.custom-pagination :deep(.el-pagination .btn-prev:hover),
+.custom-pagination :deep(.el-pagination .btn-next:hover) {
+  color: #F97316;
+}
+
+.custom-pagination :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+/* ===========================
+   Uni Dialog
+   =========================== */
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #FB923C;
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+}
+
+.uni-dialog :deep(.el-dialog__title) {
+  color: #F97316;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.uni-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #fed7aa;
+  padding-top: 14px;
+}
+
+.uni-dialog :deep(.el-descriptions__label.is-bordered-label) {
+  background: #fffbeb !important;
+  color: #F97316 !important;
+  font-weight: 600;
+}
+
+.uni-dialog :deep(.el-tabs__active-bar) {
+  background-color: #F97316 !important;
+}
+
+.uni-dialog :deep(.el-tabs__item.is-active) {
+  color: #F97316 !important;
+  font-weight: 600;
+}
+
+.uni-dialog :deep(.el-tabs__item:hover) {
+  color: #FB923C !important;
+}
+
+.uni-dialog :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #fed7aa inset;
+  border-radius: 8px;
+}
+
+.uni-dialog :deep(.el-input.is-focus .el-input__wrapper),
+.uni-dialog :deep(.el-textarea__inner:focus),
+.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.uni-dialog :deep(.el-textarea__inner) {
+  box-shadow: 0 0 0 1px #fed7aa inset;
+  border-radius: 8px;
+}
+
+.uni-dialog :deep(.el-textarea__inner:hover) {
+  box-shadow: 0 0 0 1px #FB923C inset;
+}
+
+.uni-dialog :deep(.el-input-number .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #fed7aa inset;
+  border-radius: 8px;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
+  padding-right: 32px;
+}
+
+.uni-dialog :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #F97316, #EA580C) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+}
+
+.uni-dialog :deep(.el-button--primary:hover) {
+  opacity: 0.9;
+}
+
+.section-subtitle {
+  color: #F97316;
+  font-weight: 600;
+}
+</style>

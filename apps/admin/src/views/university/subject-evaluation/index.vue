@@ -314,7 +314,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(`确定要禁用选中的${selectedIds.value.length} 条评估记录吗？`, '提示')
-    const res = await batchDeleteSubjectEvaluation(selectedIds.value)
+    const res = await batchDeleteSubjectEvaluation(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量禁用成功')
       fetchData()
@@ -337,7 +337,7 @@ const handleBatchHardDelete = async () => {
       confirmButtonText: '确定永久删除',
       cancelButtonText: '取消',
     })
-    const res = await batchHardDeleteSubjectEvaluation(selectedIds.value)
+    const res = await batchHardDeleteSubjectEvaluation(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量永久删除成功')
       fetchData()
@@ -377,9 +377,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- 搜索栏-->
-    <div class="mb-4 rounded-lg bg-white p-5">
+  <div class="page-wrap">
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png" /></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png" /></div>
+
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="page-title">学科评估管理</div>
+      <div class="page-subtitle">管理各院校的学科评估信息</div>
+    </div>
+
+    <!-- 搜索卡片 -->
+    <div class="search-card">
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        筛选条件
+      </div>
       <el-form :model="queryParams" inline>
         <el-form-item label="院校名称">
           <el-input
@@ -444,27 +457,28 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <button class="btn-search" @click="handleSearch">查询</button>
+          <button class="btn-outline" @click="handleReset">重置</button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- 操作按钮-->
-    <div class="mb-4">
-      <el-button type="primary" @click="openDialog('add')">新增评估</el-button>
-      <el-button @click="handleImport">导入Excel</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量禁用</el-button>
-      <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量永久删除</el-button>
-      <el-button @click="fetchData">刷新</el-button>
+    <!-- 操作按钮栏 -->
+    <div class="action-bar">
+      <button class="btn-primary" @click="openDialog('add')">新增评估</button>
+      <button class="btn-outline" @click="handleImport">导入Excel</button>
+      <button class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量禁用</button>
+      <button class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchHardDelete">批量永久删除</button>
+      <button class="btn-outline" @click="fetchData">刷新</button>
     </div>
 
-    <!-- 表格 -->
-    <div class="rounded-lg bg-white p-5">
+    <!-- 表格卡片 -->
+    <div class="table-card">
       <el-table
         :data="tableData"
         v-loading="loading"
         stripe
+        class="custom-table"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" />
@@ -482,29 +496,29 @@ onMounted(() => {
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            <span class="status-pill" :class="row.status === 1 ? 'status-on' : 'status-off'">
               {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
         <el-table-column label="操作" width="480" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button
-              :type="row.status === 1 ? 'info' : 'success'"
-              link
+            <button class="btn-op btn-op-detail" @click="openDialog('detail', row.id)">详情</button>
+            <button class="btn-op btn-op-edit" @click="openDialog('edit', row.id)">修改</button>
+            <button
+              class="btn-op"
+              :class="row.status === 1 ? 'btn-op-disable' : 'btn-op-enable'"
               @click="handleToggleStatus(row)"
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">永久删除</el-button>
+            </button>
+            <button class="btn-op btn-op-delete" @click="handleHardDelete(row.id)">永久删除</button>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -523,6 +537,7 @@ onMounted(() => {
       :title="dialogTitle"
       width="600px"
       :close-on-click-modal="false"
+      class="uni-dialog"
     >
       <div v-loading="formLoading">
         <!-- 详情模式 -->
@@ -628,13 +643,317 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">
+        <button class="btn-outline" @click="dialogVisible = false">
           {{ dialogMode === 'detail' ? '关闭' : '取消' }}
-        </el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">
+        </button>
+        <button v-if="dialogMode !== 'detail'" class="btn-primary" @click="handleSubmit">
           确定
-        </el-button>
+        </button>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+/* ========== 页面整体 ========== */
+.page-wrap {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========== 水印 ========== */
+.watermark-left,
+.watermark-right {
+  position: absolute;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+.watermark-left {
+  left: -60px;
+  top: -60px;
+  transform: rotate(18deg);
+}
+.watermark-right {
+  right: -40px;
+  bottom: -40px;
+  transform: rotate(-12deg);
+}
+.watermark-left img,
+.watermark-right img {
+  width: 180px;
+}
+
+/* ========== 页面头部 ========== */
+.page-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.4;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* ========== 搜索卡片 ========== */
+.search-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  margin-bottom: 16px;
+}
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+/* ========== 操作栏 ========== */
+.action-bar {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ========== 按钮 ========== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transition: all 0.3s;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-outline:hover {
+  border-color: #F97316;
+  color: #F97316;
+}
+
+.btn-search {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.25);
+}
+.btn-search:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ========== 表格卡片 ========== */
+.table-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+}
+
+/* 表格头 */
+.custom-table :deep(.el-table__header th) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+/* 行 hover */
+.custom-table :deep(.el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+
+/* 斑马纹 */
+.custom-table :deep(.el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
+}
+
+/* ========== 状态胶囊 ========== */
+.status-pill {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-on {
+  background: rgba(249, 115, 22, 0.12);
+  color: #F97316;
+}
+.status-off {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+/* ========== 操作按钮 ========== */
+.btn-op {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 14px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  margin: 0 2px;
+}
+.btn-op:hover {
+  opacity: 0.85;
+}
+.btn-op-detail {
+  color: #F97316;
+  background: rgba(249, 115, 22, 0.08);
+}
+.btn-op-edit {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+.btn-op-enable {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+.btn-op-disable {
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.08);
+}
+.btn-op-delete {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ========== 分页 ========== */
+.custom-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+.custom-pagination :deep(.el-pagination .is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border-radius: 6px;
+}
+.custom-pagination :deep(.el-pagination .is-active .el-pager li) {
+  color: #fff !important;
+}
+.custom-pagination :deep(.el-pager li:hover) {
+  color: #F97316;
+}
+
+/* ========== Dialog ========== */
+.uni-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+}
+.uni-dialog :deep(.el-descriptions) {
+  --el-descriptions-item-bordered-label-background: rgba(249, 115, 22, 0.05);
+}
+.uni-dialog :deep(.el-descriptions__label) {
+  background: rgba(249, 115, 22, 0.06) !important;
+}
+.uni-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+}
+.uni-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+.uni-dialog :deep(.el-dialog__footer) {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+</style>

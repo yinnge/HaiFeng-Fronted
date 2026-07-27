@@ -4,6 +4,8 @@ import { ref, reactive, onMounted } from 'vue'
 
 import { ElMessageBox, ElMessage } from 'element-plus'
 
+import { Search } from '@element-plus/icons-vue'
+
 import {
 
   getIndustryPage,
@@ -65,6 +67,7 @@ const queryParams = reactive<IndustryQueryDTO>({
   isDeleted: undefined,
 
 })
+
 const dialogVisible = ref(false)
 
 const dialogMode = ref<'detail' | 'add' | 'edit'>('detail')
@@ -577,7 +580,7 @@ const handleBatchDelete = async () => {
 
     })
 
-    const res = await batchDeleteIndustry(selectedIds.value)
+    const res = await batchDeleteIndustry(selectedIds.value as unknown as number[])
 
     if (res.data.code === 200) { ElMessage.success('批量删除成功'); selectedIds.value = []; fetchData() }
 
@@ -651,9 +654,39 @@ onMounted(() => { fetchData() })
 
 <template>
 
-  <div>
+  <div class="page-wrap">
 
-    <div class="mb-4 rounded-lg bg-white p-5">
+    <!-- Watermarks -->
+
+    <img src="@/assets/images/logo-main.png" class="watermark watermark-tr" alt="" />
+
+    <img src="@/assets/images/logo-main.png" class="watermark watermark-bl" alt="" />
+
+
+
+    <!-- Page Header -->
+
+    <div class="page-header">
+
+      <h1 class="page-title">行业管理</h1>
+
+      <p class="page-subtitle">管理行业信息、查看行业详情、导入导出数据</p>
+
+    </div>
+
+
+
+    <!-- Search Card -->
+
+    <div class="search-card">
+
+      <div class="section-label">
+
+        <el-icon :size="14"><Search /></el-icon>
+
+        <span style="margin-left: 6px;">搜索筛选</span>
+
+      </div>
 
       <el-form :model="queryParams" inline>
 
@@ -693,9 +726,9 @@ onMounted(() => { fetchData() })
 
         <el-form-item>
 
-          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <button type="button" class="btn-search" @click="handleSearch">查询</button>
 
-          <el-button @click="handleReset">重置</el-button>
+          <button type="button" class="btn-reset" @click="handleReset">重置</button>
 
         </el-form-item>
 
@@ -705,15 +738,23 @@ onMounted(() => { fetchData() })
 
 
 
-    <div class="mb-4 flex items-center justify-between">
+    <!-- Action Bar -->
 
-      <div class="flex items-center gap-2">
+    <div class="action-bar">
 
-        <el-button type="primary" @click="openDialog('add')">新增行业</el-button>
+      <div class="action-left">
 
-        <el-dropdown split-button type="success" @click="openImportDialog('main')">
+        <button type="button" class="btn-primary" @click="openDialog('add')">新增行业</button>
 
-          Excel导入
+        <el-dropdown trigger="click">
+
+          <button type="button" class="btn-outline">
+
+            Excel导入
+
+            <span class="dropdown-arrow">▼</span>
+
+          </button>
 
           <template #dropdown>
 
@@ -729,19 +770,21 @@ onMounted(() => { fetchData() })
 
         </el-dropdown>
 
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量永久删除</el-button>
+        <button type="button" class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量永久删除</button>
 
       </div>
 
-      <el-button @click="fetchData">刷新</el-button>
+      <button type="button" class="btn-refresh" @click="fetchData">刷新</button>
 
     </div>
 
 
 
-    <div class="rounded-lg bg-white p-5">
+    <!-- Table Card -->
 
-      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
+    <div class="table-card">
+
+      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" class="industry-table">
 
         <el-table-column type="selection" width="50" />
 
@@ -755,7 +798,7 @@ onMounted(() => { fetchData() })
 
           <template #default="{ row }">
 
-            <el-tag v-if="row.talentTrend" :type="trendTag(row.talentTrend)" size="small">{{ row.talentTrend }}</el-tag>
+            <span v-if="row.talentTrend" :class="['trend-pill', `trend-${trendTag(row.talentTrend)}`]">{{ row.talentTrend }}</span>
 
           </template>
 
@@ -767,7 +810,11 @@ onMounted(() => { fetchData() })
 
           <template #default="{ row }">
 
-            <el-tag :type="statusTag(row.isDeleted)" size="small">{{ statusLabel(row.isDeleted) }}</el-tag>
+            <span :class="['status-pill', row.isDeleted ? 'status-disabled' : 'status-enabled']">
+
+              {{ statusLabel(row.isDeleted) }}
+
+            </span>
 
           </template>
 
@@ -779,17 +826,17 @@ onMounted(() => { fetchData() })
 
           <template #default="{ row }">
 
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
+            <button type="button" class="btn-action btn-action-detail" @click="openDialog('detail', row.id)">详情</button>
 
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
+            <button type="button" class="btn-action btn-action-edit" @click="openDialog('edit', row.id)">修改</button>
 
-            <el-button :type="row.isDeleted ? 'success' : 'info'" link @click="handleToggleStatus(row)">
+            <button type="button" :class="['btn-action', row.isDeleted ? 'btn-action-enable' : 'btn-action-disable']" @click="handleToggleStatus(row)">
 
               {{ row.isDeleted ? '启用' : '禁用' }}
 
-            </el-button>
+            </button>
 
-            <el-button type="danger" link @click="handleDelete(row.id)">永久删除</el-button>
+            <button type="button" class="btn-action btn-action-delete" @click="handleDelete(row.id)">永久删除</button>
 
           </template>
 
@@ -799,7 +846,7 @@ onMounted(() => { fetchData() })
 
 
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
 
         <el-pagination
 
@@ -825,7 +872,9 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="850px" :close-on-click-modal="false" :destroy-on-close="true">
+    <!-- Main Dialog -->
+
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="850px" :close-on-click-modal="false" :destroy-on-close="true" class="uni-dialog">
 
       <div v-loading="formLoading">
 
@@ -857,7 +906,11 @@ onMounted(() => { fetchData() })
 
             <el-descriptions-item label="状态" :span="2">
 
-              <el-tag :type="statusTag(detailData.isDeleted)" size="small">{{ statusLabel(detailData.isDeleted) }}</el-tag>
+              <span :class="['status-pill', detailData.isDeleted ? 'status-disabled' : 'status-enabled']">
+
+                {{ statusLabel(detailData.isDeleted) }}
+
+              </span>
 
             </el-descriptions-item>
 
@@ -1147,9 +1200,9 @@ onMounted(() => { fetchData() })
 
       <template #footer>
 
-        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
+        <button type="button" class="btn-cancel" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
 
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定</el-button>
+        <button v-if="dialogMode !== 'detail'" type="button" class="btn-confirm" @click="handleSubmit">确定</button>
 
       </template>
 
@@ -1157,7 +1210,9 @@ onMounted(() => { fetchData() })
 
 
 
-    <el-dialog v-model="importDialogVisible" :title="importType === 'main' ? '导入行业主表' : '导入行业详情'" width="500px">
+    <!-- Import Dialog -->
+
+    <el-dialog v-model="importDialogVisible" :title="importType === 'main' ? '导入行业主表' : '导入行业详情'" width="500px" class="uni-dialog">
 
       <el-upload drag :auto-upload="false" :show-file-list="true" accept=".xlsx,.xls" :on-change="handleImportFileChange" :limit="1">
 
@@ -1175,9 +1230,9 @@ onMounted(() => { fetchData() })
 
       <template #footer>
 
-        <el-button @click="importDialogVisible = false">取消</el-button>
+        <button type="button" class="btn-cancel" @click="importDialogVisible = false">取消</button>
 
-        <el-button type="primary" :loading="importLoading" @click="handleImportSubmit">确定导入</el-button>
+        <button type="button" class="btn-confirm" :disabled="importLoading" @click="handleImportSubmit">{{ importLoading ? '导入中...' : '确定导入' }}</button>
 
       </template>
 
@@ -1187,3 +1242,497 @@ onMounted(() => { fetchData() })
 
 </template>
 
+
+
+<style scoped>
+/* ========== Page Wrapper ========== */
+.page-wrap {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========== Watermarks ========== */
+.watermark {
+  position: absolute;
+  width: 180px;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+.watermark-tr {
+  top: 20px;
+  right: 20px;
+  transform: rotate(18deg);
+}
+.watermark-bl {
+  bottom: 20px;
+  left: 20px;
+  transform: rotate(-12deg);
+}
+
+/* ========== Page Header ========== */
+.page-header {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* ========== Section Label ========== */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.section-label :deep(.el-icon) {
+  color: #fff;
+}
+
+/* ========== Search Card ========== */
+.search-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== Search Buttons ========== */
+.btn-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: all 0.3s;
+}
+.btn-search:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+}
+
+.btn-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-reset:hover {
+  color: #F97316;
+  border-color: #F97316;
+}
+
+/* ========== Action Bar ========== */
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.action-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary Button (新增行业) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.45);
+  opacity: 0.92;
+}
+
+/* Outline Button (Excel导入) */
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-outline:hover {
+  color: #F97316;
+  border-color: #F97316;
+}
+
+.dropdown-arrow {
+  margin-left: 6px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* Danger Button (批量删除) */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.45);
+  opacity: 0.92;
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Refresh Button */
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-refresh:hover {
+  color: #F97316;
+  border-color: #F97316;
+}
+
+/* ========== Table Card ========== */
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  position: relative;
+  z-index: 1;
+}
+
+/* Table Header */
+:deep(.industry-table .el-table__header-wrapper th.el-table__cell) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+:deep(.industry-table .el-table__header-wrapper th .cell) {
+  color: #fff !important;
+  font-weight: 600;
+}
+
+/* Row hover */
+:deep(.industry-table .el-table__body tr:hover > td.el-table__cell) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+
+/* Striped rows */
+:deep(.industry-table.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
+  background: rgba(255, 247, 237, 0.3) !important;
+}
+
+/* Selection column background */
+:deep(.industry-table .el-table-column--selection .cell) {
+  color: #fff;
+}
+
+/* ========== Status Pills ========== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.status-enabled {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+.status-disabled {
+  background: rgba(156, 163, 175, 0.15);
+  color: #6b7280;
+}
+
+/* ========== Trend Pills ========== */
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.trend-success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+.trend-warning {
+  background: rgba(249, 115, 22, 0.1);
+  color: #F97316;
+}
+.trend-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+.trend-info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* ========== Action Buttons (Table) ========== */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  margin: 0 2px;
+  transition: all 0.2s;
+}
+.btn-action-detail {
+  background: rgba(249, 115, 22, 0.1);
+  color: #F97316;
+}
+.btn-action-detail:hover {
+  background: rgba(249, 115, 22, 0.2);
+}
+.btn-action-edit {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+.btn-action-edit:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+.btn-action-enable {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+.btn-action-enable:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+.btn-action-disable {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+}
+.btn-action-disable:hover {
+  background: rgba(234, 179, 8, 0.2);
+}
+.btn-action-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+.btn-action-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ========== Custom Pagination ========== */
+.custom-pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  border-radius: 6px;
+}
+.custom-pagination :deep(.el-pager li:hover) {
+  color: #F97316;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+}
+
+/* ========== Dialog ========== */
+.uni-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin-right: 0;
+}
+.uni-dialog :deep(.el-dialog__title) {
+  font-weight: 600;
+  color: #1f2937;
+}
+.uni-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+.uni-dialog :deep(.el-dialog__footer) {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+/* Dialog Footer Buttons */
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 22px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-cancel:hover {
+  color: #F97316;
+  border-color: #F97316;
+}
+.btn-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.3s;
+}
+.btn-confirm:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+}
+.btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Form Inputs in Dialog */
+.uni-dialog :deep(.el-input .el-input__wrapper),
+.uni-dialog :deep(.el-input-number .el-input__wrapper) {
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+.uni-dialog :deep(.el-textarea .el-textarea__inner) {
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+.uni-dialog :deep(.el-input .el-input__wrapper:hover),
+.uni-dialog :deep(.el-input-number .el-input__wrapper:hover),
+.uni-dialog :deep(.el-textarea .el-textarea__inner:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+}
+.uni-dialog :deep(.el-input.is-focus .el-input__wrapper),
+.uni-dialog :deep(.el-input-number.is-focus .el-input__wrapper),
+.uni-dialog :deep(.el-textarea.is-focus .el-textarea__inner) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35) inset;
+}
+.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35) inset;
+}
+.uni-dialog :deep(.el-select .el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+}
+
+/* Descriptions */
+.uni-dialog :deep(.el-descriptions) {
+  --el-descriptions-item-bordered-label-background: rgba(249, 115, 22, 0.05);
+}
+.uni-dialog :deep(.el-descriptions__label.is-bordered-label) {
+  background: rgba(249, 115, 22, 0.06) !important;
+}
+
+/* Tabs */
+.uni-dialog :deep(.el-tabs__active-bar) {
+  background-color: #F97316;
+}
+.uni-dialog :deep(.el-tabs__item.is-active) {
+  color: #F97316;
+}
+.uni-dialog :deep(.el-tabs__item:hover) {
+  color: #F97316;
+}
+
+/* Upload drag area */
+.uni-dialog :deep(.el-upload-dragger) {
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+  transition: all 0.3s;
+}
+.uni-dialog :deep(.el-upload-dragger:hover) {
+  border-color: #F97316;
+}
+</style>

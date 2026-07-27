@@ -85,22 +85,30 @@ const employmentRoutes: RouteRecordRaw = {
       ],
     },
     {
-      path: 'industry/teacher',
-      name: 'IndustryTeacher',
-      component: () => import('@/views/employment/teacher/index.vue'),
-      meta: { title: '教师招聘管理', moduleCode: 'emp_industry_teacher' },
-    },
-    {
-      path: 'industry/healthcare',
-      name: 'IndustryHealthcare',
-      component: () => import('@/views/employment/healthcare/index.vue'),
-      meta: { title: '医疗卫生招聘管理', moduleCode: 'emp_industry_medical' },
-    },
-    {
-      path: 'industry/finance',
-      name: 'IndustryFinance',
-      component: () => import('@/views/employment/finance/index.vue'),
-      meta: { title: '银行/金融招聘管理', moduleCode: 'emp_industry_bank' },
+      path: 'industry',
+      name: 'EmploymentIndustry',
+      meta: { title: '行业专项招聘管理', icon: 'OfficeBuilding', moduleCode: 'emp_industry' },
+      redirect: '/employment/industry/bank',
+      children: [
+        {
+          path: 'bank',
+          name: 'IndustryBank',
+          component: () => import('@/views/employment/finance/index.vue'),
+          meta: { title: '银行/金融岗位管理', moduleCode: 'emp_industry_bank' },
+        },
+        {
+          path: 'medical',
+          name: 'IndustryMedical',
+          component: () => import('@/views/employment/healthcare/index.vue'),
+          meta: { title: '医疗卫生岗位管理', moduleCode: 'emp_industry_medical' },
+        },
+        {
+          path: 'teacher',
+          name: 'IndustryTeacher',
+          component: () => import('@/views/employment/teacher/index.vue'),
+          meta: { title: '教师招聘岗位管理', moduleCode: 'emp_industry_teacher' },
+        },
+      ],
     },
   ],
 }
