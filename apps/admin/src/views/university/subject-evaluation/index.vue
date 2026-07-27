@@ -265,10 +265,10 @@ const handleToggleStatus = async (row: SubjectEvaluationListVO) => {
 
 const handleDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要下架该评估记录吗？', '提示')
+    await ElMessageBox.confirm('确定要禁用该评估记录吗？', '提示')
     const res = await deleteSubjectEvaluation(id)
     if (res.data.code === 200) {
-      ElMessage.success('下架成功')
+      ElMessage.success('禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -299,14 +299,14 @@ const handleHardDelete = async (id: string) => {
 
 const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要下架的评估记录')
+    ElMessage.warning('请先选择要禁用的评估记录')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要下架选中的${selectedIds.value.length} 条评估记录吗？`, '提示')
+    await ElMessageBox.confirm(`确定要禁用选中的${selectedIds.value.length} 条评估记录吗？`, '提示')
     const res = await batchDeleteSubjectEvaluation(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量下架成功')
+      ElMessage.success('批量禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -429,8 +429,8 @@ onMounted(() => {
             clearable
             style="width: 120px"
           >
-            <el-option label="展示" :value="1" />
-            <el-option label="下架" :value="0" />
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -444,7 +444,7 @@ onMounted(() => {
     <div class="mb-4">
       <el-button type="primary" @click="openDialog('add')">新增评估</el-button>
       <el-button @click="handleImport">导入Excel</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量下架</el-button>
+      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量禁用</el-button>
       <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量永久删除</el-button>
       <el-button @click="fetchData">刷新</el-button>
     </div>
@@ -473,7 +473,7 @@ onMounted(() => {
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '展示' : '下架' }}
+              {{ row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -489,7 +489,7 @@ onMounted(() => {
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">下架</el-button>
+            <el-button type="danger" link @click="handleDelete(row.id)">禁用</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">永久删除</el-button>
           </template>
         </el-table-column>
@@ -532,7 +532,7 @@ onMounted(() => {
             <el-descriptions-item label="排序">{{ detailData.sortOrder }}</el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="detailData.status === 1 ? 'success' : 'info'" size="small">
-                {{ detailData.status === 1 ? '展示' : '下架' }}
+                {{ detailData.status === 1 ? '启用' : '禁用' }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>

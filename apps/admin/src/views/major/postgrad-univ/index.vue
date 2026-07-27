@@ -22,6 +22,7 @@ const queryParams = reactive<PostgradUnivQueryDTO>({
   size: 10,
   universityName: '',
   postgradMajorName: '',
+  status: undefined as unknown as number,
 })
 
 const fetchData = async () => {
@@ -30,6 +31,7 @@ const fetchData = async () => {
     const params: Record<string, any> = { page: queryParams.page, size: queryParams.size }
     if (queryParams.universityName) params.universityName = queryParams.universityName
     if (queryParams.postgradMajorName) params.postgradMajorName = queryParams.postgradMajorName
+    if (queryParams.status !== undefined && queryParams.status !== null && queryParams.status !== (undefined as unknown as number)) params.status = queryParams.status
     const res = await getPostgradUnivPage(params as PostgradUnivQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -48,6 +50,7 @@ const handleSearch = () => { queryParams.page = 1; fetchData() }
 const handleReset = () => {
   queryParams.universityName = ''
   queryParams.postgradMajorName = ''
+  queryParams.status = undefined as unknown as number
   queryParams.page = 1; fetchData()
 }
 const handlePageChange = (page: number) => { queryParams.page = page; fetchData() }
@@ -65,9 +68,9 @@ const handleDelete = async (id: string) => {
 
 const handleHardDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要永久删除该关联记录吗？此操作不可恢复！', '警告', { type: 'warning' })
+    await ElMessageBox.confirm('确定要删除该关联记录吗？此操作不可恢复！', '确认删除', { type: 'warning' })
     const res = await hardDeletePostgradUniv(id)
-    if (res.data.code === 200) { ElMessage.success('已永久删除'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('删除成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -84,9 +87,9 @@ const handleRestore = async (id: string) => {
 const handleBatchSoftDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
-    await ElMessageBox.confirm(`确定批量软删除选中的${selectedIds.value.length} 条记录吗？软删除后可恢复。`, '确认批量软删除')
+    await ElMessageBox.confirm(`确定批量禁用选中的${selectedIds.value.length} 条记录吗？禁用后可恢复。`, '确认批量禁用')
     const res = await batchSoftDeletePostgradUniv({ ids: selectedIds.value })
-    if (res.data.code === 200) { ElMessage.success('批量软删除成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('批量禁用成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -94,9 +97,9 @@ const handleBatchSoftDelete = async () => {
 const handleBatchHardDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
-    await ElMessageBox.confirm(`确定批量硬删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(`确定删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '确认批量删除', { type: 'warning' })
     const res = await batchHardDeletePostgradUniv({ ids: selectedIds.value })
-    if (res.data.code === 200) { ElMessage.success('批量硬删除成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('批量删除成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -144,21 +147,27 @@ onMounted(() => { fetchData() })
         <el-form-item label="考研专业">
           <el-input v-model="queryParams.postgradMajorName" placeholder="专业名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
         </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 120px">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询<</el-button>
-          <el-button @click="handleReset">重置<</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div class="mb-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <el-button type="primary" @click="handleImport">导入关联数据<</el-button>
+        <el-button type="primary" @click="handleImport">导入关联数据</el-button>
       </div>
       <div class="flex items-center gap-2">
-        <el-button :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量软删除</el-button>
-        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量硬删除</el-button>
-        <el-button @click="fetchData">刷新<</el-button>
+        <el-button :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量禁用</el-button>
+        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量删除</el-button>
+        <el-button @click="fetchData">刷新</el-button>
       </div>
     </div>
 
@@ -184,10 +193,10 @@ onMounted(() => { fetchData() })
           <template #default="{ row }">
             <el-button v-if="row.status === 1" type="info" link @click="handleDelete(row.id)">软删除</el-button>
             <template v-else>
-              <el-button type="success" link @click="handleRestore(row.id)">恢复<</el-button>
+              <el-button type="success" link @click="handleRestore(row.id)">恢复</el-button>
               <el-button type="warning" link @click="handleDelete(row.id)">软删除</el-button>
             </template>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">硬删除</el-button>
+            <el-button type="danger" link @click="handleHardDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
