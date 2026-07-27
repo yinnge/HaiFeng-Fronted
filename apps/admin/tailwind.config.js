@@ -14,6 +14,7 @@ export default {
           orange: '#e8722a',
           'orange-light': '#f5a54a',
           'orange-dark': '#c45a1f',
+          sidebar: '#F97316',
           gold: '#bf8a30',
           'gold-light': '#d4a85a',
           blue: '#1e88e5',

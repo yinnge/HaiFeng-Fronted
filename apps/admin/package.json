@@ -11,6 +11,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@antv/g2plot": "^2.4.35",
     "@element-plus/icons-vue": "^2.3.1",
     "@haifeng/shared": "workspace:*",
     "axios": "^1.6.8",

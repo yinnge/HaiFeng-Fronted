@@ -1,99 +1,74 @@
 <script setup lang="ts">
-import { ElMessageBox, ElMessage } from 'element-plus'
-import { deleteAdmin, toggleAdminStatus } from '@/api/permission/admin'
-import type { AdminVO } from '@/types/permission/admin'
+import type { OrderListVO } from '@/types/user/order'
+import { MemberTypeLabel } from '@haifeng/shared'
 
 defineProps<{
-  data: AdminVO[]
+  data: OrderListVO[]
   loading: boolean
   total: number
   page: number
   size: number
+  orderTypeLabel: Record<string, string>
 }>()
 
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
   (e: 'detail', id: string): void
-  (e: 'refresh'): void
+  (e: 'wechat', row: OrderListVO): void
+  (e: 'disable', id: string): void
+  (e: 'restore', id: string): void
+  (e: 'hard-delete', id: string): void
 }>()
 
-const handleToggleStatus = async (row: AdminVO) => {
-  const action = row.status === 1 ? '禁用' : '启用'
-  try {
-    await ElMessageBox.confirm(`确定要${action}管理员"${row.username}"吗？`, '提示', {
-      type: 'warning',
-    })
-    const res = await toggleAdminStatus(row.id)
-    if (res.data.code === 200) {
-      ElMessage.success(`${action}成功`)
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.msg || `${action}失败`)
-    }
-  } catch {
-    // 用户取消
-  }
-}
-
-const handleDelete = async (row: AdminVO) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除管理员"${row.username}"吗？此操作不可恢复！`, '警告', {
-      type: 'error',
-    })
-    const res = await deleteAdmin(row.id)
-    if (res.data.code === 200) {
-      ElMessage.success('删除成功')
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.msg || '删除失败')
-    }
-  } catch {
-    // 用户取消
-  }
-}
-
-const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
+const pageSizes = [10, 20, 30, 50, 100]
 </script>
 
 <template>
   <div class="table-card">
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="realName" label="姓名" min-width="100">
+        <el-table-column prop="id" label="ID" width="140" />
+        <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
+        <el-table-column prop="memberName" label="会员名称" min-width="100" />
+        <el-table-column prop="phone" label="手机号" width="120" />
+        <el-table-column prop="wechatId" label="微信号" width="130">
           <template #default="{ row }">
-            <span class="desc-text">{{ row.realName || '-' }}</span>
+            <span class="dim-text">{{ row.wechatId || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" label="手机号" min-width="120">
+        <el-table-column prop="orderType" label="订单类型" width="100" align="center">
           <template #default="{ row }">
-            <span class="code-text">{{ row.phone }}</span>
+            <span class="type-tag">{{ orderTypeLabel[row.orderType] }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="roleName" label="角色" min-width="100">
+        <el-table-column prop="beforeType" label="变更前" width="100" align="center">
           <template #default="{ row }">
-            <span class="role-tag">{{ row.roleName }}</span>
+            <span class="dim-text">{{ MemberTypeLabel[row.beforeType as keyof typeof MemberTypeLabel] }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="afterType" label="变更后" width="100" align="center">
           <template #default="{ row }">
-            <span v-if="row.status === 1" class="status-tag status-on">启用</span>
-            <span v-else class="status-tag status-off">禁用</span>
+            <span class="bold-text">{{ MemberTypeLabel[row.afterType as keyof typeof MemberTypeLabel] }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column prop="durationMonths" label="时长" width="80" align="center">
+          <template #default="{ row }">{{ row.durationMonths }}个月</template>
+        </el-table-column>
+        <el-table-column prop="amount" label="金额" width="100" align="right">
+          <template #default="{ row }">
+            <span class="amount-text">¥{{ row.amount?.toFixed(2) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" width="180" />
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
-              <button
-                type="button"
-                :class="['action-btn', row.status === 1 ? 'action-disable' : 'action-enable']"
-                @click="handleToggleStatus(row)"
-              >
-                {{ row.status === 1 ? '禁用' : '启用' }}
-              </button>
-              <button type="button" class="action-btn action-delete" @click="handleDelete(row)">删除</button>
+              <button type="button" class="action-btn action-wechat" @click="emit('wechat', row)">查看微信</button>
+              <button type="button" class="action-btn action-disable" @click="emit('disable', row.id)">禁用</button>
+              <button type="button" class="action-btn action-restore" @click="emit('restore', row.id)">恢复</button>
+              <button type="button" class="action-btn action-hard-delete" @click="emit('hard-delete', row.id)">硬删除</button>
             </div>
           </template>
         </el-table-column>
@@ -129,6 +104,7 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
   box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
 }
 
+/* 表格自定义样式 */
 .custom-table :deep(.el-table) {
   --el-table-border-color: #f3f4f6;
   --el-table-header-bg-color: transparent;
@@ -170,60 +146,48 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
   min-height: 200px;
 }
 
-.code-text {
-  font-family: 'SF Mono', 'Consolas', 'Liberation Mono', monospace;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.desc-text {
+/* 文字样式 */
+.dim-text {
   font-size: 13px;
   color: #9ca3af;
 }
 
-.role-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  background: linear-gradient(135deg, #F97316, #FB923C);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 12px;
+.bold-text {
   font-weight: 600;
+  color: #1f2937;
 }
 
-.status-tag {
+.amount-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #F97316;
+}
+
+.type-tag {
   display: inline-flex;
   align-items: center;
   padding: 3px 12px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.12));
+  color: #C2410C;
+  border: 1px solid rgba(249, 115, 22, 0.2);
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.status-on {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff;
-}
-
-.status-off {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-}
-
+/* 操作按钮组 */
 .action-group {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  padding: 3px 12px;
+  padding: 3px 10px;
   border: none;
   border-radius: 12px;
   font-size: 12px;
@@ -242,33 +206,43 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
   transform: translateY(-1px);
 }
 
+.action-wechat {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.action-wechat:hover {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
 .action-disable {
-  background: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fde68a;
-}
-.action-disable:hover {
-  background: #fde68a;
-}
-
-.action-enable {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-.action-enable:hover {
-  background: #a7f3d0;
-}
-
-.action-delete {
   background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
 }
-.action-delete:hover {
+.action-disable:hover {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
 }
 
+.action-restore {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-restore:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-hard-delete {
+  background: linear-gradient(135deg, #b91c1c, #dc2626);
+  color: #fff;
+}
+.action-hard-delete:hover {
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 自定义分页 */
 .custom-pagination {
   display: flex;
   justify-content: flex-end;

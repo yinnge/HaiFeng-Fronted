@@ -108,7 +108,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="user-page">
+    <!-- 枫叶装饰 -->
+    <div class="watermark-left">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+    <div class="watermark-right">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+
+    <div class="page-header">
+      <div class="page-title">用户管理</div>
+      <div class="page-subtitle">查看用户信息及会员状态</div>
+    </div>
+
     <UserSearch @search="handleSearch" @reset="handleReset" />
 
     <UserTable
@@ -138,3 +151,54 @@ onMounted(() => {
     />
   </div>
 </template>
+
+<style scoped>
+.user-page {
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 枫叶水印 */
+.watermark-left,
+.watermark-right {
+  position: absolute;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+.watermark-left {
+  top: -60px;
+  right: 40px;
+  transform: rotate(18deg);
+}
+.watermark-right {
+  bottom: -40px;
+  left: 30px;
+  transform: rotate(-12deg);
+}
+.watermark-left img,
+.watermark-right img {
+  width: 180px;
+  height: auto;
+}
+
+/* 页面标题 */
+.page-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+}
+</style>

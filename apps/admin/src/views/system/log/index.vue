@@ -74,24 +74,99 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <LogSearch @search="handleSearch" @reset="handleReset" />
+  <div v-loading="loading" class="log-page">
+    <div class="log-container">
+      <!-- 页面标题 -->
+      <div class="page-header">
+        <h1 class="page-title">操作日志</h1>
+        <p class="page-subtitle">查看系统操作记录和管理员行为日志</p>
+      </div>
 
-    <LogTable
-      :data="tableData"
-      :loading="loading"
-      :total="total"
-      :page="queryParams.page"
-      :size="queryParams.size"
-      @page-change="handlePageChange"
-      @size-change="handleSizeChange"
-      @detail="handleDetail"
-      @refresh="fetchData"
-    />
+      <LogSearch @search="handleSearch" @reset="handleReset" />
 
-    <LogDetailModal
-      v-model:visible="showDetailModal"
-      :log-id="currentLogId"
-    />
+      <LogTable
+        :data="tableData"
+        :loading="loading"
+        :total="total"
+        :page="queryParams.page"
+        :size="queryParams.size"
+        @page-change="handlePageChange"
+        @size-change="handleSizeChange"
+        @detail="handleDetail"
+        @refresh="fetchData"
+      />
+
+      <LogDetailModal
+        v-model:visible="showDetailModal"
+        :log-id="currentLogId"
+      />
+    </div>
+
+    <!-- 品牌装饰：枫叶水印 -->
+    <div class="brand-watermark brand-watermark-1"></div>
+    <div class="brand-watermark brand-watermark-2"></div>
   </div>
 </template>
+
+<style scoped>
+.log-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.6) 0%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 247, 237, 0.3) 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.log-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* 品牌装饰：枫叶水印 */
+.brand-watermark {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.brand-watermark-1 {
+  top: -50px;
+  right: -50px;
+  background-image: url('@/assets/images/logo-main.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.brand-watermark-2 {
+  bottom: -80px;
+  left: -80px;
+  background-image: url('@/assets/images/logo-main.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: rotate(15deg);
+}
+</style>

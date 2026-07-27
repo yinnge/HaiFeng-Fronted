@@ -11,7 +11,7 @@ const isCollapsed = computed(() => appStore.sidebarCollapsed)
 <template>
   <el-container class="h-screen">
     <!-- 侧边栏 -->
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="transition-all duration-300">
+    <el-aside :width="isCollapsed ? '64px' : '240px'" class="transition-all duration-300">
       <Sidebar />
     </el-aside>
 
@@ -42,5 +42,9 @@ const isCollapsed = computed(() => appStore.sidebarCollapsed)
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+:deep(.el-aside) {
+  overflow: hidden;
 }
 </style>

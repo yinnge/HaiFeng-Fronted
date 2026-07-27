@@ -2,12 +2,14 @@
 import { ref, reactive, watch, computed } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { getRoleDetail, addRole, updateRole } from '@/api/permission/role'
-import type { RoleAddDTO, RoleUpdateDTO } from '@/types/permission/role'
+import { getModelProviderDetail, createModelProvider, updateModelProvider } from '@/api/system/provider'
+import type { ModelProviderCreateDTO, ModelProviderUpdateDTO } from '@/types/system/provider'
+import { ProviderType, ProviderTypeLabel } from '@/types/system/provider'
+import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
-  roleId?: string
+  providerId?: string
 }>()
 
 const emit = defineEmits<{
@@ -17,44 +19,63 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const showExitConfirm = ref(false)
+const originalData = ref<string>('')
 
-const isEdit = computed(() => !!props.roleId)
-const title = computed(() => (isEdit.value ? '编辑角色' : '新增角色'))
+const isEdit = computed(() => !!props.providerId)
+const title = computed(() => (isEdit.value ? '编辑服务商' : '新增服务商'))
 
-const form = reactive<RoleAddDTO & { id?: string }>({
-  roleName: '',
-  roleCode: '',
+const form = reactive<ModelProviderCreateDTO & { id?: string }>({
+  apiKey: '',
+  baseUrl: '',
+  modelName: '',
+  providerName: '',
+  type: ProviderType.AI,
   description: '',
+  status: 1,
 })
 
 const rules: FormRules = {
-  roleName: [
-    { required: true, message: '请输入角色名称', trigger: 'blur' },
-    { max: 50, message: '角色名称不能超过50个字符', trigger: 'blur' },
+  apiKey: [
+    { required: true, message: '请输入 API Key', trigger: 'blur' },
+    { max: 500, message: 'API Key 不能超过500个字符', trigger: 'blur' },
   ],
-  roleCode: [
-    { required: true, message: '请输入角色编码', trigger: 'blur' },
-    { max: 50, message: '角色编码不能超过50个字符', trigger: 'blur' },
+  modelName: [
+    { required: true, message: '请输入模型名称', trigger: 'blur' },
+    { max: 100, message: '模型名称不能超过100个字符', trigger: 'blur' },
   ],
-  description: [
-    { max: 100, message: '描述不能超过100个字符', trigger: 'blur' },
+  providerName: [
+    { required: true, message: '请输入服务商名称', trigger: 'blur' },
+    { max: 100, message: '服务商名称不能超过100个字符', trigger: 'blur' },
+  ],
+  type: [
+    { required: true, message: '请选择类型', trigger: 'change' },
   ],
 }
 
+const hasChanges = computed(() => {
+  return JSON.stringify(form) !== originalData.value
+})
+
 const fetchDetail = async () => {
-  if (!props.roleId) return
+  if (!props.providerId) return
   loading.value = true
   try {
-    const res = await getRoleDetail(props.roleId)
+    const res = await getModelProviderDetail(props.providerId)
     if (res.data.code === 200) {
       const data = res.data.data
       form.id = data.id
-      form.roleName = data.roleName
-      form.roleCode = data.roleCode
+      form.apiKey = ''
+      form.baseUrl = data.baseUrl || ''
+      form.modelName = data.modelName
+      form.providerName = data.providerName
+      form.type = data.type
       form.description = data.description || ''
+      form.status = data.status
+      originalData.value = JSON.stringify(form)
     }
   } catch (error) {
-    ElMessage.error('获取角色详情失败')
+    ElMessage.error('获取服务商详情失败')
   } finally {
     loading.value = false
   }
@@ -62,13 +83,28 @@ const fetchDetail = async () => {
 
 const resetForm = () => {
   form.id = undefined
-  form.roleName = ''
-  form.roleCode = ''
+  form.apiKey = ''
+  form.baseUrl = ''
+  form.modelName = ''
+  form.providerName = ''
+  form.type = ProviderType.AI
   form.description = ''
+  form.status = 1
+  originalData.value = ''
   formRef.value?.resetFields()
 }
 
 const handleClose = () => {
+  if (hasChanges.value) {
+    showExitConfirm.value = true
+  } else {
+    emit('update:visible', false)
+    resetForm()
+  }
+}
+
+const handleDiscard = () => {
+  showExitConfirm.value = false
   emit('update:visible', false)
   resetForm()
 }
@@ -79,15 +115,20 @@ const handleSave = async () => {
 
   loading.value = true
   try {
-    if (isEdit.value && props.roleId) {
-      const data: RoleUpdateDTO = {
-        roleName: form.roleName,
-        roleCode: form.roleCode,
+    if (isEdit.value && props.providerId) {
+      const data: ModelProviderUpdateDTO = {
+        apiKey: form.apiKey || undefined,
+        baseUrl: form.baseUrl,
+        modelName: form.modelName,
+        providerName: form.providerName,
+        type: form.type,
         description: form.description,
+        status: form.status,
       }
-      const res = await updateRole(props.roleId, data)
+      const res = await updateModelProvider(props.providerId, data)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
+        showExitConfirm.value = false
         emit('update:visible', false)
         emit('success')
         resetForm()
@@ -95,12 +136,16 @@ const handleSave = async () => {
         ElMessage.error(res.data.msg || '更新失败')
       }
     } else {
-      const data: RoleAddDTO = {
-        roleName: form.roleName,
-        roleCode: form.roleCode,
+      const data: ModelProviderCreateDTO = {
+        apiKey: form.apiKey,
+        baseUrl: form.baseUrl,
+        modelName: form.modelName,
+        providerName: form.providerName,
+        type: form.type,
         description: form.description,
+        status: form.status,
       }
-      const res = await addRole(data)
+      const res = await createModelProvider(data)
       if (res.data.code === 200) {
         ElMessage.success('新增成功')
         emit('update:visible', false)
@@ -117,11 +162,17 @@ const handleSave = async () => {
   }
 }
 
+const handleSaveAndClose = async () => {
+  await handleSave()
+}
+
 watch(
   () => props.visible,
   (val) => {
-    if (val && props.roleId) {
+    if (val && props.providerId) {
       fetchDetail()
+    } else if (val) {
+      originalData.value = JSON.stringify(form)
     }
   }
 )
@@ -131,7 +182,7 @@ watch(
   <el-dialog
     :model-value="visible"
     :title="title"
-    width="500px"
+    width="520px"
     :close-on-click-modal="false"
     class="detail-dialog"
     @update:model-value="handleClose"
@@ -140,22 +191,49 @@ watch(
       ref="formRef"
       :model="form"
       :rules="rules"
-      label-width="80px"
+      label-width="100px"
       v-loading="loading"
     >
-      <el-form-item label="角色名称" prop="roleName">
-        <el-input v-model="form.roleName" placeholder="请输入角色名称" />
+      <el-form-item label="服务商名称" prop="providerName">
+        <el-input v-model="form.providerName" placeholder="请输入服务商名称" />
       </el-form-item>
-      <el-form-item label="角色编码" prop="roleCode">
-        <el-input v-model="form.roleCode" placeholder="请输入角色编码" />
+      <el-form-item label="模型名称" prop="modelName">
+        <el-input v-model="form.modelName" placeholder="请输入模型名称，如：gpt-4o" />
+      </el-form-item>
+      <el-form-item label="类型" prop="type">
+        <el-select v-model="form.type" placeholder="请选择类型" style="width: 100%">
+          <el-option
+            v-for="(label, key) in ProviderTypeLabel"
+            :key="key"
+            :label="label"
+            :value="key"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="API Key" prop="apiKey">
+        <el-input
+          v-model="form.apiKey"
+          type="password"
+          show-password
+          :placeholder="isEdit ? '留空则不修改' : '请输入 API Key'"
+        />
+      </el-form-item>
+      <el-form-item label="Base URL" prop="baseUrl">
+        <el-input v-model="form.baseUrl" placeholder="请输入 Base URL（可选）" />
       </el-form-item>
       <el-form-item label="描述" prop="description">
         <el-input
           v-model="form.description"
           type="textarea"
           :rows="3"
-          placeholder="请输入描述"
+          placeholder="请输入描述（可选）"
         />
+      </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="form.status" style="width: 100%">
+          <el-option label="启用" :value="1" />
+          <el-option label="禁用" :value="0" />
+        </el-select>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -173,6 +251,13 @@ watch(
       </div>
     </template>
   </el-dialog>
+
+  <ExitConfirmModal
+    v-model:visible="showExitConfirm"
+    @cancel="showExitConfirm = false"
+    @discard="handleDiscard"
+    @save="handleSaveAndClose"
+  />
 </template>
 
 <style scoped>
@@ -225,6 +310,19 @@ watch(
 }
 
 .detail-dialog :deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.detail-dialog :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.detail-dialog :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.detail-dialog :deep(.el-select__wrapper.is-focused) {
   box-shadow: 0 0 0 1px #F97316 inset;
 }
 
