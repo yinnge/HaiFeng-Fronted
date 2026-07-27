@@ -4,12 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore, useUserStore } from '@/store'
 import { asyncRoutes } from '@/router'
 import type { RouteRecordRaw } from 'vue-router'
+import logoMain from '@/assets/images/logo-main.png'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
-
 const userStore = useUserStore()
+
 const isCollapsed = computed(() => appStore.sidebarCollapsed)
 const activeMenu = computed(() => route.path)
 
@@ -31,7 +32,6 @@ const menuList = computed(() => {
 
   function buildMenu(route: RouteRecordRaw): MenuItem | null {
     if (route.meta?.hidden) return null
-    // profile 已加载时按 moduleCode 过滤
     if (userStore.profile && route.meta?.moduleCode) {
       if (!userStore.moduleCodes.includes(route.meta.moduleCode as string)) {
         return null
@@ -73,20 +73,27 @@ function handleMenuSelect(index: string) {
 </script>
 
 <template>
-  <div class="flex h-full flex-col" style="background-color: #001529;">
-    <div class="flex h-16 items-center justify-center" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-      <span v-if="!isCollapsed" class="text-sm font-medium text-white">海枫管理后台</span>
-      <span v-else class="text-lg font-bold text-white">HF</span>
+  <div class="sidebar-root">
+    <!-- Brand Area: white background with logo -->
+    <div class="sidebar-brand">
+      <template v-if="!isCollapsed">
+        <img :src="logoMain" alt="海枫管理后台" class="sidebar-logo" />
+        <span class="sidebar-brand-text">海枫管理后台</span>
+      </template>
+      <template v-else>
+        <img :src="logoMain" alt="HF" class="sidebar-logo-collapsed" />
+      </template>
     </div>
 
+    <!-- Navigation Menu -->
     <el-menu
       :default-active="activeMenu"
       :collapse="isCollapsed"
       :collapse-transition="false"
-      background-color="#001529"
-      text-color="rgba(255,255,255,0.65)"
-      active-text-color="#1890ff"
-      class="flex-1 border-none"
+      background-color="#F97316"
+      text-color="#FFFFFF"
+      active-text-color="#FFFFFF"
+      class="sidebar-menu"
       @select="handleMenuSelect"
     >
       <template v-for="menu in menuList" :key="menu.path">
@@ -137,3 +144,106 @@ function handleMenuSelect(index: string) {
     </el-menu>
   </div>
 </template>
+
+<style scoped>
+.sidebar-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #F97316;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 64px;
+  padding: 0 16px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-collapsed {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu {
+  flex: 1;
+  border-right: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-menu :deep(.el-sub-menu__title .el-sub-menu__icon-arrow) {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sidebar-menu :deep(.el-menu-item),
+.sidebar-menu :deep(.el-sub-menu__title) {
+  transition: background-color 200ms ease;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  height: 48px;
+  line-height: 48px;
+}
+
+.sidebar-menu :deep(.el-menu-item:hover),
+.sidebar-menu :deep(.el-sub-menu__title:hover) {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF;
+  font-weight: 500;
+  position: relative;
+  border-left: 4px solid #FFFFFF;
+  padding-left: 12px;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active::before) {
+  display: none;
+}
+
+.sidebar-menu :deep(.el-menu) {
+  transition: height 200ms ease-out;
+}
+
+.sidebar-menu :deep(.el-menu--collapse .el-menu-item),
+.sidebar-menu :deep(.el-menu--collapse .el-sub-menu__title) {
+  padding-left: 0;
+  justify-content: center;
+}
+
+.sidebar-menu :deep(.el-menu--collapse .el-menu-item.is-active) {
+  border-left: none;
+  padding-left: 0;
+}
+
+.sidebar-menu :deep(.el-sub-menu .el-menu) {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+</style>
