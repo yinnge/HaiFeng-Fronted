@@ -300,7 +300,27 @@ const resetFormData = () => {
 
   formData.registrationTime = ''
 
-  formData.detail = undefined
+  formData.detail = {
+
+    basicInfo: {},
+
+    awards: [],
+
+    background: '',
+
+    purposes: [],
+
+    competitionRules: [],
+
+    scoringCriteria: [],
+
+    notices: [],
+
+    processGuide: [],
+
+    awardsDisplay: [],
+
+  }
 
 }
 

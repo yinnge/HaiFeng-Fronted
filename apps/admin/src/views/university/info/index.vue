@@ -53,7 +53,7 @@ const formData = reactive<UniversityAddDTO>({
   cityName: '',
   region: '华东',
   category: '',
-  majorCount: undefined,
+  majorCount: 0,
   educationLevel: '',
   nature: '',
   recommendationRate: undefined,
@@ -291,21 +291,6 @@ const handleToggleStatus = async (row: UniversityListVO) => {
   }
 }
 
-const handleDelete = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要下架该院校吗？', '提示')
-    const res = await deleteUniversity(id)
-    if (res.data.code === 200) {
-      ElMessage.success('下架成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    // cancel
-  }
-}
-
 const handleHardDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm('确定要永久删除该院校吗？此操作不可恢复！', '警告', {
@@ -316,25 +301,6 @@ const handleHardDelete = async (id: string) => {
     const res = await hardDeleteUniversity(id)
     if (res.data.code === 200) {
       ElMessage.success('永久删除成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    // cancel
-  }
-}
-
-const handleBatchDelete = async () => {
-  if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要下架的院校')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确定要下架选中的${selectedIds.value.length} 所院校吗？`, '提示')
-    const res = await batchDeleteUniversity(selectedIds.value)
-    if (res.data.code === 200) {
-      ElMessage.success('批量下架成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -460,7 +426,6 @@ onMounted(() => {
       <el-button type="primary" @click="openDialog('add')">新增院校</el-button>
       <el-button @click="handleImport(importUniversityMain)">导入主表</el-button>
       <el-button @click="handleImport(importUniversityDetail)">导入详情</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量下架</el-button>
       <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量永久删除</el-button>
       <el-button @click="fetchData">刷新</el-button>
     </div>
@@ -501,7 +466,6 @@ onMounted(() => {
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">下架</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">永久删除</el-button>
           </template>
         </el-table-column>
@@ -641,7 +605,7 @@ onMounted(() => {
                   </el-col>
                 </el-row>
                 <el-row :gutter="16">
-                  <el-col :span="12">
+                  <el-col :span="8">
                     <el-form-item label="院校类别" required>
                       <el-select v-model="formData.category" placeholder="请选择" style="width: 100%">
                         <el-option label="综合" value="综合" />
@@ -658,12 +622,12 @@ onMounted(() => {
                       </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
+                  <el-col :span="8">
                     <el-form-item label="专业数量">
-                      <el-input-number v-model="formData.majorCount" :min="0" style="width: 100%" />
+                      <el-input-number v-model="formData.majorCount" :min="0" :controls="true" style="width: 100%" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
+                  <el-col :span="8">
                     <el-form-item label="办学层次">
                       <el-select v-model="formData.educationLevel" placeholder="请选择" style="width: 100%">
                         <el-option label="本科" value="本科" />

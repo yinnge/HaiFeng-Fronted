@@ -240,9 +240,9 @@ const handleDelete = async (id: string) => {
 
 const handleHardDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要永久删除该考研专业吗？此操作不可恢复！', '警告', { type: 'warning' })
+    await ElMessageBox.confirm('确定要删除该考研专业吗？此操作不可恢复！', '确认删除', { type: 'warning' })
     const res = await hardDeletePostgradMajor(id)
-    if (res.data.code === 200) { ElMessage.success('已永久删除'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('删除成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -259,9 +259,9 @@ const handleRestore = async (id: string) => {
 const handleBatchSoftDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
-    await ElMessageBox.confirm(`确定批量软删除选中的${selectedIds.value.length} 条记录吗？软删除后可恢复。`, '确认批量软删除')
+    await ElMessageBox.confirm(`确定批量禁用选中的${selectedIds.value.length} 条记录吗？禁用后可恢复。`, '确认批量禁用')
     const res = await batchSoftDeletePostgradMajor({ ids: selectedIds.value })
-    if (res.data.code === 200) { ElMessage.success('批量软删除成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('批量禁用成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -269,9 +269,9 @@ const handleBatchSoftDelete = async () => {
 const handleBatchHardDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
-    await ElMessageBox.confirm(`确定批量硬删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(`确定删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '确认批量删除', { type: 'warning' })
     const res = await batchHardDeletePostgradMajor({ ids: selectedIds.value })
-    if (res.data.code === 200) { ElMessage.success('批量硬删除成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('批量删除成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -343,21 +343,21 @@ onMounted(() => { fetchData() })
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询<</el-button>
-          <el-button @click="handleReset">重置<</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div class="mb-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openDialog('add')">新增考研专业<</el-button>
-        <el-button @click="handleImport">导入考研专业<</el-button>
+        <el-button type="primary" @click="openDialog('add')">新增考研专业</el-button>
+        <el-button @click="handleImport">导入考研专业</el-button>
       </div>
       <div class="flex items-center gap-2">
-        <el-button :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量软删除</el-button>
-        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量硬删除</el-button>
-        <el-button @click="fetchData">刷新<</el-button>
+        <el-button :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量禁用</el-button>
+        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量删除</el-button>
+        <el-button @click="fetchData">刷新</el-button>
       </div>
     </div>
 
@@ -394,12 +394,12 @@ onMounted(() => { fetchData() })
         <el-table-column prop="createdAt" label="创建时间" width="180" />
         <el-table-column label="操作" width="320" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情<</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改<</el-button>
-            <el-button v-if="row.status === 1" type="info" link @click="handleToggleStatus(row)">禁用<</el-button>
-            <el-button v-else type="success" link @click="handleRestore(row.id)">恢复<</el-button>
+            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
+            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
+            <el-button v-if="row.status === 1" type="info" link @click="handleToggleStatus(row)">禁用</el-button>
+            <el-button v-else type="success" link @click="handleRestore(row.id)">恢复</el-button>
             <el-button type="warning" link @click="handleDelete(row.id)">软删除</el-button>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">硬删除</el-button>
+            <el-button type="danger" link @click="handleHardDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -508,21 +508,21 @@ onMounted(() => { fetchData() })
             <el-form-item label="考试科目">
               <div v-for="(item, index) in arrOrEmpty(formData.examSubjects)" :key="index" class="mb-2 flex items-center gap-2">
                 <el-input v-model="formData.examSubjects![index]" placeholder="请输入考试科目" style="width: 400px" />
-                <el-button type="danger" link @click="removeArrayItem(formData.examSubjects, index)">删除<</el-button>
+                <el-button type="danger" link @click="removeArrayItem(formData.examSubjects, index)">删除</el-button>
               </div>
-              <el-button type="primary" link @click="addArrayItem(formData.examSubjects)">+ 添加考试科目<</el-button>
+              <el-button type="primary" link @click="addArrayItem(formData.examSubjects)">+ 添加考试科目</el-button>
             </el-form-item>
             <el-form-item label="录取条件">
               <div v-for="(item, index) in arrOrEmpty(formData.admissionRequirements)" :key="index" class="mb-2 flex items-center gap-2">
                 <el-input v-model="formData.admissionRequirements![index]" placeholder="请输入录取条件" style="width: 400px" />
-                <el-button type="danger" link @click="removeArrayItem(formData.admissionRequirements, index)">删除<</el-button>
+                <el-button type="danger" link @click="removeArrayItem(formData.admissionRequirements, index)">删除</el-button>
               </div>
-              <el-button type="primary" link @click="addArrayItem(formData.admissionRequirements)">+ 添加录取条件<</el-button>
+              <el-button type="primary" link @click="addArrayItem(formData.admissionRequirements)">+ 添加录取条件</el-button>
             </el-form-item>
             <el-form-item label="跨考因素">
               <div v-for="(item, index) in arrOrEmpty(formData.crossExamFactors)" :key="index" class="mb-2 flex items-center gap-2">
                 <el-input v-model="formData.crossExamFactors![index]" placeholder="请输入跨考因素" style="width: 400px" />
-                <el-button type="danger" link @click="removeArrayItem(formData.crossExamFactors, index)">删除<</el-button>
+                <el-button type="danger" link @click="removeArrayItem(formData.crossExamFactors, index)">删除</el-button>
               </div>
               <el-button type="primary" link @click="addArrayItem(formData.crossExamFactors)">+ 添加跨考因素</el-button>
             </el-form-item>
@@ -531,8 +531,8 @@ onMounted(() => { fetchData() })
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}<</el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定<</el-button>
+        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
+        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

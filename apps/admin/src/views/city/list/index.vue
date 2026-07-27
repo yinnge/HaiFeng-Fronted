@@ -31,6 +31,7 @@ const queryParams = reactive<CityQueryDTO>({
   cityName: '',
   province: '',
   region: '',
+  isDeleted: false,
 })
 
 const dialogVisible = ref(false)
@@ -96,6 +97,7 @@ const fetchData = async () => {
     if (queryParams.cityName) params.cityName = queryParams.cityName
     if (queryParams.province) params.province = queryParams.province
     if (queryParams.region) params.region = queryParams.region
+    if (queryParams.isDeleted !== null && queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getCityPage(params as CityQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -119,6 +121,7 @@ const handleReset = () => {
   queryParams.cityName = ''
   queryParams.province = ''
   queryParams.region = ''
+  queryParams.isDeleted = false
   queryParams.page = 1
   fetchData()
 }
@@ -345,6 +348,10 @@ const handleToggleStatus = async (row: CityListVO) => {
   const actionText = newStatus ? '禁用' : '启用'
   try {
     await ElMessageBox.confirm(`确定${actionText}该城市吗？`, '提示')
+  } catch {
+    return
+  }
+  try {
     const res = await updateCityStatus(row.id, { isDeleted: newStatus })
     if (res.data.code === 200) {
       ElMessage.success(`${actionText}成功`)
@@ -353,7 +360,7 @@ const handleToggleStatus = async (row: CityListVO) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch {
-    // 取消
+    ElMessage.error('操作失败，请检查网络连接')
   }
 }
 
@@ -461,8 +468,14 @@ onMounted(() => {
         <el-form-item label="省份">
           <el-input v-model="queryParams.province" placeholder="省份模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item `label="`所属地区">
-          <el-input v-model="queryParams.region" `placeholder="`所属地区模糊搜索" `clearable style="width: 150px" @keyup.enter="handleSearch" />
+        <el-form-item label="所属地区">
+          <el-input v-model="queryParams.region" placeholder="所属地区模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="queryParams.isDeleted" placeholder="请选择" clearable style="width: 120px">
+            <el-option label="启用" :value="false" />
+            <el-option label="禁用" :value="true" />
+          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -499,7 +512,7 @@ onMounted(() => {
         <el-table-column prop="collegeCount" label="高校数量" width="100" align="center" />
         <el-table-column prop="keyCollegeCount" label="重点高校" width="100" align="center" />
         <el-table-column prop="residentPopulation" label="常住人口(万)" width="120" align="right" />
-        <el-table-column prop="isDeleted" `label="`状态" `width="80" align="center">
+        <el-table-column prop="isDeleted" label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="statusTag(row.isDeleted)" size="small">{{ statusLabel(row.isDeleted) }}</el-tag>
           </template>
@@ -538,19 +551,19 @@ onMounted(() => {
             <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="城市名称">{{ detailData.cityName }}</el-descriptions-item>
             <el-descriptions-item label="省份">{{ detailData.province }}</el-descriptions-item>
-            <el-descriptions-item `label="`所属地区">{{ detailData.region || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="所属地区">{{ detailData.region || '-' }}</el-descriptions-item>
             <el-descriptions-item label="高校数量">{{ detailData.collegeCount }}</el-descriptions-item>
             <el-descriptions-item label="重点高校数量">{{ detailData.keyCollegeCount }}</el-descriptions-item>
             <el-descriptions-item label="常住人口(万)">{{ detailData.residentPopulation }}</el-descriptions-item>
             <el-descriptions-item label="GDP(亿元)">{{ detailData.gdp }}</el-descriptions-item>
-            <el-descriptions-item `label="`状态" `:span="2">
+            <el-descriptions-item label="状态" :span="2">
               <el-tag :type="statusTag(detailData.isDeleted)" size="small">{{ statusLabel(detailData.isDeleted) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item `label="`城市简介" `:span="2">
+            <el-descriptions-item label="城市简介" :span="2">
               <div class="max-h-40 overflow-y-auto whitespace-pre-wrap">{{ detailData.cityIntro || '-' }}</div>
             </el-descriptions-item>
             <el-descriptions-item label="面积(km²)">{{ detailData.area ?? '-' }}</el-descriptions-item>
-            <el-descriptions-item `label="`副标题">{{ detailData.subtitle || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="副标题">{{ detailData.subtitle || '-' }}</el-descriptions-item>
             <el-descriptions-item label="城市级别">{{ detailData.cityLevel || '-' }}</el-descriptions-item>
             <el-descriptions-item label="行政区划代码">{{ detailData.adminCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="人均GDP(万元)">{{ detailData.perCapitaGdp ?? '-' }}</el-descriptions-item>
@@ -571,19 +584,19 @@ onMounted(() => {
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="城市名称" required>
-                      <el-input v-model="formData.cityName" `placeholder="`请输入城市名称" `maxlength="50" show-word-limit />
+                      <el-input v-model="formData.cityName" placeholder="请输入城市名称" maxlength="50" show-word-limit />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="省份" required>
-                      <el-input v-model="formData.province" `placeholder="`请输入省份" `maxlength="30" show-word-limit />
+                      <el-input v-model="formData.province" placeholder="请输入省份" maxlength="30" show-word-limit />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
-                    <el-form-item `label="`所属地区" `required>
-                      <el-input v-model="formData.region" `placeholder="`请输入所属地区" `maxlength="20" show-word-limit />
+                    <el-form-item label="所属地区" required>
+                      <el-input v-model="formData.region" placeholder="请输入所属地区" maxlength="20" show-word-limit />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
@@ -611,8 +624,8 @@ onMounted(() => {
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-form-item `label="`城市简介">
-                  <el-input v-model="formData.cityIntro" type="textarea" :rows="4" placeholder="`请输入城市简介" />
+                <el-form-item label="城市简介">
+                  <el-input v-model="formData.cityIntro" type="textarea" :rows="4" placeholder="请输入城市简介" />
                 </el-form-item>
               </el-form>
             </el-tab-pane>
@@ -627,8 +640,8 @@ onMounted(() => {
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
-                    <el-form-item `label="`副标题">
-                      <el-input v-model="detailForm.subtitle" `placeholder="`城市副标题" `maxlength="200" />
+                    <el-form-item label="副标题">
+                      <el-input v-model="detailForm.subtitle" placeholder="城市副标题" maxlength="200" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -770,7 +783,7 @@ onMounted(() => {
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
-                    <el-form-item `label="`交通数据">
+                    <el-form-item label="交通数据">
                       <el-input v-model="detailForm.transportation" type="textarea" :rows="3" />
                     </el-form-item>
                   </el-col>

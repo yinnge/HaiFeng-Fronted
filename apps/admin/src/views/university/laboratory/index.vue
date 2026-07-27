@@ -136,14 +136,18 @@ const resetFormData = () => {
 const fetchUniversityOptions = async () => {
   try {
     const res = await getUniversityPage({ page: 1, size: 1000 } as any)
+    console.log('院校列表响应:', res.data)
     if (res.data.code === 200) {
       universityOptions.value = res.data.data.records.map((r: any) => ({
         label: r.name,
         value: r.id,
       }))
+    } else {
+      ElMessage.error(res.data.msg || '获取院校列表失败')
     }
-  } catch {
-    // silent
+  } catch (e) {
+    console.error('获取院校列表失败:', e)
+    ElMessage.error('获取院校列表失败，请检查网络或登录状态')
   }
 }
 
@@ -363,21 +367,6 @@ const handleToggleStatus = async (row: LaboratoryListVO) => {
   }
 }
 
-const handleDelete = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要下架该实验室吗？', '提示')
-    const res = await deleteLaboratory(id)
-    if (res.data.code === 200) {
-      ElMessage.success('下架成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    // cancel
-  }
-}
-
 const handleHardDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm('确定要永久删除该实验室吗？此操作不可恢复！', '警告', {
@@ -388,25 +377,6 @@ const handleHardDelete = async (id: string) => {
     const res = await hardDeleteLaboratory(id)
     if (res.data.code === 200) {
       ElMessage.success('永久删除成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    // cancel
-  }
-}
-
-const handleBatchDelete = async () => {
-  if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要下架的实验室')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(`确定要下架选中的${selectedIds.value.length} 个实验室吗？`, '提示')
-    const res = await batchDeleteLaboratory(selectedIds.value)
-    if (res.data.code === 200) {
-      ElMessage.success('批量下架成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -544,7 +514,6 @@ onMounted(() => {
     <div class="mb-4">
       <el-button type="primary" @click="openDialog('add')">新增实验室</el-button>
       <el-button @click="handleImport">导入Excel</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量下架</el-button>
       <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量永久删除</el-button>
       <el-button @click="fetchData">刷新</el-button>
     </div>
@@ -568,12 +537,12 @@ onMounted(() => {
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '展示' : '下架' }}
+              {{ row.status === 1 ? '展示' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="480" align="center" fixed="right">
+        <el-table-column label="操作" width="430" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
             <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
@@ -584,7 +553,6 @@ onMounted(() => {
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">下架</el-button>
             <el-button type="danger" link @click="handleHardDelete(row.id)">永久删除</el-button>
           </template>
         </el-table-column>

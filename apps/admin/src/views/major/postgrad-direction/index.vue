@@ -192,14 +192,14 @@ const handleSubmit = async () => {
 
 const handleDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要永久删除该关联记录吗？此操作不可恢复！', '警告', {
+    await ElMessageBox.confirm('确定要删除该关联记录吗？此操作不可恢复！', '确认删除', {
       type: 'warning',
-      confirmButtonText: '确定永久删除',
+      confirmButtonText: '确定删除',
       cancelButtonText: '取消',
     })
     const res = await deleteMajorPostgradDirection(id)
     if (res.data.code === 200) {
-      ElMessage.success('已永久删除')
+      ElMessage.success('删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -214,13 +214,13 @@ const handleBatchHardDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量硬删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`,
-      '警告',
-      { type: 'warning', confirmButtonText: '确定永久删除', cancelButtonText: '取消' }
+      `确定删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`,
+      '确认批量删除',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
     const res = await batchDeleteMajorPostgradDirection({ ids: selectedIds.value })
     if (res.data.code === 200) {
-      ElMessage.success('批量硬删除成功')
+      ElMessage.success('批量删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -269,20 +269,20 @@ onMounted(() => { fetchData() })
           <el-input v-model="queryParams.postgradMajorName" placeholder="考研专业名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询<</el-button>
-          <el-button @click="handleReset">重置<</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div class="mb-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openDialog('add')">新增关联<</el-button>
-        <el-button @click="handleImport">导入关联数据<</el-button>
+        <el-button type="primary" @click="openDialog('add')">新增关联</el-button>
+        <el-button @click="handleImport">导入关联数据</el-button>
       </div>
       <div class="flex items-center gap-2">
-        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量硬删除</el-button>
-        <el-button @click="fetchData">刷新<</el-button>
+        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量删除</el-button>
+        <el-button @click="fetchData">刷新</el-button>
       </div>
     </div>
 
@@ -300,9 +300,9 @@ onMounted(() => { fetchData() })
         <el-table-column prop="createdAt" label="创建时间" width="180" />
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情<</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改<</el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">硬删除</el-button>
+            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
+            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
+            <el-button type="danger" link @click="handleDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -368,8 +368,8 @@ onMounted(() => { fetchData() })
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}<</el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定<</el-button>
+        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
+        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
