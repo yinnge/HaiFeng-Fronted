@@ -3,6 +3,7 @@ export interface CompetitionListVO {
   compName: string
   compLevel: string | null
   registrationTime: string | null
+  isDeleted: boolean
   updatedAt: string
 }
 
@@ -28,6 +29,7 @@ export interface CompetitionDetailVO {
 export interface CompetitionQueryDTO {
   compName?: string
   compLevel?: string
+  isDeleted?: boolean
   page: number
   size: number
 }

@@ -1,6 +1,6 @@
 import request from '@haifeng/shared/utils/request'
 import type { R, PageResult } from '@haifeng/shared'
-import type { BatchScoreLineListVO, BatchScoreLineDetailVO, BatchScoreLineQueryDTO, BatchScoreLineAddDTO } from '@/types/algorithm/config'
+import type { BatchScoreLineListVO, BatchScoreLineDetailVO, BatchScoreLineQueryDTO, BatchScoreLineAddDTO, BatchScoreLineStatusDTO } from '@/types/algorithm/config'
 import type { AxiosResponse } from 'axios'
 
 const PREFIX = '/api/v1/admin/algorithm/config/batch-score-line'
@@ -16,6 +16,9 @@ export const addBatchScoreLine = (data: BatchScoreLineAddDTO): Promise<AxiosResp
 
 export const updateBatchScoreLine = (id: string, data: BatchScoreLineAddDTO): Promise<AxiosResponse<R<void>>> =>
   request.put(`${PREFIX}/${id}`, data)
+
+export const updateBatchScoreLineStatus = (id: string, data: BatchScoreLineStatusDTO): Promise<AxiosResponse<R<void>>> =>
+  request.put(`${PREFIX}/${id}/status`, null, { params: { isDeleted: data.isDeleted } })
 
 export const deleteBatchScoreLine = (id: string): Promise<AxiosResponse<R<void>>> =>
   request.delete(`${PREFIX}/${id}`)

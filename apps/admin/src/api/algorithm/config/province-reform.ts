@@ -1,6 +1,6 @@
 import request from '@haifeng/shared/utils/request'
 import type { R, PageResult } from '@haifeng/shared'
-import type { ProvinceReformListVO, ProvinceReformDetailVO, ProvinceReformQueryDTO, ProvinceReformAddDTO } from '@/types/algorithm/config'
+import type { ProvinceReformListVO, ProvinceReformDetailVO, ProvinceReformQueryDTO, ProvinceReformAddDTO, ProvinceReformBatchStatusDTO } from '@/types/algorithm/config'
 import type { AxiosResponse } from 'axios'
 
 const PREFIX = '/api/v1/admin/algorithm/config/province-reform'
@@ -22,3 +22,9 @@ export const deleteProvinceReform = (id: string): Promise<AxiosResponse<R<void>>
 
 export const batchDeleteProvinceReform = (ids: string[]): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch-delete`, ids)
+
+export const updateProvinceReformStatus = (id: string, isDeleted: boolean): Promise<AxiosResponse<R<void>>> =>
+  request.put(`${PREFIX}/${id}/status`, null, { params: { isDeleted } })
+
+export const batchUpdateProvinceReformStatus = (data: ProvinceReformBatchStatusDTO): Promise<AxiosResponse<R<void>>> =>
+  request.post(`${PREFIX}/batch-status`, data)

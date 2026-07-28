@@ -4,6 +4,7 @@ export interface CompetitionMajorListVO {
   majorId: string
   competitionName: string
   majorName: string
+  isDeleted: boolean
   createdAt: string
 }
 
@@ -12,6 +13,7 @@ export interface CompetitionMajorQueryDTO {
   majorId?: number
   competitionName?: string
   majorName?: string
+  isDeleted?: boolean
   page: number
   size: number
 }

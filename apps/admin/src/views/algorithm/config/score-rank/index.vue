@@ -9,6 +9,7 @@ import {
   deleteScoreRank,
   batchDeleteScoreRank,
   importScoreRank,
+  updateScoreRankStatus,
 } from '@/api/algorithm/config/score-rank'
 import type {
   ScoreRankListVO,
@@ -39,6 +40,7 @@ const queryParams = reactive<ScoreRankQueryDTO>({
   subjectType: undefined,
   score: undefined,
   rank: undefined,
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -67,6 +69,7 @@ const fetchData = async () => {
     if (queryParams.subjectType) params.subjectType = queryParams.subjectType
     if (queryParams.score !== undefined && queryParams.score !== null) params.score = queryParams.score
     if (queryParams.rank !== undefined && queryParams.rank !== null) params.rank = queryParams.rank
+    if (queryParams.isDeleted !== undefined && queryParams.isDeleted !== null) params.isDeleted = queryParams.isDeleted
     const res = await getScoreRankPage(params as ScoreRankQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -92,6 +95,7 @@ const handleReset = () => {
   queryParams.subjectType = undefined
   queryParams.score = undefined
   queryParams.rank = undefined
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -195,12 +199,14 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDelete = async (id: string) => {
+const handleToggleStatus = async (row: ScoreRankListVO) => {
+  const newStatus = !row.isDeleted
+  const actionText = newStatus ? '启用' : '禁用'
   try {
-    await ElMessageBox.confirm('确定要软删除该记录吗？', '提示')
-    const res = await deleteScoreRank(id)
+    await ElMessageBox.confirm(`确定要${actionText}该记录吗？`, '提示')
+    const res = await updateScoreRankStatus(row.id, newStatus)
     if (res.data.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(`${actionText}成功`)
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -212,14 +218,14 @@ const handleDelete = async (id: string) => {
 
 const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的记录')
+    ElMessage.warning('请先选择要禁用的记录')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要软删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
+    await ElMessageBox.confirm(`确定要禁用选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
     const res = await batchDeleteScoreRank(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success('批量禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -300,6 +306,12 @@ onMounted(() => {
           <el-form-item label="位次">
             <el-input-number v-model="queryParams.rank" :min="0" controls-position="right" :value-on-clear="undefined" style="width: 140px;" />
           </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 110px;">
+              <el-option label="启用" :value="false" />
+              <el-option label="禁用" :value="true" />
+            </el-select>
+          </el-form-item>
         </div>
         <div class="search-actions">
           <button type="button" class="search-btn" @click="handleSearch">
@@ -336,7 +348,7 @@ onMounted(() => {
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        批量软删除
+        批量禁用
       </button>
       <div class="action-bar-spacer" />
       <button type="button" class="refresh-btn" @click="fetchData">
@@ -371,12 +383,25 @@ onMounted(() => {
               <span class="code-text">{{ row.rank }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <span :class="['status-tag', row.isDeleted ? 'status-disabled' : 'status-enabled']">
+                {{ row.isDeleted ? '禁用' : '启用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="230" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
                 <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</button>
-                <button type="button" class="action-btn action-delete" @click="handleDelete(row.id)">软删除</button>
+                <button
+                  type="button"
+                  :class="['action-btn', row.isDeleted ? 'action-enable' : 'action-disable']"
+                  @click="handleToggleStatus(row)"
+                >
+                  {{ row.isDeleted ? '启用' : '禁用' }}
+                </button>
               </div>
             </template>
           </el-table-column>
@@ -869,6 +894,41 @@ onMounted(() => {
 .action-delete:hover {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
+}
+
+.action-disable {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-disable:hover {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-enable {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-enable:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 状态标签 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-enabled {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #059669;
+}
+.status-disabled {
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  color: #9ca3af;
 }
 
 /* 分页 */

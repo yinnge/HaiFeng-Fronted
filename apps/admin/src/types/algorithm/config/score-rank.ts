@@ -7,6 +7,7 @@ export interface ScoreRankListVO {
   subjectType: string
   score: number
   rank: number
+  isDeleted: boolean
 }
 
 export interface ScoreRankDetailVO {
@@ -27,6 +28,7 @@ export interface ScoreRankQueryDTO extends BasePageQuery {
   subjectType?: string
   score?: number
   rank?: number
+  isDeleted?: boolean
 }
 
 export interface ScoreRankAddDTO {

@@ -26,6 +26,10 @@ export const updateCompetition = (data: CompetitionUpdateDTO) => {
   return request.put<R<void>>(`${PREFIX}/update`, data)
 }
 
+export const enableCompetition = (id: string) => {
+  return request.put<R<void>>(`${PREFIX}/${id}/enable`)
+}
+
 export const softDeleteCompetition = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/soft/${id}`)
 }

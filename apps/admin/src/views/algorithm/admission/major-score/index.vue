@@ -35,7 +35,7 @@ const queryParams = reactive<AdmissionMajorScoreQueryDTO>({
   majorCode: '',
   majorName: '',
   educationLevel: '',
-  isDeleted: false,
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -53,19 +53,19 @@ const formData = reactive<AdmissionMajorScoreAddDTO>({
   duration: '',
   tuition: '',
   description: '',
-  admissionCount: undefined,
-  minScore: undefined,
-  minRank: undefined,
-  avgScore: undefined,
-  avgRank: undefined,
-  maxScore: undefined,
-  maxRank: undefined,
+  admissionCount: 0,
+  minScore: 0,
+  minRank: 0,
+  avgScore: 0,
+  avgRank: 0,
+  maxScore: 0,
+  maxRank: 0,
   constraints: [],
 })
 
 const fetchGroupOptions = async () => {
   try {
-    const res = await getGroupPage({ page: 1, size: 1000, isDeleted: false })
+    const res = await getGroupPage({ page: 1, size: 100 })
     if (res.data.code === 200) {
       groupOptions.value = res.data.data.records.map((g) => ({
         id: g.id,
@@ -110,7 +110,7 @@ const handleReset = () => {
   queryParams.majorCode = ''
   queryParams.majorName = ''
   queryParams.educationLevel = ''
-  queryParams.isDeleted = false
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -138,13 +138,13 @@ const resetFormData = () => {
   formData.duration = ''
   formData.tuition = ''
   formData.description = ''
-  formData.admissionCount = undefined
-  formData.minScore = undefined
-  formData.minRank = undefined
-  formData.avgScore = undefined
-  formData.avgRank = undefined
-  formData.maxScore = undefined
-  formData.maxRank = undefined
+  formData.admissionCount = 0
+  formData.minScore = 0
+  formData.minRank = 0
+  formData.avgScore = 0
+  formData.avgRank = 0
+  formData.maxScore = 0
+  formData.maxRank = 0
   formData.constraints = []
 }
 
@@ -171,13 +171,13 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           formData.duration = d.duration || ''
           formData.tuition = d.tuition || ''
           formData.description = d.description || ''
-          formData.admissionCount = d.admissionCount ?? undefined
-          formData.minScore = d.minScore ?? undefined
-          formData.minRank = d.minRank ?? undefined
-          formData.avgScore = d.avgScore ?? undefined
-          formData.avgRank = d.avgRank ?? undefined
-          formData.maxScore = d.maxScore ?? undefined
-          formData.maxRank = d.maxRank ?? undefined
+          formData.admissionCount = d.admissionCount ?? 0
+          formData.minScore = d.minScore ?? 0
+          formData.minRank = d.minRank ?? 0
+          formData.avgScore = d.avgScore ?? 0
+          formData.avgRank = d.avgRank ?? 0
+          formData.maxScore = d.maxScore ?? 0
+          formData.maxRank = d.maxRank ?? 0
           formData.constraints = d.constraints || []
         } else {
           dialogTitle.value = '专业明细详情'
@@ -209,13 +209,13 @@ const handleSubmit = async () => {
         duration: formData.duration || undefined,
         tuition: formData.tuition || undefined,
         description: formData.description || undefined,
-        admissionCount: formData.admissionCount ?? undefined,
-        minScore: formData.minScore ?? undefined,
-        minRank: formData.minRank ?? undefined,
-        avgScore: formData.avgScore ?? undefined,
-        avgRank: formData.avgRank ?? undefined,
-        maxScore: formData.maxScore ?? undefined,
-        maxRank: formData.maxRank ?? undefined,
+        admissionCount: formData.admissionCount || undefined,
+        minScore: formData.minScore || undefined,
+        minRank: formData.minRank || undefined,
+        avgScore: formData.avgScore || undefined,
+        avgRank: formData.avgRank || undefined,
+        maxScore: formData.maxScore || undefined,
+        maxRank: formData.maxRank || undefined,
         constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
       })
     } else if (dialogMode.value === 'edit' && currentId.value) {
@@ -225,13 +225,13 @@ const handleSubmit = async () => {
         duration: formData.duration || undefined,
         tuition: formData.tuition || undefined,
         description: formData.description || undefined,
-        admissionCount: formData.admissionCount ?? undefined,
-        minScore: formData.minScore ?? undefined,
-        minRank: formData.minRank ?? undefined,
-        avgScore: formData.avgScore ?? undefined,
-        avgRank: formData.avgRank ?? undefined,
-        maxScore: formData.maxScore ?? undefined,
-        maxRank: formData.maxRank ?? undefined,
+        admissionCount: formData.admissionCount || undefined,
+        minScore: formData.minScore || undefined,
+        minRank: formData.minRank || undefined,
+        avgScore: formData.avgScore || undefined,
+        avgRank: formData.avgRank || undefined,
+        maxScore: formData.maxScore || undefined,
+        maxRank: formData.maxRank || undefined,
         constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
       })
     } else {
@@ -282,16 +282,16 @@ const handleDelete = async (id: string) => {
   }
 }
 
-const handleBatchDelete = async () => {
+const handleBatchDisable = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的专业明细')
+    ElMessage.warning('请先选择要禁用的专业明细')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的${selectedIds.value.length} 条专业明细吗？`, '提示')
+    await ElMessageBox.confirm(`确定要禁用选中的${selectedIds.value.length} 条专业明细吗？`, '提示')
     const res = await batchDeleteMajorScore(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success('批量禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -393,9 +393,9 @@ onMounted(() => {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <span>新增专业明细</span>
       </button>
-      <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        <span>批量软删除</span>
+      <button class="custom-btn outline-btn" :disabled="selectedIds.length === 0" @click="handleBatchDisable">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>批量禁用</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -423,14 +423,13 @@ onMounted(() => {
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" align="center" fixed="right">
+        <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="{ row }">
             <button class="action-pill action-info" @click="openDialog('detail', row.id)">详情</button>
             <button class="action-pill action-edit" @click="openDialog('edit', row.id)">修改</button>
             <button :class="['action-pill', row.isDeleted ? 'action-enabled' : 'action-disabled']" @click="handleToggleStatus(row)">
               {{ row.isDeleted ? '启用' : '禁用' }}
             </button>
-            <button class="action-pill action-danger" @click="handleDelete(row.id)">软删除</button>
           </template>
         </el-table-column>
       </el-table>
@@ -543,39 +542,39 @@ onMounted(() => {
             <el-row :gutter="16">
               <el-col :span="6">
                 <el-form-item label="录取人数" class="dialog-form-item">
-                  <el-input-number v-model="formData.admissionCount" :min="0" :max="99999" style="width: 100%;" />
+                  <el-input v-model.number="formData.admissionCount" type="number" :min="0" :max="99999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="最低分" class="dialog-form-item">
-                  <el-input-number v-model="formData.minScore" :min="0" :max="900" style="width: 100%;" />
+                  <el-input v-model.number="formData.minScore" type="number" :min="0" :max="900" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="中位分" class="dialog-form-item">
-                  <el-input-number v-model="formData.avgScore" :min="0" :precision="2" style="width: 100%;" />
+                  <el-input v-model.number="formData.avgScore" type="number" :min="0" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="最高分" class="dialog-form-item">
-                  <el-input-number v-model="formData.maxScore" :min="0" :max="900" style="width: 100%;" />
+                  <el-input v-model.number="formData.maxScore" type="number" :min="0" :max="900" style="width: 100%;" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
               <el-col :span="6">
                 <el-form-item label="最低位次" class="dialog-form-item">
-                  <el-input-number v-model="formData.minRank" :min="0" :max="9999999" style="width: 100%;" />
+                  <el-input v-model.number="formData.minRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="中位位次" class="dialog-form-item">
-                  <el-input-number v-model="formData.avgRank" :min="0" :max="9999999" style="width: 100%;" />
+                  <el-input v-model.number="formData.avgRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="最高位次" class="dialog-form-item">
-                  <el-input-number v-model="formData.maxRank" :min="0" :max="9999999" style="width: 100%;" />
+                  <el-input v-model.number="formData.maxRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -872,16 +871,10 @@ onMounted(() => {
 :deep(.uni-dialog .el-select__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset !important;
 }
-:deep(.uni-dialog .el-input-number__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #F97316 inset !important;
-}
 :deep(.uni-dialog .el-input__wrapper) {
   border-radius: 8px;
 }
 :deep(.uni-dialog .el-select__wrapper) {
-  border-radius: 8px;
-}
-:deep(.uni-dialog .el-input-number__wrapper) {
   border-radius: 8px;
 }
 .dialog-form-item {
