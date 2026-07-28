@@ -3,12 +3,15 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getNotificationPage,
-  broadcastNotification,
   deleteNotification,
   hardDeleteNotification,
   restoreNotification,
 } from '@/api/user/notification'
-import type { NotificationListVO, NotificationQueryDTO, BroadcastDTO } from '@/types/user/notification'
+import type { NotificationListVO, NotificationQueryDTO } from '@/types/user/notification'
+import NotificationSearch from './components/NotificationSearch.vue'
+import NotificationTable from './components/NotificationTable.vue'
+import NotificationDetailModal from './components/NotificationDetailModal.vue'
+import BroadcastModal from './components/BroadcastModal.vue'
 
 const loading = ref(false)
 const tableData = ref<NotificationListVO[]>([])
@@ -24,10 +27,7 @@ const queryParams = reactive<NotificationQueryDTO>({
 
 const dialogVisible = ref(false)
 const broadcastVisible = ref(false)
-const formLoading = ref(false)
 const detailData = ref<NotificationListVO | null>(null)
-const broadcastForm = reactive<BroadcastDTO>({ title: '', content: '' })
-const broadcasting = ref(false)
 
 const notificationTypeLabel: Record<string, string> = {
   member_expire_soon: '会员即将到期',
@@ -90,33 +90,6 @@ const openDetail = (row: NotificationListVO) => {
   dialogVisible.value = true
 }
 
-const openBroadcast = () => {
-  broadcastForm.title = ''
-  broadcastForm.content = ''
-  broadcastVisible.value = true
-}
-
-const handleBroadcast = async () => {
-  if (!broadcastForm.title || !broadcastForm.content) {
-    ElMessage.warning('请填写公告标题和内容')
-    return
-  }
-  broadcasting.value = true
-  try {
-    const res = await broadcastNotification({ title: broadcastForm.title, content: broadcastForm.content })
-    if (res.data.code === 200) {
-      ElMessage.success('群发任务已提交')
-      broadcastVisible.value = false
-    } else {
-      ElMessage.error(res.data.msg || '群发失败')
-    }
-  } catch {
-    ElMessage.error('群发失败')
-  } finally {
-    broadcasting.value = false
-  }
-}
-
 const handleDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm('确定要禁用该通知吗？', '提示', { type: 'warning' })
@@ -160,116 +133,161 @@ const handleHardDelete = async (id: string) => {
   } catch { /* 取消 */ }
 }
 
+const handleBroadcastSuccess = () => {
+  fetchData()
+}
+
 onMounted(() => {
   fetchData()
 })
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 rounded-lg bg-white p-5">
-      <el-form :model="queryParams" inline>
-        <el-form-item label="用户ID">
-          <el-input-number v-model="queryParams.memberId" :min="1" :value-on-clear="undefined" clearable style="width: 160px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="通知类型">
-          <el-select v-model="queryParams.notificationType" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="(label, val) in notificationTypeLabel" :key="val" :label="label" :value="val" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="是否已读">
-          <el-select v-model="queryParams.isRead" placeholder="全部" clearable style="width: 100px">
-            <el-option label="已读" :value="true" />
-            <el-option label="未读" :value="false" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="page-wrapper">
+    <div class="watermark-top-right">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+    <div class="watermark-bottom-left">
+      <img src="@/assets/images/logo-main.png" alt="" />
     </div>
 
-    <div class="mb-4">
-      <el-button type="primary" @click="openBroadcast">群发公告</el-button>
-      <el-button @click="fetchData">刷新</el-button>
-    </div>
-
-    <div class="rounded-lg bg-white p-5">
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="140" />
-        <el-table-column prop="memberId" label="用户ID" width="100" />
-        <el-table-column prop="memberName" label="用户名" width="100" />
-        <el-table-column prop="notificationType" label="通知类型" width="130">
-          <template #default="{ row }">
-            <el-tag size="small">{{ notificationTypeLabel[row.notificationType] || row.notificationType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="title" label="标题" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="content" label="内容" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="isRead" label="已读状态" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.isRead ? 'success' : 'info'" size="small">
-              {{ row.isRead ? '已读' : '未读' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="260" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="openDetail(row)">详情</el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">禁用</el-button>
-            <el-button type="success" link @click="handleRestore(row.id)">恢复</el-button>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">硬删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="mt-4 flex justify-end">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.size"
-          :page-sizes="[10, 20, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">通知管理</h1>
+        <p class="page-subtitle">管理系统通知与群发公告</p>
       </div>
+      <button type="button" class="broadcast-btn" @click="broadcastVisible = true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+        </svg>
+        群发公告
+      </button>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="通知详情" width="700px" :close-on-click-modal="false">
-      <template v-if="detailData">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
-          <el-descriptions-item label="用户ID">{{ detailData.memberId }}</el-descriptions-item>
-          <el-descriptions-item label="用户名">{{ detailData.memberName }}</el-descriptions-item>
-          <el-descriptions-item label="通知类型">{{ notificationTypeLabel[detailData.notificationType] || detailData.notificationType }}</el-descriptions-item>
-          <el-descriptions-item label="标题">{{ detailData.title }}</el-descriptions-item>
-          <el-descriptions-item label="内容">{{ detailData.content }}</el-descriptions-item>
-          <el-descriptions-item label="已读状态">{{ detailData.isRead ? '已读' : '未读' }}</el-descriptions-item>
-          <el-descriptions-item label="阅读时间">{{ detailData.readAt || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
-        </el-descriptions>
-      </template>
-      <template #footer>
-        <el-button @click="dialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <NotificationSearch
+      :model-value="queryParams"
+      :notification-type-label="notificationTypeLabel"
+      @update:model-value="Object.assign(queryParams, $event)"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
-    <el-dialog v-model="broadcastVisible" title="群发系统公告" width="500px" :close-on-click-modal="false">
-      <el-form :model="broadcastForm" label-width="80px">
-        <el-form-item label="标题" required>
-          <el-input v-model="broadcastForm.title" placeholder="请输入公告标题" maxlength="200" show-word-limit />
-        </el-form-item>
-        <el-form-item label="内容" required>
-          <el-input v-model="broadcastForm.content" type="textarea" :rows="6" placeholder="请输入公告内容" maxlength="5000" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="broadcastVisible = false">取消</el-button>
-        <el-button type="primary" :loading="broadcasting" @click="handleBroadcast">确认群发</el-button>
-      </template>
-    </el-dialog>
+    <NotificationTable
+      :data="tableData"
+      :loading="loading"
+      :total="total"
+      :page="queryParams.page"
+      :size="queryParams.size"
+      :notification-type-label="notificationTypeLabel"
+      @detail="openDetail"
+      @disable="handleDelete"
+      @restore="handleRestore"
+      @hard-delete="handleHardDelete"
+      @refresh="fetchData"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
+
+    <NotificationDetailModal
+      v-model:visible="dialogVisible"
+      :data="detailData"
+      :notification-type-label="notificationTypeLabel"
+    />
+
+    <BroadcastModal
+      v-model:visible="broadcastVisible"
+      @success="handleBroadcastSuccess"
+    />
   </div>
 </template>
+
+<style scoped>
+.page-wrapper {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px 32px 40px;
+  overflow: hidden;
+}
+
+.watermark-top-right {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-bottom-left {
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-top-right img,
+.watermark-bottom-left img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.broadcast-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.broadcast-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.broadcast-btn:active {
+  transform: translateY(0);
+}
+</style>

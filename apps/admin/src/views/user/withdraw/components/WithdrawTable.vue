@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { deleteAdmin, toggleAdminStatus } from '@/api/permission/admin'
-import type { AdminVO } from '@/types/permission/admin'
+import { getWithdrawWechat, deleteWithdraw, restoreWithdraw, hardDeleteWithdraw } from '@/api/user/withdraw'
+import type { WithdrawListVO } from '@/types/user/withdraw'
 
 defineProps<{
-  data: AdminVO[]
+  data: WithdrawListVO[]
   loading: boolean
   total: number
   page: number
@@ -14,86 +14,122 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
-  (e: 'detail', id: string): void
+  (e: 'detail', row: WithdrawListVO): void
+  (e: 'process', row: WithdrawListVO): void
   (e: 'refresh'): void
 }>()
 
-const handleToggleStatus = async (row: AdminVO) => {
-  const action = row.status === 1 ? '禁用' : '启用'
+const statusLabel: Record<string, string> = {
+  pending: '待处理',
+  paid: '已支付',
+  rejected: '已拒绝',
+}
+
+const handleViewWechat = async (row: WithdrawListVO) => {
   try {
-    await ElMessageBox.confirm(`确定要${action}管理员"${row.username}"吗？`, '提示', {
-      type: 'warning',
-    })
-    const res = await toggleAdminStatus(row.id)
+    const res = await getWithdrawWechat(row.id)
     if (res.data.code === 200) {
-      ElMessage.success(`${action}成功`)
-      emit('refresh')
+      ElMessage.success(`微信号: ${res.data.data}`)
     } else {
-      ElMessage.error(res.data.msg || `${action}失败`)
+      ElMessage.error(res.data.msg || '获取微信号失败')
     }
   } catch {
-    // 用户取消
+    ElMessage.error('获取微信号失败')
   }
 }
 
-const handleDelete = async (row: AdminVO) => {
+const handleDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm(`确定要删除管理员"${row.username}"吗？此操作不可恢复！`, '警告', {
-      type: 'error',
+    await ElMessageBox.confirm('确定要禁用该提现记录吗？', '提示', { type: 'warning' })
+    const res = await deleteWithdraw(id)
+    if (res.data.code === 200) {
+      ElMessage.success('禁用成功')
+      emit('refresh')
+    } else {
+      ElMessage.error(res.data.msg || '禁用失败')
+    }
+  } catch { /* 取消 */ }
+}
+
+const handleRestore = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要恢复该提现记录吗？', '提示', { type: 'warning' })
+    const res = await restoreWithdraw(id)
+    if (res.data.code === 200) {
+      ElMessage.success('恢复成功')
+      emit('refresh')
+    } else {
+      ElMessage.error(res.data.msg || '恢复失败')
+    }
+  } catch { /* 取消 */ }
+}
+
+const handleHardDelete = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要永久删除该提现记录吗？此操作不可恢复！', '警告', {
+      type: 'warning',
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
     })
-    const res = await deleteAdmin(row.id)
+    const res = await hardDeleteWithdraw(id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
       emit('refresh')
     } else {
       ElMessage.error(res.data.msg || '删除失败')
     }
-  } catch {
-    // 用户取消
-  }
+  } catch { /* 取消 */ }
 }
 
-const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
+const pageSizes = [10, 20, 30, 50, 100]
 </script>
 
 <template>
   <div class="table-card">
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="realName" label="姓名" min-width="100">
+        <el-table-column prop="memberName" label="用户名" width="110" />
+        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column prop="wechatId" label="微信号" width="130">
           <template #default="{ row }">
-            <span class="desc-text">{{ row.realName || '-' }}</span>
+            <span class="text-gray-400">{{ row.wechatId || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" label="手机号" min-width="120">
+        <el-table-column prop="amount" label="提现金额" width="110" align="right">
           <template #default="{ row }">
-            <span class="code-text">{{ row.phone }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="roleName" label="角色" min-width="100">
-          <template #default="{ row }">
-            <span class="role-tag">{{ row.roleName }}</span>
+            <span class="amount-text">¥{{ row.amount?.toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <span v-if="row.status === 1" class="status-tag status-on">启用</span>
-            <span v-else class="status-tag status-off">禁用</span>
+            <span v-if="row.status === 'pending'" class="status-tag status-pending">待处理</span>
+            <span v-else-if="row.status === 'paid'" class="status-tag status-paid">已支付</span>
+            <span v-else-if="row.status === 'rejected'" class="status-tag status-rejected">已拒绝</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column prop="operatorName" label="处理人" width="100">
+          <template #default="{ row }">{{ row.operatorName || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.remark || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" width="180" />
+        <el-table-column label="操作" width="320" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
+              <button type="button" class="action-btn action-detail" @click="emit('detail', row)">详情</button>
+              <button type="button" class="action-btn action-wechat" @click="handleViewWechat(row)">查看微信</button>
               <button
+                v-if="row.status === 'pending'"
                 type="button"
-                :class="['action-btn', row.status === 1 ? 'action-disable' : 'action-enable']"
-                @click="handleToggleStatus(row)"
+                class="action-btn action-process"
+                @click="emit('process', row)"
               >
-                {{ row.status === 1 ? '禁用' : '启用' }}
+                处理提现
               </button>
-              <button type="button" class="action-btn action-delete" @click="handleDelete(row)">删除</button>
+              <button type="button" class="action-btn action-disable" @click="handleDelete(row.id)">禁用</button>
+              <button type="button" class="action-btn action-enable" @click="handleRestore(row.id)">恢复</button>
+              <button type="button" class="action-btn action-delete" @click="handleHardDelete(row.id)">硬删除</button>
             </div>
           </template>
         </el-table-column>
@@ -170,26 +206,9 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
   min-height: 200px;
 }
 
-.code-text {
-  font-family: 'SF Mono', 'Consolas', 'Liberation Mono', monospace;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.desc-text {
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-.role-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  background: linear-gradient(135deg, #F97316, #FB923C);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 12px;
+.amount-text {
   font-weight: 600;
+  color: #F97316;
 }
 
 .status-tag {
@@ -201,15 +220,19 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
   font-weight: 600;
 }
 
-.status-on {
+.status-pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #fff;
+}
+
+.status-paid {
   background: linear-gradient(135deg, #10b981, #34d399);
   color: #fff;
 }
 
-.status-off {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
+.status-rejected {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
 }
 
 .action-group {
@@ -239,6 +262,24 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 }
 .action-detail:hover {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-wechat {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.action-wechat:hover {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-process {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-process:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   transform: translateY(-1px);
 }
 

@@ -201,15 +201,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="mb-4">
-      <el-button type="primary" @click="openDialog('add')">新增</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除</el-button>
-      <el-button @click="fetchData">刷新</el-button>
+  <div class="page-wrap">
+    <!-- 水印 -->
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png" /></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png" /></div>
+
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h2 class="page-title">省份改革配置管理</h2>
+      <p class="page-subtitle">管理各省份高考改革模式与年份配置</p>
     </div>
 
-    <div class="rounded-lg bg-white p-5">
-      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" @click="openDialog('add')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
+        <span>新增</span>
+      </button>
+      <button class="btn btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
+        <span>批量软删除</span>
+      </button>
+      <div class="action-bar-spacer" />
+      <button class="btn btn-outline" @click="fetchData">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
+        <span>刷新</span>
+      </button>
+    </div>
+
+    <!-- 表格卡片 -->
+    <div class="table-card">
+      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" class="custom-table">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="province" label="省份" width="120" />
         <el-table-column label="改革年份" width="120">
@@ -219,20 +241,20 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="改革模式" min-width="150">
           <template #default="{ row }">
-            <el-tag v-if="row.reformModel" type="primary" size="small">{{ row.reformModel }}</el-tag>
+            <span v-if="row.reformModel" class="status-pill success">{{ row.reformModel }}</span>
             <span v-else class="text-gray-400">传统文理</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">软删除</el-button>
+            <span class="action-pill pill-info" @click="openDialog('detail', row.id)">详情</span>
+            <span class="action-pill pill-warning" @click="openDialog('edit', row.id)">修改</span>
+            <span class="action-pill pill-danger" @click="handleDelete(row.id)">软删除</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -245,7 +267,8 @@ onMounted(() => {
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" :close-on-click-modal="false">
+    <!-- 弹窗 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" :close-on-click-modal="false" class="uni-dialog">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border>
@@ -277,13 +300,225 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">
+        <button class="btn btn-outline" @click="dialogVisible = false">
           {{ dialogMode === 'detail' ? '关闭' : '取消' }}
-        </el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">
+        </button>
+        <button v-if="dialogMode !== 'detail'" class="btn btn-primary" @click="handleSubmit">
           确定
-        </el-button>
+        </button>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.page-wrap {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 水印 */
+.watermark-left {
+  position: absolute;
+  top: -60px;
+  right: 40px;
+  opacity: 0.05;
+  pointer-events: none;
+  transform: rotate(18deg);
+}
+.watermark-left img {
+  width: 180px;
+}
+.watermark-right {
+  position: absolute;
+  bottom: -40px;
+  left: 30px;
+  opacity: 0.05;
+  pointer-events: none;
+  transform: rotate(-12deg);
+}
+.watermark-right img {
+  width: 180px;
+}
+
+/* 页面标题 */
+.page-header {
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 6px 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #999;
+  margin: 0;
+}
+
+/* 操作栏 */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.action-bar-spacer {
+  flex: 1;
+}
+
+/* 基础按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+}
+.btn-danger {
+  background: linear-gradient(135deg, #EF4444, #F87171);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+}
+.btn-outline {
+  background: #fff;
+  color: #555;
+  border: 1px solid #e0e0e0;
+}
+.btn-outline:hover {
+  border-color: #F97316;
+  color: #F97316;
+}
+
+/* 表格卡片 */
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 自定义表格表头 */
+.custom-table :deep(.el-table__header-wrapper th) {
+  background: linear-gradient(180deg, #FFF7ED, #FFF1F2) !important;
+  color: #F97316 !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+.custom-table :deep(.el-table__header-wrapper th .cell) {
+  color: #F97316 !important;
+}
+
+/* 状态胶囊 */
+.status-pill {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-pill.success {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+/* 操作胶囊 */
+.action-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 2px;
+}
+.action-pill:hover {
+  transform: translateY(-1px);
+}
+.pill-info {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
+.pill-info:hover {
+  background: #DBEAFE;
+}
+.pill-warning {
+  background: #FFF7ED;
+  color: #F97316;
+}
+.pill-warning:hover {
+  background: #FFEDD5;
+}
+.pill-danger {
+  background: #FEF2F2;
+  color: #EF4444;
+}
+.pill-danger:hover {
+  background: #FEE2E2;
+}
+
+/* 分页 */
+.custom-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+.custom-pagination :deep(.el-pagination .is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  border-radius: 6px;
+}
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+}
+.custom-pagination :deep(.btn-prev:hover),
+.custom-pagination :deep(.btn-next:hover) {
+  color: #F97316;
+}
+
+/* 弹窗 */
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+}
+.uni-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.uni-dialog :deep(.el-descriptions__label) {
+  background: #FFF7ED;
+  font-weight: 500;
+}
+</style>

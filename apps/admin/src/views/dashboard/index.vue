@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { getDashboardStats, getMemberTrend, getOrderTrend } from '@/api/dashboard'
-import type { DashboardStatsVO, TrendDataVO } from '@/types/dashboard'
+import { getDashboardStats, getMemberTrend, getOrderTrend, getDashboardOverview } from '@/api/dashboard'
+import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO } from '@/types/dashboard'
 import { Line, Column } from '@antv/g2plot'
 
 const loading = ref(true)
 const errorMsg = ref('')
 const stats = ref<DashboardStatsVO | null>(null)
+const overview = ref<DashboardOverviewVO | null>(null)
 const activeDays = ref(7)
 
 // 图表实例
 let memberTrendChart: Line | null = null
 let orderTrendChart: Line | null = null
 let entityCompareChart: Column | null = null
-let memberTypeChart: Column | null = null
 
 // 图表容器 ref
 const memberTrendRef = ref<HTMLDivElement>()
 const orderTrendRef = ref<HTMLDivElement>()
 const entityCompareRef = ref<HTMLDivElement>()
-const memberTypeRef = ref<HTMLDivElement>()
 
 // 品牌色
 const BRAND_ORANGE = '#F97316'
@@ -40,9 +39,6 @@ const statCards = ref<{
 // 实体对比数据
 const entityCards = ref<{ label: string; value: number; color: string }[]>([])
 
-// 会员类型分布数据
-const memberTypeCards = ref<{ label: string; value: number; color: string }[]>([])
-
 async function fetchStats() {
   loading.value = true
   errorMsg.value = ''
@@ -52,7 +48,6 @@ async function fetchStats() {
       stats.value = res.data.data
       buildStatCards()
       await nextTick()
-      renderMemberTypeChart()
       renderEntityCompareChart()
     } else {
       errorMsg.value = res.data.msg || '获取数据失败'
@@ -79,6 +74,17 @@ async function fetchTrends() {
     }
   } catch (e: any) {
     console.error('获取趋势数据失败:', e)
+  }
+}
+
+async function fetchOverview() {
+  try {
+    const res = await getDashboardOverview()
+    if (res.data.code === 200 && res.data.data) {
+      overview.value = res.data.data
+    }
+  } catch (e: any) {
+    console.error('获取概览数据失败:', e)
   }
 }
 
@@ -125,13 +131,6 @@ function buildStatCards() {
     { label: '企业', value: entityStats.enterpriseCount, color: BRAND_GOLD },
     { label: '录取组', value: entityStats.admissionGroupCount, color: '#8b5cf6' },
     { label: '分数记录', value: entityStats.admissionMajorScoreCount, color: '#ec4899' },
-  ]
-
-  // 会员类型分布
-  memberTypeCards.value = [
-    { label: '普通会员', value: memberStats.totalMembers - memberStats.proMembers - memberStats.vipMembers, color: '#9ca3af' },
-    { label: 'Pro 会员', value: memberStats.proMembers, color: BRAND_GOLD },
-    { label: 'VIP 会员', value: memberStats.vipMembers, color: BRAND_ORANGE },
   ]
 }
 
@@ -187,12 +186,6 @@ function renderMemberTrendChart(data: TrendDataVO) {
     },
     tooltip: {
       showCrosshairs: true,
-      crosshairs: {
-        style: {
-          stroke: BRAND_ORANGE,
-          strokeDash: [4, 4],
-        },
-      },
     },
     animation: {
       appear: {
@@ -257,12 +250,6 @@ function renderOrderTrendChart(data: TrendDataVO) {
     },
     tooltip: {
       showCrosshairs: true,
-      crosshairs: {
-        style: {
-          stroke: BRAND_BLUE,
-          strokeDash: [4, 4],
-        },
-      },
     },
     animation: {
       appear: {
@@ -283,7 +270,7 @@ function renderEntityCompareChart() {
     data: entityCards.value.map((item) => ({ type: item.label, value: item.value })),
     xField: 'type',
     yField: 'value',
-    colorField: 'type',
+    seriesField: 'type',
     color: entityCards.value.map((item) => item.color),
     columnWidthRatio: 0.6,
     label: {
@@ -329,84 +316,30 @@ function renderEntityCompareChart() {
   entityCompareChart.render()
 }
 
-function renderMemberTypeChart() {
-  if (!memberTypeRef.value || !memberTypeCards.value.length) return
-  memberTypeChart?.destroy()
-
-  memberTypeChart = new Column(memberTypeRef.value, {
-    data: memberTypeCards.value.map((item) => ({ type: item.label, value: item.value })),
-    xField: 'type',
-    yField: 'value',
-    colorField: 'type',
-    color: memberTypeCards.value.map((item) => item.color),
-    columnWidthRatio: 0.5,
-    label: {
-      position: 'top',
-      style: {
-        fontSize: 11,
-        fill: '#6b7280',
-      },
-    },
-    xAxis: {
-      label: {
-        style: {
-          fontSize: 11,
-          fill: '#9ca3af',
-        },
-      },
-      line: null,
-      tickLine: null,
-    },
-    yAxis: {
-      label: {
-        style: {
-          fontSize: 11,
-          fill: '#9ca3af',
-        },
-      },
-      grid: {
-        line: {
-          style: {
-            stroke: '#f3f4f6',
-          },
-        },
-      },
-    },
-    animation: {
-      appear: {
-        animation: 'zoom-in',
-        duration: 600,
-      },
-    },
-  })
-
-  memberTypeChart.render()
-}
-
 function handleDaysChange(days: number) {
   activeDays.value = days
   fetchTrends()
 }
 
-function handleResize() {
-  memberTrendChart?.resize()
-  orderTrendChart?.resize()
-  entityCompareChart?.resize()
-  memberTypeChart?.resize()
+function formatTime(timeStr: string): string {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${month}-${day} ${hours}:${minutes}`
 }
 
 onMounted(async () => {
-  await fetchStats()
+  await Promise.all([fetchStats(), fetchOverview()])
   await fetchTrends()
-  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
   memberTrendChart?.destroy()
   orderTrendChart?.destroy()
   entityCompareChart?.destroy()
-  memberTypeChart?.destroy()
 })
 </script>
 
@@ -498,13 +431,61 @@ onBeforeUnmount(() => {
         <div ref="entityCompareRef" class="chart-container" />
       </div>
 
-      <!-- 右下：会员类型分布 -->
-      <div class="bento-cell bento-cell--chart">
-        <div class="chart-header">
-          <h3 class="chart-title">会员类型分布</h3>
-          <span class="chart-badge chart-badge--gold">柱状图</span>
+      <!-- 右下：系统信息 + 待办事项 -->
+      <div v-if="overview" class="bento-cell bento-cell--overview">
+        <!-- 系统信息 -->
+        <div class="overview-section">
+          <div class="overview-header">
+            <span class="overview-icon">⚙️</span>
+            <h3 class="overview-title">系统信息</h3>
+          </div>
+          <div class="overview-list">
+            <div class="overview-item">
+              <span class="overview-label">站点名称</span>
+              <span class="overview-value">{{ overview.systemInfo.siteName || '-' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">应用版本</span>
+              <span class="overview-value overview-value--tag">v{{ overview.systemInfo.appVersion }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">AI 模型</span>
+              <span class="overview-value">{{ overview.systemInfo.aiProvider }} / {{ overview.systemInfo.aiModel }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">管理员数</span>
+              <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
+            </div>
+          </div>
         </div>
-        <div ref="memberTypeRef" class="chart-container" />
+
+        <!-- 分割线 -->
+        <div class="overview-divider" />
+
+        <!-- 待办事项 -->
+        <div class="overview-section">
+          <div class="overview-header">
+            <span class="overview-icon">📋</span>
+            <h3 class="overview-title">待办事项</h3>
+            <span class="overview-badge">{{ overview.todoList.pendingOrderCount }} 笔待处理</span>
+          </div>
+          <div class="todo-list">
+            <div
+              v-for="order in overview.todoList.pendingOrders"
+              :key="order.id"
+              class="todo-item"
+            >
+              <div class="todo-item__info">
+                <span class="todo-item__name">{{ order.memberName }}</span>
+                <span class="todo-item__time">{{ formatTime(order.createdAt) }}</span>
+              </div>
+              <span class="todo-item__amount">¥{{ order.amount }}</span>
+            </div>
+            <div v-if="overview.todoList.pendingOrders.length === 0" class="todo-empty">
+              暂无待处理订单
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -710,6 +691,144 @@ onBeforeUnmount(() => {
   min-height: 220px;
 }
 
+/* 右下：系统信息 + 待办事项 */
+.bento-cell--overview {
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+
+.overview-section {
+  flex: 1;
+}
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.overview-icon {
+  font-size: 14px;
+}
+
+.overview-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.overview-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #F97316;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 146, 60, 0.1));
+  border-radius: 10px;
+}
+
+.overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(249, 115, 22, 0.08);
+}
+
+.overview-item:last-child {
+  border-bottom: none;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.overview-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.overview-value--tag {
+  padding: 1px 6px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.08));
+  border-radius: 4px;
+  color: #F97316;
+}
+
+.overview-value--highlight {
+  font-weight: 600;
+  color: #F97316;
+}
+
+.overview-divider {
+  height: 1px;
+  margin: 12px 0;
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
+}
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(249, 115, 22, 0.06);
+  transition: all 0.2s ease;
+}
+
+.todo-item:hover {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.06);
+}
+
+.todo-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.todo-item__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.todo-item__time {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.todo-item__amount {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F97316;
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
 /* 响应式 */
 @media (max-width: 1024px) {
   .bento-grid {
@@ -717,7 +836,8 @@ onBeforeUnmount(() => {
   }
 
   .bento-cell--stats,
-  .bento-cell--trend {
+  .bento-cell--trend,
+  .bento-cell--overview {
     grid-column: 1;
     grid-row: auto;
   }

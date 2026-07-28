@@ -131,7 +131,7 @@ const handleSelectionChange = (selection: AdmissionMajorScoreListVO[]) => {
 }
 
 const resetFormData = () => {
-  formData.groupId = queryParams.groupId || ''
+  formData.groupId = queryParams.groupId ? String(queryParams.groupId) : ''
   formData.majorCode = ''
   formData.majorName = ''
   formData.educationLevel = ''
@@ -289,7 +289,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(`确定要删除选中的${selectedIds.value.length} 条专业明细吗？`, '提示')
-    const res = await batchDeleteMajorScore(selectedIds.value)
+    const res = await batchDeleteMajorScore(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量删除成功')
       fetchData()
@@ -303,7 +303,7 @@ const handleBatchDelete = async () => {
 
 watch(() => route.query.groupId, (val) => {
   if (val) {
-    queryParams.groupId = val
+    queryParams.groupId = Number(val)
     handleSearch()
   }
 })
@@ -311,16 +311,27 @@ watch(() => route.query.groupId, (val) => {
 onMounted(() => {
   fetchGroupOptions()
   if (route.query.groupId) {
-    queryParams.groupId = route.query.groupId as string
+    queryParams.groupId = Number(route.query.groupId)
   }
   fetchData()
 })
 </script>
 
 <template>
-  <div>
-    <!-- 搜索区 -->
-    <div class="mb-4 rounded-lg bg-white p-5">
+  <div class="page-wrap">
+    <!-- 水印 -->
+    <img src="@/assets/images/logo-main.png" class="watermark watermark-tr" />
+    <img src="@/assets/images/logo-main.png" class="watermark watermark-bl" />
+
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1 class="page-title">专业分数明细</h1>
+      <p class="page-subtitle">管理招生专业的分数明细信息，支持专业明细的新增、修改、查询和状态管理</p>
+    </div>
+
+    <!-- 搜索卡片 -->
+    <div class="search-card">
+      <div class="section-label">搜索条件</div>
       <el-form :model="queryParams" inline>
         <el-row :gutter="16" class="w-full">
           <el-col :span="6">
@@ -358,22 +369,32 @@ onMounted(() => {
         </el-row>
         <el-row>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
+            <button class="custom-btn search-btn" @click.prevent="handleSearch">
+              <span>查询</span>
+            </button>
+            <button class="custom-btn reset-btn" @click.prevent="handleReset">
+              <span>重置</span>
+            </button>
           </el-form-item>
         </el-row>
       </el-form>
     </div>
 
-    <!-- 操作区 -->
-    <div class="mb-4">
-      <el-button type="primary" @click="openDialog('add')">新增专业明细</el-button>
-      <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量软删除</el-button>
-      <el-button @click="fetchData">刷新</el-button>
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="custom-btn add-btn" @click="openDialog('add')">
+        <span>＋ 新增专业明细</span>
+      </button>
+      <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        <span>批量软删除</span>
+      </button>
+      <button class="custom-btn outline-btn" @click="fetchData">
+        <span>刷新</span>
+      </button>
     </div>
 
-    <!-- 表格 -->
-    <div class="rounded-lg bg-white p-5">
+    <!-- 表格卡片 -->
+    <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="70" />
@@ -387,24 +408,24 @@ onMounted(() => {
         <el-table-column prop="avgScore" label="平均分" width="80" />
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.isDeleted ? 'info' : 'success'" size="small">
+            <span :class="['status-pill', row.isDeleted ? 'status-disabled' : 'status-enabled']">
               {{ row.isDeleted ? '禁用' : '启用' }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" align="center" fixed="right">
+        <el-table-column label="操作" width="320" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button :type="row.isDeleted ? 'success' : 'info'" link @click="handleToggleStatus(row)">
+            <button class="action-pill action-info" @click="openDialog('detail', row.id)">详情</button>
+            <button class="action-pill action-edit" @click="openDialog('edit', row.id)">修改</button>
+            <button :class="['action-pill', row.isDeleted ? 'action-enabled' : 'action-disabled']" @click="handleToggleStatus(row)">
               {{ row.isDeleted ? '启用' : '禁用' }}
-            </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">软删除</el-button>
+            </button>
+            <button class="action-pill action-danger" @click="handleDelete(row.id)">软删除</button>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -418,7 +439,7 @@ onMounted(() => {
     </div>
 
     <!-- Dialog -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="800px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="800px" :close-on-click-modal="false" class="uni-dialog">
       <div v-loading="formLoading">
         <!-- 详情模式 -->
         <template v-if="dialogMode === 'detail' && detailData">
@@ -434,9 +455,9 @@ onMounted(() => {
                 <el-descriptions-item label="学制">{{ detailData.duration || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="学费">{{ detailData.tuition || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="状态">
-                  <el-tag :type="detailData.isDeleted ? 'info' : 'success'" size="small">
+                  <span :class="['status-pill', detailData.isDeleted ? 'status-disabled' : 'status-enabled']">
                     {{ detailData.isDeleted ? '禁用' : '启用' }}
-                  </el-tag>
+                  </span>
                 </el-descriptions-item>
                 <el-descriptions-item label="约束条件" :span="2">
                   <template v-if="detailData.constraints && detailData.constraints.length > 0">
@@ -567,13 +588,264 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">
+        <button class="dialog-cancel-btn" @click="dialogVisible = false">
           {{ dialogMode === 'detail' ? '关闭' : '取消' }}
-        </el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">
+        </button>
+        <button v-if="dialogMode !== 'detail'" class="dialog-confirm-btn" @click="handleSubmit">
           确定
-        </el-button>
+        </button>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.page-wrap {
+  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.watermark {
+  position: absolute;
+  width: 180px;
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+}
+.watermark-tr {
+  top: 20px;
+  right: 20px;
+  transform: rotate(18deg);
+}
+.watermark-bl {
+  bottom: 20px;
+  left: 20px;
+  transform: rotate(-12deg);
+}
+.page-header {
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+.search-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(249,115,22,0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  margin-bottom: 16px;
+}
+.section-label {
+  display: inline-block;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 14px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.custom-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.custom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.search-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+}
+.search-btn:hover {
+  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+}
+.reset-btn {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+.reset-btn:hover {
+  border-color: #F97316;
+  color: #F97316;
+}
+.add-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+}
+.add-btn:hover {
+  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+}
+.outline-btn {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+.outline-btn:hover {
+  border-color: #F97316;
+  color: #F97316;
+}
+.danger-btn {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.danger-btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+}
+
+.action-bar {
+  margin-bottom: 16px;
+}
+
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(249,115,22,0.1);
+  border-top: 3px solid #F97316;
+}
+
+:deep(.table-card .el-table th) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
+  border-bottom: 2px solid #F97316 !important;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-enabled {
+  background: #d1fae5;
+  color: #065f46;
+}
+.status-disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.action-pill {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin: 0 2px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.action-info {
+  background: rgba(249,115,22,0.1);
+  color: #F97316;
+}
+.action-info:hover { background: rgba(249,115,22,0.2); }
+.action-edit {
+  background: rgba(59,130,246,0.1);
+  color: #3b82f6;
+}
+.action-edit:hover { background: rgba(59,130,246,0.2); }
+.action-enabled {
+  background: rgba(16,185,129,0.1);
+  color: #059669;
+}
+.action-enabled:hover { background: rgba(16,185,129,0.2); }
+.action-disabled {
+  background: rgba(234,179,8,0.1);
+  color: #ca8a04;
+}
+.action-disabled:hover { background: rgba(234,179,8,0.2); }
+.action-danger {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+}
+.action-danger:hover { background: rgba(239,68,68,0.2); }
+
+.custom-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+:deep(.custom-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  color: #fff !important;
+  border-radius: 6px;
+}
+:deep(.custom-pagination .btn-prev:hover),
+:deep(.custom-pagination .btn-next:hover) {
+  color: #F97316 !important;
+}
+
+:deep(.uni-dialog .el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+  margin-bottom: 0;
+}
+:deep(.uni-dialog .el-dialog__title) {
+  color: #1f2937;
+  font-weight: 600;
+}
+:deep(.uni-dialog .el-descriptions__label) {
+  background: rgba(255,247,237,0.5) !important;
+}
+:deep(.uni-dialog .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+:deep(.uni-dialog .el-select__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+:deep(.uni-dialog .el-input-number__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+
+.dialog-cancel-btn {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.dialog-cancel-btn:hover {
+  border-color: #F97316;
+  color: #F97316;
+}
+.dialog-confirm-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.dialog-confirm-btn:hover {
+  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+}
+</style>
