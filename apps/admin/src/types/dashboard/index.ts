@@ -33,3 +33,35 @@ export interface TrendDataVO {
   dates: string[]
   values: number[]
 }
+
+/** 系统信息 VO */
+export interface SystemInfoVO {
+  appVersion: string
+  springVersion: string
+  javaVersion: string
+  siteName: string
+  aiProvider: string
+  aiModel: string
+  adminCount: number
+}
+
+/** 待处理订单项 */
+export interface PendingOrderItem {
+  id: number
+  orderNo: string
+  memberName: string
+  amount: number
+  createdAt: string
+}
+
+/** 待办事项 VO */
+export interface TodoListVO {
+  pendingOrderCount: number
+  pendingOrders: PendingOrderItem[]
+}
+
+/** 仪表盘概览 VO */
+export interface DashboardOverviewVO {
+  systemInfo: SystemInfoVO
+  todoList: TodoListVO
+}
