@@ -28,6 +28,8 @@ const formData = reactive<ProvinceConfigUpdateDTO>({
   rankSteepness: 2.4,
 })
 
+const searchForm = reactive({ province: '' })
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -43,6 +45,17 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleSearch = () => {
+  queryParams.page = 1
+  fetchData()
+}
+
+const handleReset = () => {
+  searchForm.province = ''
+  queryParams.page = 1
+  fetchData()
 }
 
 const handlePageChange = (page: number) => {
@@ -121,34 +134,64 @@ onMounted(() => {
       <p class="subtitle">管理各省份算法参数，控制同分密度与 Sigmoid 陡度</p>
     </div>
 
-    <div class="action-bar">
-      <div class="left-actions" />
-      <div class="right-actions">
-        <button class="btn btn-refresh" @click="fetchData">
-          <span class="btn-icon">↻</span>刷新
-        </button>
+    <div class="search-card">
+      <div class="section-label">
+        <span class="label-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        筛选条件
       </div>
+      <el-form :model="searchForm" inline class="search-form">
+        <div class="filter-fields">
+          <el-form-item label="省份">
+            <el-input
+              v-model="searchForm.province"
+              placeholder="请输入省份"
+              clearable
+              style="width: 180px"
+              @keyup.enter="handleSearch"
+            />
+          </el-form-item>
+        </div>
+        <div class="search-actions">
+          <button type="button" class="search-btn" @click="handleSearch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            查询
+          </button>
+          <button type="button" class="reset-btn" @click="handleReset">重置</button>
+        </div>
+      </el-form>
     </div>
 
     <div class="table-card">
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="province" label="省份" width="120" />
-        <el-table-column label="同分密度惩罚系数" width="170">
-          <template #default="{ row }">{{ row.densityK }}</template>
-        </el-table-column>
-        <el-table-column label="线差 Sigmoid 陡度" width="170">
-          <template #default="{ row }">{{ row.lineSteepness }}</template>
-        </el-table-column>
-        <el-table-column label="位次 Sigmoid 陡度" min-width="170">
-          <template #default="{ row }">{{ row.rankSteepness }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="160" align="center" fixed="right">
-          <template #default="{ row }">
-            <button class="action-pill action-detail" @click="openDialog('detail', row.province)">详情</button>
-            <button class="action-pill action-edit" @click="openDialog('edit', row.province)">修改</button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="custom-table" v-loading="loading">
+        <el-table :data="tableData" stripe>
+          <el-table-column prop="province" label="省份" min-width="120" />
+          <el-table-column label="同分密度惩罚系数" min-width="180">
+            <template #default="{ row }">{{ row.densityK }}</template>
+          </el-table-column>
+          <el-table-column label="线差 Sigmoid 陡度" min-width="170">
+            <template #default="{ row }">{{ row.lineSteepness }}</template>
+          </el-table-column>
+          <el-table-column label="位次 Sigmoid 陡度" min-width="170">
+            <template #default="{ row }">{{ row.rankSteepness }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="160" align="center" fixed="right">
+            <template #default="{ row }">
+              <div class="action-group">
+                <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.province)">详情</button>
+                <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.province)">修改</button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <div class="custom-pagination">
         <el-pagination
@@ -168,7 +211,7 @@ onMounted(() => {
       :title="dialogTitle"
       width="600px"
       :close-on-click-modal="false"
-      class="uni-dialog"
+      class="detail-dialog"
     >
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
@@ -198,8 +241,8 @@ onMounted(() => {
 
       <template #footer>
         <div class="dialog-footer">
-          <button class="btn btn-cancel" @click="handleCloseDialog">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
-          <button v-if="dialogMode === 'edit'" class="btn btn-confirm" @click="handleSubmit">确定</button>
+          <button type="button" class="exit-btn" @click="handleCloseDialog">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
+          <button v-if="dialogMode === 'edit'" type="button" class="save-btn" @click="handleSubmit">确定</button>
         </div>
       </template>
     </el-dialog>
@@ -209,7 +252,7 @@ onMounted(() => {
 <style scoped>
 /* ===== 页面包装器 ===== */
 .page-wrap {
-  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  background: linear-gradient(180deg, rgba(255,237,227,0.5) 0%, #fff 100%);
   min-height: calc(100vh - 60px);
   padding: 24px;
   position: relative;
@@ -222,21 +265,23 @@ onMounted(() => {
   width: 180px;
   opacity: 0.05;
   pointer-events: none;
-  user-select: none;
+  z-index: 0;
 }
 .watermark-tr {
-  top: -20px;
-  right: -20px;
+  top: -60px;
+  right: 40px;
   transform: rotate(18deg);
 }
 .watermark-bl {
-  bottom: -20px;
-  left: -20px;
+  bottom: -40px;
+  left: 30px;
   transform: rotate(-12deg);
 }
 
 /* ===== 页面标题 ===== */
 .page-header {
+  position: relative;
+  z-index: 1;
   margin-bottom: 24px;
 }
 .page-header .title {
@@ -252,137 +297,290 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ===== 操作栏 ===== */
-.action-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ===== 搜索卡片 ===== */
+.search-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
   margin-bottom: 16px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
 }
-.left-actions,
-.right-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+.search-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
 }
-.btn {
+
+.section-label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 20px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
+  border-radius: 20px;
+  margin-bottom: 20px;
 }
-.btn-icon {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
+.label-icon {
+  display: flex;
+  align-items: center;
 }
-.btn-refresh {
-  background: #fff;
+
+.search-form {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.filter-fields {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+.search-form :deep(.el-form-item__label) {
+  font-weight: 500;
   color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
 }
-.btn-refresh:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+.search-form :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+.search-form :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+.search-form :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+.search-btn:active {
+  transform: translateY(0);
+}
+
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.reset-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+.reset-btn:active {
+  background: #f3f4f6;
 }
 
 /* ===== 表格卡片 ===== */
 .table-card {
+  position: relative;
+  z-index: 1;
   background: #fff;
-  border: 1px solid #fdba74;
   border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(249,115,22,0.06);
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
+}
+.table-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
 }
 
-/* ===== 表格头部橙色渐变 ===== */
-:deep(.el-table th.el-table__cell) {
+.custom-table :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.custom-table :deep(.el-table__header th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
-  color: #f97316 !important;
+  color: #1f2937 !important;
   font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background-color: #fffbf7;
+.custom-table :deep(.el-table__header th .cell) {
+  color: #1f2937;
+}
+.custom-table :deep(.el-table__body tr) {
+  transition: background-color 0.2s ease;
+}
+.custom-table :deep(.el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+.custom-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
+}
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
+}
+.custom-table :deep(.el-table__empty-block) {
+  min-height: 200px;
 }
 
-/* ===== 操作胶囊 ===== */
-.action-pill {
-  display: inline-block;
-  padding: 2px 12px;
+/* ===== 操作按钮组 ===== */
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  transition: all 0.15s;
-  margin: 0 2px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .action-detail {
-  color: #f97316;
-  border-color: #fed7aa;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
 .action-detail:hover {
-  background: #fff7ed;
-  border-color: #f97316;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
 }
 .action-edit {
-  color: #3b82f6;
-  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
 }
 .action-edit:hover {
-  background: #eff6ff;
-  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
 }
 
 /* ===== 分页 ===== */
 .custom-pagination {
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
-.custom-pagination :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #f97316, #fb923c) !important;
-  color: #fff !important;
-  border-radius: 6px;
+.custom-pagination :deep(.el-pagination) {
+  --el-pagination-hover-color: #F97316;
+}
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 .custom-pagination :deep(.el-pager li:hover) {
-  color: #f97316;
+  color: #F97316;
+}
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) {
+  border-radius: 8px;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) {
+  border-radius: 8px;
 }
 .custom-pagination :deep(.btn-prev:hover),
 .custom-pagination :deep(.btn-next:hover) {
-  color: #f97316;
+  color: #F97316;
 }
 
 /* ===== 对话框 ===== */
-.uni-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid #fdba74;
-  padding-bottom: 16px;
-  margin-bottom: 0;
+.detail-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
 }
-.uni-dialog :deep(.el-dialog__title) {
-  font-size: 17px;
-  font-weight: 700;
+.detail-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+.detail-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
   color: #1f2937;
 }
-.uni-dialog :deep(.el-descriptions__label) {
-  background: #fff7ed;
+.detail-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+.detail-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+.detail-dialog :deep(.el-descriptions__label) {
+  background: rgba(249, 115, 22, 0.06);
   color: #f97316;
   font-weight: 600;
 }
-.uni-dialog :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #f97316 inset;
+.detail-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
 }
-.uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
-  padding-right: 36px;
+.detail-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+.detail-dialog :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.detail-dialog :deep(.el-form-item) {
+  margin-bottom: 18px;
 }
 
 .dialog-footer {
@@ -390,37 +588,41 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 12px;
 }
-.btn-cancel {
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
   background: #fff;
-  color: #374151;
+  color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 24px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
 }
-.btn-cancel:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+.exit-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
-.btn-confirm {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
   border: none;
-  padding: 8px 24px;
-  border-radius: 24px;
-  font-size: 13px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-confirm:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+.save-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 </style>

@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
   >
     <button class="user-avatar-trigger" @click="toggleDropdown">
       <div v-if="hasAvatar" class="user-avatar-img">
-        <img :src="userInfo?.avatar" :alt="displayName" />
+        <img :src="userInfo?.avatar || undefined" :alt="displayName" />
       </div>
       <div v-else class="user-avatar-initial">
         {{ avatarInitial }}
@@ -112,7 +112,7 @@ onBeforeUnmount(() => {
       <div v-if="showDropdown" class="user-avatar-dropdown">
         <div class="dropdown-user-info">
           <div v-if="hasAvatar" class="dropdown-avatar">
-            <img :src="userInfo?.avatar" :alt="displayName" />
+            <img :src="userInfo?.avatar || undefined" :alt="displayName" />
           </div>
           <div v-else class="dropdown-avatar-initial">
             {{ avatarInitial }}

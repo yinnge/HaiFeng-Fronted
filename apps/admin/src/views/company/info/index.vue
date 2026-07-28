@@ -3,9 +3,6 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getEnterprisePage,
-  getEnterpriseDetail,
-  addEnterprise,
-  updateEnterprise,
   updateEnterpriseStatus,
   deleteEnterprise,
   batchDeleteEnterprise,
@@ -13,9 +10,11 @@ import {
 } from '@/api/company'
 import type {
   EnterpriseListVO,
-  EnterpriseDetailVO,
   EnterpriseQueryDTO,
 } from '@/types/company'
+import InfoSearch from './components/InfoSearch.vue'
+import InfoTable from './components/InfoTable.vue'
+import InfoDetailModal from './components/InfoDetailModal.vue'
 
 const loading = ref(false)
 const tableData = ref<EnterpriseListVO[]>([])
@@ -33,28 +32,11 @@ const queryParams = reactive<EnterpriseQueryDTO>({
   isDeleted: undefined,
 })
 
+const natureOptions = ['央企', '国企', '民企', '外企', '合资']
+
 const dialogVisible = ref(false)
 const dialogMode = ref<'detail' | 'add' | 'edit'>('detail')
-const dialogTitle = ref('')
-const formLoading = ref(false)
 const currentId = ref<string | null>(null)
-const detailData = ref<EnterpriseDetailVO | null>(null)
-
-const formData = reactive<Record<string, any>>({
-  cityName: '',
-  enterpriseName: '',
-  enterpriseNature: '',
-  enterpriseType: '',
-  logoUrl: '',
-  officialWebsite: '',
-  region: '',
-  enterpriseScale: '',
-  mainBusiness: '',
-  enterpriseIntro: '',
-  recruitmentStatus: '招聘中',
-})
-
-const natureOptions = ['央企', '国企', '民企', '外企', '合资']
 
 const fetchData = async () => {
   loading.value = true
@@ -105,106 +87,10 @@ const handleSelectionChange = (rows: EnterpriseListVO[]) => {
   selectedIds.value = rows.map((r) => r.id)
 }
 
-const resetForm = () => {
-  formData.cityName = ''
-  formData.enterpriseName = ''
-  formData.enterpriseNature = ''
-  formData.enterpriseType = ''
-  formData.logoUrl = ''
-  formData.officialWebsite = ''
-  formData.region = ''
-  formData.enterpriseScale = ''
-  formData.mainBusiness = ''
-  formData.enterpriseIntro = ''
-  formData.recruitmentStatus = '招聘中'
-}
-
-const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
+const openDialog = (mode: 'detail' | 'add' | 'edit', id?: string) => {
   dialogMode.value = mode
   currentId.value = id || null
-
-  if (mode === 'add') {
-    dialogTitle.value = '新增企业'
-    resetForm()
-    detailData.value = null
-  } else if (mode === 'edit' && id) {
-    dialogTitle.value = '修改企业'
-    formLoading.value = true
-    try {
-      const res = await getEnterpriseDetail(id)
-      if (res.data.code === 200) {
-        const d = res.data.data
-        formData.cityName = d.cityName || ''
-        formData.enterpriseName = d.enterpriseName
-        formData.enterpriseNature = d.enterpriseNature
-        formData.enterpriseType = d.enterpriseType || ''
-        formData.logoUrl = d.logoUrl || ''
-        formData.officialWebsite = d.officialWebsite || ''
-        formData.region = d.region || ''
-        formData.enterpriseScale = d.enterpriseScale || ''
-        formData.mainBusiness = d.mainBusiness || ''
-        formData.enterpriseIntro = d.enterpriseIntro || ''
-        formData.recruitmentStatus = d.recruitmentStatus
-      }
-    } catch { ElMessage.error('获取详情失败') }
-    finally { formLoading.value = false }
-    detailData.value = null
-  } else if (mode === 'detail' && id) {
-    dialogTitle.value = '企业详情'
-    formLoading.value = true
-    try {
-      const res = await getEnterpriseDetail(id)
-      if (res.data.code === 200) detailData.value = res.data.data
-    } catch { ElMessage.error('获取详情失败') }
-    finally { formLoading.value = false }
-  }
   dialogVisible.value = true
-}
-
-const handleSubmit = async () => {
-  if (!formData.enterpriseName) {
-    ElMessage.warning('请填写企业名称')
-    return
-  }
-  if (!formData.enterpriseNature) {
-    ElMessage.warning('请选择企业性质')
-    return
-  }
-
-  try {
-    const data: Record<string, any> = {
-      enterpriseName: formData.enterpriseName,
-      enterpriseNature: formData.enterpriseNature,
-    }
-    if (formData.cityName) data.cityName = formData.cityName
-    if (formData.enterpriseType) data.enterpriseType = formData.enterpriseType
-    if (formData.logoUrl) data.logoUrl = formData.logoUrl
-    if (formData.officialWebsite) data.officialWebsite = formData.officialWebsite
-    if (formData.region) data.region = formData.region
-    if (formData.enterpriseScale) data.enterpriseScale = formData.enterpriseScale
-    if (formData.mainBusiness) data.mainBusiness = formData.mainBusiness
-    if (formData.enterpriseIntro) data.enterpriseIntro = formData.enterpriseIntro
-    if (formData.recruitmentStatus) data.recruitmentStatus = formData.recruitmentStatus
-
-    let res: any
-    if (dialogMode.value === 'add') {
-      res = await addEnterprise(data as any)
-    } else if (dialogMode.value === 'edit' && currentId.value) {
-      res = await updateEnterprise(currentId.value, data)
-    } else {
-      return
-    }
-
-    if (res.data.code === 200) {
-      ElMessage.success(dialogMode.value === 'add' ? '新增成功' : '修改成功')
-      dialogVisible.value = false
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    ElMessage.error('操作失败')
-  }
 }
 
 const handleToggleStatus = async (row: EnterpriseListVO) => {
@@ -287,251 +173,307 @@ const handleImportSubmit = async () => {
   }
 }
 
-const statusTag = (val: boolean) => (val ? 'info' : 'success')
-const statusLabel = (val: boolean) => (val ? '禁用' : '启用')
+const handleDialogSuccess = () => {
+  fetchData()
+}
 
 onMounted(() => { fetchData() })
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 rounded-lg bg-white p-5">
-      <el-form :model="queryParams" inline>
-        <el-form-item label="企业名称">
-          <el-input v-model="queryParams.enterpriseName" placeholder="企业名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="城市名称">
-          <el-input v-model="queryParams.cityName" placeholder="城市名称模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="企业性质">
-          <el-select v-model="queryParams.enterpriseNature" placeholder="全部" clearable style="width: 120px">
-            <el-option v-for="item in natureOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="企业类型">
-          <el-input v-model="queryParams.enterpriseType" placeholder="类型模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="招聘状态">
-          <el-select v-model="queryParams.recruitmentStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option label="招聘中" value="招聘中" />
-            <el-option label="已结束" value="已结束" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100px">
-            <el-option label="启用" :value="false" />
-            <el-option label="禁用" :value="true" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="page-wrapper">
+    <div class="watermark-top-right">
+      <img src="@/assets/images/logo-main.png" alt="" />
+    </div>
+    <div class="watermark-bottom-left">
+      <img src="@/assets/images/logo-main.png" alt="" />
     </div>
 
-    <div class="mb-4 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openDialog('add')">新增企业</el-button>
-        <el-button type="success" @click="openImportDialog">Excel批量导入</el-button>
-        <el-button type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">批量永久删除</el-button>
-      </div>
-      <el-button @click="fetchData">刷新</el-button>
-    </div>
-
-    <div class="rounded-lg bg-white p-5">
-      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
-        <el-table-column prop="cityName" label="城市名称" width="120" />
-        <el-table-column prop="enterpriseName" label="企业名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="enterpriseNature" label="企业性质" width="100" />
-        <el-table-column prop="enterpriseType" label="企业类型" width="150" show-overflow-tooltip />
-        <el-table-column prop="recruitmentStatus" label="招聘状态" width="100" />
-        <el-table-column prop="isDeleted" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-tag :type="statusTag(row.isDeleted)" size="small">{{ statusLabel(row.isDeleted) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="300" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button :type="row.isDeleted ? 'success' : 'info'" link @click="handleToggleStatus(row)">
-              {{ row.isDeleted ? '启用' : '禁用' }}
-            </el-button>
-            <el-button type="danger" link @click="handleDelete(row.id)">永久删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="mt-4 flex justify-end">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.size"
-          :page-sizes="[10, 20, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">企业管理</h1>
+        <p class="page-subtitle">管理企业基本信息、招聘状态与关联岗位</p>
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="900px" :close-on-click-modal="false" :destroy-on-close="true">
-      <div v-loading="formLoading">
-        <template v-if="dialogMode === 'detail' && detailData">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
-            <el-descriptions-item label="企业名称">{{ detailData.enterpriseName }}</el-descriptions-item>
-            <el-descriptions-item label="城市名称">{{ detailData.cityName || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="企业性质">{{ detailData.enterpriseNature }}</el-descriptions-item>
-            <el-descriptions-item label="企业类型">{{ detailData.enterpriseType || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="招聘状态">{{ detailData.recruitmentStatus }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="statusTag(detailData.isDeleted)" size="small">{{ statusLabel(detailData.isDeleted) }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="总部地区">{{ detailData.region || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="企业规模">{{ detailData.enterpriseScale || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="Logo地址">
-              <template v-if="detailData.logoUrl">
-                <el-link type="primary" :href="detailData.logoUrl" target="_blank">{{ detailData.logoUrl }}</el-link>
-              </template>
-              <template v-else>-</template>
-            </el-descriptions-item>
-            <el-descriptions-item label="官网">
-              <template v-if="detailData.officialWebsite">
-                <el-link type="primary" :href="detailData.officialWebsite" target="_blank">{{ detailData.officialWebsite }}</el-link>
-              </template>
-              <template v-else>-</template>
-            </el-descriptions-item>
-            <el-descriptions-item label="主营业务" :span="2">{{ detailData.mainBusiness || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="企业简介" :span="2">{{ detailData.enterpriseIntro || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
-            <el-descriptions-item label="更新时间">{{ detailData.updatedAt }}</el-descriptions-item>
-          </el-descriptions>
+    <InfoSearch
+      :enterprise-name="queryParams.enterpriseName!"
+      :city-name="queryParams.cityName!"
+      :enterprise-nature="queryParams.enterpriseNature"
+      :enterprise-type="queryParams.enterpriseType!"
+      :recruitment-status="queryParams.recruitmentStatus"
+      :is-deleted="queryParams.isDeleted"
+      :nature-options="natureOptions"
+      @update:enterprise-name="queryParams.enterpriseName = $event"
+      @update:city-name="queryParams.cityName = $event"
+      @update:enterprise-nature="queryParams.enterpriseNature = $event"
+      @update:enterprise-type="queryParams.enterpriseType = $event"
+      @update:recruitment-status="queryParams.recruitmentStatus = $event"
+      @update:is-deleted="queryParams.isDeleted = $event"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
-          <div class="mt-4">
-            <h3 class="mb-2 text-base font-medium">关联岗位</h3>
-            <el-table :data="detailData.positions" border stripe size="small" v-if="detailData.positions?.length">
-              <el-table-column prop="positionName" label="岗位名称" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="recruitmentType" label="招聘类型" width="90" />
-              <el-table-column prop="province" label="省份" width="80" />
-              <el-table-column prop="city" label="城市" width="80" />
-              <el-table-column prop="workLocation" label="工作地点" width="140" show-overflow-tooltip />
-              <el-table-column prop="educationRequirement" label="学历要求" width="90" />
-              <el-table-column prop="majorRequirement" label="专业要求" width="120" show-overflow-tooltip />
-              <el-table-column prop="workExperience" label="工作经验" width="90" />
-              <el-table-column label="薪资(k/月)" width="120">
-                <template #default="{ row }">
-                  {{ row.salaryMin ?? '-' }} - {{ row.salaryMax ?? '-' }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="positionStatus" label="岗位状态" width="90" />
-              <el-table-column prop="deadline" label="截止日期" width="100" />
-            </el-table>
-            <div v-else class="py-8 text-center text-gray-400">暂无关联岗位</div>
-          </div>
-        </template>
+    <InfoTable
+      :data="tableData"
+      :loading="loading"
+      :total="total"
+      :page="queryParams.page"
+      :size="queryParams.size"
+      :selected-ids="selectedIds"
+      @detail="openDialog('detail', $event.id)"
+      @edit="openDialog('edit', $event.id)"
+      @toggle-status="handleToggleStatus"
+      @delete="handleDelete"
+      @batch-delete="handleBatchDelete"
+      @add="openDialog('add')"
+      @import="openImportDialog"
+      @refresh="fetchData"
+      @selection-change="handleSelectionChange"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
-        <template v-if="dialogMode !== 'detail'">
-          <el-form :model="formData" label-width="120px">
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="企业名称" required>
-                  <el-input v-model="formData.enterpriseName" placeholder="请输入企业名称" maxlength="200" show-word-limit />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="企业性质" required>
-                  <el-select v-model="formData.enterpriseNature" placeholder="请选择" style="width: 100%">
-                    <el-option v-for="item in natureOptions" :key="item" :label="item" :value="item" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="城市名称">
-                  <el-input v-model="formData.cityName" placeholder="请输入城市名称" maxlength="50" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="企业类型">
-                  <el-input v-model="formData.enterpriseType" placeholder="请输入企业类型" maxlength="50" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="Logo地址">
-                  <el-input v-model="formData.logoUrl" placeholder="请输入Logo图片URL" maxlength="500" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="官网">
-                  <el-input v-model="formData.officialWebsite" placeholder="请输入企业官网" maxlength="500" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="总部地区">
-                  <el-input v-model="formData.region" placeholder="如: 广东省深圳市" maxlength="100" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="企业规模">
-                  <el-input v-model="formData.enterpriseScale" placeholder="如: 10000人以上" maxlength="50" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="招聘状态">
-                  <el-select v-model="formData.recruitmentStatus" placeholder="请选择招聘状态" style="width: 100%">
-                    <el-option label="招聘中" value="招聘中" />
-                    <el-option label="已结束" value="已结束" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="主营业务">
-                  <el-input v-model="formData.mainBusiness" placeholder="请输入主营业务" maxlength="500" show-word-limit />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-form-item label="企业简介">
-              <el-input v-model="formData.enterpriseIntro" type="textarea" :rows="4" placeholder="请输入企业简介" />
-            </el-form-item>
-          </el-form>
-        </template>
-      </div>
+    <InfoDetailModal
+      v-model:visible="dialogVisible"
+      :mode="dialogMode"
+      :current-id="currentId"
+      :nature-options="natureOptions"
+      @success="handleDialogSuccess"
+    />
 
-      <template #footer>
-        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="importDialogVisible" title="Excel批量导入" width="550px">
-      <div>
-        <div class="mb-3 text-sm text-gray-500">
+    <!-- Excel导入弹窗 -->
+    <el-dialog v-model="importDialogVisible" title="Excel批量导入" width="550px" class="import-dialog">
+      <div class="import-content">
+        <div class="import-tip">
           导入企业数据及关联岗位（单文件多Sheet）。企业名称必填且唯一，企业性质必填（央企/国企/民企/外企/合资）。
         </div>
         <el-upload drag :auto-upload="false" :show-file-list="true" accept=".xlsx,.xls" :on-change="handleImportFileChange" :limit="1">
-          <el-icon class="el-icon--upload" style="font-size: 48px;"><UploadFilled /></el-icon>
-          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-          <template #tip>
-            <div class="el-upload__tip">仅支持 .xlsx / .xls 格式，单Sheet不超过500行</div>
-          </template>
+          <div class="upload-area">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+            </svg>
+            <div class="upload-text">将文件拖到此处，或<em>点击上传</em></div>
+            <div class="upload-hint">仅支持 .xlsx / .xls 格式，单Sheet不超过500行</div>
+          </div>
         </el-upload>
       </div>
       <template #footer>
-        <el-button @click="importDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="importLoading" @click="handleImportSubmit">确定导入</el-button>
+        <div class="dialog-footer">
+          <button type="button" class="cancel-btn" @click="importDialogVisible = false">取消</button>
+          <button type="button" class="submit-btn" :disabled="importLoading" @click="handleImportSubmit">
+            <span v-if="importLoading" class="loading-spinner"></span>
+            确定导入
+          </button>
+        </div>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.page-wrapper {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px 32px 40px;
+  overflow: hidden;
+}
+
+.watermark-top-right {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-bottom-left {
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.watermark-top-right img,
+.watermark-bottom-left img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.import-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.import-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.import-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.import-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.import-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.import-tip {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.import-dialog :deep(.el-upload-dragger) {
+  border-radius: 12px;
+  border: 2px dashed rgba(249, 115, 22, 0.3);
+  transition: all 0.25s ease;
+}
+
+.import-dialog :deep(.el-upload-dragger:hover) {
+  border-color: #F97316;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.06);
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 0;
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  color: #F97316;
+}
+
+.upload-text {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.upload-text em {
+  color: #F97316;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 16px;
+}
+
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cancel-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

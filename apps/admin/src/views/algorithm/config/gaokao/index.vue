@@ -8,6 +8,7 @@ import {
 import type { GaokaoConfigDetailVO, GaokaoConfigUpdateDTO } from '@/types/algorithm/config/gaokao'
 import logoMain from '@/assets/images/logo-main.png'
 
+const activeTab = ref('default')
 const loading = ref(false)
 const configData = ref<GaokaoConfigDetailVO | null>(null)
 
@@ -106,21 +107,29 @@ onMounted(() => {
     <div class="action-bar">
       <div class="left-actions">
         <button class="btn btn-add" @click="openEditDialog">
-          <span class="btn-icon">✎</span>修改配置
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          修改配置
         </button>
       </div>
       <div class="right-actions">
         <button class="btn btn-refresh" @click="fetchData">
-          <span class="btn-icon">↻</span>刷新
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          刷新
         </button>
       </div>
     </div>
 
-    <div v-loading="loading" class="config-grid">
-      <div class="config-card">
-        <div class="config-card-header">默认参数</div>
-        <div class="config-card-body">
-          <el-descriptions :column="2" border>
+    <div v-loading="loading" class="config-tabs-card">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="默认参数" name="default">
+          <el-descriptions :column="2" border class="config-descriptions">
             <el-descriptions-item label="默认同分密度惩罚系数">
               {{ configData?.defaultDensityK ?? '-' }}
             </el-descriptions-item>
@@ -131,13 +140,10 @@ onMounted(() => {
               {{ configData?.defaultRankSteepness ?? '-' }}
             </el-descriptions-item>
           </el-descriptions>
-        </div>
-      </div>
+        </el-tab-pane>
 
-      <div class="config-card">
-        <div class="config-card-header">权重配置</div>
-        <div class="config-card-body">
-          <el-descriptions :column="2" border>
+        <el-tab-pane label="权重配置" name="weight">
+          <el-descriptions :column="2" border class="config-descriptions">
             <el-descriptions-item label="新高考-线差权重">
               {{ configData?.newGaokaoLineWeight ?? '-' }}
             </el-descriptions-item>
@@ -157,13 +163,10 @@ onMounted(() => {
               {{ configData?.weightSoftBoth ?? '-' }}
             </el-descriptions-item>
           </el-descriptions>
-        </div>
-      </div>
+        </el-tab-pane>
 
-      <div class="config-card">
-        <div class="config-card-header">年份衰减权重</div>
-        <div class="config-card-body">
-          <el-descriptions :column="5" border>
+        <el-tab-pane label="年份衰减权重" name="year">
+          <el-descriptions :column="5" border class="config-descriptions">
             <el-descriptions-item
               v-for="(_, index) in 5"
               :key="index"
@@ -175,8 +178,8 @@ onMounted(() => {
           <div v-if="configData?.createdAt" class="meta-time">
             创建时间：{{ configData.createdAt }}
           </div>
-        </div>
-      </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <el-dialog
@@ -184,7 +187,7 @@ onMounted(() => {
       title="修改全局参数"
       width="650px"
       :close-on-click-modal="false"
-      class="uni-dialog"
+      class="detail-dialog"
     >
       <div v-loading="formLoading">
         <el-form :model="formData" label-width="190px">
@@ -234,8 +237,8 @@ onMounted(() => {
 
       <template #footer>
         <div class="dialog-footer">
-          <button class="btn btn-cancel" @click="dialogVisible = false">取消</button>
-          <button class="btn btn-confirm" :disabled="formLoading" @click="handleSubmit">
+          <button type="button" class="exit-btn" @click="dialogVisible = false">取消</button>
+          <button type="button" class="save-btn" :disabled="formLoading" @click="handleSubmit">
             {{ formLoading ? '提交中...' : '确定' }}
           </button>
         </div>
@@ -260,21 +263,23 @@ onMounted(() => {
   width: 180px;
   opacity: 0.05;
   pointer-events: none;
-  user-select: none;
+  z-index: 0;
 }
 .watermark-tr {
-  top: -20px;
-  right: -20px;
+  top: -60px;
+  right: 40px;
   transform: rotate(18deg);
 }
 .watermark-bl {
-  bottom: -20px;
-  left: -20px;
+  bottom: -40px;
+  left: 30px;
   transform: rotate(-12deg);
 }
 
 /* ===== 页面标题 ===== */
 .page-header {
+  position: relative;
+  z-index: 1;
   margin-bottom: 24px;
 }
 .page-header .title {
@@ -292,6 +297,8 @@ onMounted(() => {
 
 /* ===== 操作栏 ===== */
 .action-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -303,77 +310,84 @@ onMounted(() => {
   gap: 10px;
   align-items: center;
 }
+
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
-}
-.btn-icon {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
+  transition: all 0.25s ease;
 }
 .btn-add {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
-  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 .btn-add:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+.btn-add:active {
+  transform: translateY(0);
 }
 .btn-refresh {
   background: #fff;
-  color: #374151;
+  color: #6b7280;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
 }
 .btn-refresh:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+.btn-refresh:active {
+  background: #f3f4f6;
 }
 
-/* ===== 配置卡片网格 ===== */
-.config-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* ===== 配置卡片 ===== */
-.config-card {
+/* ===== 配置标签卡片 ===== */
+.config-tabs-card {
+  position: relative;
+  z-index: 1;
   background: #fff;
-  border: 1px solid #fdba74;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(249,115,22,0.06);
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
 }
-.config-card-header {
-  background: linear-gradient(180deg, #fff7ed, #ffedd5);
-  padding: 14px 24px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #f97316;
-  border-bottom: 1px solid #fed7aa;
+.config-tabs-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
 }
-.config-card-body {
-  padding: 20px 24px;
+
+.config-tabs-card :deep(.el-tabs__item.is-active) {
+  color: #F97316;
+  font-weight: 600;
 }
-.config-card-body :deep(.el-descriptions__label) {
-  background: #fff7ed;
+.config-tabs-card :deep(.el-tabs__active-bar) {
+  background: #F97316;
+}
+.config-tabs-card :deep(.el-tabs__item:hover) {
+  color: #F97316;
+}
+
+.config-descriptions {
+  margin-top: 8px;
+}
+.config-descriptions :deep(.el-descriptions__label) {
+  background: rgba(249, 115, 22, 0.06) !important;
   color: #f97316;
   font-weight: 600;
 }
+.config-descriptions :deep(.el-descriptions__body .el-descriptions__table) {
+  border-color: rgba(249, 115, 22, 0.1);
+}
+
 .meta-time {
   margin-top: 12px;
   font-size: 13px;
@@ -381,21 +395,42 @@ onMounted(() => {
 }
 
 /* ===== 对话框 ===== */
-.uni-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid #fdba74;
-  padding-bottom: 16px;
-  margin-bottom: 0;
+.detail-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
 }
-.uni-dialog :deep(.el-dialog__title) {
-  font-size: 17px;
-  font-weight: 700;
+.detail-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+.detail-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
   color: #1f2937;
 }
-.uni-dialog :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #f97316 inset;
+.detail-dialog :deep(.el-dialog__body) {
+  padding: 24px;
 }
-.uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
+.detail-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+.detail-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+.detail-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+.detail-dialog :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.detail-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
   padding-right: 36px;
+}
+.detail-dialog :deep(.el-form-item) {
+  margin-bottom: 18px;
 }
 
 .form-section-title {
@@ -410,40 +445,44 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 12px;
 }
-.btn-cancel {
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
   background: #fff;
-  color: #374151;
+  color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 24px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
 }
-.btn-cancel:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+.exit-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
-.btn-confirm {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
   border: none;
-  padding: 8px 24px;
-  border-radius: 24px;
-  font-size: 13px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-confirm:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+.save-btn:hover:not(:disabled) {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
-.btn-confirm:disabled {
+.save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

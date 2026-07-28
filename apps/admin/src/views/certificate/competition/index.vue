@@ -338,38 +338,48 @@ onMounted(() => { fetchData() })
 
     <!-- 搜索卡片 -->
     <div class="search-card">
-      <div class="section-label">搜索条件</div>
-      <el-form :model="queryParams" inline>
-        <el-form-item label="竞赛名称">
-          <el-input v-model="queryParams.compName" placeholder="竞赛名称模糊搜索" clearable style="width: 200px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="竞赛级别">
-          <el-select v-model="queryParams.compLevel" placeholder="全部级别" clearable style="width: 140px">
-            <el-option label="国家级" value="国家级" />
-            <el-option label="省级" value="省级" />
-            <el-option label="校级" value="校级" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <button class="custom-btn search-btn" @click.prevent="handleSearch">
-            <span>查询</span>
+      <div class="section-label">
+        <span class="label-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        筛选条件
+      </div>
+      <el-form :model="queryParams" inline class="search-form">
+        <div class="filter-fields">
+          <el-form-item label="竞赛名称">
+            <el-input v-model="queryParams.compName" placeholder="竞赛名称模糊搜索" clearable style="width: 200px" @keyup.enter="handleSearch" />
+          </el-form-item>
+          <el-form-item label="竞赛级别">
+            <el-select v-model="queryParams.compLevel" placeholder="全部级别" clearable style="width: 140px">
+              <el-option label="国家级" value="国家级" />
+              <el-option label="省级" value="省级" />
+              <el-option label="校级" value="校级" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="search-actions">
+          <button type="button" class="search-btn" @click.prevent="handleSearch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            查询
           </button>
-          <button class="custom-btn reset-btn" @click.prevent="handleReset">
+          <button type="button" class="reset-btn" @click.prevent="handleReset">
             <span>重置</span>
           </button>
-        </el-form-item>
+        </div>
       </el-form>
     </div>
 
     <!-- 操作栏 -->
     <div class="action-bar">
       <button class="custom-btn add-btn" @click="openDialog('add')">
-        <span>＋ 新增竞赛</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>新增竞赛</span>
       </button>
       <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
         <span>批量硬删除</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.5 16.5A9 9 0 1 0 2 12"/><polyline points="23 4 23 10 17 10"/></svg>
         <span>刷新</span>
       </button>
     </div>
@@ -378,22 +388,24 @@ onMounted(() => { fetchData() })
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
-        <el-table-column prop="compName" label="竞赛名称" width="200" show-overflow-tooltip />
-        <el-table-column prop="compLevel" label="竞赛级别" width="110">
+        <el-table-column prop="id" label="ID" min-width="140" />
+        <el-table-column prop="compName" label="竞赛名称" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="compLevel" label="竞赛级别" min-width="140">
           <template #default="{ row }">
             <span v-if="row.compLevel" :class="['status-pill', row.compLevel === '国家级' ? 'status-national' : row.compLevel === '省级' ? 'status-provincial' : 'status-school']">{{ row.compLevel }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="registrationTime" label="报名时间" width="150" />
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
+        <el-table-column prop="registrationTime" label="报名时间" min-width="160" />
+        <el-table-column prop="updatedAt" label="更新时间" min-width="180" />
         <el-table-column label="操作" width="300" align="center" fixed="right">
           <template #default="{ row }">
-            <button class="action-pill action-info" @click="openDialog('detail', row.id)">详情</button>
-            <button class="action-pill action-edit" @click="openDialog('edit', row.id)">修改</button>
-            <button class="action-pill action-warn" @click="handleSoftDelete(row.id, row.compName)">软删除</button>
-            <button class="action-pill action-danger" @click="handleHardDelete(row.id, row.compName)">硬删除</button>
+            <div class="action-group">
+              <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
+              <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</button>
+              <button type="button" class="action-btn action-soft-delete" @click="handleSoftDelete(row.id, row.compName)">软删除</button>
+              <button type="button" class="action-btn action-hard-delete" @click="handleHardDelete(row.id, row.compName)">硬删除</button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -632,31 +644,38 @@ onMounted(() => { fetchData() })
 
 <style scoped>
 .page-wrap {
-  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
   min-height: calc(100vh - 60px);
   padding: 24px;
   position: relative;
   overflow: hidden;
 }
+
+/* 水印 */
 .watermark {
   position: absolute;
   width: 180px;
   opacity: 0.05;
   pointer-events: none;
   user-select: none;
+  z-index: 0;
 }
 .watermark-tr {
-  top: 20px;
-  right: 20px;
+  top: -60px;
+  right: 40px;
   transform: rotate(18deg);
 }
 .watermark-bl {
-  bottom: 20px;
-  left: 20px;
+  bottom: -40px;
+  left: 30px;
   transform: rotate(-12deg);
 }
+
+/* 页面标题 */
 .page-header {
-  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24px;
 }
 .page-title {
   font-size: 22px;
@@ -669,86 +688,194 @@ onMounted(() => { fetchData() })
   color: #9ca3af;
   margin: 0;
 }
+
+/* 搜索卡片 */
 .search-card {
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  border: 1px solid rgba(249,115,22,0.1);
+  margin-bottom: 16px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
   border-top: 3px solid #F97316;
   border-bottom: 3px solid #FB923C;
-  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
+.search-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
+  transform: translateY(-1px);
+}
+
 .section-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 3px 14px;
+  font-size: 13px;
+  font-weight: 600;
   border-radius: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.label-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* 搜索表单 */
+.search-form {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-fields {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+}
+
+.search-form :deep(.el-input__wrapper),
+.search-form :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.search-form :deep(.el-input__wrapper:hover),
+.search-form :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.search-form :deep(.el-input__wrapper.is-focus),
+.search-form :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+.search-btn:active {
+  transform: translateY(0);
+}
+
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.reset-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+.reset-btn:active {
+  background: #f3f4f6;
 }
 
 /* 自定义按钮 */
 .custom-btn {
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   padding: 8px 20px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  margin-right: 8px;
+  border-radius: 20px;
+  transition: all 0.25s ease;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 .custom-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.search-btn {
-  background: linear-gradient(135deg, #F97316, #FB923C);
-  color: #fff;
-}
-.search-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
-}
-.reset-btn {
-  background: #fff;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-.reset-btn:hover {
-  border-color: #F97316;
-  color: #F97316;
-}
+
 .add-btn {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 .add-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
+.add-btn:active {
+  transform: translateY(0);
+}
+
 .outline-btn {
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
 }
 .outline-btn:hover {
-  border-color: #F97316;
-  color: #F97316;
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
+
 .danger-btn {
   background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
 }
 .danger-btn:hover:not(:disabled) {
-  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
 /* 操作栏 */
 .action-bar {
-  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 /* 表格卡片 */
@@ -756,85 +883,184 @@ onMounted(() => { fetchData() })
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  border: 1px solid rgba(249,115,22,0.1);
+  border: 1px solid rgba(249, 115, 22, 0.1);
   border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+.table-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
 }
 
-/* 表格表头 */
-:deep(.table-card .el-table th) {
+/* 表格 */
+.table-card :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-card :deep(.el-table__header th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
   color: #1f2937 !important;
   font-weight: 600;
+  font-size: 14px;
   border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
+}
+
+.table-card :deep(.el-table__header th .cell) {
+  color: #1f2937;
+}
+
+.table-card :deep(.el-table__body tr) {
+  transition: background-color 0.2s ease;
+}
+
+.table-card :deep(.el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+
+.table-card :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
+}
+
+.table-card :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
 }
 
 /* 状态标签 */
 .status-pill {
-  display: inline-block;
-  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-national {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.status-provincial {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.status-school {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* 操作按钮组 */
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-}
-.status-national {
-  background: #fef3c7;
-  color: #d97706;
-}
-.status-provincial {
-  background: #e0e7ff;
-  color: #4f46e5;
-}
-.status-school {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-/* 操作标签 */
-.action-pill {
-  border: none;
   cursor: pointer;
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  margin: 0 2px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
-.action-info {
-  background: rgba(249,115,22,0.1);
-  color: #F97316;
+
+.action-detail {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
-.action-info:hover { background: rgba(249,115,22,0.2); }
+.action-detail:hover {
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
+}
+
 .action-edit {
-  background: rgba(59,130,246,0.1);
-  color: #3b82f6;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #fff;
 }
-.action-edit:hover { background: rgba(59,130,246,0.2); }
-.action-warn {
-  background: rgba(234,179,8,0.1);
-  color: #ca8a04;
+.action-edit:hover {
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
 }
-.action-warn:hover { background: rgba(234,179,8,0.2); }
-.action-danger {
-  background: rgba(239,68,68,0.1);
-  color: #ef4444;
+
+.action-soft-delete {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
 }
-.action-danger:hover { background: rgba(239,68,68,0.2); }
+.action-soft-delete:hover {
+  background: #fde68a;
+}
+
+.action-hard-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-hard-delete:hover {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
 
 /* 分页 */
 .custom-pagination {
-  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
-:deep(.custom-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff !important;
-  border-radius: 6px;
+
+.custom-pagination :deep(.el-pagination) {
+  --el-pagination-hover-color: #F97316;
 }
-:deep(.custom-pagination .btn-prev:hover),
-:deep(.custom-pagination .btn-next:hover) {
-  color: #F97316 !important;
+
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.custom-pagination :deep(.el-pager li:hover) {
+  color: #F97316;
+}
+
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+}
+
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) {
+  border-radius: 8px;
+}
+
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) {
+  border-radius: 8px;
+}
+
+.custom-pagination :deep(.btn-prev:hover),
+.custom-pagination :deep(.btn-next:hover) {
+  color: #F97316;
 }
 
 /* Dialog */
@@ -843,16 +1069,20 @@ onMounted(() => { fetchData() })
   padding-bottom: 16px;
   margin-bottom: 0;
 }
+
 :deep(.uni-dialog .el-dialog__title) {
   color: #1f2937;
   font-weight: 600;
 }
+
 :deep(.uni-dialog .el-descriptions__label) {
-  background: rgba(255,247,237,0.5) !important;
+  background: rgba(249, 115, 22, 0.06) !important;
 }
+
 :deep(.uni-dialog .el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset !important;
 }
+
 :deep(.uni-dialog .el-select__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset !important;
 }
@@ -863,14 +1093,17 @@ onMounted(() => { fetchData() })
   color: #6b7280;
   border: 1px solid #d1d5db;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
+  transition: all 0.25s ease;
 }
 .dialog-cancel-btn:hover {
-  border-color: #F97316;
-  color: #F97316;
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
+
 .dialog-confirm-btn {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
@@ -880,8 +1113,13 @@ onMounted(() => { fetchData() })
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: all 0.25s ease;
 }
 .dialog-confirm-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+.dialog-confirm-btn:active {
+  transform: translateY(0);
 }
 </style>

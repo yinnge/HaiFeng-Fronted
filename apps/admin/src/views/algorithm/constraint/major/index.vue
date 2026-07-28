@@ -254,55 +254,72 @@ onMounted(() => {
     </div>
 
     <div class="search-card">
-      <span class="section-label">检索条件</span>
-      <el-form :model="queryParams" inline>
-        <el-form-item label="专业代码">
-          <el-input v-model="queryParams.majorCode" placeholder="精确搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="专业名称">
-          <el-input v-model="queryParams.majorName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="约束代码">
-          <el-input v-model="queryParams.constraintCode" placeholder="精确搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="约束名称">
-          <el-input v-model="queryParams.constraintName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item>
-          <div class="search-btns">
-            <button class="btn btn-search" @click="handleSearch">查询</button>
-            <button class="btn btn-reset" @click="handleReset">重置</button>
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2a5.5 5.5 0 0 1 4.383 8.823l3.147 3.147a.75.75 0 0 1-1.06 1.06l-3.147-3.147A5.5 5.5 0 1 1 6.5 2Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+        <span>筛选条件</span>
+      </div>
+      <div class="search-form">
+        <div class="filter-fields">
+          <div class="form-item">
+            <label>专业代码</label>
+            <el-input v-model="queryParams.majorCode" placeholder="精确搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
           </div>
-        </el-form-item>
-      </el-form>
+          <div class="form-item">
+            <label>专业名称</label>
+            <el-input v-model="queryParams.majorName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
+          </div>
+          <div class="form-item">
+            <label>约束代码</label>
+            <el-input v-model="queryParams.constraintCode" placeholder="精确搜索" clearable style="width: 140px" @keyup.enter="handleSearch" />
+          </div>
+          <div class="form-item">
+            <label>约束名称</label>
+            <el-input v-model="queryParams.constraintName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-search" @click="handleSearch">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2a5.5 5.5 0 0 1 4.383 8.823l3.147 3.147a.75.75 0 0 1-1.06 1.06l-3.147-3.147A5.5 5.5 0 1 1 6.5 2Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+            <span>查询</span>
+          </button>
+          <button class="btn btn-reset" @click="handleReset">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
+            <span>重置</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="action-bar">
       <div class="left-actions">
         <button class="btn btn-add" @click="openDialog('add')">
-          <span class="btn-icon">+</span>新增关联
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
+          <span>新增关联</span>
         </button>
-        <button class="btn btn-import" @click="openImportDialog">
-          <span class="btn-icon">↑</span>Excel导入
+        <button class="btn btn-outline" @click="openImportDialog">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v2.5A1.75 1.75 0 0 0 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-2.5a.75.75 0 0 0-1.5 0v2.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-2.5Z"/></svg>
+          <span>Excel导入</span>
         </button>
         <button class="btn btn-batch-delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-          <span class="btn-icon">×</span>批量删除
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
+          <span>批量删除</span>
         </button>
       </div>
       <div class="right-actions">
         <button class="btn btn-refresh" @click="fetchData">
-          <span class="btn-icon">↻</span>刷新
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
+          <span>刷新</span>
         </button>
       </div>
     </div>
 
     <div class="table-card">
-      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
+      <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" class="custom-table">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="180" show-overflow-tooltip />
-        <el-table-column prop="majorCode" label="专业代码" width="120" />
+        <el-table-column prop="id" label="ID" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="majorCode" label="专业代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="constraintCode" label="约束代码" width="180" show-overflow-tooltip />
+        <el-table-column prop="constraintCode" label="约束代码" min-width="180" show-overflow-tooltip />
         <el-table-column prop="constraintName" label="约束名称" min-width="160" show-overflow-tooltip />
         <el-table-column label="操作" width="160" align="center" fixed="right">
           <template #default="{ row }">
@@ -406,7 +423,7 @@ onMounted(() => {
 <style scoped>
 /* ===== 页面包装器 ===== */
 .page-wrap {
-  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
   min-height: calc(100vh - 60px);
   padding: 24px;
   position: relative;
@@ -422,19 +439,21 @@ onMounted(() => {
   user-select: none;
 }
 .watermark-tr {
-  top: -20px;
-  right: -20px;
+  top: -60px;
+  right: 40px;
   transform: rotate(18deg);
 }
 .watermark-bl {
-  bottom: -20px;
-  left: -20px;
+  bottom: -40px;
+  left: 30px;
   transform: rotate(-12deg);
 }
 
 /* ===== 页面标题 ===== */
 .page-header {
   margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
 }
 .page-header .title {
   font-size: 22px;
@@ -452,54 +471,95 @@ onMounted(() => {
 /* ===== 搜索卡片 ===== */
 .search-card {
   background: #fff;
-  border: 1px solid #fdba74;
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(249,115,22,0.06);
+  transition: box-shadow 0.3s, transform 0.3s;
 }
+.search-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.1);
+  transform: translateY(-1px);
+}
+
 .section-label {
-  display: inline-block;
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  color: #f97316;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  font-size: 13px;
   font-weight: 600;
-  padding: 3px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
-  margin-bottom: 16px;
-  border: 1px solid #fed7aa;
+  margin-bottom: 20px;
 }
-.search-btns {
+
+.search-form {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.form-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.form-item label {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.search-actions {
   display: flex;
   gap: 10px;
-  align-items: center;
+  margin-left: auto;
 }
+
 .btn-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: linear-gradient(135deg, #f97316, #fb923c);
   color: #fff;
   border: none;
-  padding: 8px 22px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
+  transition: all 0.25s;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 .btn-search:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
   transform: translateY(-1px);
 }
+
 .btn-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 22px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
 }
 .btn-reset:hover {
   border-color: #f97316;
@@ -520,67 +580,63 @@ onMounted(() => {
   gap: 10px;
   align-items: center;
 }
+
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.25s;
+  white-space: nowrap;
 }
-.btn-icon {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-}
-.btn-add {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
-  border-radius: 24px;
-}
-.btn-add:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
-  transform: translateY(-1px);
-}
-.btn-batch-delete {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(239,68,68,0.2);
-  border-radius: 24px;
-}
-.btn-batch-delete:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  box-shadow: 0 3px 10px rgba(239,68,68,0.3);
-  transform: translateY(-1px);
-}
-.btn-batch-delete:disabled {
+.btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.btn-import,
-.btn-export {
+
+.btn-add {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.btn-add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+}
+
+.btn-outline {
   background: #fff;
   color: #374151;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
 }
-.btn-import:hover,
-.btn-export:hover {
+.btn-outline:hover {
   border-color: #f97316;
   color: #f97316;
   background: #fff7ed;
 }
+
+.btn-batch-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.btn-batch-delete:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+}
+
 .btn-refresh {
   background: #fff;
-  color: #374151;
+  color: #6b7280;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
 }
 .btn-refresh:hover {
   border-color: #f97316;
@@ -591,20 +647,34 @@ onMounted(() => {
 /* ===== 表格卡片 ===== */
 .table-card {
   background: #fff;
-  border: 1px solid #fdba74;
   border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(249,115,22,0.06);
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
 }
 
-/* ===== 表格头部橙色渐变 ===== */
-:deep(.el-table th.el-table__cell) {
+/* ===== 表格头部 ===== */
+.custom-table :deep(.el-table th.el-table__cell) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
-  color: #f97316 !important;
+  color: #1f2937 !important;
   font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background-color: #fffbf7;
+.custom-table :deep(.el-table th.el-table__cell .cell) {
+  color: #1f2937 !important;
+}
+
+/* ===== 表格行悬停 ===== */
+.custom-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+
+/* ===== 表格条纹行 ===== */
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
+  background-color: rgba(255, 247, 237, 0.3);
 }
 
 /* ===== 操作胶囊 ===== */
@@ -615,30 +685,29 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
+  border: none;
   transition: all 0.15s;
   margin: 0 2px;
 }
 .action-detail {
-  color: #f97316;
-  border-color: #fed7aa;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
 }
 .action-detail:hover {
-  background: #fff7ed;
-  border-color: #f97316;
+  background: linear-gradient(135deg, #ea580c, #f97316);
 }
 .action-delete {
-  color: #ef4444;
-  border-color: #fecaca;
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
 }
 .action-delete:hover {
-  background: #fef2f2;
-  border-color: #ef4444;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
 }
 
 /* ===== 分页 ===== */
 .custom-pagination {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
@@ -646,7 +715,7 @@ onMounted(() => {
 .custom-pagination :deep(.el-pager li.is-active) {
   background: linear-gradient(135deg, #f97316, #fb923c) !important;
   color: #fff !important;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .custom-pagination :deep(.el-pager li:hover) {
   color: #f97316;
@@ -657,8 +726,11 @@ onMounted(() => {
 }
 
 /* ===== 对话框 ===== */
+.uni-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+}
 .uni-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid #fdba74;
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
   padding-bottom: 16px;
   margin-bottom: 0;
 }
@@ -668,12 +740,21 @@ onMounted(() => {
   color: #1f2937;
 }
 .uni-dialog :deep(.el-descriptions__label) {
-  background: #fff7ed;
+  background: rgba(249, 115, 22, 0.06);
   color: #f97316;
   font-weight: 600;
 }
+.uni-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+}
+.uni-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
 .uni-dialog :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-textarea__inner) {
+  border-radius: 8px;
 }
 .uni-dialog :deep(.el-textarea__inner:focus) {
   border-color: #f97316;
@@ -681,6 +762,9 @@ onMounted(() => {
 }
 .uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
   box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-form-item) {
+  margin-bottom: 18px;
 }
 
 .dialog-footer {
@@ -690,14 +774,14 @@ onMounted(() => {
 }
 .btn-cancel {
   background: #fff;
-  color: #374151;
+  color: #6b7280;
   border: 1px solid #d1d5db;
   padding: 8px 24px;
-  border-radius: 8px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
 }
 .btn-cancel:hover {
   border-color: #f97316;
@@ -709,16 +793,16 @@ onMounted(() => {
   color: #fff;
   border: none;
   padding: 8px 24px;
-  border-radius: 24px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(249,115,22,0.25);
+  transition: all 0.25s;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 .btn-confirm:hover {
   background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
   transform: translateY(-1px);
 }
 .btn-confirm:disabled {

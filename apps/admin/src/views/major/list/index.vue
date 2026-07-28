@@ -444,11 +444,6 @@ onMounted(() => { fetchData() })
         v-loading="loading"
         stripe
         @selection-change="handleSelectionChange"
-        :header-cell-style="{
-          background: 'linear-gradient(180deg, #FFF7ED 0%, #FFEDD5 100%)',
-          color: '#9A3412',
-          fontWeight: 600,
-        }"
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="140" />
@@ -789,6 +784,18 @@ onMounted(() => { fetchData() })
   padding: 20px;
   border: 1px solid #FED7AA;
   box-shadow: 0 2px 12px rgba(249,115,22,0.06);
+}
+
+.table-card :deep(.el-table__header th) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
+}
+.table-card :deep(.el-table__header th .cell) {
+  color: #1f2937;
 }
 
 .status-pill {

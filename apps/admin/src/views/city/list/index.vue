@@ -1098,15 +1098,17 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.table-card :deep(.el-table thead) {
-  color: #F97316;
+.table-card :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
 
-.table-card :deep(.el-table th.el-table__cell) {
-  background: linear-gradient(180deg, #fff7ed, #fff1f2) !important;
-  color: #F97316 !important;
-  font-weight: 700;
-  border-bottom: 2px solid #FB923C !important;
+.table-card :deep(.el-table th.el-table__cell .cell) {
+  color: #1f2937;
 }
 
 .table-card :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
