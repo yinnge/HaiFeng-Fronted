@@ -331,64 +331,74 @@ onMounted(() => {
 
     <!-- 搜索卡片 -->
     <div class="search-card">
-      <div class="section-label">搜索条件</div>
-      <el-form :model="queryParams" inline>
-        <el-row :gutter="16" class="w-full">
-          <el-col :span="6">
-            <el-form-item label="所属专业组" style="width: 100%; margin-bottom: 16px;">
-              <el-select v-model="queryParams.groupId" placeholder="请选择" clearable filterable style="width: 100%;">
-                <el-option v-for="g in groupOptions" :key="g.id" :label="g.label" :value="g.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="专业代码" style="width: 100%; margin-bottom: 16px;">
-              <el-input v-model="queryParams.majorCode" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="专业名称" style="width: 100%; margin-bottom: 16px;">
-              <el-input v-model="queryParams.majorName" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="3">
-            <el-form-item label="层次" style="width: 100%; margin-bottom: 16px;">
-              <el-select v-model="queryParams.educationLevel" placeholder="全部" clearable style="width: 100%;">
-                <el-option v-for="e in educationLevelOptions" :key="e" :label="e" :value="e" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="3">
-            <el-form-item label="状态" style="width: 100%; margin-bottom: 16px;">
-              <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100%;">
-                <el-option label="启用" :value="false" />
-                <el-option label="禁用" :value="true" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-form-item>
-            <button class="custom-btn search-btn" @click.prevent="handleSearch">
-              <span>查询</span>
-            </button>
-            <button class="custom-btn reset-btn" @click.prevent="handleReset">
-              <span>重置</span>
-            </button>
-          </el-form-item>
-        </el-row>
-      </el-form>
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        筛选条件
+      </div>
+      <div class="filter-wrapper">
+        <div class="filter-fields">
+          <el-form :model="queryParams" inline>
+            <el-row :gutter="16" class="w-full">
+              <el-col :span="6">
+                <el-form-item label="所属专业组" style="width: 100%; margin-bottom: 16px;">
+                  <el-select v-model="queryParams.groupId" placeholder="请选择" clearable filterable style="width: 100%;">
+                    <el-option v-for="g in groupOptions" :key="g.id" :label="g.label" :value="g.id" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="专业代码" style="width: 100%; margin-bottom: 16px;">
+                  <el-input v-model="queryParams.majorCode" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="专业名称" style="width: 100%; margin-bottom: 16px;">
+                  <el-input v-model="queryParams.majorName" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="3">
+                <el-form-item label="层次" style="width: 100%; margin-bottom: 16px;">
+                  <el-select v-model="queryParams.educationLevel" placeholder="全部" clearable style="width: 100%;">
+                    <el-option v-for="e in educationLevelOptions" :key="e" :label="e" :value="e" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="3">
+                <el-form-item label="状态" style="width: 100%; margin-bottom: 16px;">
+                  <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100%;">
+                    <el-option label="启用" :value="false" />
+                    <el-option label="禁用" :value="true" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
+        <div class="search-actions">
+          <button class="custom-btn search-btn" @click.prevent="handleSearch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>查询</span>
+          </button>
+          <button class="custom-btn reset-btn" @click.prevent="handleReset">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            <span>重置</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 操作栏 -->
     <div class="action-bar">
       <button class="custom-btn add-btn" @click="openDialog('add')">
-        <span>＋ 新增专业明细</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>新增专业明细</span>
       </button>
       <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         <span>批量软删除</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         <span>刷新</span>
       </button>
     </div>
@@ -397,16 +407,16 @@ onMounted(() => {
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="groupId" label="专业组ID" width="90" />
-        <el-table-column prop="majorCode" label="专业代码" width="120" />
+        <el-table-column prop="id" label="ID" min-width="70" />
+        <el-table-column prop="groupId" label="专业组ID" min-width="90" />
+        <el-table-column prop="majorCode" label="专业代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="educationLevel" label="层次" width="80" />
-        <el-table-column prop="admissionCount" label="录取人数" width="90" />
-        <el-table-column prop="minScore" label="最低分" width="80" />
-        <el-table-column prop="minRank" label="最低位次" width="90" />
-        <el-table-column prop="avgScore" label="平均分" width="80" />
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column prop="educationLevel" label="层次" min-width="80" />
+        <el-table-column prop="admissionCount" label="录取人数" min-width="90" />
+        <el-table-column prop="minScore" label="最低分" min-width="80" />
+        <el-table-column prop="minRank" label="最低位次" min-width="90" />
+        <el-table-column prop="avgScore" label="平均分" min-width="80" />
+        <el-table-column label="状态" min-width="80" align="center">
           <template #default="{ row }">
             <span :class="['status-pill', row.isDeleted ? 'status-disabled' : 'status-enabled']">
               {{ row.isDeleted ? '禁用' : '启用' }}
@@ -493,38 +503,38 @@ onMounted(() => {
         <!-- 新增/修改模式 -->
         <template v-if="dialogMode !== 'detail'">
           <el-form :model="formData" label-width="120px">
-            <el-form-item label="所属专业组" required>
+            <el-form-item label="所属专业组" required class="dialog-form-item">
               <el-select v-model="formData.groupId" placeholder="请选择专业组" filterable style="width: 100%;">
                 <el-option v-for="g in groupOptions" :key="g.id" :label="g.label" :value="g.id" />
               </el-select>
             </el-form-item>
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item label="专业代码" required>
+                <el-form-item label="专业代码" required class="dialog-form-item">
                   <el-input v-model="formData.majorCode" placeholder="请输入" maxlength="20" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="专业名称" required>
+                <el-form-item label="专业名称" required class="dialog-form-item">
                   <el-input v-model="formData.majorName" placeholder="请输入" maxlength="100" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
               <el-col :span="8">
-                <el-form-item label="层次">
+                <el-form-item label="层次" class="dialog-form-item">
                   <el-select v-model="formData.educationLevel" placeholder="请选择" clearable style="width: 100%;">
                     <el-option v-for="e in educationLevelOptions" :key="e" :label="e" :value="e" />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="学制">
+                <el-form-item label="学制" class="dialog-form-item">
                   <el-input v-model="formData.duration" placeholder="如：四年" maxlength="20" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="学费">
+                <el-form-item label="学费" class="dialog-form-item">
                   <el-input v-model="formData.tuition" placeholder="如：5000元/年" maxlength="50" />
                 </el-form-item>
               </el-col>
@@ -532,44 +542,44 @@ onMounted(() => {
             <el-divider>分数信息</el-divider>
             <el-row :gutter="16">
               <el-col :span="6">
-                <el-form-item label="录取人数">
+                <el-form-item label="录取人数" class="dialog-form-item">
                   <el-input-number v-model="formData.admissionCount" :min="0" :max="99999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="最低分">
+                <el-form-item label="最低分" class="dialog-form-item">
                   <el-input-number v-model="formData.minScore" :min="0" :max="900" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="中位分">
+                <el-form-item label="中位分" class="dialog-form-item">
                   <el-input-number v-model="formData.avgScore" :min="0" :precision="2" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="最高分">
+                <el-form-item label="最高分" class="dialog-form-item">
                   <el-input-number v-model="formData.maxScore" :min="0" :max="900" style="width: 100%;" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
               <el-col :span="6">
-                <el-form-item label="最低位次">
+                <el-form-item label="最低位次" class="dialog-form-item">
                   <el-input-number v-model="formData.minRank" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="中位位次">
+                <el-form-item label="中位位次" class="dialog-form-item">
                   <el-input-number v-model="formData.avgRank" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="最高位次">
+                <el-form-item label="最高位次" class="dialog-form-item">
                   <el-input-number v-model="formData.maxRank" :min="0" :max="9999999" style="width: 100%;" />
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="约束条件">
+            <el-form-item label="约束条件" class="dialog-form-item">
               <el-select
                 v-model="formData.constraints"
                 multiple
@@ -580,7 +590,7 @@ onMounted(() => {
                 style="width: 100%;"
               />
             </el-form-item>
-            <el-form-item label="专业简介">
+            <el-form-item label="专业简介" class="dialog-form-item">
               <el-input v-model="formData.description" type="textarea" :rows="3" maxlength="2000" show-word-limit />
             </el-form-item>
           </el-form>
@@ -615,17 +625,19 @@ onMounted(() => {
   user-select: none;
 }
 .watermark-tr {
-  top: 20px;
-  right: 20px;
+  top: -60px;
+  right: 40px;
   transform: rotate(18deg);
 }
 .watermark-bl {
-  bottom: 20px;
-  left: 20px;
+  bottom: -40px;
+  left: 30px;
   transform: rotate(-12deg);
 }
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  z-index: 1;
+  position: relative;
 }
 .page-title {
   font-size: 22px;
@@ -638,6 +650,7 @@ onMounted(() => {
   color: #9ca3af;
   margin: 0;
 }
+
 .search-card {
   background: #fff;
   border-radius: 12px;
@@ -646,16 +659,36 @@ onMounted(() => {
   border-top: 3px solid #F97316;
   border-bottom: 3px solid #FB923C;
   margin-bottom: 16px;
+  position: relative;
 }
 .section-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 3px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
   border-radius: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.filter-wrapper {
+  display: flex;
+  align-items: flex-start;
+}
+.filter-fields {
+  flex: 1;
+  min-width: 0;
+}
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding-top: 6px;
+  flex-shrink: 0;
 }
 
 .custom-btn {
@@ -663,12 +696,13 @@ onMounted(() => {
   cursor: pointer;
   font-size: 14px;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 20px;
   transition: all 0.2s;
   margin-right: 8px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-weight: 500;
 }
 .custom-btn:disabled {
   opacity: 0.5;
@@ -677,14 +711,18 @@ onMounted(() => {
 .search-btn {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  font-weight: 600;
+  padding: 8px 24px;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
 }
 .search-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.45);
 }
 .reset-btn {
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
+  padding: 8px 20px;
 }
 .reset-btn:hover {
   border-color: #F97316;
@@ -693,13 +731,17 @@ onMounted(() => {
 .add-btn {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
 }
 .add-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.45);
 }
 .outline-btn {
   background: #fff;
-  color: #6b7280;
+  color: #374151;
   border: 1px solid #d1d5db;
 }
 .outline-btn:hover {
@@ -724,13 +766,22 @@ onMounted(() => {
   padding: 24px;
   border: 1px solid rgba(249,115,22,0.1);
   border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
 }
 
 :deep(.table-card .el-table th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
   color: #1f2937 !important;
   font-weight: 600;
+  font-size: 14px;
   border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
+}
+:deep(.table-card .el-table__row--striped td) {
+  background: rgba(255,247,237,0.3) !important;
+}
+:deep(.table-card .el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249,115,22,0.03), rgba(251,146,60,0.07)) !important;
 }
 
 .status-pill {
@@ -786,14 +837,16 @@ onMounted(() => {
 .action-danger:hover { background: rgba(239,68,68,0.2); }
 
 .custom-pagination {
-  margin-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 :deep(.custom-pagination .el-pager li.is-active) {
   background: linear-gradient(135deg, #F97316, #FB923C) !important;
   color: #fff !important;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 :deep(.custom-pagination .btn-prev:hover),
 :deep(.custom-pagination .btn-next:hover) {
@@ -801,16 +854,17 @@ onMounted(() => {
 }
 
 :deep(.uni-dialog .el-dialog__header) {
-  border-bottom: 2px solid #F97316;
-  padding-bottom: 16px;
-  margin-bottom: 0;
+  border-bottom: 2px solid rgba(249,115,22,0.15);
+  padding: 20px 24px;
 }
 :deep(.uni-dialog .el-dialog__title) {
   color: #1f2937;
   font-weight: 600;
 }
 :deep(.uni-dialog .el-descriptions__label) {
-  background: rgba(255,247,237,0.5) !important;
+  background: rgba(249,115,22,0.06) !important;
+  font-weight: 600;
+  color: #374151;
 }
 :deep(.uni-dialog .el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset !important;
@@ -821,13 +875,25 @@ onMounted(() => {
 :deep(.uni-dialog .el-input-number__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset !important;
 }
+:deep(.uni-dialog .el-input__wrapper) {
+  border-radius: 8px;
+}
+:deep(.uni-dialog .el-select__wrapper) {
+  border-radius: 8px;
+}
+:deep(.uni-dialog .el-input-number__wrapper) {
+  border-radius: 8px;
+}
+.dialog-form-item {
+  margin-bottom: 18px !important;
+}
 
 .dialog-cancel-btn {
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 20px;
-  border-radius: 8px;
+  padding: 8px 24px;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
 }
@@ -843,9 +909,10 @@ onMounted(() => {
   border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
 }
 .dialog-confirm-btn:hover {
-  box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.45);
 }
 </style>

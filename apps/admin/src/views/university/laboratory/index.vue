@@ -1066,9 +1066,15 @@ onMounted(() => {
 
 /* 表格头 */
 .custom-table :deep(.el-table__header th) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff !important;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
   font-weight: 600 !important;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
+}
+.custom-table :deep(.el-table__header th .cell) {
+  color: #1f2937;
 }
 
 /* 行 hover */

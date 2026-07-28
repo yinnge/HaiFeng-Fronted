@@ -47,7 +47,7 @@ const employmentRoutes: RouteRecordRaw = {
         {
           path: 'project',
           name: 'GrassrootsProject',
-          component: () => import('@/views/employment/grassroots/index.vue'),
+          component: () => import('@/views/employment/grassroots/project/index.vue'),
           meta: { title: '基层服务项目岗位', moduleCode: 'emp_grassroots_3s' },
         },
         {

@@ -850,21 +850,9 @@ onMounted(() => {
 
         @selection-change="handleSelectionChange"
 
-        :header-cell-style="{
-
-          background: 'linear-gradient(180deg, #FFF7ED 0%, #FFEDD5 100%)',
-
-          color: '#9A3412',
-
-          fontWeight: 600,
-
-        }"
-
       >
 
         <el-table-column type="selection" width="50" />
-
-        <el-table-column prop="id" label="ID" width="140" />
 
         <el-table-column prop="certName" label="证书名称" width="150" show-overflow-tooltip />
 
@@ -1225,12 +1213,13 @@ onMounted(() => {
 .page-title {
   font-size: 22px;
   font-weight: 700;
-  color: #9A3412;
-  margin: 0 0 4px;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
 }
 .page-subtitle {
   font-size: 13px;
-  color: #C2410C;
+  color: #9ca3af;
   margin: 0;
 }
 
@@ -1260,7 +1249,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #F97316, #FB923C) !important;
   border: none !important;
   color: #fff !important;
-  border-radius: 6px !important;
+  border-radius: 20px !important;
   padding: 8px 20px !important;
 }
 .btn-search:hover {
@@ -1270,7 +1259,7 @@ onMounted(() => {
   background: #fff !important;
   border: 1px solid #F97316 !important;
   color: #F97316 !important;
-  border-radius: 6px !important;
+  border-radius: 20px !important;
   padding: 8px 20px !important;
 }
 .btn-reset:hover {
@@ -1305,9 +1294,9 @@ onMounted(() => {
 
 .btn-outline {
   background: #fff !important;
-  border: 1px solid #F97316 !important;
-  color: #F97316 !important;
-  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  border-radius: 20px !important;
   padding: 8px 16px !important;
 }
 .btn-outline:hover {
@@ -1323,7 +1312,7 @@ onMounted(() => {
   background: #fff !important;
   border: 1px solid #DC2626 !important;
   color: #DC2626 !important;
-  border-radius: 6px !important;
+  border-radius: 20px !important;
   padding: 8px 16px !important;
 }
 .btn-danger:hover {
@@ -1338,7 +1327,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #DC2626, #EF4444) !important;
   border: none !important;
   color: #fff !important;
-  border-radius: 6px !important;
+  border-radius: 20px !important;
   padding: 8px 16px !important;
 }
 .btn-danger-solid:hover {
@@ -1357,6 +1346,18 @@ onMounted(() => {
   padding: 20px;
   border: 1px solid #FED7AA;
   box-shadow: 0 2px 12px rgba(249,115,22,0.06);
+}
+
+.table-card :deep(.el-table__header-wrapper th) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
+}
+.table-card :deep(.el-table__header-wrapper th .cell) {
+  color: #1f2937 !important;
 }
 
 .status-pill {

@@ -8,11 +8,12 @@ import {
   ProvinceOptions,
   Identity,
   canEditSchoolByIdentity,
+  getCityOptionsByProvince,
 } from '@haifeng/shared'
 import type { MemberProfileVO, MemberProfileUpdateDTO } from '@/types/member/profile'
 import type { SearchItem } from '@/types/search'
 import { updateProfile } from '@/api/member/profile'
-import { searchUniversity, searchCity, searchMajor } from '@/api/search'
+import { searchUniversity, searchMajor } from '@/api/search'
 
 const props = defineProps<{
   profile: MemberProfileVO | null
@@ -61,12 +62,23 @@ const showSchoolField = computed(() => {
   return canEditSchoolByIdentity(form.value.identity as Identity)
 })
 
+const cityOptions = computed(() => {
+  return getCityOptionsByProvince(form.value.province || '')
+})
+
 watch(
   () => form.value.identity,
   (newVal, oldVal) => {
     if (oldVal && !canEditSchoolByIdentity(newVal as Identity)) {
       form.value.schoolName = ''
     }
+  }
+)
+
+watch(
+  () => form.value.province,
+  () => {
+    form.value.city = ''
   }
 )
 
@@ -77,19 +89,6 @@ async function handleUniversitySearch(query: string, cb: (items: { value: string
   }
   try {
     const { data } = await searchUniversity(query)
-    cb(data.data.map((item: SearchItem) => ({ value: item.name })))
-  } catch {
-    cb([])
-  }
-}
-
-async function handleCitySearch(query: string, cb: (items: { value: string }[]) => void) {
-  if (!query) {
-    cb([])
-    return
-  }
-  try {
-    const { data } = await searchCity(query)
     cb(data.data.map((item: SearchItem) => ({ value: item.name })))
   } catch {
     cb([])
@@ -184,13 +183,21 @@ async function handleSave() {
           </el-select>
         </el-form-item>
         <el-form-item label="城市">
-          <el-autocomplete
+          <el-select
             v-model="form.city"
-            :fetch-suggestions="handleCitySearch"
-            placeholder="请输入城市"
+            placeholder="请先选择省份"
+            :disabled="!form.province"
+            filterable
             class="w-full"
             clearable
-          />
+          >
+            <el-option
+              v-for="item in cityOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="专业">
           <el-autocomplete

@@ -293,7 +293,6 @@ onMounted(() => { fetchData() })
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="resourceName" label="资源名称" min-width="200" show-overflow-tooltip />
         <el-table-column prop="category" label="分类" width="120">
           <template #default="{ row }">
@@ -597,17 +596,17 @@ onMounted(() => { fetchData() })
   border-bottom: 3px solid #FB923C;
 }
 
-/* Table header orange gradient */
+/* Table header light orange gradient + dark text + orange bottom border */
 .table-card :deep(.el-table__header-wrapper th) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff !important;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
   font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
 .table-card :deep(.el-table__header-wrapper th .cell) {
-  color: #fff !important;
-}
-.table-card :deep(.el-table__header-wrapper th .el-checkbox__inner) {
-  border-color: rgba(255,255,255,0.6) !important;
+  color: #1f2937 !important;
 }
 
 /* Row hover orange tint */

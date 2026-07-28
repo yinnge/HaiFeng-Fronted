@@ -457,8 +457,8 @@ onMounted(() => { fetchData() })
 .table-card { background:#fff; border-radius:12px; padding:24px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s ease; }
 .table-card:hover { box-shadow:0 4px 16px rgba(249,115,22,0.08); }
 .custom-table :deep(.el-table) { --el-table-border-color:#f3f4f6; --el-table-header-bg-color:transparent; border-radius:8px; overflow:hidden; }
-.custom-table :deep(.el-table__header th) { background:linear-gradient(135deg,#F97316,#FB923C)!important; color:#fff; font-weight:600; font-size:14px; border-bottom:none; padding:14px 0; }
-.custom-table :deep(.el-table__header th .cell) { color:#fff; }
+.custom-table :deep(.el-table__header th) { background:linear-gradient(180deg,#fff7ed,#ffedd5)!important; color:#1f2937!important; font-weight:600; font-size:14px; border-bottom:2px solid #F97316!important; padding:14px 0; }
+.custom-table :deep(.el-table__header th .cell) { color:#1f2937; }
 .custom-table :deep(.el-table__body tr:hover>td) { background:linear-gradient(90deg,rgba(249,115,22,0.03),rgba(251,146,60,0.07))!important; }
 .custom-table :deep(.el-table__body td) { border-bottom:1px solid #f3f4f6; padding:12px 0; }
 .custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) { background:rgba(255,247,237,0.3); }

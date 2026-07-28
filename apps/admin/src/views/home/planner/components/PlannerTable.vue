@@ -110,14 +110,14 @@ const statusLabel = (status: number) => (status === 1 ? '展示' : '下架')
   overflow: hidden;
 }
 .custom-table :deep(.el-table__header th) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
   font-weight: 600;
   font-size: 14px;
-  border-bottom: none;
+  border-bottom: 2px solid #F97316 !important;
   padding: 14px 0;
 }
-.custom-table :deep(.el-table__header th .cell) { color: #fff; }
+.custom-table :deep(.el-table__header th .cell) { color: #1f2937; }
 .custom-table :deep(.el-table__body tr) { transition: background-color 0.2s ease; }
 .custom-table :deep(.el-table__body tr:hover > td) {
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;

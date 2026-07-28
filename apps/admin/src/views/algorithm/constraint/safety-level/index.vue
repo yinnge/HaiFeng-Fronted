@@ -275,55 +275,58 @@ onMounted(() => {
 <template>
   <div class="page-wrap">
     <!-- 水印 -->
-    <div class="watermark-left"><img src="@/assets/images/logo-main.png" /></div>
-    <div class="watermark-right"><img src="@/assets/images/logo-main.png" /></div>
+    <div class="watermark watermark-tr"><img src="@/assets/images/logo-main.png" /></div>
+    <div class="watermark watermark-bl"><img src="@/assets/images/logo-main.png" /></div>
 
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2 class="page-title">安全系数等级管理</h2>
-      <p class="page-subtitle">管理安全系数等级配置、系数范围与置信度</p>
+      <h2 class="title">安全系数等级管理</h2>
+      <p class="subtitle">管理安全系数等级配置、系数范围与置信度</p>
     </div>
 
     <!-- 操作栏 -->
     <div class="action-bar">
-      <button class="btn btn-primary" @click="openDialog('add')">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
-        <span>新增等级</span>
-      </button>
-      <button class="btn btn-danger" :disabled="selectedLevels.length === 0" @click="handleBatchDelete">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
-        <span>批量删除</span>
-      </button>
-      <div class="action-bar-spacer" />
-      <button class="btn btn-outline" @click="fetchData">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
-        <span>刷新</span>
-      </button>
+      <div class="left-actions">
+        <button class="btn btn-add" @click="openDialog('add')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
+          <span>新增等级</span>
+        </button>
+        <button class="btn btn-batch-delete" :disabled="selectedLevels.length === 0" @click="handleBatchDelete">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
+          <span>批量删除</span>
+        </button>
+      </div>
+      <div class="right-actions">
+        <button class="btn btn-refresh" @click="fetchData">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
+          <span>刷新</span>
+        </button>
+      </div>
     </div>
 
     <!-- 表格卡片 -->
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" class="custom-table">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="level" label="等级编号" width="90" align="center" />
-        <el-table-column prop="code" label="代码" width="140" />
-        <el-table-column prop="name" label="名称" width="120" />
-        <el-table-column prop="nameShort" label="简称" width="70" align="center" />
-        <el-table-column label="系数范围" width="160" align="center">
+        <el-table-column prop="level" label="等级编号" min-width="90" align="center" />
+        <el-table-column prop="code" label="代码" min-width="140" />
+        <el-table-column prop="name" label="名称" min-width="120" />
+        <el-table-column prop="nameShort" label="简称" min-width="70" align="center" />
+        <el-table-column label="系数范围" min-width="160" align="center">
           <template #default="{ row }">
             {{ row.minCoefficient.toFixed(2) }} ~ {{ row.maxCoefficient.toFixed(2) }}
           </template>
         </el-table-column>
-        <el-table-column prop="confidence" label="置信度" width="100" align="center">
+        <el-table-column prop="confidence" label="置信度" min-width="100" align="center">
           <template #default="{ row }">
-            <span class="status-pill" :class="confidenceTag(row.confidence)">{{ confidenceLabel(row.confidence) }}</span>
+            <span class="status-pill" :class="'status-' + confidenceTag(row.confidence)">{{ confidenceLabel(row.confidence) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
-            <span class="action-pill pill-info" @click="openDialog('detail', row.level)">详情</span>
-            <span class="action-pill pill-warning" @click="openDialog('edit', row.level)">修改</span>
-            <span class="action-pill pill-danger" @click="handleDelete(row.level)">删除</span>
+            <button class="action-pill action-detail" @click="openDialog('detail', row.level)">详情</button>
+            <button class="action-pill action-edit" @click="openDialog('edit', row.level)">修改</button>
+            <button class="action-pill action-delete" @click="handleDelete(row.level)">删除</button>
           </template>
         </el-table-column>
       </el-table>
@@ -358,7 +361,7 @@ onMounted(() => {
               {{ detailData.color || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="置信度">
-              <span class="status-pill" :class="confidenceTag(detailData.confidence)">{{ confidenceLabel(detailData.confidence) }}</span>
+              <span class="status-pill" :class="'status-' + confidenceTag(detailData.confidence)">{{ confidenceLabel(detailData.confidence) }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="置信度说明">{{ detailData.confidenceReason || '-' }}</el-descriptions-item>
             <el-descriptions-item label="详细说明" :span="2">
@@ -430,8 +433,10 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <button class="btn btn-outline" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
-        <button v-if="dialogMode !== 'detail'" class="btn btn-primary" @click="handleSubmit">确定</button>
+        <div class="dialog-footer">
+          <button class="btn btn-cancel" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
+          <button v-if="dialogMode !== 'detail'" class="btn btn-confirm" @click="handleSubmit">确定</button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -447,42 +452,42 @@ onMounted(() => {
 }
 
 /* 水印 */
-.watermark-left {
+.watermark {
   position: absolute;
+  width: 180px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+.watermark img {
+  width: 180px;
+}
+.watermark-tr {
   top: -60px;
   right: 40px;
-  opacity: 0.05;
-  pointer-events: none;
   transform: rotate(18deg);
 }
-.watermark-left img {
-  width: 180px;
-}
-.watermark-right {
-  position: absolute;
+.watermark-bl {
   bottom: -40px;
   left: 30px;
-  opacity: 0.05;
-  pointer-events: none;
   transform: rotate(-12deg);
-}
-.watermark-right img {
-  width: 180px;
 }
 
 /* 页面标题 */
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
 }
-.page-title {
-  font-size: 20px;
+.page-header .title {
+  font-size: 22px;
   font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 6px 0;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  letter-spacing: 0.02em;
 }
-.page-subtitle {
+.page-header .subtitle {
   font-size: 13px;
-  color: #999;
+  color: #9ca3af;
   margin: 0;
 }
 
@@ -490,25 +495,26 @@ onMounted(() => {
 .action-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
-.action-bar-spacer {
-  flex: 1;
+.left-actions,
+.right-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-/* 基础按钮 */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border: none;
+  gap: 5px;
+  padding: 8px 20px;
   border-radius: 20px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  border: none;
   transition: all 0.25s;
   white-space: nowrap;
 }
@@ -516,52 +522,69 @@ onMounted(() => {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.btn-primary {
-  background: linear-gradient(135deg, #F97316, #FB923C);
+
+.btn-add {
+  background: linear-gradient(135deg, #f97316, #fb923c);
   color: #fff;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-primary:hover:not(:disabled) {
+.btn-add:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
 }
-.btn-danger {
-  background: linear-gradient(135deg, #EF4444, #F87171);
+
+.btn-batch-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
-.btn-danger:hover:not(:disabled) {
+.btn-batch-delete:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }
-.btn-outline {
+
+.btn-refresh {
   background: #fff;
-  color: #555;
-  border: 1px solid #e0e0e0;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
 }
-.btn-outline:hover {
-  border-color: #F97316;
-  color: #F97316;
+.btn-refresh:hover {
+  border-color: #f97316;
+  color: #f97316;
+  background: #fff7ed;
 }
 
 /* 表格卡片 */
 .table-card {
   background: #fff;
   border-radius: 12px;
-  padding: 20px;
-  border: 1px solid rgba(249, 115, 22, 0.2);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
 }
 
-/* 自定义表格表头 */
-.custom-table :deep(.el-table__header-wrapper th) {
-  background: linear-gradient(180deg, #FFF7ED, #FFF1F2) !important;
-  color: #F97316 !important;
+/* 表格头部 */
+.custom-table :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
-.custom-table :deep(.el-table__header-wrapper th .cell) {
-  color: #F97316 !important;
+.custom-table :deep(.el-table th.el-table__cell .cell) {
+  color: #1f2937 !important;
+}
+
+/* 表格行悬停 */
+.custom-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
+}
+
+/* 表格条纹行 */
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
+  background-color: rgba(255, 247, 237, 0.3);
 }
 
 /* 状态胶囊 */
@@ -570,93 +593,162 @@ onMounted(() => {
   padding: 2px 12px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.5;
 }
-.status-pill.success {
-  background: #ECFDF5;
+.status-pill.status-success {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
   color: #059669;
 }
-.status-pill.warning {
-  background: #FFFBEB;
-  color: #D97706;
+.status-pill.status-warning {
+  background: #fef3c7;
+  color: #d97706;
 }
-.status-pill.danger {
-  background: #FEF2F2;
-  color: #DC2626;
+.status-pill.status-danger {
+  background: linear-gradient(135deg, #fef2f2, #fecaca);
+  color: #dc2626;
 }
-.status-pill.info {
-  background: #F3F4F6;
-  color: #6B7280;
+.status-pill.status-info {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 /* 操作胶囊 */
 .action-pill {
   display: inline-block;
-  padding: 3px 12px;
+  padding: 2px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  border: none;
+  transition: all 0.15s;
   margin: 0 2px;
 }
-.action-pill:hover {
-  transform: translateY(-1px);
+.action-detail {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
 }
-.pill-info {
-  background: #EFF6FF;
-  color: #3B82F6;
+.action-detail:hover {
+  background: linear-gradient(135deg, #ea580c, #f97316);
 }
-.pill-info:hover {
-  background: #DBEAFE;
+.action-edit {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
 }
-.pill-warning {
-  background: #FFF7ED;
-  color: #F97316;
+.action-edit:hover {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
 }
-.pill-warning:hover {
-  background: #FFEDD5;
+.action-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
 }
-.pill-danger {
-  background: #FEF2F2;
-  color: #EF4444;
-}
-.pill-danger:hover {
-  background: #FEE2E2;
+.action-delete:hover {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
 }
 
 /* 分页 */
 .custom-pagination {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
-}
-.custom-pagination :deep(.el-pagination .is-active) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff !important;
-  border-radius: 6px;
 }
 .custom-pagination :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  background: linear-gradient(135deg, #f97316, #fb923c) !important;
   color: #fff !important;
+  border-radius: 8px;
+}
+.custom-pagination :deep(.el-pager li:hover) {
+  color: #f97316;
 }
 .custom-pagination :deep(.btn-prev:hover),
 .custom-pagination :deep(.btn-next:hover) {
-  color: #F97316;
+  color: #f97316;
 }
 
 /* 弹窗 */
+.uni-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+}
 .uni-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid #F97316;
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
   padding-bottom: 16px;
+  margin-bottom: 0;
 }
 .uni-dialog :deep(.el-dialog__title) {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
 }
 .uni-dialog :deep(.el-descriptions__label) {
-  background: #FFF7ED;
-  font-weight: 500;
+  background: rgba(249, 115, 22, 0.06);
+  color: #f97316;
+  font-weight: 600;
+}
+.uni-dialog :deep(.el-input__wrapper) {
+  border-radius: 8px;
+}
+.uni-dialog :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-textarea__inner) {
+  border-radius: 8px;
+}
+.uni-dialog :deep(.el-textarea__inner:focus) {
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
+  padding-right: 36px;
+}
+.uni-dialog :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.btn-cancel {
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-cancel:hover {
+  border-color: #f97316;
+  color: #f97316;
+  background: #fff7ed;
+}
+.btn-confirm {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.btn-confirm:hover {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+  transform: translateY(-1px);
 }
 </style>

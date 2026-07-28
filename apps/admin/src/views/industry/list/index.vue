@@ -1479,12 +1479,15 @@ onMounted(() => { fetchData() })
 
 /* Table Header */
 :deep(.industry-table .el-table__header-wrapper th.el-table__cell) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff !important;
-  border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
 :deep(.industry-table .el-table__header-wrapper th .cell) {
-  color: #fff !important;
+  color: #1f2937;
   font-weight: 600;
 }
 
