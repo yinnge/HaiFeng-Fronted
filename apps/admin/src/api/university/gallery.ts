@@ -47,12 +47,12 @@ export const hardDeleteGallery = (
   request.delete(`${PREFIX}/${id}/hard`)
 
 export const batchDeleteGallery = (
-  ids: number[],
+  ids: string[],
 ): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch-delete`, { ids })
 
 export const batchHardDeleteGallery = (
-  ids: number[],
+  ids: string[],
 ): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch-hard-delete`, { ids })
 

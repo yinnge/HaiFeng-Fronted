@@ -260,7 +260,7 @@ const handleBatchSoftDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
     await ElMessageBox.confirm(`确定批量禁用选中的${selectedIds.value.length} 条记录吗？禁用后可恢复。`, '确认批量禁用')
-    const res = await batchSoftDeletePostgradMajor({ ids: selectedIds.value })
+    const res = await batchSoftDeletePostgradMajor({ ids: selectedIds.value as unknown as number[] })
     if (res.data.code === 200) { ElMessage.success('批量禁用成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
@@ -270,7 +270,7 @@ const handleBatchHardDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要操作的记录'); return }
   try {
     await ElMessageBox.confirm(`确定删除选中的${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '确认批量删除', { type: 'warning' })
-    const res = await batchHardDeletePostgradMajor({ ids: selectedIds.value })
+    const res = await batchHardDeletePostgradMajor({ ids: selectedIds.value as unknown as number[] })
     if (res.data.code === 200) { ElMessage.success('批量删除成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
@@ -313,12 +313,24 @@ const statusLabel = (status: number) => status === 1 ? '启用' : '禁用'
 const popularityTag = (v: string | null) => v === '热门' ? 'danger' : v === '一般' ? 'warning' : 'info'
 const difficultyTag = (v: string | null) => v === '高' ? 'danger' : v === '中' ? 'warning' : 'info'
 
+const popularityPillClass = (v: string | null) => v === '热门' ? 'status-hot' : v === '一般' ? 'status-warn' : 'status-info'
+const difficultyPillClass = (v: string | null) => v === '高' ? 'status-hard' : v === '中' ? 'status-mid' : 'status-low'
+
 onMounted(() => { fetchData() })
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 rounded-lg bg-white p-5">
+  <div class="page-wrap">
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png" /></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png" /></div>
+
+    <div class="page-header">
+      <h2 class="page-title">考研专业管理</h2>
+      <p class="page-subtitle">管理研究生考试专业信息，包括考试科目、录取条件与跨考分析</p>
+    </div>
+
+    <div class="search-card">
+      <div class="section-label">筛选条件</div>
       <el-form :model="queryParams" inline>
         <el-form-item label="专业名称">
           <el-input v-model="queryParams.majorName" placeholder="名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
@@ -343,30 +355,35 @@ onMounted(() => { fetchData() })
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button class="btn-search" @click="handleSearch">查询</el-button>
+          <el-button class="btn-reset" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
 
-    <div class="mb-4 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <el-button type="primary" @click="openDialog('add')">新增考研专业</el-button>
-        <el-button @click="handleImport">导入考研专业</el-button>
+    <div class="action-bar">
+      <div class="action-left">
+        <el-button class="btn-add" @click="openDialog('add')">+ 新增考研专业</el-button>
+        <el-button class="btn-outline" @click="handleImport">导入考研专业</el-button>
       </div>
-      <div class="flex items-center gap-2">
-        <el-button :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量禁用</el-button>
-        <el-button :disabled="selectedIds.length === 0" type="danger" @click="handleBatchHardDelete">批量删除</el-button>
-        <el-button @click="fetchData">刷新</el-button>
+      <div class="action-right">
+        <el-button class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量禁用</el-button>
+        <el-button class="btn-danger-solid" :disabled="selectedIds.length === 0" @click="handleBatchHardDelete">批量删除</el-button>
+        <el-button class="btn-outline" @click="fetchData">刷新</el-button>
       </div>
     </div>
 
-    <div class="rounded-lg bg-white p-5">
+    <div class="table-card">
       <el-table
         :data="tableData"
         v-loading="loading"
         stripe
         @selection-change="handleSelectionChange"
+        :header-cell-style="{
+          background: 'linear-gradient(180deg, #FFF7ED 0%, #FFEDD5 100%)',
+          color: '#9A3412',
+          fontWeight: 600,
+        }"
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="140" />
@@ -376,34 +393,36 @@ onMounted(() => { fetchData() })
         <el-table-column prop="disciplineCategory" label="学科门类" width="90" />
         <el-table-column prop="popularity" label="热门程度" width="90" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.popularity" :type="popularityTag(row.popularity)" size="small">{{ row.popularity }}</el-tag>
+            <span v-if="row.popularity" class="status-pill" :class="popularityPillClass(row.popularity)">{{ row.popularity }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="difficulty" label="难度等级" width="90" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.difficulty" :type="difficultyTag(row.difficulty)" size="small">{{ row.difficulty }}</el-tag>
+            <span v-if="row.difficulty" class="status-pill" :class="difficultyPillClass(row.difficulty)">{{ row.difficulty }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            <span class="status-pill" :class="row.status === 1 ? 'status-on' : 'status-off'">
+              {{ statusLabel(row.status) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
         <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDialog('detail', row.id)">详情</el-button>
-            <el-button type="warning" link @click="openDialog('edit', row.id)">修改</el-button>
-            <el-button v-if="row.status === 1" type="info" link @click="handleToggleStatus(row)">禁用</el-button>
-            <el-button v-else type="success" link @click="handleRestore(row.id)">恢复</el-button>
-            <el-button type="danger" link @click="handleHardDelete(row.id)">删除</el-button>
+            <span class="action-link" @click="openDialog('detail', row.id)">详情</span>
+            <span class="action-link" @click="openDialog('edit', row.id)">修改</span>
+            <span v-if="row.status === 1" class="action-link" @click="handleToggleStatus(row)">禁用</span>
+            <span v-else class="action-link" @click="handleRestore(row.id)">恢复</span>
+            <span class="action-link action-danger" @click="handleHardDelete(row.id)">删除</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="mt-4 flex justify-end">
+      <div class="custom-pagination">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -416,10 +435,10 @@ onMounted(() => { fetchData() })
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false" class="uni-dialog">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
-          <el-descriptions :column="2" border>
+          <el-descriptions :column="2" border class="uni-descriptions">
             <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="专业名称">{{ detailData.majorName }}</el-descriptions-item>
             <el-descriptions-item label="专业代码">{{ detailData.majorCode }}</el-descriptions-item>
@@ -429,7 +448,9 @@ onMounted(() => { fetchData() })
             <el-descriptions-item label="难度等级">{{ detailData.difficulty || '-' }}</el-descriptions-item>
             <el-descriptions-item label="跨考难度">{{ detailData.crossExamDifficulty || '-' }}</el-descriptions-item>
             <el-descriptions-item label="状态">
-              <el-tag :type="statusTag(detailData.status)" size="small">{{ statusLabel(detailData.status) }}</el-tag>
+              <span class="status-pill" :class="detailData.status === 1 ? 'status-on' : 'status-off'">
+                {{ statusLabel(detailData.status) }}
+              </span>
             </el-descriptions-item>
             <el-descriptions-item label="专业简介" :span="2">{{ detailData.brief || '-' }}</el-descriptions-item>
             <el-descriptions-item label="详细介绍" :span="2">{{ detailData.introduction || '-' }}</el-descriptions-item>
@@ -530,9 +551,300 @@ onMounted(() => { fetchData() })
       </div>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
-        <el-button v-if="dialogMode !== 'detail'" type="primary" @click="handleSubmit">确定</el-button>
+        <span class="dialog-footer">
+          <el-button class="btn-outline" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</el-button>
+          <el-button v-if="dialogMode !== 'detail'" class="btn-add" @click="handleSubmit">确定</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.page-wrap {
+  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.watermark-left,
+.watermark-right {
+  position: absolute;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+.watermark-left {
+  top: -60px;
+  right: 40px;
+  transform: rotate(18deg);
+}
+.watermark-right {
+  bottom: -40px;
+  left: 30px;
+  transform: rotate(-12deg);
+}
+.watermark-left img,
+.watermark-right img {
+  width: 180px;
+}
+
+.page-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #9A3412;
+  margin: 0 0 4px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #C2410C;
+  margin: 0;
+}
+
+.search-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  box-shadow: 0 2px 12px rgba(249,115,22,0.08);
+}
+.section-label {
+  display: inline-block;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.btn-search {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 8px 20px !important;
+}
+.btn-search:hover {
+  opacity: 0.9;
+}
+.btn-reset {
+  background: #fff !important;
+  border: 1px solid #F97316 !important;
+  color: #F97316 !important;
+  border-radius: 6px !important;
+  padding: 8px 20px !important;
+}
+.btn-reset:hover {
+  background: #FFF7ED !important;
+}
+
+.action-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.action-left, .action-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 20px !important;
+  padding: 8px 20px !important;
+  font-weight: 500;
+}
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+.btn-outline {
+  background: #fff !important;
+  border: 1px solid #F97316 !important;
+  color: #F97316 !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+}
+.btn-outline:hover {
+  background: #FFF7ED !important;
+  border-color: #FB923C !important;
+}
+.btn-outline:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: #fff !important;
+  border: 1px solid #DC2626 !important;
+  color: #DC2626 !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+}
+.btn-danger:hover {
+  background: #FEF2F2 !important;
+}
+.btn-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-danger-solid {
+  background: linear-gradient(135deg, #DC2626, #EF4444) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+}
+.btn-danger-solid:hover {
+  opacity: 0.9;
+}
+.btn-danger-solid:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.table-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #FED7AA;
+  box-shadow: 0 2px 12px rgba(249,115,22,0.06);
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-on {
+  background: #DCFCE7;
+  color: #15803D;
+}
+.status-off {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+.status-hot {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+.status-warn {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.status-info {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+.status-hard {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+.status-mid {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.status-low {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.action-link {
+  color: #F97316;
+  cursor: pointer;
+  font-size: 13px;
+  margin: 0 6px;
+  transition: color 0.2s;
+}
+.action-link:hover {
+  color: #FB923C;
+}
+.action-danger {
+  color: #DC2626;
+}
+.action-danger:hover {
+  color: #EF4444;
+}
+
+.custom-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+.custom-pagination :deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border-radius: 6px;
+}
+.custom-pagination :deep(.el-pagination .el-pager li.is-active:hover) {
+  color: #fff !important;
+}
+.custom-pagination :deep(.btn-prev:hover),
+.custom-pagination :deep(.btn-next:hover) {
+  color: #F97316 !important;
+}
+
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.uni-dialog :deep(.el-dialog__title) {
+  font-size: 17px;
+  font-weight: 600;
+  color: #9A3412;
+}
+
+.uni-descriptions :deep(.el-descriptions__label) {
+  background: linear-gradient(135deg, #FFF7ED, #FFEDD5) !important;
+  color: #9A3412 !important;
+  font-weight: 500;
+}
+
+.uni-dialog :deep(.el-form-item__label) {
+  color: #9A3412;
+  font-weight: 500;
+}
+.uni-dialog :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+.uni-dialog :deep(.el-select .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+.uni-dialog :deep(.el-textarea__inner:focus) {
+  border-color: #F97316;
+  box-shadow: 0 0 0 1px #F97316;
+}
+.uni-dialog :deep(.el-input-number .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>
