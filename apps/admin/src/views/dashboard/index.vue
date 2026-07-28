@@ -187,12 +187,6 @@ function renderMemberTrendChart(data: TrendDataVO) {
     },
     tooltip: {
       showCrosshairs: true,
-      crosshairs: {
-        style: {
-          stroke: BRAND_ORANGE,
-          strokeDash: [4, 4],
-        },
-      },
     },
     animation: {
       appear: {
@@ -257,12 +251,6 @@ function renderOrderTrendChart(data: TrendDataVO) {
     },
     tooltip: {
       showCrosshairs: true,
-      crosshairs: {
-        style: {
-          stroke: BRAND_BLUE,
-          strokeDash: [4, 4],
-        },
-      },
     },
     animation: {
       appear: {
@@ -283,7 +271,7 @@ function renderEntityCompareChart() {
     data: entityCards.value.map((item) => ({ type: item.label, value: item.value })),
     xField: 'type',
     yField: 'value',
-    colorField: 'type',
+    seriesField: 'type',
     color: entityCards.value.map((item) => item.color),
     columnWidthRatio: 0.6,
     label: {
@@ -337,7 +325,7 @@ function renderMemberTypeChart() {
     data: memberTypeCards.value.map((item) => ({ type: item.label, value: item.value })),
     xField: 'type',
     yField: 'value',
-    colorField: 'type',
+    seriesField: 'type',
     color: memberTypeCards.value.map((item) => item.color),
     columnWidthRatio: 0.5,
     label: {
@@ -388,21 +376,12 @@ function handleDaysChange(days: number) {
   fetchTrends()
 }
 
-function handleResize() {
-  memberTrendChart?.resize()
-  orderTrendChart?.resize()
-  entityCompareChart?.resize()
-  memberTypeChart?.resize()
-}
-
 onMounted(async () => {
   await fetchStats()
   await fetchTrends()
-  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
   memberTrendChart?.destroy()
   orderTrendChart?.destroy()
   entityCompareChart?.destroy()
