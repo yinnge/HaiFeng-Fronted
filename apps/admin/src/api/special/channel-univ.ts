@@ -6,9 +6,14 @@ import type {
   ChannelUnivQueryDTO,
   ChannelUnivAddDTO,
   ChannelUnivUpdateDTO,
+  ChannelOptionVO,
 } from '@/types/special/channel-univ'
 
 const PREFIX = '/api/v1/admin/special/channel-univ'
+
+export const getChannelOptions = () => {
+  return request.get<R<ChannelOptionVO[]>>('/api/v1/admin/special/channel/options')
+}
 
 export const getChannelUnivPage = (params: ChannelUnivQueryDTO) => {
   return request.get<R<PageResult<ChannelUnivListVO>>>(`${PREFIX}/page`, { params })

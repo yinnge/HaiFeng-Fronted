@@ -6,8 +6,8 @@ import {
   getSafetyDetail,
   addSafety,
   updateSafety,
-  deleteSafety,
   batchDeleteSafety,
+  toggleSafetyStatus,
 } from '@/api/algorithm/constraint'
 import type {
   SafetyLevelListVO,
@@ -19,11 +19,12 @@ import type {
 const loading = ref(false)
 const tableData = ref<SafetyLevelListVO[]>([])
 const total = ref(0)
-const selectedLevels = ref<string[]>([])
+const selectedLevels = ref<number[]>([])
 
 const queryParams = reactive({
   page: 1,
   size: 10,
+  isDeleted: null as boolean | null,
 })
 
 const dialogVisible = ref(false)
@@ -55,7 +56,11 @@ const confidenceOptions = [
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getSafetyPage({ page: queryParams.page, size: queryParams.size })
+    const params: { page: number; size: number; isDeleted?: boolean | null } = { page: queryParams.page, size: queryParams.size }
+    if (queryParams.isDeleted !== null) {
+      params.isDeleted = queryParams.isDeleted
+    }
+    const res = await getSafetyPage(params)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
       total.value = res.data.data.total
@@ -81,7 +86,7 @@ const handleSizeChange = (size: number) => {
 }
 
 const handleSelectionChange = (rows: SafetyLevelListVO[]) => {
-  selectedLevels.value = rows.map((r) => String(r.level))
+  selectedLevels.value = rows.map((r) => r.level)
 }
 
 const resetForm = () => {
@@ -203,27 +208,24 @@ const handleSubmit = async () => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    if (err.response?.data?.msg) {
-      ElMessage.error(err.response.data.msg)
-    } else {
-      ElMessage.error('操作失败')
-    }
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
-const handleDelete = async (level: number) => {
+const handleToggleStatus = async (row: SafetyLevelListVO) => {
+  const action = row.isDeleted ? '启用' : '禁用'
   try {
     await ElMessageBox.confirm(
-      '确定删除该安全系数等级吗？删除后可恢复。',
-      '确认删除',
-      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+      `确定${action}该安全系数等级吗？`,
+      `确认${action}`,
+      { type: 'warning', confirmButtonText: `确定${action}`, cancelButtonText: '取消' }
     )
-    const res = await deleteSafety(level)
+    const res = await toggleSafetyStatus(row.level)
     if (res.data.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(`${action}成功`)
       fetchData()
     } else {
-      ElMessage.error(res.data.msg || '删除失败')
+      ElMessage.error(res.data.msg || `${action}失败`)
     }
   } catch {
     // 取消
@@ -237,17 +239,17 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量删除选中的${selectedLevels.value.length} 个等级吗？删除后可恢复。`,
-      '确认批量删除',
-      { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
+      `确定批量禁用选中的${selectedLevels.value.length} 个等级吗？`,
+      '确认批量禁用',
+      { type: 'warning', confirmButtonText: '确定批量禁用', cancelButtonText: '取消' }
     )
-    const res = await batchDeleteSafety(selectedLevels.value as unknown as number[])
+    const res = await batchDeleteSafety(selectedLevels.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success('批量禁用成功')
       selectedLevels.value = []
       fetchData()
     } else {
-      ElMessage.error(res.data.msg || '批量删除失败')
+      ElMessage.error(res.data.msg || '批量禁用失败')
     }
   } catch {
     // 取消
@@ -293,10 +295,18 @@ onMounted(() => {
         </button>
         <button class="btn btn-batch-delete" :disabled="selectedLevels.length === 0" @click="handleBatchDelete">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
-          <span>批量删除</span>
+          <span>批量禁用</span>
         </button>
       </div>
       <div class="right-actions">
+        <div class="status-filter">
+          <span class="filter-label">状态：</span>
+          <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 110px" @change="fetchData">
+            <el-option label="全部" :value="null" />
+            <el-option label="启用" :value="false" />
+            <el-option label="禁用" :value="true" />
+          </el-select>
+        </div>
         <button class="btn btn-refresh" @click="fetchData">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
           <span>刷新</span>
@@ -322,11 +332,16 @@ onMounted(() => {
             <span class="status-pill" :class="'status-' + confidenceTag(row.confidence)">{{ confidenceLabel(row.confidence) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="状态" min-width="80" align="center">
+          <template #default="{ row }">
+            <span class="status-pill" :class="row.isDeleted ? 'status-danger' : 'status-success'">{{ row.isDeleted ? '禁用' : '启用' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <button class="action-pill action-detail" @click="openDialog('detail', row.level)">详情</button>
             <button class="action-pill action-edit" @click="openDialog('edit', row.level)">修改</button>
-            <button class="action-pill action-delete" @click="handleDelete(row.level)">删除</button>
+            <button class="action-pill" :class="row.isDeleted ? 'action-enable' : 'action-delete'" @click="handleToggleStatus(row)">{{ row.isDeleted ? '启用' : '禁用' }}</button>
           </template>
         </el-table-column>
       </el-table>
@@ -554,6 +569,27 @@ onMounted(() => {
   background: #fff7ed;
 }
 
+/* 状态筛选 */
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-filter .filter-label {
+  font-size: 13px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.status-filter :deep(.el-select .el-input__wrapper) {
+  border-radius: 20px;
+}
+.status-filter :deep(.el-select .el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+.status-filter :deep(.el-select .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+
 /* 表格卡片 */
 .table-card {
   background: #fff;
@@ -645,6 +681,13 @@ onMounted(() => {
 }
 .action-delete:hover {
   background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+.action-enable {
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  color: #fff;
+}
+.action-enable:hover {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
 }
 
 /* 分页 */

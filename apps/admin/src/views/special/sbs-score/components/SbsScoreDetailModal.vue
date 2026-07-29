@@ -6,6 +6,7 @@ import {
   addScore,
   updateScore,
 } from '@/api/special/strong-base-score'
+import { getUniversityPage } from '@/api/university/info'
 import type {
   StrongBaseScoreDetailVO,
   StrongBaseScoreAddDTO,
@@ -26,6 +27,8 @@ const emit = defineEmits<{
 
 const formLoading = ref(false)
 const detailData = ref<StrongBaseScoreDetailVO | null>(null)
+const universityOptions = ref<{ label: string; value: string }[]>([])
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const formData = ref<StrongBaseScoreAddDTO>({
   universityId: '',
@@ -52,12 +55,42 @@ const dialogTitle = (() => {
   return '数据详情'
 })()
 
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(async () => {
+    if (!query) {
+      universityOptions.value = []
+      return
+    }
+    try {
+      const res = await getUniversityPage({ page: 1, size: 100, name: query } as any)
+      if (res.data.code === 200) {
+        universityOptions.value = res.data.data.records.map((r: any) => ({
+          label: r.name,
+          value: r.id,
+        }))
+      }
+    } catch {
+      /* 忽略 */
+    }
+  }, 300)
+}
+
+const onUniversityChange = (id: string) => {
+  formData.value.universityId = id
+  const option = universityOptions.value.find((o) => o.value === id)
+  if (option) {
+    formData.value.universityName = option.label
+  }
+}
+
 watch(
   () => props.visible,
   async (val) => {
     if (val) {
       formLoading.value = true
       detailData.value = null
+      universityOptions.value = []
 
       if (props.mode === 'add') {
         formData.value = {
@@ -104,7 +137,7 @@ watch(
             }
           }
         } catch {
-          ElMessage.error('获取详情失败')
+          ElMessage.error('获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }
@@ -115,7 +148,7 @@ watch(
             detailData.value = res.data.data
           }
         } catch {
-          ElMessage.error('获取详情失败')
+          ElMessage.error('获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }
@@ -130,8 +163,24 @@ const subjectTypeLabel = (val: string) => {
 }
 
 const handleSubmit = async () => {
-  if (!formData.value.universityId || !formData.value.universityName || !formData.value.year || !formData.value.province || !formData.value.subjectType || !formData.value.majorName) {
-    ElMessage.warning('请填写必填字段')
+  if (!formData.value.universityId) {
+    ElMessage.warning('请选择大学')
+    return
+  }
+  if (!formData.value.year) {
+    ElMessage.warning('请填写年份')
+    return
+  }
+  if (!formData.value.province) {
+    ElMessage.warning('请填写省份')
+    return
+  }
+  if (!formData.value.subjectType) {
+    ElMessage.warning('请选择科类')
+    return
+  }
+  if (!formData.value.majorName) {
+    ElMessage.warning('请填写专业名称')
     return
   }
 
@@ -151,10 +200,10 @@ const handleSubmit = async () => {
       emit('update:visible', false)
       emit('success')
     } else {
-      ElMessage.error(res.data.msg || '操作失败')
+      ElMessage.error(res.data.msg || '操作失败，请稍后重试')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.msg || '网络异常或服务器错误，请稍后重试')
   } finally {
     formLoading.value = false
   }
@@ -209,11 +258,22 @@ const handleClose = () => {
       <!-- 新增/修改模式 -->
       <template v-if="mode !== 'detail'">
         <el-form :model="formData" label-width="120px">
-          <el-form-item label="大学ID" required>
-            <el-input v-model="formData.universityId" placeholder="请输入大学ID" />
+          <el-form-item label="大学" required>
+            <el-select
+              v-model="formData.universityId"
+              placeholder="请输入大学名称搜索"
+              filterable
+              remote
+              :remote-method="handleUniversitySearch"
+              :loading="formLoading"
+              style="width: 100%"
+              @change="onUniversityChange"
+            >
+              <el-option v-for="item in universityOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="大学名称" required>
-            <el-input v-model="formData.universityName" placeholder="请输入大学名称" maxlength="50" show-word-limit />
+          <el-form-item label="大学名称">
+            <el-input v-model="formData.universityName" disabled placeholder="选择大学后自动填充" />
           </el-form-item>
           <el-form-item label="年份" required>
             <el-input-number v-model="formData.year" :min="2000" :max="2099" controls-position="right" style="width: 130px" />

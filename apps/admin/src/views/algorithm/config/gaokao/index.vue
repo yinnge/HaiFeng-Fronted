@@ -56,7 +56,7 @@ const openEditDialog = () => {
   formData.oldGaokaoRankWeight = d.oldGaokaoRankWeight
   formData.weightSoftGroup = d.weightSoftGroup
   formData.weightSoftBoth = d.weightSoftBoth
-  formData.yearWeights = [...d.yearWeights]
+  formData.yearWeights = d.yearWeights ? [...d.yearWeights] : [1.0, 0.8, 0.6, 0.4, 0.2]
   dialogVisible.value = true
 }
 

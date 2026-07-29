@@ -9,7 +9,9 @@ import {
   batchDeleteMajor,
   toggleMajorStatus,
   importMajorExcel,
+  getDictPage,
 } from '@/api/algorithm/constraint'
+import { getMajorPage as getMajorListPage } from '@/api/major/index'
 import type {
   MajorConstraintListVO,
   MajorConstraintDetailVO,
@@ -23,6 +25,26 @@ const loading = ref(false)
 const tableData = ref<MajorConstraintListVO[]>([])
 const total = ref(0)
 const selectedIds = ref<string[]>([])
+
+const queryMajorSuggestions = async (queryString: string, cb: any) => {
+  if (!queryString) { cb([]); return }
+  try {
+    const res = await getMajorListPage({ majorName: queryString, page: 1, size: 10 } as any)
+    if (res.data.code === 200) {
+      cb((res.data.data.records || []).map((item: any) => ({ value: item.majorName })))
+    } else { cb([]) }
+  } catch { cb([]) }
+}
+
+const queryConstraintSuggestions = async (queryString: string, cb: any) => {
+  if (!queryString) { cb([]); return }
+  try {
+    const res = await getDictPage({ name: queryString, page: 1, size: 10 })
+    if (res.data.code === 200) {
+      cb((res.data.data.records || []).map((item: any) => ({ value: item.name })))
+    } else { cb([]) }
+  } catch { cb([]) }
+}
 
 const queryParams = reactive<MajorConstraintQueryDTO>({
   page: 1,
@@ -412,10 +434,24 @@ onMounted(() => {
         <template v-if="dialogMode === 'add'">
           <el-form :model="formData" label-width="100px">
             <el-form-item label="专业名称" required>
-              <el-input v-model="formData.majorName" placeholder="请输入专业名称（系统自动查找对应代码）" maxlength="100" show-word-limit />
+              <el-autocomplete
+                v-model="formData.majorName"
+                :fetch-suggestions="queryMajorSuggestions"
+                placeholder="输入专业名称模糊搜索，从下拉选择"
+                :trigger-on-focus="false"
+                clearable
+                style="width: 100%"
+              />
             </el-form-item>
             <el-form-item label="约束名称" required>
-              <el-input v-model="formData.constraintName" placeholder="请输入约束名称（系统自动查找对应代码）" maxlength="100" show-word-limit />
+              <el-autocomplete
+                v-model="formData.constraintName"
+                :fetch-suggestions="queryConstraintSuggestions"
+                placeholder="输入约束名称模糊搜索，从下拉选择"
+                :trigger-on-focus="false"
+                clearable
+                style="width: 100%"
+              />
             </el-form-item>
             <el-form-item label="备注">
               <el-input v-model="formData.remark" type="textarea" :rows="3" placeholder="备注说明" maxlength="200" show-word-limit />

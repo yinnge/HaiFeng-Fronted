@@ -33,7 +33,9 @@ const searchForm = reactive({ province: '' })
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getProvinceConfigPage({ page: queryParams.page, size: queryParams.size })
+    const params: { page: number; size: number; province?: string } = { page: queryParams.page, size: queryParams.size }
+    if (searchForm.province) params.province = searchForm.province
+    const res = await getProvinceConfigPage(params)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
       total.value = res.data.data.total

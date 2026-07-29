@@ -19,7 +19,7 @@ import type { AxiosResponse } from 'axios'
 // ========== 约束字典 ==========
 const DICT_PREFIX = '/api/v1/admin/algorithm/constraint/dict'
 
-export const getDictPage = (params: { page: number; size: number }): Promise<AxiosResponse<R<PageResult<ConstraintDictListVO>>>> =>
+export const getDictPage = (params: { page: number; size: number; name?: string }): Promise<AxiosResponse<R<PageResult<ConstraintDictListVO>>>> =>
   request.get(`${DICT_PREFIX}/page`, { params })
 
 export const getDictDetail = (code: string): Promise<AxiosResponse<R<ConstraintDictDetailVO>>> =>
@@ -72,7 +72,7 @@ export const importMajorExcel = (file: File): Promise<AxiosResponse<R<number>>> 
 // ========== 安全系数 ==========
 const SAFETY_PREFIX = '/api/v1/admin/algorithm/constraint/safety-level'
 
-export const getSafetyPage = (params: { page: number; size: number }): Promise<AxiosResponse<R<PageResult<SafetyLevelListVO>>>> =>
+export const getSafetyPage = (params: { page: number; size: number; isDeleted?: boolean | null }): Promise<AxiosResponse<R<PageResult<SafetyLevelListVO>>>> =>
   request.get(`${SAFETY_PREFIX}/page`, { params })
 
 export const getSafetyDetail = (level: number): Promise<AxiosResponse<R<SafetyLevelDetailVO>>> =>
@@ -84,8 +84,11 @@ export const addSafety = (data: SafetyLevelAddDTO): Promise<AxiosResponse<R<void
 export const updateSafety = (level: number, data: SafetyLevelUpdateDTO): Promise<AxiosResponse<R<void>>> =>
   request.put(`${SAFETY_PREFIX}/${level}`, data)
 
+export const toggleSafetyStatus = (level: number): Promise<AxiosResponse<R<void>>> =>
+  request.put(`${SAFETY_PREFIX}/${level}/status`)
+
 export const deleteSafety = (level: number): Promise<AxiosResponse<R<void>>> =>
   request.delete(`${SAFETY_PREFIX}/${level}`)
 
 export const batchDeleteSafety = (levels: number[]): Promise<AxiosResponse<R<void>>> =>
-  request.post(`${SAFETY_PREFIX}/batch-delete`, levels)
+  request.post(`${SAFETY_PREFIX}/batch-delete`, { levels })

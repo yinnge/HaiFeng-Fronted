@@ -6,6 +6,7 @@ export interface SafetyLevelListVO {
   minCoefficient: number
   maxCoefficient: number
   confidence: string | null
+  isDeleted: boolean
 }
 
 export interface SafetyLevelDetailVO {
