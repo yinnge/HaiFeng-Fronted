@@ -33,7 +33,7 @@ export interface StrongBaseUnivQueryDTO {
 }
 
 export interface StrongBaseUnivAddDTO {
-  universityId: string
+  universityId?: string
   universityName: string
   isPilot?: boolean
   pilotYear?: number
@@ -47,7 +47,7 @@ export interface StrongBaseUnivAddDTO {
 }
 
 export interface StrongBaseUnivUpdateDTO {
-  universityId: string
+  universityId?: string
   universityName: string
   isPilot?: boolean
   pilotYear?: number

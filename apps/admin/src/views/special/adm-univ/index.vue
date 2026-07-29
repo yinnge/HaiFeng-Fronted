@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getChannelUnivPage,
@@ -13,7 +13,8 @@ import AdmUnivTable from './components/AdmUnivTable.vue'
 import AdmUnivDetailModal from './components/AdmUnivDetailModal.vue'
 
 const loading = ref(false)
-const allData = ref<ChannelUnivListVO[]>([])
+const records = ref<ChannelUnivListVO[]>([])
+const total = ref(0)
 
 const queryParams = reactive({
   page: 1,
@@ -24,22 +25,6 @@ const filterChannelName = ref('')
 const filterUniversityName = ref('')
 const filterYear = ref<number | undefined>(undefined)
 
-const filteredData = computed(() => {
-  return allData.value.filter((item) => {
-    if (filterChannelName.value && !item.channelName.includes(filterChannelName.value)) return false
-    if (filterUniversityName.value && !item.universityName.includes(filterUniversityName.value)) return false
-    if (filterYear.value !== undefined && filterYear.value !== null && item.year !== filterYear.value) return false
-    return true
-  })
-})
-
-const total = computed(() => filteredData.value.length)
-
-const tableData = computed(() => {
-  const start = (queryParams.page - 1) * queryParams.size
-  return filteredData.value.slice(start, start + queryParams.size)
-})
-
 const selectedIds = ref<string[]>([])
 
 const dialogVisible = ref(false)
@@ -49,9 +34,16 @@ const currentId = ref<string | null>(null)
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getChannelUnivPage({ page: 1, size: 1000 })
+    const res = await getChannelUnivPage({
+      page: queryParams.page,
+      size: queryParams.size,
+      channelName: filterChannelName.value || undefined,
+      universityName: filterUniversityName.value || undefined,
+      year: filterYear.value,
+    })
     if (res.data.code === 200) {
-      allData.value = res.data.data.records
+      records.value = res.data.data.records
+      total.value = res.data.data.total
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
@@ -62,20 +54,28 @@ const fetchData = async () => {
   }
 }
 
-const handleSearch = () => { queryParams.page = 1 }
+const handleSearch = () => {
+  queryParams.page = 1
+  fetchData()
+}
 
 const handleReset = () => {
   filterChannelName.value = ''
   filterUniversityName.value = ''
   filterYear.value = undefined
   queryParams.page = 1
+  fetchData()
 }
 
-const handlePageChange = (page: number) => { queryParams.page = page }
+const handlePageChange = (page: number) => {
+  queryParams.page = page
+  fetchData()
+}
 
 const handleSizeChange = (size: number) => {
   queryParams.size = size
   queryParams.page = 1
+  fetchData()
 }
 
 const handleSelectionChange = (rows: ChannelUnivListVO[]) => {
@@ -171,12 +171,12 @@ onMounted(() => { fetchData() })
       @update:channel-name="filterChannelName = $event"
       @update:university-name="filterUniversityName = $event"
       @update:year="filterYear = $event"
-      @search="handleSearch"
+      @confirm="handleSearch"
       @reset="handleReset"
     />
 
     <AdmUnivTable
-      :data="tableData"
+      :data="records"
       :loading="loading"
       :total="total"
       :page="queryParams.page"

@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getChannelUnivDetail,
   addChannelUniv,
   updateChannelUniv,
+  getChannelOptions,
 } from '@/api/special/channel-univ'
+import { getUniversityPage } from '@/api/university/info'
 import type {
   ChannelUnivDetailVO,
   ChannelUnivAddDTO,
   ChannelUnivUpdateDTO,
+  ChannelOptionVO,
 } from '@/types/special/channel-univ'
 
 const props = defineProps<{
@@ -25,13 +28,17 @@ const emit = defineEmits<{
 
 const formLoading = ref(false)
 const detailData = ref<ChannelUnivDetailVO | null>(null)
+const channelOptions = ref<ChannelOptionVO[]>([])
+const universityOptions = ref<{ label: string; value: string }[]>([])
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const formData = ref<ChannelUnivAddDTO>({
   channelCode: '',
   channelName: '',
   universityId: '',
   universityName: '',
-  year: undefined,
+  year: new Date().getFullYear(),
   regionTag: '',
   signupStart: '',
   signupEnd: '',
@@ -47,6 +54,52 @@ const dialogTitle = (() => {
   return '关联详情'
 })()
 
+const onChannelChange = (code: string) => {
+  const option = channelOptions.value.find((o) => o.channelCode === code)
+  if (option) {
+    formData.value.channelName = option.channelName
+  }
+}
+
+const fetchChannelOptions = async () => {
+  try {
+    const res = await getChannelOptions()
+    if (res.data.code === 200) {
+      channelOptions.value = res.data.data
+    }
+  } catch {
+    /* 非关键，不提示 */
+  }
+}
+
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(async () => {
+    if (!query) {
+      universityOptions.value = []
+      return
+    }
+    try {
+      const res = await getUniversityPage({ page: 1, size: 100, name: query } as any)
+      if (res.data.code === 200) {
+        universityOptions.value = res.data.data.records.map((r: any) => ({
+          label: r.name,
+          value: r.id,
+        }))
+      }
+    } catch {
+      /* 忽略 */
+    }
+  }, 300)
+}
+
+const onUniversityChange = (id: string) => {
+  const option = universityOptions.value.find((o) => o.value === id)
+  if (option) {
+    formData.value.universityName = option.label
+  }
+}
+
 watch(
   () => props.visible,
   async (val) => {
@@ -60,7 +113,7 @@ watch(
           channelName: '',
           universityId: '',
           universityName: '',
-          year: undefined,
+          year: new Date().getFullYear(),
           regionTag: '',
           signupStart: '',
           signupEnd: '',
@@ -80,7 +133,7 @@ watch(
               channelName: d.channelName,
               universityId: d.universityId,
               universityName: d.universityName,
-              year: d.year ?? undefined,
+              year: d.year ?? new Date().getFullYear(),
               regionTag: d.regionTag || '',
               signupStart: d.signupStart || '',
               signupEnd: d.signupEnd || '',
@@ -91,7 +144,7 @@ watch(
             }
           }
         } catch {
-          ElMessage.error('获取详情失败')
+          ElMessage.error('获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }
@@ -102,7 +155,7 @@ watch(
             detailData.value = res.data.data
           }
         } catch {
-          ElMessage.error('获取详情失败')
+          ElMessage.error('获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }
@@ -112,8 +165,16 @@ watch(
 )
 
 const handleSubmit = async () => {
-  if (!formData.value.channelCode || !formData.value.channelName || !formData.value.universityId || !formData.value.universityName) {
-    ElMessage.warning('请填写通道代码、名称和大学信息')
+  if (!formData.value.channelCode) {
+    ElMessage.warning('请选择通道')
+    return
+  }
+  if (!formData.value.universityId) {
+    ElMessage.warning('请选择大学')
+    return
+  }
+  if (!formData.value.year) {
+    ElMessage.warning('请填写招生年份')
     return
   }
 
@@ -129,14 +190,14 @@ const handleSubmit = async () => {
     }
 
     if (res.data.code === 200) {
-      ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功')
+      ElMessage.success(props.mode === 'add' ? '新增关联成功' : '修改关联成功')
       emit('update:visible', false)
       emit('success')
     } else {
-      ElMessage.error(res.data.msg || '操作失败')
+      ElMessage.error(res.data.msg || '操作失败，请稍后重试')
     }
   } catch {
-    ElMessage.error('操作失败')
+    ElMessage.error('网络异常或服务器错误，请稍后重试')
   } finally {
     formLoading.value = false
   }
@@ -145,6 +206,10 @@ const handleSubmit = async () => {
 const handleClose = () => {
   emit('update:visible', false)
 }
+
+onMounted(() => {
+  fetchChannelOptions()
+})
 </script>
 
 <template>
@@ -197,19 +262,23 @@ const handleClose = () => {
       <!-- 新增/修改模式 -->
       <template v-if="mode !== 'detail'">
         <el-form :model="formData" label-width="110px">
-          <el-form-item label="通道代码" required>
-            <el-input v-model="formData.channelCode" placeholder="请输入通道代码" maxlength="30" show-word-limit />
+          <el-form-item label="通道" required>
+            <el-select v-model="formData.channelCode" placeholder="请选择通道" filterable style="width: 100%" @change="onChannelChange">
+              <el-option v-for="item in channelOptions" :key="item.channelCode" :label="`${item.channelCode} - ${item.channelName}`" :value="item.channelCode" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="通道名称" required>
-            <el-input v-model="formData.channelName" placeholder="请输入通道名称" maxlength="50" show-word-limit />
+          <el-form-item label="通道名称">
+            <el-input v-model="formData.channelName" disabled placeholder="选择通道后自动填充" />
           </el-form-item>
-          <el-form-item label="大学ID" required>
-            <el-input v-model="formData.universityId" placeholder="请输入大学ID" />
+          <el-form-item label="大学" required>
+            <el-select v-model="formData.universityId" placeholder="请输入大学名称搜索" filterable remote :remote-method="handleUniversitySearch" :loading="formLoading" style="width: 100%" @change="onUniversityChange">
+              <el-option v-for="item in universityOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="大学名称" required>
-            <el-input v-model="formData.universityName" placeholder="请输入大学名称" maxlength="50" show-word-limit />
+          <el-form-item label="大学名称">
+            <el-input v-model="formData.universityName" disabled placeholder="选择大学后自动填充" />
           </el-form-item>
-          <el-form-item label="招生年份">
+          <el-form-item label="招生年份" required>
             <el-input-number v-model="formData.year" :min="2000" :max="2099" controls-position="right" style="width: 130px" />
           </el-form-item>
           <el-form-item label="地区标签">

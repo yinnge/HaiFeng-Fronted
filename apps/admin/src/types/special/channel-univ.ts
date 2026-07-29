@@ -29,6 +29,9 @@ export interface ChannelUnivDetailVO {
 export interface ChannelUnivQueryDTO {
   page: number
   size: number
+  channelName?: string
+  universityName?: string
+  year?: number
 }
 
 export interface ChannelUnivAddDTO {
@@ -36,7 +39,7 @@ export interface ChannelUnivAddDTO {
   channelName: string
   universityId: string
   universityName: string
-  year?: number
+  year: number
   regionTag?: string
   signupStart?: string
   signupEnd?: string
@@ -51,7 +54,7 @@ export interface ChannelUnivUpdateDTO {
   channelName: string
   universityId: string
   universityName: string
-  year?: number
+  year: number
   regionTag?: string
   signupStart?: string
   signupEnd?: string
@@ -59,4 +62,9 @@ export interface ChannelUnivUpdateDTO {
   brochureTitle?: string
   brochureContent?: string
   sortOrder?: number
+}
+
+export interface ChannelOptionVO {
+  channelCode: string
+  channelName: string
 }

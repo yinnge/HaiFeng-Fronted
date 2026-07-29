@@ -6,6 +6,7 @@ import {
   addStrongBaseUniv,
   updateStrongBaseUniv,
 } from '@/api/special/strong-base-univ'
+import { getUniversityPage } from '@/api/university/info'
 import type {
   StrongBaseUnivDetailVO,
   StrongBaseUnivAddDTO,
@@ -41,6 +42,36 @@ const formData = ref<StrongBaseUnivAddDTO>({
 })
 
 const availableMajorsStr = ref('')
+
+const universityOptions = ref<{ label: string; value: string }[]>([])
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const handleUniversitySearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(async () => {
+    if (!query) {
+      universityOptions.value = []
+      return
+    }
+    try {
+      const res = await getUniversityPage({ page: 1, size: 100, name: query })
+      if (res.data.code === 200) {
+        universityOptions.value = res.data.data.records.map((r: any) => ({
+          label: r.name,
+          value: r.id,
+        }))
+      }
+    } catch { /* ignore */ }
+  }, 300)
+}
+
+const onUniversityChange = (id: string) => {
+  formData.value.universityId = id
+  const option = universityOptions.value.find((o) => o.value === id)
+  if (option) {
+    formData.value.universityName = option.label
+  }
+}
 
 const dialogTitle = (() => {
   if (props.mode === 'add') return '新增配置'
@@ -113,8 +144,8 @@ watch(
 )
 
 const handleSubmit = async () => {
-  if (!formData.value.universityId || !formData.value.universityName) {
-    ElMessage.warning('请填写大学ID和名称')
+  if (!formData.value.universityName) {
+    ElMessage.warning('请填写大学名称')
     return
   }
 
@@ -143,8 +174,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
@@ -216,11 +247,22 @@ const handleClose = () => {
       <!-- 新增/修改模式 -->
       <template v-if="mode !== 'detail'">
         <el-form :model="formData" label-width="130px">
-          <el-form-item label="大学ID" required>
-            <el-input v-model="formData.universityId" placeholder="请输入大学ID" />
+          <el-form-item label="大学" required>
+            <el-select
+              v-model="formData.universityId"
+              placeholder="请输入大学名称搜索"
+              filterable
+              remote
+              :remote-method="handleUniversitySearch"
+              :loading="formLoading"
+              style="width: 100%"
+              @change="onUniversityChange"
+            >
+              <el-option v-for="item in universityOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="大学名称" required>
-            <el-input v-model="formData.universityName" placeholder="请输入大学名称" maxlength="50" show-word-limit />
+          <el-form-item label="大学名称">
+            <el-input v-model="formData.universityName" disabled placeholder="选择大学后自动填充" />
           </el-form-item>
           <el-form-item label="试点校">
             <el-radio-group v-model="formData.isPilot">
