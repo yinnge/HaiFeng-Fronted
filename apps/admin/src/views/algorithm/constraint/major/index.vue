@@ -7,6 +7,7 @@ import {
   addMajor,
   deleteMajor,
   batchDeleteMajor,
+  toggleMajorStatus,
   importMajorExcel,
 } from '@/api/algorithm/constraint'
 import type {
@@ -30,6 +31,7 @@ const queryParams = reactive<MajorConstraintQueryDTO>({
   majorName: '',
   constraintCode: '',
   constraintName: '',
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -57,6 +59,7 @@ const fetchData = async () => {
     if (queryParams.majorName) params.majorName = queryParams.majorName
     if (queryParams.constraintCode) params.constraintCode = queryParams.constraintCode
     if (queryParams.constraintName) params.constraintName = queryParams.constraintName
+    if (queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getMajorPage(params as MajorConstraintQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -81,6 +84,7 @@ const handleReset = () => {
   queryParams.majorName = ''
   queryParams.constraintCode = ''
   queryParams.constraintName = ''
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -158,10 +162,26 @@ const handleSubmit = async () => {
   }
 }
 
+const handleToggleStatus = async (row: MajorConstraintListVO) => {
+  const actionText = row.isDeleted ? '启用' : '禁用'
+  try {
+    await ElMessageBox.confirm(`确定${actionText}该关联吗？`, '提示')
+    const res = await toggleMajorStatus(row.id)
+    if (res.data.code === 200) {
+      ElMessage.success(`${actionText}成功`)
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '操作失败')
+    }
+  } catch {
+    // 取消
+  }
+}
+
 const handleDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm(
-      '确定删除该关联吗？删除后可恢复。',
+      '确定删除该关联吗？此操作不可恢复。',
       '确认删除',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
@@ -177,24 +197,24 @@ const handleDelete = async (id: string) => {
   }
 }
 
-const handleBatchDelete = async () => {
+const handleBatchDisable = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的关联')
+    ElMessage.warning('请先选择要禁用的关联')
     return
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量删除选中的 ${selectedIds.value.length} 条关联吗？删除后可恢复。`,
-      '确认批量删除',
-      { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
+      `确定批量禁用选中的 ${selectedIds.value.length} 条关联吗？禁用后可启用。`,
+      '确认批量禁用',
+      { type: 'warning', confirmButtonText: '确定批量禁用', cancelButtonText: '取消' }
     )
     const res = await batchDeleteMajor(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success('批量禁用成功')
       selectedIds.value = []
       fetchData()
     } else {
-      ElMessage.error(res.data.msg || '批量删除失败')
+      ElMessage.error(res.data.msg || '批量禁用失败')
     }
   } catch {
     // 取消
@@ -238,6 +258,8 @@ const handleImportSubmit = async () => {
   }
 }
 
+const statusLabel = (val: boolean) => (val ? '禁用' : '启用')
+
 onMounted(() => {
   fetchData()
 })
@@ -276,6 +298,13 @@ onMounted(() => {
             <label>约束名称</label>
             <el-input v-model="queryParams.constraintName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
           </div>
+          <div class="form-item">
+            <label>状态</label>
+            <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100px" @change="handleSearch">
+              <el-option label="启用" :value="false" />
+              <el-option label="禁用" :value="true" />
+            </el-select>
+          </div>
         </div>
         <div class="search-actions">
           <button class="btn btn-search" @click="handleSearch">
@@ -300,9 +329,9 @@ onMounted(() => {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v2.5A1.75 1.75 0 0 0 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-2.5a.75.75 0 0 0-1.5 0v2.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-2.5Z"/></svg>
           <span>Excel导入</span>
         </button>
-        <button class="btn btn-batch-delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        <button class="btn btn-batch-disable" :disabled="selectedIds.length === 0" @click="handleBatchDisable">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
-          <span>批量删除</span>
+          <span>批量禁用</span>
         </button>
       </div>
       <div class="right-actions">
@@ -316,14 +345,27 @@ onMounted(() => {
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" class="custom-table">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" min-width="180" show-overflow-tooltip />
         <el-table-column prop="majorCode" label="专业代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="constraintCode" label="约束代码" min-width="180" show-overflow-tooltip />
         <el-table-column prop="constraintName" label="约束名称" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <span class="status-pill" :class="!row.isDeleted ? 'status-on' : 'status-off'">
+              {{ statusLabel(row.isDeleted) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
             <button class="action-pill action-detail" @click="openDialog('detail', row.id)">详情</button>
+            <button
+              class="action-pill"
+              :class="row.isDeleted ? 'action-enable' : 'action-disable'"
+              @click="handleToggleStatus(row)"
+            >
+              {{ row.isDeleted ? '启用' : '禁用' }}
+            </button>
             <button class="action-pill action-delete" @click="handleDelete(row.id)">删除</button>
           </template>
         </el-table-column>
@@ -353,11 +395,15 @@ onMounted(() => {
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="专业代码">{{ detailData.majorCode }}</el-descriptions-item>
             <el-descriptions-item label="专业名称">{{ detailData.majorName }}</el-descriptions-item>
             <el-descriptions-item label="约束代码">{{ detailData.constraintCode }}</el-descriptions-item>
             <el-descriptions-item label="约束名称">{{ detailData.constraintName }}</el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <span class="status-pill" :class="!detailData.isDeleted ? 'status-on' : 'status-off'">
+                {{ statusLabel(detailData.isDeleted) }}
+              </span>
+            </el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
             <el-descriptions-item label="创建时间" :span="2">{{ detailData.createdAt }}</el-descriptions-item>
           </el-descriptions>
@@ -623,12 +669,12 @@ onMounted(() => {
   background: #fff7ed;
 }
 
-.btn-batch-delete {
+.btn-batch-disable {
   background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
-.btn-batch-delete:hover:not(:disabled) {
+.btn-batch-disable:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }
@@ -677,6 +723,24 @@ onMounted(() => {
   background-color: rgba(255, 247, 237, 0.3);
 }
 
+/* ===== 状态药丸 ===== */
+.status-pill {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.status-on {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #059669;
+}
+.status-off {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 /* ===== 操作胶囊 ===== */
 .action-pill {
   display: inline-block;
@@ -695,6 +759,20 @@ onMounted(() => {
 }
 .action-detail:hover {
   background: linear-gradient(135deg, #ea580c, #f97316);
+}
+.action-enable {
+  background: linear-gradient(135deg, #059669, #34d399);
+  color: #fff;
+}
+.action-enable:hover {
+  background: linear-gradient(135deg, #047857, #059669);
+}
+.action-disable {
+  background: #fef3c7;
+  color: #d97706;
+}
+.action-disable:hover {
+  background: #fde68a;
 }
 .action-delete {
   background: linear-gradient(135deg, #ef4444, #f87171);

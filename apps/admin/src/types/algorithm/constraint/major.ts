@@ -4,6 +4,7 @@ export interface MajorConstraintListVO {
   majorName: string
   constraintCode: string
   constraintName: string
+  isDeleted: boolean
 }
 
 export interface MajorConstraintDetailVO {
@@ -13,6 +14,7 @@ export interface MajorConstraintDetailVO {
   constraintCode: string
   constraintName: string
   remark: string | null
+  isDeleted: boolean
   createdAt: string
 }
 
@@ -23,6 +25,7 @@ export interface MajorConstraintQueryDTO {
   majorName?: string
   constraintCode?: string
   constraintName?: string
+  isDeleted?: boolean
 }
 
 export interface MajorConstraintAddDTO {

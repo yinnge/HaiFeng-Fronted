@@ -23,6 +23,9 @@ export const deleteScoreRank = (id: string): Promise<AxiosResponse<R<void>>> =>
 export const batchDeleteScoreRank = (ids: string[]): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch-delete`, ids)
 
+export const updateScoreRankStatus = (id: string, isDeleted: boolean): Promise<AxiosResponse<R<void>>> =>
+  request.put(`${PREFIX}/${id}/status`, null, { params: { isDeleted } })
+
 export const importScoreRank = (file: File): Promise<AxiosResponse<R<number>>> => {
   const formData = new FormData()
   formData.append('file', file)

@@ -6,8 +6,8 @@ import {
   getProvinceReformDetail,
   addProvinceReform,
   updateProvinceReform,
-  deleteProvinceReform,
-  batchDeleteProvinceReform,
+  updateProvinceReformStatus,
+  batchUpdateProvinceReformStatus,
 } from '@/api/algorithm/config/province-reform'
 import type {
   ProvinceReformListVO,
@@ -33,6 +33,7 @@ const reformModelOptions = ['3+3', '3+1+2', '传统文理']
 const queryParams = reactive<ProvinceReformQueryDTO>({
   page: 1,
   size: 10,
+  isDeleted: null,
 })
 
 const dialogVisible = ref(false)
@@ -51,7 +52,7 @@ const formData = reactive<ProvinceReformAddDTO>({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getProvinceReformPage({ page: queryParams.page, size: queryParams.size })
+    const res = await getProvinceReformPage({ page: queryParams.page, size: queryParams.size, isDeleted: queryParams.isDeleted })
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
       total.value = res.data.data.total
@@ -151,17 +152,20 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '操作失败')
   }
 }
 
-const handleDelete = async (id: string) => {
+const handleToggleStatus = async (row: ProvinceReformListVO) => {
+  const isCurrentlyDisabled = row.isDeleted === true
+  const newStatus = !isCurrentlyDisabled
+  const actionText = newStatus ? '禁用' : '启用'
   try {
-    await ElMessageBox.confirm('确定要软删除该记录吗？', '提示')
-    const res = await deleteProvinceReform(id)
+    await ElMessageBox.confirm(`确定要${actionText}该记录吗？`, '提示')
+    const res = await updateProvinceReformStatus(row.id, newStatus)
     if (res.data.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(`${actionText}成功`)
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -171,16 +175,17 @@ const handleDelete = async (id: string) => {
   }
 }
 
-const handleBatchDelete = async () => {
+const handleBatchStatus = async (isDeleted: boolean) => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的记录')
+    ElMessage.warning('请先选择要操作的记录')
     return
   }
+  const actionText = isDeleted ? '禁用' : '启用'
   try {
-    await ElMessageBox.confirm(`确定要软删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
-    const res = await batchDeleteProvinceReform(selectedIds.value)
+    await ElMessageBox.confirm(`确定要批量${actionText}选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
+    const res = await batchUpdateProvinceReformStatus({ ids: selectedIds.value, isDeleted })
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success(`批量${actionText}成功`)
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -188,11 +193,23 @@ const handleBatchDelete = async () => {
   } catch {
     // cancel
   }
+}
+
+const handleFilter = () => {
+  queryParams.page = 1
+  fetchData()
 }
 
 const formatReformModel = (model: string | null) => {
   if (!model) return '未改革'
   return model
+}
+
+const tableRowClassName = ({ row }: { row: ProvinceReformListVO }) => {
+  if (row.isDeleted === true) {
+    return 'disabled-row'
+  }
+  return ''
 }
 
 onMounted(() => {
@@ -212,6 +229,27 @@ onMounted(() => {
       <div class="page-subtitle">管理各省份高考改革模式与年份配置</div>
     </div>
 
+    <!-- 筛选栏 -->
+    <div class="filter-card">
+      <div class="filter-body">
+        <span class="pill-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          状态
+        </span>
+        <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 130px;" @change="handleFilter">
+          <el-option label="全部" :value="null" />
+          <el-option label="启用" :value="false" />
+          <el-option label="禁用" :value="true" />
+        </el-select>
+      </div>
+    </div>
+
     <!-- 操作栏 -->
     <div class="action-bar">
       <button type="button" class="add-btn" @click="openDialog('add')">
@@ -221,12 +259,19 @@ onMounted(() => {
         </svg>
         新增
       </button>
-      <button type="button" class="batch-delete-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+      <button type="button" class="batch-disable-btn" :disabled="selectedIds.length === 0" @click="handleBatchStatus(true)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        批量软删除
+        批量禁用
+      </button>
+      <button type="button" class="batch-enable-btn" :disabled="selectedIds.length === 0" @click="handleBatchStatus(false)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        批量启用
       </button>
       <div class="action-bar-spacer" />
       <button type="button" class="refresh-btn" @click="fetchData">
@@ -242,7 +287,7 @@ onMounted(() => {
     <!-- 表格卡片 -->
     <div class="table-card">
       <div class="custom-table">
-        <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
+        <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange" :row-class-name="tableRowClassName">
           <el-table-column type="selection" width="50" />
           <el-table-column prop="province" label="省份" min-width="120" />
           <el-table-column label="改革年份" min-width="120">
@@ -256,12 +301,24 @@ onMounted(() => {
               <span v-else class="desc-text">传统文理</span>
             </template>
           </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <span v-if="row.isDeleted === true" class="status-tag status-off">禁用</span>
+              <span v-else class="status-tag status-on">启用</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="220" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
                 <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</button>
-                <button type="button" class="action-btn action-delete" @click="handleDelete(row.id)">软删除</button>
+                <button
+                  type="button"
+                  :class="['action-btn', row.isDeleted === true ? 'action-enable' : 'action-disable']"
+                  @click="handleToggleStatus(row)"
+                >
+                  {{ row.isDeleted === true ? '启用' : '禁用' }}
+                </button>
               </div>
             </template>
           </el-table-column>
@@ -371,6 +428,51 @@ onMounted(() => {
   z-index: 1;
   margin-bottom: 24px;
 }
+/* 筛选栏 */
+.filter-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
+}
+.filter-card:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
+}
+.filter-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.filter-body :deep(.el-select .el-select__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+.filter-body :deep(.el-select .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
+.filter-body :deep(.el-select .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.pill-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 14px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .page-title {
   font-size: 22px;
   font-weight: 700;
@@ -420,7 +522,7 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-.batch-delete-btn {
+.batch-disable-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -436,11 +538,36 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
   white-space: nowrap;
 }
-.batch-delete-btn:hover:not(:disabled) {
+.batch-disable-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
-.batch-delete-btn:disabled {
+.batch-disable-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.batch-enable-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+.batch-enable-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+.batch-enable-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -591,12 +718,21 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-.action-delete {
+.action-disable {
   background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
 }
-.action-delete:hover {
+.action-disable:hover {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-enable {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-enable:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   transform: translateY(-1px);
 }
 
@@ -750,5 +886,13 @@ onMounted(() => {
 }
 .save-btn:active {
   transform: translateY(0);
+}
+
+.custom-table :deep(.disabled-row) {
+  opacity: 0.6;
+  background: rgba(156, 163, 175, 0.05) !important;
+}
+.custom-table :deep(.disabled-row:hover > td) {
+  background: rgba(156, 163, 175, 0.1) !important;
 }
 </style>

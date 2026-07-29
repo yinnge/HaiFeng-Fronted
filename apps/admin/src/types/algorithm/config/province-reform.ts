@@ -5,6 +5,7 @@ export interface ProvinceReformListVO {
   province: string
   reformYear: number | null
   reformModel: string | null
+  isDeleted: boolean | null
 }
 
 export interface ProvinceReformDetailVO {
@@ -16,6 +17,7 @@ export interface ProvinceReformDetailVO {
 }
 
 export interface ProvinceReformQueryDTO extends BasePageQuery {
+  isDeleted?: boolean | null
 }
 
 export interface ProvinceReformAddDTO {
@@ -25,4 +27,9 @@ export interface ProvinceReformAddDTO {
 }
 
 export interface ProvinceReformUpdateDTO extends ProvinceReformAddDTO {
+}
+
+export interface ProvinceReformBatchStatusDTO {
+  ids: string[]
+  isDeleted: boolean
 }

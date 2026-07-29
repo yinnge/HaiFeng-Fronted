@@ -6,7 +6,7 @@ import {
   getBatchScoreLineDetail,
   addBatchScoreLine,
   updateBatchScoreLine,
-  deleteBatchScoreLine,
+  updateBatchScoreLineStatus,
   hardDeleteBatchScoreLine,
   batchDeleteBatchScoreLine,
   batchHardDeleteBatchScoreLine,
@@ -17,6 +17,7 @@ import type {
   BatchScoreLineDetailVO,
   BatchScoreLineQueryDTO,
   BatchScoreLineAddDTO,
+  BatchScoreLineStatusDTO,
 } from '@/types/algorithm/config'
 import type { AxiosResponse } from 'axios'
 import type { R } from '@haifeng/shared'
@@ -41,6 +42,7 @@ const queryParams = reactive<BatchScoreLineQueryDTO>({
   subjectType: undefined,
   batch: undefined,
   scoreLine: undefined,
+  isDeleted: null,
 })
 
 const dialogVisible = ref(false)
@@ -69,6 +71,7 @@ const fetchData = async () => {
     if (queryParams.subjectType) params.subjectType = queryParams.subjectType
     if (queryParams.batch) params.batch = queryParams.batch
     if (queryParams.scoreLine !== undefined && queryParams.scoreLine !== null) params.scoreLine = queryParams.scoreLine
+    if (queryParams.isDeleted !== null && queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getBatchScoreLinePage(params as BatchScoreLineQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -94,6 +97,7 @@ const handleReset = () => {
   queryParams.subjectType = undefined
   queryParams.batch = undefined
   queryParams.scoreLine = undefined
+  queryParams.isDeleted = null
   queryParams.page = 1
   fetchData()
 }
@@ -197,12 +201,15 @@ const handleSubmit = async () => {
   }
 }
 
-const handleSoftDelete = async (id: string) => {
+const handleToggleStatus = async (row: BatchScoreLineListVO) => {
+  const newStatus = !row.isDeleted
+  const actionText = newStatus ? '禁用' : '启用'
   try {
-    await ElMessageBox.confirm('确定要软删除该记录吗？', '提示')
-    const res = await deleteBatchScoreLine(id)
+    await ElMessageBox.confirm(`确定要${actionText}该记录吗？`, '提示')
+    const data: BatchScoreLineStatusDTO = { isDeleted: newStatus }
+    const res = await updateBatchScoreLineStatus(row.id, data)
     if (res.data.code === 200) {
-      ElMessage.success('软删除成功')
+      ElMessage.success(`${actionText}成功`)
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -215,13 +222,13 @@ const handleSoftDelete = async (id: string) => {
 const handleHardDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm('确定要永久删除该记录吗？此操作不可恢复！', '警告', {
-      confirmButtonText: '确认永久删除',
+      confirmButtonText: '确认删除',
       cancelButtonText: '取消',
       type: 'warning',
     })
     const res = await hardDeleteBatchScoreLine(id)
     if (res.data.code === 200) {
-      ElMessage.success('硬删除成功')
+      ElMessage.success('删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -231,16 +238,16 @@ const handleHardDelete = async (id: string) => {
   }
 }
 
-const handleBatchSoftDelete = async () => {
+const handleBatchDisable = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的记录')
+    ElMessage.warning('请先选择要禁用的记录')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要软删除选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
+    await ElMessageBox.confirm(`确定要禁用选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
     const res = await batchDeleteBatchScoreLine(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量软删除成功')
+      ElMessage.success('批量禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -250,20 +257,20 @@ const handleBatchSoftDelete = async () => {
   }
 }
 
-const handleBatchHardDelete = async () => {
+const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
     ElMessage.warning('请先选择要删除的记录')
     return
   }
   try {
     await ElMessageBox.confirm(`确定要永���删除选中的 ${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确认永久删除',
+      confirmButtonText: '确认删除',
       cancelButtonText: '取消',
       type: 'warning',
     })
     const res = await batchHardDeleteBatchScoreLine(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量硬删除成功')
+      ElMessage.success('批量删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -344,6 +351,12 @@ onMounted(() => {
           <el-form-item label="分数线">
             <el-input-number v-model="queryParams.scoreLine" :min="0" :max="900" controls-position="right" :value-on-clear="undefined" style="width: 130px;" />
           </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 110px;">
+              <el-option label="启用" :value="false" />
+              <el-option label="禁用" :value="true" />
+            </el-select>
+          </el-form-item>
         </div>
         <div class="search-actions">
           <button type="button" class="search-btn" @click="handleSearch">
@@ -375,15 +388,15 @@ onMounted(() => {
         </svg>
         导入Excel
       </button>
-      <button type="button" class="batch-delete-btn" :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">
+      <button type="button" class="batch-delete-btn" :disabled="selectedIds.length === 0" @click="handleBatchDisable">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        批量软删除
+        批量禁用
       </button>
-      <button type="button" class="batch-hard-delete-btn" :disabled="selectedIds.length === 0" @click="handleBatchHardDelete">
-        批量硬删除
+      <button type="button" class="batch-hard-delete-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        批量删除
       </button>
       <div class="action-bar-spacer" />
       <button type="button" class="refresh-btn" @click="fetchData">
@@ -414,13 +427,20 @@ onMounted(() => {
               <span class="code-text">{{ row.scoreLine }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <span :class="row.isDeleted ? 'status-tag status-disabled' : 'status-tag status-enabled'">
+                {{ row.isDeleted ? '禁用' : '启用' }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="300" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
                 <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</button>
-                <button type="button" class="action-btn action-soft-delete" @click="handleSoftDelete(row.id)">软删除</button>
-                <button type="button" class="action-btn action-delete" @click="handleHardDelete(row.id)">硬删除</button>
+                <button type="button" class="action-btn action-toggle" @click="handleToggleStatus(row)">{{ row.isDeleted ? '启用' : '禁用' }}</button>
+                <button type="button" class="action-btn action-delete" @click="handleHardDelete(row.id)">删除</button>
               </div>
             </template>
           </el-table-column>
@@ -930,12 +950,12 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-.action-soft-delete {
+.action-toggle {
   background: #fef3c7;
   color: #d97706;
   border: 1px solid #fde68a;
 }
-.action-soft-delete:hover {
+.action-toggle:hover {
   background: #fde68a;
 }
 
@@ -946,6 +966,23 @@ onMounted(() => {
 .action-delete:hover {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
+}
+
+/* 状态标签 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-enabled {
+  background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(251,146,60,0.12));
+  color: #F97316;
+}
+.status-disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
 }
 
 /* 分页 */
