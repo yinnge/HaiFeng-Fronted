@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'delete', id: string): void
   (e: 'status-change', row: CivilListVO, val: string): void
   (e: 'batch-delete'): void
+  (e: 'add'): void
   (e: 'pre-validate'): void
   (e: 'import'): void
   (e: 'refresh'): void
@@ -37,7 +38,7 @@ const currentPageSize = computed({
 
 const hasSelection = computed(() => props.selectedIds.length > 0)
 
-const regStatusOptions = ['报名中', '已结束', '即将开始']
+const regStatusOptions = ['报名中', '已结束']
 
 const regStatusPill: Record<string, string> = {
   '报名中': 'pill-success',
@@ -49,6 +50,10 @@ const regStatusPill: Record<string, string> = {
 <template>
   <div class="table-toolbar">
     <div class="toolbar-left">
+      <button type="button" class="toolbar-btn toolbar-btn--primary" @click="emit('add')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        新增公务员职位
+      </button>
       <button type="button" class="toolbar-btn toolbar-btn--outline" @click="emit('pre-validate')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         Excel预览
@@ -167,6 +172,17 @@ const regStatusPill: Record<string, string> = {
 .toolbar-btn svg {
   width: 14px;
   height: 14px;
+}
+
+.toolbar-btn--primary {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.25);
+}
+
+.toolbar-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.35);
 }
 
 .toolbar-btn--success {

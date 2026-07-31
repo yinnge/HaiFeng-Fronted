@@ -55,6 +55,35 @@ export interface InstitutionQueryDTO {
   positionStatus?: string
 }
 
+export interface InstitutionAddDTO {
+  positionName: string
+  supervisingDept?: string
+  institution?: string
+  workLocation?: string
+  province?: string
+  examCategory?: string
+  positionType?: string
+  subCategory?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  ageLimit?: number
+  recruitmentCount?: number
+  salaryRange?: string
+  regDeadline?: string
+  majorRequirements?: string[]
+  specialPosition?: string
+  otherRequirement?: string
+  otherRequirementDesc?: string
+  remarkType?: string
+  remarkDesc?: string
+  consultationPhone?: string
+  supervisionPhone?: string
+  positionStatus?: string
+  positionTag?: string
+  tagText?: string
+  sortOrder?: number
+}
+
 export interface InstitutionUpdateDTO {
   positionName?: string
   supervisingDept?: string

@@ -4,6 +4,7 @@ import type {
   MilitaryListVO,
   MilitaryDetailVO,
   MilitaryQueryDTO,
+  MilitaryAddDTO,
   MilitaryUpdateDTO,
   MilitaryStatusDTO,
 } from '@/types/employment/military'
@@ -16,6 +17,10 @@ export const getMilitaryPage = (params: MilitaryQueryDTO) => {
 
 export const getMilitaryDetail = (id: string) => {
   return request.get<R<MilitaryDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addMilitary = (data: MilitaryAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateMilitary = (id: string, data: MilitaryUpdateDTO) => {

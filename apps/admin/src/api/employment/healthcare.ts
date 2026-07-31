@@ -5,6 +5,7 @@ import type {
   HealthcareDetailVO,
   HealthcareQueryDTO,
   HealthcareUpdateDTO,
+  HealthcareAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/healthcare'
 
@@ -16,6 +17,10 @@ export const getHealthcarePage = (params: HealthcareQueryDTO) => {
 
 export const getHealthcareDetail = (id: string) => {
   return request.get<R<HealthcareDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addHealthcare = (data: HealthcareAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateHealthcare = (id: string, data: HealthcareUpdateDTO) => {

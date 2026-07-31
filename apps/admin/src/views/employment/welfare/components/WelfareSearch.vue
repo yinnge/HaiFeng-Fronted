@@ -25,7 +25,7 @@ const emit = defineEmits<{
   reset: []
 }>()
 
-const positionCategoryOptions = ['公共管理', '公共服务', '公共环境', '公共安全', '设施维护', '其他']
+const positionCategoryOptions = ['公共管理类', '公共服务类', '公共环境类', '公共安全类', '设施维护类', '其他']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 </script>
 

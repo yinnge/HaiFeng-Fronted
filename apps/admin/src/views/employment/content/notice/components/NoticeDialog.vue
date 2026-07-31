@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getNoticeDetail, updateNotice } from '@/api/employment/notice'
-import type { NoticeDetailVO, NoticeUpdateDTO } from '@/types/employment/notice'
+import type { FormInstance, FormRules } from 'element-plus'
+import { getNoticeDetail, updateNotice, addNotice } from '@/api/employment/notice'
+import type { NoticeDetailVO, NoticeUpdateDTO, NoticeAddDTO } from '@/types/employment/notice'
 import { NoticeCategoryLabel, NoticeTypeOptions } from '@/types/employment/notice'
 
 const props = defineProps<{
   visible: boolean
-  mode: 'detail' | 'edit'
+  mode: 'detail' | 'edit' | 'add'
   currentId: string | null
 }>()
 
@@ -20,9 +21,29 @@ const formLoading = ref(false)
 const detailData = ref<NoticeDetailVO | null>(null)
 const formData = ref<Record<string, any>>({})
 
+const formRef = ref<FormInstance>()
+
+// 必填校验（与后端 NoticeAddDTO @NotBlank 字段对齐）
+const rules: FormRules = {
+  noticeCategory: [{ required: true, message: '请选择公告类别', trigger: 'change' }],
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  content: [{ required: true, message: '请输入内容', trigger: 'blur' }],
+}
+
 const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
 
 watch(() => props.visible, async (val) => {
+  if (val && props.mode === 'add') {
+    formData.value = {
+      noticeCategory: '', noticeType: '', title: '', summary: '', content: '',
+      province: '', city: '', tags: [], year: '', source: '', sourceUrl: '',
+      publishDate: '', publishUnit: '', regStartDate: undefined, regEndDate: undefined,
+      examTime: undefined, recruitmentCount: undefined,
+      isTop: false, isImportant: false, sortOrder: 0,
+    }
+    nextTick(() => { formRef.value?.clearValidate() })
+    return
+  }
   if (val && props.currentId) {
     formLoading.value = true
     detailData.value = null
@@ -54,6 +75,7 @@ watch(() => props.visible, async (val) => {
             isImportant: d.isImportant,
             sortOrder: d.sortOrder,
           }
+          nextTick(() => { formRef.value?.clearValidate() })
         }
       } else {
         ElMessage.error(res.data.msg || '获取详情失败')
@@ -69,30 +91,27 @@ watch(() => props.visible, async (val) => {
 const handleClose = () => { emit('update:visible', false) }
 
 const handleSubmit = async () => {
-  if (!formData.value.title || !formData.value.content) {
-    ElMessage.warning('请填写标题和内容')
-    return
-  }
-  if (!formData.value.noticeCategory) {
-    ElMessage.warning('请选择公告类别')
-    return
-  }
-  if (!props.currentId) return
   try {
-    const res = await updateNotice(props.currentId, { ...formData.value })
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
+  if (props.mode !== 'add' && !props.currentId) return
+  try {
+    const res = props.mode === 'add' ? await addNotice({ ...formData.value } as NoticeAddDTO) : await updateNotice(props.currentId!, { ...formData.value } as NoticeUpdateDTO)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功')
       emit('update:visible', false)
       emit('saved')
     } else {
-      ElMessage.error(res.data.msg || '修改失败')
+      ElMessage.error(res.data.msg || (props.mode === 'add' ? '新增失败' : '修改失败'))
     }
   } catch {
-    ElMessage.error('修改失败')
+    ElMessage.error(props.mode === 'add' ? '新增失败' : '修改失败')
   }
 }
 
-const dialogTitle = () => props.mode === 'detail' ? '公告详情' : '修改公告'
+const dialogTitle = () => props.mode === 'detail' ? '公告详情' : props.mode === 'edit' ? '修改公告' : '新增公告'
 </script>
 
 <template>
@@ -147,11 +166,11 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : '修改公�
         </el-descriptions>
       </template>
 
-      <template v-if="mode === 'edit'">
-        <el-form :model="formData" label-width="110px">
+      <template v-if="mode !== 'detail'">
+        <el-form ref="formRef" :model="formData" :rules="rules" label-width="110px">
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="公告类别" required>
+              <el-form-item label="公告类别" prop="noticeCategory" required>
                 <el-select v-model="formData.noticeCategory" placeholder="请选择" style="width: 100%">
                   <el-option v-for="(label, key) in NoticeCategoryLabel" :key="key" :label="label" :value="key" />
                 </el-select>
@@ -165,13 +184,13 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : '修改公�
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="标题" required>
+          <el-form-item label="标题" prop="title" required>
             <el-input v-model="formData.title" placeholder="请输入标题" maxlength="500" show-word-limit />
           </el-form-item>
           <el-form-item label="摘要">
             <el-input v-model="formData.summary" type="textarea" :rows="2" placeholder="请输入摘要" />
           </el-form-item>
-          <el-form-item label="内容" required>
+          <el-form-item label="内容" prop="content" required>
             <el-input v-model="formData.content" type="textarea" :rows="10" placeholder="请输入公告内容（支持 HTML）" />
           </el-form-item>
           <el-row :gutter="20">
@@ -262,7 +281,7 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : '修改公�
         <button type="button" class="close-btn" @click="handleClose">
           {{ mode === 'detail' ? '关闭' : '取消' }}
         </button>
-        <button v-if="mode === 'edit'" type="button" class="submit-btn" @click="handleSubmit">确定</button>
+        <button v-if="mode !== 'detail'" type="button" class="submit-btn" @click="handleSubmit">确定</button>
       </div>
     </template>
   </el-dialog>

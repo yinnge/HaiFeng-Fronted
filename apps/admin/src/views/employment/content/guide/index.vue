@@ -14,13 +14,14 @@ const total = ref(0)
 const selectedIds = ref<string[]>([])
 
 const queryParams = reactive<ExamGuideQueryDTO>({
-  page: 1, size: 10, title: undefined, guideCategory: undefined, guideType: undefined, isTop: undefined,
+  page: 1, size: 10, title: undefined, guideCategory: undefined, guideType: undefined, isTop: undefined, status: undefined,
 })
 
 const detailVisible = ref(false)
 const detailId = ref<string | null>(null)
 const editVisible = ref(false)
 const editData = ref<Record<string, any>>({})
+const formMode = ref<'add' | 'edit'>('edit')
 
 const fetchData = async () => {
   loading.value = true
@@ -30,6 +31,7 @@ const fetchData = async () => {
     if (queryParams.guideCategory) params.guideCategory = queryParams.guideCategory
     if (queryParams.guideType) params.guideType = queryParams.guideType
     if (queryParams.isTop !== undefined) params.isTop = queryParams.isTop
+    if (queryParams.status !== undefined) params.status = queryParams.status
     const res = await getExamGuidePage(params as ExamGuideQueryDTO)
     if (res.data.code === 200) { tableData.value = res.data.data.records; total.value = res.data.data.total }
     else { ElMessage.error(res.data.msg || '获取列表失败') }
@@ -38,23 +40,32 @@ const fetchData = async () => {
 
 const handleSearch = () => { queryParams.page = 1; fetchData() }
 const handleReset = () => {
-  queryParams.title = undefined; queryParams.guideCategory = undefined; queryParams.guideType = undefined; queryParams.isTop = undefined; queryParams.page = 1; fetchData()
+  queryParams.title = undefined; queryParams.guideCategory = undefined; queryParams.guideType = undefined; queryParams.isTop = undefined; queryParams.status = undefined; queryParams.page = 1; fetchData()
 }
 const handlePageChange = (page: number) => { queryParams.page = page; fetchData() }
 const handleSizeChange = (size: number) => { queryParams.size = size; queryParams.page = 1; fetchData() }
 const handleSelectionChange = (rows: ExamGuideListVO[]) => { selectedIds.value = rows.map(r => r.id) }
 
 const handleDetail = (id: string) => { detailId.value = id; detailVisible.value = true }
+const handleAdd = () => { formMode.value = 'add'; editData.value = {}; editVisible.value = true }
 const handleEdit = async (id: string) => {
+  formMode.value = 'edit'
   const res = await getExamGuideDetail(id)
   if (res.data.code === 200) { editData.value = res.data.data; editVisible.value = true }
 }
 const handleSubmit = () => { fetchData() }
 const handleDisable = async (row: ExamGuideListVO) => {
   try {
-    await ElMessageBox.confirm('确定禁用该备考指南？禁用后将从列表隐藏？', '提示', { confirmButtonText: '确定禁用', cancelButtonText: '取消' })
+    await ElMessageBox.confirm('确定禁用该备考指南？禁用后将从列表隐藏', '提示', { confirmButtonText: '确定禁用', cancelButtonText: '取消' })
     const res = await updateExamGuideStatus(row.id, { status: 0 })
     if (res.data.code === 200) { ElMessage.success('禁用成功'); fetchData() } else { ElMessage.error(res.data.msg || '操作失败') }
+  } catch { /* cancel */ }
+}
+const handleEnable = async (row: ExamGuideListVO) => {
+  try {
+    await ElMessageBox.confirm('确定启用该备考指南？启用后将恢复显示', '提示', { confirmButtonText: '确定启用', cancelButtonText: '取消' })
+    const res = await updateExamGuideStatus(row.id, { status: 1 })
+    if (res.data.code === 200) { ElMessage.success('启用成功'); fetchData() } else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* cancel */ }
 }
 const handleDelete = async (id: string) => {
@@ -91,21 +102,21 @@ onMounted(() => { fetchData() })
 
     <GuideSearch
       v-model:title="queryParams.title" v-model:guide-category="queryParams.guideCategory"
-      v-model:guide-type="queryParams.guideType" v-model:is-top="queryParams.isTop"
+      v-model:guide-type="queryParams.guideType" v-model:is-top="queryParams.isTop" v-model:status="queryParams.status"
       @search="handleSearch" @reset="handleReset"
     />
 
     <div class="table-card">
       <GuideTable
         :data="tableData" :loading="loading" :total="total" :page="queryParams.page" :size="queryParams.size" :selected-ids="selectedIds"
-        @detail="handleDetail" @edit="handleEdit" @disable="handleDisable" @delete="handleDelete"
+        @detail="handleDetail" @add="handleAdd" @edit="handleEdit" @disable="handleDisable" @enable="handleEnable" @delete="handleDelete"
         @batch-delete="handleBatchDelete" @refresh="fetchData"
         @selection-change="handleSelectionChange" @page-change="handlePageChange" @size-change="handleSizeChange"
       />
     </div>
 
     <GuideDetailModal v-model:visible="detailVisible" :current-id="detailId" />
-    <GuideFormModal v-model:visible="editVisible" :initial-data="editData" @submit="handleSubmit" />
+    <GuideFormModal v-model:visible="editVisible" :initial-data="editData" :mode="formMode" @submit="handleSubmit" />
   </div>
 </template>
 

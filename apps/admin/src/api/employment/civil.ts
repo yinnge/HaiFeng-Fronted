@@ -4,6 +4,7 @@ import type {
   CivilListVO,
   CivilDetailVO,
   CivilQueryDTO,
+  CivilAddDTO,
   CivilUpdateDTO,
   CivilStatusDTO,
 } from '@/types/employment/civil'
@@ -16,6 +17,10 @@ export const getCivilPage = (params: CivilQueryDTO) => {
 
 export const getCivilDetail = (id: string) => {
   return request.get<R<CivilDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addCivil = (data: CivilAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateCivil = (id: string, data: CivilUpdateDTO) => {

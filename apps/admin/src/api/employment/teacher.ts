@@ -5,6 +5,7 @@ import type {
   TeacherDetailVO,
   TeacherQueryDTO,
   TeacherUpdateDTO,
+  TeacherAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/teacher'
 
@@ -16,6 +17,10 @@ export const getTeacherPage = (params: TeacherQueryDTO) => {
 
 export const getTeacherDetail = (id: string) => {
   return request.get<R<TeacherDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addTeacher = (data: TeacherAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateTeacher = (id: string, data: TeacherUpdateDTO) => {

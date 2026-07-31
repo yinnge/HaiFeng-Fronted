@@ -10,6 +10,7 @@ const props = defineProps<{
   year: string | undefined
   isTop: boolean | undefined
   isImportant: boolean | undefined
+  status: number | undefined
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   (e: 'update:year', val: string | undefined): void
   (e: 'update:isTop', val: boolean | undefined): void
   (e: 'update:isImportant', val: boolean | undefined): void
+  (e: 'update:status', val: number | undefined): void
   (e: 'search'): void
   (e: 'reset'): void
 }>()
@@ -29,6 +31,10 @@ const yearOptions = ['2026', '2025', '2024', '2023', '2022']
 const booleanOptions = [
   { label: '是', value: true },
   { label: '否', value: false },
+]
+const statusOptions = [
+  { label: '启用', value: 0 },
+  { label: '禁用', value: 1 },
 ]
 </script>
 
@@ -129,6 +135,18 @@ const booleanOptions = [
             @update:model-value="emit('update:isImportant', $event)"
           >
             <el-option v-for="item in booleanOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态">
+          <el-select
+            :model-value="status"
+            placeholder="全部"
+            clearable
+            style="width: 100px"
+            @update:model-value="emit('update:status', $event === '' || $event === undefined ? undefined : $event)"
+          >
+            <el-option v-for="s in statusOptions" :key="s.value" :label="s.label" :value="s.value" />
           </el-select>
         </el-form-item>
 

@@ -15,6 +15,7 @@ const emit = defineEmits<{
   detail: [id: string]
   edit: [id: string]
   delete: [id: string]
+  add: []
   'status-change': [row: GrassrootsListVO, status: string]
   'batch-delete': []
   'pre-validate': []
@@ -36,6 +37,10 @@ const currentPageSize = computed({ get: () => props.size, set: (val: number) => 
   <div>
     <div class="toolbar">
       <div class="toolbar-left">
+        <button type="button" class="btn-tool btn-orange" @click="emit('add')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新增岗位
+        </button>
         <button type="button" class="btn-tool btn-orange" @click="emit('pre-validate')">Excel预览</button>
         <button type="button" class="btn-tool btn-green" @click="emit('import')">Excel导入</button>
         <button type="button" class="btn-tool btn-red" :disabled="selectedIds.length === 0" @click="emit('batch-delete')">批量删除</button>
@@ -88,7 +93,7 @@ const currentPageSize = computed({ get: () => props.size, set: (val: number) => 
 <style scoped>
 .toolbar { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .toolbar-left { display: flex; gap: 8px; }
-.btn-tool { border-radius: 20px; padding: 8px 20px; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; }
+.btn-tool { display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 8px 20px; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; }
 .btn-tool:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-tool:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-orange { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; }

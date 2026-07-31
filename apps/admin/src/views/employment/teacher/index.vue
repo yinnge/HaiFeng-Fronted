@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getTeacherPage,
+  addTeacher,
   updateTeacher,
   deleteTeacher,
   updateTeacherStatus,
@@ -10,7 +11,7 @@ import {
   preValidateTeacher,
   importTeacher,
 } from '@/api/employment/teacher'
-import type { TeacherListVO, TeacherQueryDTO } from '@/types/employment/teacher'
+import type { TeacherListVO, TeacherQueryDTO, TeacherAddDTO } from '@/types/employment/teacher'
 import TeacherSearch from './components/TeacherSearch.vue'
 import TeacherTable from './components/TeacherTable.vue'
 import TeacherDetailModal from './components/TeacherDetailModal.vue'
@@ -39,6 +40,7 @@ const detailVisible = ref(false)
 const formVisible = ref(false)
 const currentId = ref<string | null>(null)
 const editFormData = ref<Record<string, any>>({})
+const formMode = ref<'add' | 'edit'>('edit')
 
 const fetchData = async () => {
   loading.value = true
@@ -100,6 +102,7 @@ const openEdit = async (row: TeacherListVO) => {
     const { getTeacherDetail } = await import('@/api/employment/teacher')
     const res = await getTeacherDetail(row.id)
     if (res.data.code === 200) {
+      formMode.value = 'edit'
       editFormData.value = res.data.data
       currentId.value = row.id
       formVisible.value = true
@@ -111,19 +114,25 @@ const openEdit = async (row: TeacherListVO) => {
   }
 }
 
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  editFormData.value = {}
+  formVisible.value = true
+}
+
 const handleSubmitForm = async (data: Record<string, any>) => {
-  if (!currentId.value) return
   try {
-    const res = await updateTeacher(currentId.value, data)
+    const res = formMode.value === 'add' ? await addTeacher(data as TeacherAddDTO) : await updateTeacher(currentId.value!, data)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -165,7 +174,7 @@ const handleStatusChange = async (row: TeacherListVO, newStatus: string) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -185,7 +194,7 @@ const openPreValidate = async () => {
       ElMessage.error(res.data.msg || '预校验失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '预校验失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '预校验失败')
   } finally {
     preValidateLoading.value = false
   }
@@ -211,7 +220,7 @@ const handleImportSubmit = async () => {
       ElMessage.error(res.data.msg || '导入失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -266,6 +275,7 @@ onMounted(() => { fetchData() })
       :page="queryParams.page"
       :size="queryParams.size"
       :selected-ids="selectedIds"
+      @add="handleAdd"
       @detail="openDetail"
       @edit="openEdit"
       @delete="handleDelete"
@@ -287,6 +297,7 @@ onMounted(() => { fetchData() })
     <TeacherFormModal
       v-model:visible="formVisible"
       :initial-data="editFormData"
+      :mode="formMode"
       @submit="handleSubmitForm"
     />
 

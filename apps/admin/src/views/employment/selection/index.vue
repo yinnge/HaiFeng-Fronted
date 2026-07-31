@@ -4,6 +4,7 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getSelectionPage,
   getSelectionDetail,
+  addSelection,
   updateSelection,
   deleteSelection,
   updateSelectionStatus,
@@ -11,7 +12,7 @@ import {
   preValidateSelection,
   importSelection,
 } from '@/api/employment/selection'
-import type { SelectionListVO, SelectionDetailVO, SelectionQueryDTO } from '@/types/employment/selection'
+import type { SelectionListVO, SelectionDetailVO, SelectionQueryDTO, SelectionAddDTO } from '@/types/employment/selection'
 import SelectionSearch from './components/SelectionSearch.vue'
 import SelectionTable from './components/SelectionTable.vue'
 import SelectionDetailModal from './components/SelectionDetailModal.vue'
@@ -38,6 +39,7 @@ const queryParams = reactive<SelectionQueryDTO>({
 
 const detailVisible = ref(false)
 const formVisible = ref(false)
+const formMode = ref<'add' | 'edit'>('edit')
 const currentId = ref<string | null>(null)
 const editFormData = ref<Record<string, any>>({})
 
@@ -100,6 +102,7 @@ const openEdit = async (row: SelectionListVO) => {
     if (res.data.code === 200) {
       editFormData.value = res.data.data
       currentId.value = row.id
+      formMode.value = 'edit'
       formVisible.value = true
     } else {
       ElMessage.error(res.data.msg || '获取详情失败')
@@ -109,19 +112,25 @@ const openEdit = async (row: SelectionListVO) => {
   }
 }
 
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  editFormData.value = {}
+  formVisible.value = true
+}
+
 const handleSubmitForm = async (data: Record<string, any>) => {
-  if (!currentId.value) return
   try {
-    const res = await updateSelection(currentId.value, data)
+    const res = formMode.value === 'add' ? await addSelection(data as SelectionAddDTO) : await updateSelection(currentId.value!, data)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -164,7 +173,7 @@ const handleStatusChange = async (row: SelectionListVO, newStatus: string) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -184,7 +193,7 @@ const handlePreValidateSubmit = async (file: File) => {
       ElMessage.error(res.data.msg || '校验失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '校验失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '校验失败')
   } finally {
     preValidateLoading.value = false
   }
@@ -202,7 +211,7 @@ const handleImportSubmit = async (file: File) => {
       ElMessage.error(res.data.msg || '导入失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -260,6 +269,7 @@ onMounted(() => { fetchData() })
       @delete="handleDelete"
       @status-change="handleStatusChange"
       @batch-delete="handleBatchDelete"
+      @add="handleAdd"
       @pre-validate="preValidateDialogVisible = true"
       @import="importDialogVisible = true"
       @refresh="fetchData"
@@ -276,6 +286,7 @@ onMounted(() => { fetchData() })
     <SelectionFormModal
       v-model:visible="formVisible"
       :initial-data="editFormData"
+      :mode="formMode"
       @submit="handleSubmitForm"
     />
 

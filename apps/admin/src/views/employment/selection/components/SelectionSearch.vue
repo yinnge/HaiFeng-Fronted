@@ -23,9 +23,9 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
-const selectionTypeOptions = ['定向选调', '集中选调', '急需紧缺选调']
-const politicalStatusOptions = ['不限', '中共党员', '共青团员', '群众']
-const positionStatusOptions = ['在招', '已结束', '未发布']
+const selectionTypeOptions = ['定向选调', '非定向选调', '急需紧缺专业选调']
+const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '不限']
+const positionStatusOptions = ['报名中', '笔试阶段', '面试阶段', '已结束', '即将开始']
 </script>
 
 <template>

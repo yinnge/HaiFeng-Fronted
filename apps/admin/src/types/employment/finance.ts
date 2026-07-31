@@ -67,6 +67,47 @@ export interface FinanceQueryDTO {
   positionStatus?: string
 }
 
+export interface FinanceAddDTO {
+  institutionName: string
+  institutionCategory: string
+  institutionType?: string
+  institutionLogo?: string
+  branchName?: string
+  positionName: string
+  positionCategory?: string
+  recruitmentType: string
+  province?: string
+  city?: string
+  workLocation?: string
+  isRemote?: boolean
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
+  majorPreference?: string[]
+  ageLimit?: number
+  workExperience?: string
+  recruitmentCount?: number
+  certRequirements?: string[]
+  languageRequirement?: string
+  computerRequirement?: string
+  otherRequirement?: string
+  salaryMin?: number
+  salaryMax?: number
+  salaryText?: string
+  benefits?: string
+  examContent?: string
+  examTime?: string
+  interviewRounds?: string
+  regStartDate?: string
+  regEndDate?: string
+  applyLink?: string
+  positionStatus?: string
+  contactInfo?: string
+  remark?: string
+  content?: string
+  sortOrder?: number
+}
+
 export interface FinanceUpdateDTO {
   institutionName?: string
   institutionCategory?: string

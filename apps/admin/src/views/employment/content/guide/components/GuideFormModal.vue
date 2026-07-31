@@ -1,38 +1,54 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getExamGuideDetail, updateExamGuide } from '@/api/employment/guide'
+import type { FormInstance, FormRules } from 'element-plus'
+import { getExamGuideDetail, updateExamGuide, addExamGuide } from '@/api/employment/guide'
 import { GuideCategoryLabel, GuideTypeOptions } from '@/types/employment/guide'
 
-const props = defineProps<{ visible: boolean; initialData: Record<string, any> }>()
+const props = withDefaults(defineProps<{ visible: boolean; initialData: Record<string, any>; mode?: 'add' | 'edit' }>(), { mode: 'edit' })
 const emit = defineEmits<{ 'update:visible': [val: boolean]; submit: [] }>()
 
 const loading = ref(false)
 const formData = ref<Record<string, any>>({})
 
+const formRef = ref<FormInstance>()
+
+// 必填校验（与后端 ExamGuideAddDTO @NotBlank 字段对齐）
+const rules: FormRules = {
+  guideCategory: [{ required: true, message: '请选择指南类别', trigger: 'change' }],
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  content: [{ required: true, message: '请输入内容', trigger: 'blur' }],
+}
+
 watch(() => props.visible, (val) => {
-  if (val) { formData.value = { ...props.initialData } }
+  if (val) {
+    formData.value = { ...props.initialData }
+    nextTick(() => { formRef.value?.clearValidate() })
+  }
 })
 
 const handleSubmit = async () => {
-  if (!formData.value.title || !formData.value.content) { ElMessage.warning('请填写标题和内容'); return }
-  if (!formData.value.guideCategory) { ElMessage.warning('请选择指南类别'); return }
-  if (!formData.value.id) return
   try {
-    const res = await updateExamGuide(formData.value.id, { ...formData.value } as any)
-    if (res.data.code === 200) { ElMessage.success('修改成功'); emit('update:visible', false); emit('submit') }
-    else { ElMessage.error(res.data.msg || '修改失败') }
-  } catch { ElMessage.error('修改失败') }
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
+  if (props.mode !== 'add' && !formData.value.id) return
+  try {
+    const res = props.mode === 'add' ? await addExamGuide({ ...formData.value } as any) : await updateExamGuide(formData.value.id, { ...formData.value } as any)
+    if (res.data.code === 200) { ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功'); emit('update:visible', false); emit('submit') }
+    else { ElMessage.error(res.data.msg || (props.mode === 'add' ? '新增失败' : '修改失败')) }
+  } catch { ElMessage.error(props.mode === 'add' ? '新增失败' : '修改失败') }
 }
 </script>
 
 <template>
-  <el-dialog :model-value="visible" title="修改备考指南" width="800px" :close-on-click-modal="false" class="detail-dialog" @update:model-value="emit('update:visible', $event)">
+  <el-dialog :model-value="visible" :title="props.mode === 'add' ? '新增备考指南' : '修改备考指南'" width="800px" :close-on-click-modal="false" class="detail-dialog" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
-      <el-form :model="formData" label-width="100px">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="指南类别" required>
+            <el-form-item label="指南类别" prop="guideCategory" required>
               <el-select v-model="formData.guideCategory" placeholder="请选择" style="width: 100%">
                 <el-option v-for="(label, key) in GuideCategoryLabel" :key="key" :label="label" :value="key" />
               </el-select>
@@ -46,7 +62,7 @@ const handleSubmit = async () => {
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="标题" required>
+        <el-form-item label="标题" prop="title" required>
           <el-input v-model="formData.title" placeholder="请输入标题" maxlength="300" show-word-limit />
         </el-form-item>
         <el-form-item label="副标题">
@@ -61,7 +77,7 @@ const handleSubmit = async () => {
         <el-form-item label="摘要">
           <el-input v-model="formData.summary" type="textarea" :rows="2" placeholder="请输入摘要" />
         </el-form-item>
-        <el-form-item label="内容" required>
+        <el-form-item label="内容" prop="content" required>
           <el-input v-model="formData.content" type="textarea" :rows="10" placeholder="请输入详细内容（支持 HTML）" />
         </el-form-item>
         <el-row :gutter="20">

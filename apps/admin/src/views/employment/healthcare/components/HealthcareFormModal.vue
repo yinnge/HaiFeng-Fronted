@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const props = defineProps<{
   visible: boolean
   initialData: Record<string, any>
+  mode?: 'add' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -11,11 +13,27 @@ const emit = defineEmits<{
   (e: 'submit', data: Record<string, any>): void
 }>()
 
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增医疗卫生岗位' : '修改医疗卫生岗位'))
+
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
 
-const institutionTypeOptions = ['综合医院', '专科医院', '中医医院', '社区卫生服务中心', '疾控中心', '妇幼保健', '卫生监督所', '急救中心', '血站', '精神卫生中心', '康复中心', '其他']
-const institutionLevelOptions = ['三级甲等', '三级乙等', '二级甲等', '二级乙等', '一级', '未定', '社区']
+const formRefBasic = ref<FormInstance>()
+const formRefLocation = ref<FormInstance>()
+
+// 必填校验（与后端 HealthcarePositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  institutionName: [{ required: true, message: '请输入机构名称', trigger: 'blur' }],
+  institutionType: [{ required: true, message: '请选择机构类型', trigger: 'change' }],
+  positionName: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+  positionCategory: [{ required: true, message: '请选择岗位类别', trigger: 'change' }],
+}
+const locationRules: FormRules = {
+  province: [{ required: true, message: '请输入省份', trigger: 'blur' }],
+}
+
+const institutionTypeOptions = ['综合医院', '专科医院', '中医医院', '社区卫生服务中心', '疾控中心', '妇幼保健院', '卫生监督所', '急救中心', '血站', '精神卫生中心', '康复中心', '其他']
+const institutionLevelOptions = ['三级甲等', '三级乙等', '二级甲等', '二级乙等', '一级', '未定级', '社区']
 const institutionNatureOptions = ['公立', '民营']
 const positionCategoryOptions = ['临床医师', '护理', '药学', '医技', '公共卫生', '行政后勤', '科研']
 const recruitmentTypeOptions = ['编制', '合同制', '人事代理', '规培', '进修']
@@ -27,12 +45,27 @@ watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+      formRefLocation.value?.clearValidate()
+    })
   }
 })
 
 const handleClose = () => { emit('update:visible', false) }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
+  try {
+    await formRefLocation.value?.validate()
+  } catch {
+    activeTab.value = 'location'
+    return
+  }
   const data: Record<string, any> = {}
   const stringFields = ['institutionName', 'institutionType', 'institutionLevel', 'institutionNature', 'positionName', 'department', 'positionCategory', 'recruitmentType', 'province', 'city', 'district', 'educationRequirement', 'degreeRequirement', 'majorRequirement', 'workExperience', 'licenseRequirement', 'titleRequirement', 'internshipRequirement', 'researchRequirement', 'salaryRange', 'housingSubsidy', 'benefits', 'examContent', 'regStartDate', 'regEndDate', 'examTime', 'positionStatus', 'applyLink', 'contactPhone', 'contactPerson', 'remark', 'content']
   stringFields.forEach((f) => { if (formData.value[f]) data[f] = formData.value[f] })
@@ -45,7 +78,7 @@ const handleSubmit = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="修改医疗卫生岗位"
+    :title="dialogTitle"
     width="900px"
     class="form-dialog"
     :close-on-click-modal="false"
@@ -54,15 +87,15 @@ const handleSubmit = () => {
     <div class="dialog-content">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="机构与岗位信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="机构名称">
+                <el-form-item label="机构名称" prop="institutionName">
                   <el-input v-model="formData.institutionName" placeholder="机构名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="机构类型">
+                <el-form-item label="机构类型" prop="institutionType">
                   <el-select v-model="formData.institutionType" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in institutionTypeOptions" :key="item" :label="item" :value="item" />
                   </el-select>
@@ -87,12 +120,12 @@ const handleSubmit = () => {
             </el-row>
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="岗位名称">
+                <el-form-item label="岗位名称" prop="positionName">
                   <el-input v-model="formData.positionName" placeholder="岗位名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="岗位类别">
+                <el-form-item label="岗位类别" prop="positionCategory">
                   <el-select v-model="formData.positionCategory" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in positionCategoryOptions" :key="item" :label="item" :value="item" />
                   </el-select>
@@ -117,10 +150,10 @@ const handleSubmit = () => {
         </el-tab-pane>
 
         <el-tab-pane label="地区与报考要求" name="location">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefLocation" :model="formData" :rules="locationRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="8">
-                <el-form-item label="省份">
+                <el-form-item label="省份" prop="province">
                   <el-input v-model="formData.province" placeholder="省份" maxlength="30" />
                 </el-form-item>
               </el-col>

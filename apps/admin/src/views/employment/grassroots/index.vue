@@ -553,7 +553,7 @@ const handleSubmit = async () => {
 
   } catch (err: any) {
 
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
 
   }
 
@@ -651,7 +651,7 @@ const handleStatusChange = async (row: GrassrootsListVO, newStatus: string) => {
 
   } catch (err: any) {
 
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
 
   }
 
@@ -739,7 +739,7 @@ const handlePreValidateSubmit = async () => {
 
   } catch (err: any) {
 
-    ElMessage.error(err.response?.data?.msg || '校验失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '校验失败')
 
   } finally {
 
@@ -777,7 +777,7 @@ const handleImportSubmit = async () => {
 
   } catch (err: any) {
 
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
 
   } finally {
 

@@ -5,6 +5,7 @@ import type {
   FinanceDetailVO,
   FinanceQueryDTO,
   FinanceUpdateDTO,
+  FinanceAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/finance'
 
@@ -16,6 +17,10 @@ export const getFinancePage = (params: FinanceQueryDTO) => {
 
 export const getFinanceDetail = (id: string) => {
   return request.get<R<FinanceDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addFinance = (data: FinanceAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateFinance = (id: string, data: FinanceUpdateDTO) => {

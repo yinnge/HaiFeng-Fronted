@@ -4,6 +4,7 @@ import type {
   ExamGuideListVO,
   ExamGuideDetailVO,
   ExamGuideQueryDTO,
+  ExamGuideAddDTO,
   ExamGuideUpdateDTO,
   StatusDTO,
 } from '@/types/employment/guide'
@@ -16,6 +17,10 @@ export const getExamGuidePage = (params: ExamGuideQueryDTO) => {
 
 export const getExamGuideDetail = (id: string) => {
   return request.get<R<ExamGuideDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addExamGuide = (data: ExamGuideAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateExamGuide = (id: string, data: ExamGuideUpdateDTO) => {

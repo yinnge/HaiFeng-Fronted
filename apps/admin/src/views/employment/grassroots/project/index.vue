@@ -22,6 +22,7 @@ const detailVisible = ref(false)
 const detailId = ref<string | null>(null)
 const editVisible = ref(false)
 const editData = ref<Record<string, any>>({})
+const formMode = ref<'add' | 'edit'>('edit')
 const excelMode = ref<'preValidate' | 'import'>('preValidate')
 const excelVisible = ref(false)
 const excelFile = ref<File | null>(null)
@@ -56,7 +57,13 @@ const handleSizeChange = (size: number) => { queryParams.size = size; queryParam
 const handleSelectionChange = (rows: GrassrootsListVO[]) => { selectedIds.value = rows.map((r) => r.id) }
 
 const handleDetail = async (id: string) => { detailId.value = id; detailVisible.value = true }
+const handleAdd = () => {
+  formMode.value = 'add'
+  editData.value = {}
+  editVisible.value = true
+}
 const handleEdit = async (id: string) => {
+  formMode.value = 'edit'
   const res = await getGrassrootsDetail(id)
   if (res.data.code === 200) { editData.value = res.data.data; editVisible.value = true }
 }
@@ -80,7 +87,7 @@ const handleStatusChange = async (row: GrassrootsListVO, newStatus: string) => {
   try {
     const res = await updateGrassrootsStatus(row.id, { positionStatus: newStatus })
     if (res.data.code === 200) { ElMessage.success('状态更新成功'); fetchData() } else { ElMessage.error(res.data.msg || '操作失败') }
-  } catch (err: any) { ElMessage.error(err.response?.data?.msg || '操作失败') }
+  } catch (err: any) { ElMessage.error(err.response?.data?.msg || err.message || '操作失败') }
 }
 const openPreValidate = () => { excelMode.value = 'preValidate'; excelFile.value = null; excelVisible.value = true }
 const openImport = () => { excelMode.value = 'import'; excelFile.value = null; excelVisible.value = true }
@@ -93,7 +100,7 @@ const handleExcelConfirm = async () => {
     const res = await fn(excelFile.value)
     if (res.data.code === 200) { ElMessage.success(excelMode.value === 'preValidate' ? '校验通过' : '导入成功'); excelVisible.value = false; if (excelMode.value === 'import') fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
-  } catch (err: any) { ElMessage.error(err.response?.data?.msg || '操作失败') } finally { excelLoading.value = false }
+  } catch (err: any) { ElMessage.error(err.response?.data?.msg || err.message || '操作失败') } finally { excelLoading.value = false }
 }
 
 onMounted(() => { fetchData() })
@@ -120,14 +127,14 @@ onMounted(() => { fetchData() })
     <div class="table-card">
       <GrassrootsTable
         :data="tableData" :loading="loading" :total="total" :page="queryParams.page" :size="queryParams.size" :selected-ids="selectedIds"
-        @detail="handleDetail" @edit="handleEdit" @delete="handleDelete" @status-change="handleStatusChange"
+        @detail="handleDetail" @edit="handleEdit" @delete="handleDelete" @add="handleAdd" @status-change="handleStatusChange"
         @batch-delete="handleBatchDelete" @pre-validate="openPreValidate" @import="openImport" @refresh="fetchData"
         @selection-change="handleSelectionChange" @page-change="handlePageChange" @size-change="handleSizeChange"
       />
     </div>
 
     <GrassrootsDetailModal v-model:visible="detailVisible" :current-id="detailId" />
-    <GrassrootsFormModal v-model:visible="editVisible" :initial-data="editData" @submit="handleSubmit" />
+    <GrassrootsFormModal v-model:visible="editVisible" :initial-data="editData" :mode="formMode" @submit="handleSubmit" />
     <ExcelImportDialog v-model:visible="excelVisible" :mode="excelMode" @confirm="handleExcelConfirm" @file-change="handleExcelFileChange" :loading="excelLoading" />
   </div>
 </template>

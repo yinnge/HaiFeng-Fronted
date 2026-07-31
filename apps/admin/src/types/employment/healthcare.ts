@@ -69,6 +69,44 @@ export interface HealthcareQueryDTO {
   positionStatus?: string
 }
 
+export interface HealthcareAddDTO {
+  institutionName: string
+  institutionType: string
+  institutionLevel?: string
+  institutionNature?: string
+  positionName: string
+  department?: string
+  positionCategory: string
+  recruitmentType?: string
+  province: string
+  city?: string
+  district?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
+  ageLimit?: number
+  recruitmentCount?: number
+  workExperience?: string
+  licenseRequirement?: string
+  titleRequirement?: string
+  internshipRequirement?: string
+  researchRequirement?: string
+  salaryRange?: string
+  benefits?: string
+  housingSubsidy?: string
+  regStartDate?: string
+  regEndDate?: string
+  examTime?: string
+  examContent?: string
+  applyLink?: string
+  positionStatus?: string
+  contactPhone?: string
+  contactPerson?: string
+  remark?: string
+  content?: string
+  sortOrder?: number
+}
+
 export interface HealthcareUpdateDTO {
   institutionName?: string
   institutionType?: string

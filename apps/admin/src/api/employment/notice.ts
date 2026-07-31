@@ -4,6 +4,7 @@ import type {
   NoticeListVO,
   NoticeDetailVO,
   NoticeQueryDTO,
+  NoticeAddDTO,
   NoticeUpdateDTO,
   StatusDTO,
 } from '@/types/employment/notice'
@@ -16,6 +17,10 @@ export const getNoticePage = (params: NoticeQueryDTO) => {
 
 export const getNoticeDetail = (id: string) => {
   return request.get<R<NoticeDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addNotice = (data: NoticeAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateNotice = (id: string, data: NoticeUpdateDTO) => {

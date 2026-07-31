@@ -21,7 +21,7 @@ const emit = defineEmits<{
   reset: []
 }>()
 
-const positionTypeOptions = ['社区党务工作者', '社区服务工作者', '社区网格', '社区调解', '社区安全', '社区文化专干', '社会工作', '综合', '其他']
+const positionTypeOptions = ['社区党务工作者', '社区服务工作者', '社区网格员', '社区调解员', '社区安全员', '社区文化专干', '社会工作师', '综合岗', '其他']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 </script>
 

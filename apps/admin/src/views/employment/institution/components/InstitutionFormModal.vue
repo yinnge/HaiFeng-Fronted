@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const props = defineProps<{
   visible: boolean
   initialData: Record<string, any>
+  mode?: 'add' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -14,20 +16,38 @@ const emit = defineEmits<{
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
 
-const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
-const degreeOptions = ['不限', '学士', '硕士', '博士']
-const positionStatusOptions = ['在招', '已结束', '未发布']
+const formRefBasic = ref<FormInstance>()
+
+// 必填校验（与后端 InstitutionPositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  positionName: [{ required: true, message: '请输入职位名称', trigger: 'blur' }],
+}
+
+const educationOptions = ['无要求', '大专', '本科', '硕士', '博士']
+const degreeOptions = ['无要求', '学士', '硕士', '博士']
+const positionStatusOptions = ['招聘中', '已结束']
+const positionTagOptions = ['热门', '无', '急招']
+
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增事业单位职位' : '修改事业单位职位'))
 
 watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+    })
   }
 })
 
 const handleClose = () => { emit('update:visible', false) }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
   const data: Record<string, any> = {}
   for (const [key, val] of Object.entries(formData.value)) {
     if (val !== '' && val !== null && val !== undefined) {
@@ -41,7 +61,7 @@ const handleSubmit = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="修改事业单位职位"
+    :title="dialogTitle"
     width="900px"
     class="form-dialog"
     :close-on-click-modal="false"
@@ -50,10 +70,10 @@ const handleSubmit = () => {
     <div class="dialog-content">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="基本信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="职位名称">
+                <el-form-item label="职位名称" prop="positionName">
                   <el-input v-model="formData.positionName" placeholder="职位名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
@@ -213,7 +233,9 @@ const handleSubmit = () => {
               </el-col>
               <el-col :span="12">
                 <el-form-item label="职位标签">
-                  <el-input v-model="formData.positionTag" placeholder="职位标签" maxlength="100" />
+                  <el-select v-model="formData.positionTag" placeholder="请选择" clearable style="width: 100%">
+                    <el-option v-for="item in positionTagOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>

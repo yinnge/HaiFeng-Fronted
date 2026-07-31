@@ -15,8 +15,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'detail', id: string): void
   (e: 'edit', id: string): void
+  (e: 'add'): void
   (e: 'delete', id: string): void
   (e: 'disable', row: NoticeListVO): void
+  (e: 'enable', row: NoticeListVO): void
   (e: 'batch-delete'): void
   (e: 'refresh'): void
   (e: 'selection-change', rows: NoticeListVO[]): void
@@ -42,6 +44,10 @@ const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
 <template>
   <div class="table-toolbar">
     <div class="toolbar-left">
+      <button type="button" class="toolbar-btn toolbar-btn--primary" @click="emit('add')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        新增公告
+      </button>
       <button
         type="button"
         class="toolbar-btn toolbar-btn--danger"
@@ -97,11 +103,18 @@ const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
 
       <el-table-column prop="viewCount" label="阅读" width="70" align="center" />
 
+      <el-table-column label="状态" width="80" align="center">
+        <template #default="{ row }">
+          <span :class="['pill', row.isDeleted ? 'pill-gray' : 'pill-success']">{{ row.isDeleted ? '禁用' : '启用' }}</span>
+        </template>
+      </el-table-column>
+
       <el-table-column label="操作" width="280" align="center" fixed="right">
         <template #default="{ row }">
           <button type="button" class="op-btn op-btn--orange" @click="emit('detail', row.id)">详情</button>
           <button type="button" class="op-btn op-btn--yellow" @click="emit('edit', row.id)">修改</button>
-          <button type="button" class="op-btn op-btn--blue" @click="emit('disable', row)">禁用</button>
+          <button v-if="!row.isDeleted" type="button" class="op-btn op-btn--blue" @click="emit('disable', row)">禁用</button>
+          <button v-else type="button" class="op-btn op-btn--green" @click="emit('enable', row)">启用</button>
           <button type="button" class="op-btn op-btn--red" @click="emit('delete', row.id)">删除</button>
         </template>
       </el-table-column>
@@ -150,6 +163,17 @@ const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
 .toolbar-btn svg {
   width: 14px;
   height: 14px;
+}
+
+.toolbar-btn--primary {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.25);
+}
+
+.toolbar-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.35);
 }
 
 .toolbar-btn--danger {
@@ -252,6 +276,18 @@ const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.pill-success {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.08), rgba(74, 222, 128, 0.12));
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.pill-gray {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.08), rgba(156, 163, 175, 0.12));
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
 .op-btn {
   display: inline-flex;
   align-items: center;
@@ -300,6 +336,18 @@ const categoryLabel = (cat: string) => NoticeCategoryLabel[cat] || cat
   background: #2563eb;
   color: #fff;
   border-color: #2563eb;
+}
+
+.op-btn--green {
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.05);
+}
+
+.op-btn--green:hover {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
 }
 
 .op-btn--red {

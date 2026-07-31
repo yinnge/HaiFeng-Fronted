@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const props = defineProps<{
   visible: boolean
   initialData: Record<string, any>
+  mode?: 'add' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -14,22 +16,53 @@ const emit = defineEmits<{
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
 
-const selectionTypeOptions = ['定向选调', '集中选调', '急需紧缺选调']
-const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
+const formRefBasic = ref<FormInstance>()
+const formRefReq = ref<FormInstance>()
+
+// 必填校验（与后端 SelectionPositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  positionName: [{ required: true, message: '请输入职位名称', trigger: 'blur' }],
+  selectionType: [{ required: true, message: '请选择选调类型', trigger: 'change' }],
+  year: [{ required: true, message: '请输入年份', trigger: 'blur' }],
+  province: [{ required: true, message: '请输入省份', trigger: 'blur' }],
+}
+const reqRules: FormRules = {
+  educationRequirement: [{ required: true, message: '请选择学历要求', trigger: 'change' }],
+}
+
+const selectionTypeOptions = ['定向选调', '非定向选调', '急需紧缺专业选调']
+const educationOptions = ['本科', '硕士', '博士', '本科及以上', '硕士及以上']
 const degreeOptions = ['不限', '学士', '硕士', '博士']
-const politicalStatusOptions = ['不限', '中共党员', '共青团员', '群众']
+const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '不限']
 const majorCategoryOptions: string[] = []
+
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增选调生职位' : '修改选调生职位'))
 
 watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+      formRefReq.value?.clearValidate()
+    })
   }
 })
 
 const handleClose = () => { emit('update:visible', false) }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
+  try {
+    await formRefReq.value?.validate()
+  } catch {
+    activeTab.value = 'requirements'
+    return
+  }
   const data: Record<string, any> = {}
   for (const [key, val] of Object.entries(formData.value)) {
     if (val !== '' && val !== null && val !== undefined) {
@@ -43,7 +76,7 @@ const handleSubmit = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="修改选调生职位"
+    :title="dialogTitle"
     width="900px"
     class="form-dialog"
     :close-on-click-modal="false"
@@ -52,15 +85,15 @@ const handleSubmit = () => {
     <div class="dialog-content">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="招录信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="职位名称">
+                <el-form-item label="职位名称" prop="positionName">
                   <el-input v-model="formData.positionName" placeholder="职位名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="选调类型">
+                <el-form-item label="选调类型" prop="selectionType">
                   <el-select v-model="formData.selectionType" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in selectionTypeOptions" :key="item" :label="item" :value="item" />
                   </el-select>
@@ -69,12 +102,12 @@ const handleSubmit = () => {
             </el-row>
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="年份">
+                <el-form-item label="年份" prop="year">
                   <el-input v-model="formData.year" placeholder="年份" maxlength="10" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="省份">
+                <el-form-item label="省份" prop="province">
                   <el-input v-model="formData.province" placeholder="省份" maxlength="50" />
                 </el-form-item>
               </el-col>
@@ -122,10 +155,10 @@ const handleSubmit = () => {
         </el-tab-pane>
 
         <el-tab-pane label="报考要求" name="requirements">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefReq" :model="formData" :rules="reqRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="学历要求">
+                <el-form-item label="学历要求" prop="educationRequirement">
                   <el-select v-model="formData.educationRequirement" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in educationOptions" :key="item" :label="item" :value="item" />
                   </el-select>
