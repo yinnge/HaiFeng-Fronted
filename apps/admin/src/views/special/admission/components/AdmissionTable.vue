@@ -64,7 +64,7 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
         <span class="record-count">{{ total }} 条记录</span>
       </div>
       <div class="toolbar-right">
-        <button type="button" class="toolbar-btn add-btn" @click="emit('add')">
+        <button type="button" class="btn-primary" @click="emit('add')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -122,21 +122,21 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
       <el-table-column label="操作" width="300" align="center" fixed="right">
         <template #default="{ row }">
           <div class="action-group">
-            <button type="button" class="action-btn detail-btn" @click="emit('detail', row)">
+            <button type="button" class="action-btn action-detail" @click="emit('detail', row)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
               详情
             </button>
-            <button type="button" class="action-btn edit-btn" @click="emit('edit', row)">
+            <button type="button" class="action-btn action-edit" @click="emit('edit', row)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
               修改
             </button>
-            <button type="button" :class="['action-btn', row.isActive ? 'disable-btn' : 'enable-btn']" @click="emit('toggle-status', row)">
+            <button type="button" class="action-btn action-status" @click="emit('toggle-status', row)">
               <svg v-if="row.isActive" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
@@ -146,7 +146,7 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
               </svg>
               {{ row.isActive ? '禁用' : '启用' }}
             </button>
-            <button type="button" class="action-btn hard-delete-btn" @click="emit('delete', row.id)">
+            <button type="button" class="action-btn action-delete" @click="emit('delete', row.id)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -158,7 +158,7 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
       </el-table-column>
     </el-table>
 
-    <div class="pagination-wrapper">
+    <div class="custom-pagination">
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
@@ -234,13 +234,22 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
   transition: all 0.25s ease;
 }
 
-.add-btn {
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-
-.add-btn:hover {
+.btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
@@ -275,18 +284,33 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
   background: rgba(249, 115, 22, 0.04);
 }
 
+.custom-table :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
 .custom-table :deep(.el-table__header th) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  color: #fff;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
+  color: #1f2937 !important;
+  font-weight: 600;
   font-size: 14px;
-  font-weight: 600;
-  border-bottom: none;
+  border-bottom: 2px solid #F97316 !important;
+  padding: 14px 0;
 }
-
-.custom-table :deep(.el-table__header th .cell) {
-  color: #fff;
-  font-weight: 600;
+.custom-table :deep(.el-table__header th .cell) { color: #1f2937; }
+.custom-table :deep(.el-table__body tr) { transition: background-color 0.2s ease; }
+.custom-table :deep(.el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
 }
+.custom-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
+}
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
+}
+.custom-table :deep(.el-table__empty-block) { min-height: 200px; }
 
 .custom-table :deep(.el-table__row:hover > td) {
   background: rgba(249, 115, 22, 0.03) !important;
@@ -359,108 +383,58 @@ const displayTypeColorMap: Record<string, { bg: string; color: string; border: s
   white-space: nowrap;
 }
 
-.detail-btn {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.12));
-  color: #F97316;
-  border: 1px solid rgba(249, 115, 22, 0.2);
-}
-
-.detail-btn:hover {
+.action-detail {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  transform: translateY(-1px);
+}
+.action-detail:hover {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
 }
-
-.edit-btn {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(251, 191, 36, 0.12));
+.action-edit {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.action-edit:hover {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+.action-status {
+  background: #fff;
   color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid #fbbf24;
 }
-
-.edit-btn:hover {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+.action-status:hover {
+  background: #fffbeb;
+}
+.action-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
-
-.enable-btn {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(52, 211, 153, 0.12));
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.enable-btn:hover {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.disable-btn {
-  background: linear-gradient(135deg, rgba(156, 163, 175, 0.08), rgba(156, 163, 175, 0.12));
-  color: #6b7280;
-  border: 1px solid rgba(156, 163, 175, 0.2);
-}
-
-.disable-btn:hover {
-  background: linear-gradient(135deg, #6b7280, #9ca3af);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
-}
-
-.hard-delete-btn {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(248, 113, 113, 0.12));
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.hard-delete-btn:hover {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: #fff;
-  transform: translateY(-1px);
+.action-delete:hover {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
 }
 
-.pagination-wrapper {
+.custom-pagination {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
-
-.pagination-wrapper :deep(.el-pagination) {
-  --el-pagination-bg-color: transparent;
-}
-
-.pagination-wrapper :deep(.el-pager li.is-active) {
+.custom-pagination :deep(.el-pagination) { --el-pagination-hover-color: #F97316; }
+.custom-pagination :deep(.el-pager li) { border-radius: 8px; transition: all 0.2s ease; font-weight: 500; }
+.custom-pagination :deep(.el-pager li:hover) { color: #F97316; }
+.custom-pagination :deep(.el-pager li.is-active) {
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  border-radius: 8px;
-  font-weight: 600;
 }
-
-.pagination-wrapper :deep(.el-pager li) {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.pagination-wrapper :deep(.el-pager li:hover) {
-  color: #F97316;
-}
-
-.pagination-wrapper :deep(.el-pagination .btn-prev),
-.pagination-wrapper :deep(.el-pagination .btn-next) {
-  border-radius: 8px;
-}
-
-.pagination-wrapper :deep(.el-pagination .btn-prev:hover),
-.pagination-wrapper :deep(.el-pagination .btn-next:hover) {
-  color: #F97316;
-}
-
-.pagination-wrapper :deep(.el-pagination .el-select .el-input .el-input__wrapper) {
-  border-radius: 8px;
-}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) { border-radius: 8px; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) { border-radius: 8px; }
+.custom-pagination :deep(.btn-prev:hover),
+.custom-pagination :deep(.btn-next:hover) { color: #F97316; }
 </style>

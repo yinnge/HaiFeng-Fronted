@@ -261,50 +261,36 @@ function goToPdfHistory() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center justify-between px-6 py-4">
-        <button
-          class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors"
-          @click="router.push('/gaokao/plans')"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回列表</span>
-        </button>
-        <h1 class="text-xl font-bold text-gray-800">志愿表详情</h1>
-        <div class="flex items-center gap-2">
-          <button
-            class="rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-600 transition-all shadow-md disabled:opacity-50"
-            @click="handleAiAnalysis"
-          >
-            AI智能分析
-          </button>
-          <button
-            class="rounded-lg border border-gray-200 px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
-            @click="goToPdfHistory"
-          >
-            查看AI报告
-          </button>
-          <button
-            class="rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-white text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all shadow-md disabled:opacity-50"
-            :disabled="saving"
-            @click="handleSave"
-          >
-            {{ saving ? '保存中...' : '保存志愿表' }}
-          </button>
-          <button
-            class="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white text-sm font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md disabled:opacity-50"
-            :disabled="exporting"
-            @click="handleExport"
-          >
-            {{ exporting ? '导出中...' : '导出xlsx' }}
-          </button>
-        </div>
-      </div>
-    </header>
-
     <main class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
+      <div class="flex justify-end gap-3 mb-4">
+        <button
+          class="rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-600 transition-all shadow-md disabled:opacity-50"
+          @click="handleAiAnalysis"
+        >
+          AI智能分析
+        </button>
+        <button
+          class="rounded-lg border border-gray-200 px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+          @click="goToPdfHistory"
+        >
+          查看AI报告
+        </button>
+        <button
+          class="rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-white text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all shadow-md disabled:opacity-50"
+          :disabled="saving"
+          @click="handleSave"
+        >
+          {{ saving ? '保存中...' : '保存志愿表' }}
+        </button>
+        <button
+          class="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white text-sm font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md disabled:opacity-50"
+          :disabled="exporting"
+          @click="handleExport"
+        >
+          {{ exporting ? '导出中...' : '导出xlsx' }}
+        </button>
+      </div>
+
       <div v-if="loading" class="flex justify-center py-20">
         <el-icon class="is-loading text-4xl text-orange-500"><Loading /></el-icon>
       </div>

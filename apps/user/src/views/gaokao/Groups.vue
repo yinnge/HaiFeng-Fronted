@@ -200,18 +200,8 @@ onMounted(loadArchive)
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center justify-between px-6 py-4">
-        <button
-          class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors"
-          @click="router.push('/gaokao/archive')"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回档案</span>
-        </button>
-        <h1 class="text-xl font-bold text-gray-800">专业组查询</h1>
+    <main class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
+      <div class="flex justify-end gap-3 mb-4">
         <button
           class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-medium"
           :class="selectionStore.totalCount > 0
@@ -226,9 +216,7 @@ onMounted(loadArchive)
           <span>志愿表({{ selectionStore.totalCount }})</span>
         </button>
       </div>
-    </header>
 
-    <main class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
       <!-- 搜索栏 -->
       <div class="rounded-2xl bg-white p-6 shadow-md border border-gray-100 mb-6">
         <div class="flex items-center gap-4 flex-wrap">

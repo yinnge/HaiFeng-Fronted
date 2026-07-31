@@ -969,8 +969,6 @@ onMounted(() => { fetchData() })
 
         <el-table-column type="selection" width="50" />
 
-        <el-table-column prop="id" label="ID" width="140" />
-
         <el-table-column prop="projectType" label="项目类型" width="100" />
 
         <el-table-column prop="year" label="招募年份" width="90" />

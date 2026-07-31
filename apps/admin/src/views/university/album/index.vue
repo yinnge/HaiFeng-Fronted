@@ -422,7 +422,6 @@ onMounted(() => {
       <div class="custom-table" v-loading="loading">
         <el-table :data="tableData" stripe @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" />
-          <el-table-column prop="id" label="ID" width="140" />
           <el-table-column prop="universityName" label="院校名称" min-width="160" show-overflow-tooltip />
           <el-table-column prop="imageType" label="图片类型" width="120" />
           <el-table-column label="图片" width="120" align="center">

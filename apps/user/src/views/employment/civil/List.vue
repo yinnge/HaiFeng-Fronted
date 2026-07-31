@@ -3,8 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import SiteFooter from '@/components/SiteFooter.vue'
-import AppHeader from '@/components/AppHeader.vue'
 import { getCivilList } from '@/api/employment/civil'
 import type { CivilPositionListVO, CivilPositionSearchDTO } from '@/types/employment/civil'
 import { CivilRegStatusTag } from '@/types/employment/civil'
@@ -103,8 +101,6 @@ onMounted(fetchList)
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <AppHeader :show-nav-links="true" />
-
     <main class="flex-1">
       <div class="container mx-auto px-6 py-6 flex gap-6">
         <div class="flex-1 min-w-0">
@@ -192,7 +188,5 @@ onMounted(fetchList)
         <ContentDrawer />
       </div>
     </main>
-
-    <SiteFooter />
   </div>
 </template>

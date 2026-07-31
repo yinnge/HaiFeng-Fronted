@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
-import {
-  getCommissionPage,
-  deleteCommission,
-  hardDeleteCommission,
-  restoreCommission,
-} from '@/api/user/commission'
+import { ElMessage } from 'element-plus'
+import { getCommissionPage } from '@/api/user/commission'
 import type { CommissionListVO, CommissionQueryDTO } from '@/types/user/commission'
 import CommissionSearch from './components/CommissionSearch.vue'
 import CommissionTable from './components/CommissionTable.vue'
@@ -24,6 +19,7 @@ const queryParams = reactive<CommissionQueryDTO>({
   refereePhone: '',
   refereeName: '',
   orderNo: '',
+  deleted: null,
 })
 
 const dialogVisible = ref(false)
@@ -38,6 +34,7 @@ const fetchData = async () => {
     if (queryParams.refereePhone) params.refereePhone = queryParams.refereePhone
     if (queryParams.refereeName) params.refereeName = queryParams.refereeName
     if (queryParams.orderNo) params.orderNo = queryParams.orderNo
+    if (queryParams.deleted !== null && queryParams.deleted !== undefined) params.deleted = queryParams.deleted
     const res = await getCommissionPage(params as CommissionQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -63,6 +60,7 @@ const handleReset = () => {
   queryParams.refereePhone = ''
   queryParams.refereeName = ''
   queryParams.orderNo = ''
+  queryParams.deleted = null
   queryParams.page = 1
   fetchData()
 }
@@ -81,49 +79,6 @@ const handleSizeChange = (size: number) => {
 const openDetail = (row: CommissionListVO) => {
   detailData.value = row
   dialogVisible.value = true
-}
-
-const handleDelete = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要禁用该佣金记录吗？', '提示', { type: 'warning' })
-    const res = await deleteCommission(id)
-    if (res.data.code === 200) {
-      ElMessage.success('禁用成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '禁用失败')
-    }
-  } catch { /* 取消 */ }
-}
-
-const handleRestore = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要恢复该佣金记录吗？', '提示', { type: 'warning' })
-    const res = await restoreCommission(id)
-    if (res.data.code === 200) {
-      ElMessage.success('恢复成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '恢复失败')
-    }
-  } catch { /* 取消 */ }
-}
-
-const handleHardDelete = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要永久删除该佣金记录吗？此操作不可恢复！', '警告', {
-      type: 'warning',
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-    })
-    const res = await hardDeleteCommission(id)
-    if (res.data.code === 200) {
-      ElMessage.success('删除成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '删除失败')
-    }
-  } catch { /* 取消 */ }
 }
 
 onMounted(() => {
@@ -161,9 +116,6 @@ onMounted(() => {
       :page="queryParams.page"
       :size="queryParams.size"
       @detail="openDetail"
-      @disable="handleDelete"
-      @restore="handleRestore"
-      @hard-delete="handleHardDelete"
       @refresh="fetchData"
       @page-change="handlePageChange"
       @size-change="handleSizeChange"

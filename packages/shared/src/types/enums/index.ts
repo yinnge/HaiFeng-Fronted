@@ -61,3 +61,7 @@ export * from './identity'
 export * from './gender'
 // 省份枚举
 export * from './province'
+// 通知类型枚举
+export * from './notification'
+// 订单状态枚举
+export * from './order'

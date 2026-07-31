@@ -26,7 +26,6 @@ const statusLabel = (status: number) => (status === 1 ? '展示' : '下架')
   <div class="table-card">
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
-        <el-table-column prop="id" label="ID" width="160" />
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="position" label="职位" width="140">
           <template #default="{ row }">

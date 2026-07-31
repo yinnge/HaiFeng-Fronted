@@ -12,9 +12,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'detail', row: CommissionListVO): void
-  (e: 'disable', id: string): void
-  (e: 'restore', id: string): void
-  (e: 'hardDelete', id: string): void
   (e: 'refresh'): void
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
@@ -56,7 +53,6 @@ const pageSize = computed({
     </div>
 
     <el-table :data="data" v-loading="loading" stripe class="custom-table">
-      <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="referrerName" label="推荐人" min-width="100" />
       <el-table-column prop="referrerPhone" label="推荐人手机号" width="130" />
       <el-table-column prop="refereeName" label="被推荐人" min-width="100" />
@@ -76,8 +72,15 @@ const pageSize = computed({
           <span class="money-highlight primary">¥{{ row.commissionAmount?.toFixed(2) }}</span>
         </template>
       </el-table-column>
+      <el-table-column prop="deleted" label="状态" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag :type="row.deleted ? 'danger' : 'success'" size="small" effect="light">
+            {{ row.deleted ? '已撤回' : '有效' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="180" />
-      <el-table-column label="操作" width="300" align="center" fixed="right">
+      <el-table-column label="操作" width="100" align="center" fixed="right">
         <template #default="{ row }">
           <div class="action-group">
             <button type="button" class="action-btn detail-btn" @click="emit('detail', row)">
@@ -86,27 +89,6 @@ const pageSize = computed({
                 <circle cx="12" cy="12" r="3"/>
               </svg>
               详情
-            </button>
-            <button type="button" class="action-btn disable-btn" @click="emit('disable', row.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-              </svg>
-              禁用
-            </button>
-            <button type="button" class="action-btn restore-btn" @click="emit('restore', row.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="1 4 1 10 7 10"/>
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-              </svg>
-              恢复
-            </button>
-            <button type="button" class="action-btn hard-delete-btn" @click="emit('hardDelete', row.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-              硬删除
             </button>
           </div>
         </template>
@@ -276,45 +258,6 @@ const pageSize = computed({
   color: #fff;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
-.disable-btn {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(248, 113, 113, 0.12));
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.disable-btn:hover {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-}
-
-.restore-btn {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(52, 211, 153, 0.12));
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.restore-btn:hover {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.hard-delete-btn {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(248, 113, 113, 0.12));
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.hard-delete-btn:hover {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .pagination-wrapper {

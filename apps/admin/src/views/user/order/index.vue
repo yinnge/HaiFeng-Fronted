@@ -5,9 +5,10 @@ import {
   getOrderPage,
   getOrderDetail,
   getOrderWechat,
-  deleteOrder,
   hardDeleteOrder,
-  restoreOrder,
+  confirmOrder,
+  cancelOrder,
+  revokeOrder,
 } from '@/api/user/order'
 import type { OrderListVO, OrderDetailVO, OrderQueryDTO } from '@/types/user/order'
 import OrderSearch from './components/OrderSearch.vue'
@@ -25,6 +26,7 @@ const queryParams = reactive<OrderQueryDTO>({
   wechatId: '',
   operatorName: '',
   orderType: undefined,
+  orderStatus: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -45,6 +47,7 @@ const fetchData = async () => {
     if (queryParams.wechatId) params.wechatId = queryParams.wechatId
     if (queryParams.operatorName) params.operatorName = queryParams.operatorName
     if (queryParams.orderType) params.orderType = queryParams.orderType
+    if (queryParams.orderStatus) params.orderStatus = queryParams.orderStatus
     const res = await getOrderPage(params as OrderQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -64,6 +67,7 @@ const handleSearch = (params: OrderQueryDTO) => {
   queryParams.wechatId = params.wechatId
   queryParams.operatorName = params.operatorName
   queryParams.orderType = params.orderType
+  queryParams.orderStatus = params.orderStatus
   queryParams.page = 1
   fetchData()
 }
@@ -73,6 +77,7 @@ const handleReset = () => {
   queryParams.wechatId = ''
   queryParams.operatorName = ''
   queryParams.orderType = undefined
+  queryParams.orderStatus = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -120,34 +125,6 @@ const handleViewWechat = async () => {
   }
 }
 
-const handleDelete = async (id: string) => {
-  try {
-    const { ElMessageBox } = await import('element-plus')
-    await ElMessageBox.confirm('确定要禁用该订单吗？', '提示', { type: 'warning' })
-    const res = await deleteOrder(id)
-    if (res.data.code === 200) {
-      ElMessage.success('禁用成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '禁用失败')
-    }
-  } catch { /* 取消 */ }
-}
-
-const handleRestore = async (id: string) => {
-  try {
-    const { ElMessageBox } = await import('element-plus')
-    await ElMessageBox.confirm('确定要恢复该订单吗？', '提示', { type: 'warning' })
-    const res = await restoreOrder(id)
-    if (res.data.code === 200) {
-      ElMessage.success('恢复成功')
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '恢复失败')
-    }
-  } catch { /* 取消 */ }
-}
-
 const handleHardDelete = async (id: string) => {
   try {
     const { ElMessageBox } = await import('element-plus')
@@ -177,6 +154,52 @@ const handleViewWechatFromTable = async (row: OrderListVO) => {
   } catch {
     ElMessage.error('获取微信号失败')
   }
+}
+
+const handleConfirm = async (id: string) => {
+  try {
+    const { ElMessageBox } = await import('element-plus')
+    await ElMessageBox.confirm('确认用户已付款？确认后将自动升级会员。', '确认支付', { type: 'warning' })
+    const res = await confirmOrder(id)
+    if (res.data.code === 200) {
+      ElMessage.success('已确认支付，会员升级成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '确认失败')
+    }
+  } catch { /* 取消 */ }
+}
+
+const handleCancel = async (id: string) => {
+  try {
+    const { ElMessageBox } = await import('element-plus')
+    await ElMessageBox.confirm('确定要取消该订单吗？', '取消订单', { type: 'warning' })
+    const res = await cancelOrder(id)
+    if (res.data.code === 200) {
+      ElMessage.success('订单已取消')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '取消失败')
+    }
+  } catch { /* 取消 */ }
+}
+
+const handleRevoke = async (id: string) => {
+  try {
+    const { ElMessageBox } = await import('element-plus')
+    const { value: remark } = await ElMessageBox.prompt('请输入撤销原因', '撤销订单', {
+      type: 'warning',
+      inputPlaceholder: '撤销原因（选填）',
+      inputValidator: () => true,
+    })
+    const res = await revokeOrder(id, remark || undefined)
+    if (res.data.code === 200) {
+      ElMessage.success('订单已撤销，会员已回退')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '撤销失败')
+    }
+  } catch { /* 取消 */ }
 }
 
 onMounted(() => {
@@ -224,8 +247,9 @@ onMounted(() => {
       @size-change="handleSizeChange"
       @detail="handleDetail"
       @wechat="handleViewWechatFromTable"
-      @disable="handleDelete"
-      @restore="handleRestore"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+      @revoke="handleRevoke"
       @hard-delete="handleHardDelete"
     />
 

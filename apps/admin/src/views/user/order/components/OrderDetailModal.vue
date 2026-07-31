@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OrderDetailVO } from '@/types/user/order'
-import { MemberTypeLabel } from '@haifeng/shared'
+import { MemberTypeLabel, OrderStatusLabel, OrderStatusTagClass, OrderStatus } from '@haifeng/shared'
 
 defineProps<{
   visible: boolean
@@ -62,6 +62,14 @@ const handleClose = () => {
           <el-descriptions-item label="开通时长">{{ detailData.durationMonths }}个月</el-descriptions-item>
           <el-descriptions-item label="金额">
             <span class="amount-value">¥{{ detailData.amount?.toFixed(2) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="订单状态">
+            <span :class="['status-tag', OrderStatusTagClass[detailData.status as OrderStatus]]">
+              {{ OrderStatusLabel[detailData.status as OrderStatus] }}
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="支付方式">
+            {{ detailData.paymentMethod === 'wechat' ? '微信支付' : '线下转账' }}
           </el-descriptions-item>
           <el-descriptions-item label="变更前到期">{{ detailData.beforeExpireAt || '-' }}</el-descriptions-item>
           <el-descriptions-item label="变更后到期">{{ detailData.afterExpireAt }}</el-descriptions-item>
@@ -171,6 +179,35 @@ const handleClose = () => {
   font-size: 16px;
   font-weight: 700;
   color: #F97316;
+}
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #fff;
+}
+
+.status-completed {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+
+.status-cancelled {
+  background: linear-gradient(135deg, #9ca3af, #d1d5db);
+  color: #fff;
+}
+
+.status-revoked {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
 }
 
 .close-btn {

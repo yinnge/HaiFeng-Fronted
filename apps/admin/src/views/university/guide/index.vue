@@ -310,7 +310,6 @@ onMounted(() => { fetchData() })
       <div class="custom-table" v-loading="loading">
         <el-table :data="tableData" stripe @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" />
-          <el-table-column prop="id" label="ID" width="160" />
           <el-table-column prop="universityName" label="院校名称" min-width="160" show-overflow-tooltip />
           <el-table-column label="自定义标签" min-width="200">
             <template #default="{ row }">

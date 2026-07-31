@@ -1,21 +1,30 @@
 <!-- apps/user/src/views/profile/index.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
-import AppHeader from '@/components/AppHeader.vue'
 import ProfileHeader from './components/ProfileHeader.vue'
 import ProfileForm from './components/ProfileForm.vue'
 import AccountInfo from './components/AccountInfo.vue'
 import CommissionPanel from './components/CommissionPanel.vue'
+import NotificationPanel from './components/NotificationPanel.vue'
+import AvatarSelector from './components/AvatarSelector.vue'
+import UpgradeMemberDialog from './components/UpgradeMemberDialog.vue'
 import type { MemberInfoVO } from '@/types/member/info'
 import type { MemberProfileVO } from '@/types/member/profile'
+import type { SiteInfoVO } from '@/types/home'
 import { getProfile } from '@/api/member/profile'
-import { getMemberInfo, updateAvatar } from '@/api/member/info'
+import { getMemberInfo } from '@/api/member/info'
+import { getSiteInfo } from '@/api/home'
+import { useUserStore } from '@/store'
 
+const route = useRoute()
+const userStore = useUserStore()
 const activeTab = ref('profile')
 const memberInfo = ref<MemberInfoVO | null>(null)
 const profile = ref<MemberProfileVO | null>(null)
+const siteInfo = ref<SiteInfoVO | null>(null)
 const loading = ref(false)
 
 async function loadData() {
@@ -24,6 +33,14 @@ async function loadData() {
     const [infoRes, profileRes] = await Promise.all([getMemberInfo(), getProfile()])
     memberInfo.value = infoRes.data.data
     profile.value = profileRes.data.data
+    userStore.setUserInfo({
+      username: infoRes.data.data.username,
+      phone: infoRes.data.data.phone,
+      avatar: infoRes.data.data.avatar,
+      memberType: infoRes.data.data.memberType,
+      inviteCode: infoRes.data.data.inviteCode,
+      commissionBalance: infoRes.data.data.commissionBalance,
+    })
   } catch (err: any) {
     ElMessage.error(err.message || '加载失败')
   } finally {
@@ -31,23 +48,55 @@ async function loadData() {
   }
 }
 
+async function loadSiteInfo() {
+  try {
+    const res = await getSiteInfo()
+    siteInfo.value = res.data.data
+  } catch {
+    // 静默处理
+  }
+}
+
 function handleRefresh() {
   loadData()
 }
 
+const showAvatarSelector = ref(false)
+const currentAvatar = ref('')
+
 function handleUpdateAvatar() {
-  ElMessage.info('头像上传功能待实现')
+  currentAvatar.value = memberInfo.value?.avatar || ''
+  showAvatarSelector.value = true
 }
+
+function handleAvatarUpdated() {
+  loadData()
+}
+
+const showUpgradeDialog = ref(false)
+
+function handleOpenUpgrade() {
+  showUpgradeDialog.value = true
+}
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab && typeof tab === 'string') {
+      activeTab.value = tab
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   loadData()
+  loadSiteInfo()
 })
 </script>
 
 <template>
   <div class="profile-page">
-    <AppHeader :show-nav-links="true" />
-
     <main class="profile-main">
       <!-- 加载状态 -->
       <div v-if="loading" class="flex justify-center py-20">
@@ -60,24 +109,40 @@ onMounted(() => {
           :member-info="memberInfo"
           :profile="profile"
           @update-avatar="handleUpdateAvatar"
+          @open-upgrade="handleOpenUpgrade"
         />
 
         <!-- Tab 切换 + 内容区 -->
         <el-card shadow="never" class="profile-tabs-card">
           <el-tabs v-model="activeTab" class="profile-tabs">
-            <el-tab-pane label="个人资料" name="profile">
-              <ProfileForm :profile="profile" @refresh="handleRefresh" />
-            </el-tab-pane>
             <el-tab-pane label="账号安全" name="account">
               <AccountInfo :member-info="memberInfo" @refresh="handleRefresh" />
             </el-tab-pane>
+            <el-tab-pane label="个人资料" name="profile">
+              <ProfileForm :profile="profile" @refresh="handleRefresh" />
+            </el-tab-pane>
             <el-tab-pane label="佣金提现" name="commission">
               <CommissionPanel />
+            </el-tab-pane>
+            <el-tab-pane label="消息通知" name="notification">
+              <NotificationPanel @refresh="userStore.fetchUserInfo()" />
             </el-tab-pane>
           </el-tabs>
         </el-card>
       </template>
     </main>
+
+    <AvatarSelector
+      v-model:visible="showAvatarSelector"
+      :current-avatar="currentAvatar"
+      @updated="handleAvatarUpdated"
+    />
+
+    <UpgradeMemberDialog
+      v-model:visible="showUpgradeDialog"
+      :member-info="memberInfo"
+      :site-info="siteInfo"
+    />
   </div>
 </template>
 

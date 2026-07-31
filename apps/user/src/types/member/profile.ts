@@ -4,7 +4,6 @@ import type { Gender, Identity, Province } from '@haifeng/shared'
  * 用户资料 VO
  */
 export interface MemberProfileVO {
-  realName: string | null
   email: string | null
   gender: Gender | null
   schoolName: string | null
@@ -22,7 +21,6 @@ export interface MemberProfileVO {
  * 用户资料更新 DTO
  */
 export interface MemberProfileUpdateDTO {
-  realName?: string
   email?: string
   gender?: string
   schoolName?: string

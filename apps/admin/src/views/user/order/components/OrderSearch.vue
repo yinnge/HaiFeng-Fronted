@@ -12,6 +12,7 @@ const searchForm = reactive<Omit<OrderQueryDTO, 'page' | 'size'>>({
   wechatId: '',
   operatorName: '',
   orderType: undefined,
+  orderStatus: undefined,
 })
 
 const handleSearch = () => {
@@ -23,6 +24,7 @@ const handleReset = () => {
   searchForm.wechatId = ''
   searchForm.operatorName = ''
   searchForm.orderType = undefined
+  searchForm.orderStatus = undefined
   emit('reset')
 }
 </script>
@@ -76,6 +78,19 @@ const handleReset = () => {
           >
             <el-option label="新开通" value="new" />
             <el-option label="续费升级" value="renewal" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="订单状态">
+          <el-select
+            v-model="searchForm.orderStatus"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+          >
+            <el-option label="待支付" value="pending" />
+            <el-option label="已完成" value="completed" />
+            <el-option label="已取消" value="cancelled" />
+            <el-option label="已撤销" value="revoked" />
           </el-select>
         </el-form-item>
       </div>

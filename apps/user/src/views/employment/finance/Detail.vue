@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import SiteFooter from '@/components/SiteFooter.vue'
 import { getFinanceDetail } from '@/api/employment/finance'
 import type { FinancePositionDetailVO } from '@/types/employment/finance'
 
@@ -46,18 +45,6 @@ onMounted(fetchDetail)
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center px-6 py-4">
-        <button class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors" @click="router.push('/employment/finance')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回金融银行招聘</span>
-        </button>
-        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16">岗位详情</h1>
-      </div>
-    </header>
-
     <main class="container mx-auto px-6 py-8">
       <div v-loading="loading" class="min-h-[400px]">
         <div v-if="job" class="max-w-3xl mx-auto space-y-6">
@@ -142,7 +129,5 @@ onMounted(fetchDetail)
         <div v-if="!loading && !job" class="py-20 text-center text-gray-400">岗位不存在</div>
       </div>
     </main>
-
-    <SiteFooter />
   </div>
 </template>

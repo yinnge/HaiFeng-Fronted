@@ -275,21 +275,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-wrap">
-    <!-- 水印 -->
-    <div class="watermark watermark-tr"><img src="@/assets/images/logo-main.png" /></div>
-    <div class="watermark watermark-bl"><img src="@/assets/images/logo-main.png" /></div>
+  <div class="page-x">
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png" alt="" /></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png" alt="" /></div>
 
-    <!-- 页面标题 -->
     <div class="page-header">
-      <h2 class="title">安全系数等级管理</h2>
-      <p class="subtitle">管理安全系数等级配置、系数范围与置信度</p>
+      <h1 class="page-title">安全系数等级管理</h1>
+      <p class="page-subtitle">管理安全系数等级配置、系数范围与置信度</p>
     </div>
 
     <!-- 操作栏 -->
     <div class="action-bar">
       <div class="left-actions">
-        <button class="btn btn-add" @click="openDialog('add')">
+        <button class="btn-primary" @click="openDialog('add')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
           <span>新增等级</span>
         </button>
@@ -360,7 +358,7 @@ onMounted(() => {
     </div>
 
     <!-- 弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false" :destroy-on-close="true" class="uni-dialog">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false" :destroy-on-close="true" class="safety-dialog">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border>
@@ -449,8 +447,8 @@ onMounted(() => {
 
       <template #footer>
         <div class="dialog-footer">
-          <button class="btn btn-cancel" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
-          <button v-if="dialogMode !== 'detail'" class="btn btn-confirm" @click="handleSubmit">确定</button>
+          <button class="exit-btn" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
+          <button v-if="dialogMode !== 'detail'" class="save-btn" @click="handleSubmit">确定</button>
         </div>
       </template>
     </el-dialog>
@@ -458,60 +456,53 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.page-wrap {
-  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
-  min-height: calc(100vh - 60px);
-  padding: 24px;
+.page-x {
   position: relative;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px;
   overflow: hidden;
 }
 
 /* 水印 */
-.watermark {
+.watermark-left,
+.watermark-right {
   position: absolute;
-  width: 180px;
   opacity: 0.05;
   pointer-events: none;
+  z-index: 0;
 }
-.watermark img {
-  width: 180px;
-}
-.watermark-tr {
-  top: -60px;
-  right: 40px;
-  transform: rotate(18deg);
-}
-.watermark-bl {
-  bottom: -40px;
-  left: 30px;
-  transform: rotate(-12deg);
-}
+.watermark-left { top: -60px; right: 40px; transform: rotate(18deg); }
+.watermark-right { bottom: -40px; left: 30px; transform: rotate(-12deg); }
+.watermark-left img,
+.watermark-right img { width: 180px; height: auto; }
 
 /* 页面标题 */
 .page-header {
-  margin-bottom: 24px;
   position: relative;
   z-index: 1;
+  margin-bottom: 24px;
 }
-.page-header .title {
+.page-title {
   font-size: 22px;
   font-weight: 700;
   color: #1f2937;
-  margin: 0 0 4px 0;
-  letter-spacing: 0.02em;
+  margin-bottom: 4px;
 }
-.page-header .subtitle {
+.page-subtitle {
   font-size: 13px;
   color: #9ca3af;
-  margin: 0;
 }
 
 /* 操作栏 */
 .action-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .left-actions,
 .right-actions {
@@ -538,14 +529,24 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.btn-add {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-add:hover {
+.btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
 .btn-batch-delete {
@@ -598,10 +599,18 @@ onMounted(() => {
   border: 1px solid rgba(249, 115, 22, 0.1);
   border-top: 3px solid #F97316;
   border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
 }
+.table-card:hover { box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08); }
 
-/* 表格头部 */
-.custom-table :deep(.el-table th.el-table__cell) {
+/* 表格 */
+.custom-table :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.custom-table :deep(.el-table__header th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
   color: #1f2937 !important;
   font-weight: 600;
@@ -609,19 +618,19 @@ onMounted(() => {
   border-bottom: 2px solid #F97316 !important;
   padding: 14px 0;
 }
-.custom-table :deep(.el-table th.el-table__cell .cell) {
-  color: #1f2937 !important;
-}
-
-/* 表格行悬停 */
-.custom-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+.custom-table :deep(.el-table__header th .cell) { color: #1f2937; }
+.custom-table :deep(.el-table__body tr) { transition: background-color 0.2s ease; }
+.custom-table :deep(.el-table__body tr:hover > td) {
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
 }
-
-/* 表格条纹行 */
-.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background-color: rgba(255, 247, 237, 0.3);
+.custom-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
 }
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
+}
+.custom-table :deep(.el-table__empty-block) { min-height: 200px; }
 
 /* 状态胶囊 */
 .status-pill {
@@ -650,37 +659,24 @@ onMounted(() => {
 }
 
 /* 操作胶囊 */
-.action-pill {
-  display: inline-block;
-  padding: 2px 12px;
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-  margin: 0 2px;
-}
-.action-detail {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-}
-.action-detail:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-}
-.action-edit {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
-  color: #fff;
-}
-.action-edit:hover {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-}
-.action-delete {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-}
-.action-delete:hover {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .action-enable {
   background: linear-gradient(135deg, #22c55e, #4ade80);
@@ -692,106 +688,98 @@ onMounted(() => {
 
 /* 分页 */
 .custom-pagination {
-  border-top: 1px solid #f3f4f6;
-  padding-top: 16px;
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
+.custom-pagination :deep(.el-pagination) { --el-pagination-hover-color: #F97316; }
+.custom-pagination :deep(.el-pager li) { border-radius: 8px; transition: all 0.2s ease; font-weight: 500; }
+.custom-pagination :deep(.el-pager li:hover) { color: #F97316; }
 .custom-pagination :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #f97316, #fb923c) !important;
-  color: #fff !important;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
-.custom-pagination :deep(.el-pager li:hover) {
-  color: #f97316;
-}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) { border-radius: 8px; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) { border-radius: 8px; }
 .custom-pagination :deep(.btn-prev:hover),
-.custom-pagination :deep(.btn-next:hover) {
-  color: #f97316;
-}
+.custom-pagination :deep(.btn-next:hover) { color: #F97316; }
 
 /* 弹窗 */
-.uni-dialog :deep(.el-dialog) {
+.safety-dialog :deep(.el-dialog) {
   border-radius: 12px;
+  overflow: hidden;
 }
-.uni-dialog :deep(.el-dialog__header) {
+.safety-dialog :deep(.el-dialog__header) {
   border-bottom: 2px solid rgba(249, 115, 22, 0.15);
-  padding-bottom: 16px;
-  margin-bottom: 0;
+  padding: 20px 24px;
+  margin: 0;
 }
-.uni-dialog :deep(.el-dialog__title) {
-  font-size: 17px;
-  font-weight: 700;
+.safety-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
   color: #1f2937;
 }
-.uni-dialog :deep(.el-descriptions__label) {
+.safety-dialog :deep(.el-dialog__body) { padding: 24px; }
+.safety-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+.safety-dialog :deep(.el-descriptions__label) {
   background: rgba(249, 115, 22, 0.06);
   color: #f97316;
   font-weight: 600;
 }
-.uni-dialog :deep(.el-input__wrapper) {
-  border-radius: 8px;
-}
-.uni-dialog :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-textarea__inner) {
-  border-radius: 8px;
-}
-.uni-dialog :deep(.el-textarea__inner:focus) {
-  border-color: #f97316;
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
-  padding-right: 36px;
-}
-.uni-dialog :deep(.el-form-item) {
-  margin-bottom: 18px;
-}
+.safety-dialog :deep(.el-input__wrapper),
+.safety-dialog :deep(.el-textarea__inner),
+.safety-dialog :deep(.el-select__wrapper) { border-radius: 8px; transition: all 0.25s ease; }
+.safety-dialog :deep(.el-input__wrapper:hover),
+.safety-dialog :deep(.el-textarea__inner:hover),
+.safety-dialog :deep(.el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.safety-dialog :deep(.el-input__wrapper.is-focus),
+.safety-dialog :deep(.el-textarea__inner:focus),
+.safety-dialog :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.safety-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) { padding-right: 36px; }
+.safety-dialog :deep(.el-form-item) { margin-bottom: 18px; }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
-.btn-cancel {
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 24px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
 }
-.btn-cancel:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
-}
-.btn-confirm {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.exit-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
   border: none;
-  padding: 8px 24px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-confirm:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
-  transform: translateY(-1px);
-}
+.save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

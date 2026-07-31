@@ -97,9 +97,9 @@ onMounted(() => { fetchData() })
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="page-watermark top-right"></div>
-    <div class="page-watermark bottom-left"></div>
+  <div class="page-x">
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png"></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png"></div>
     <div class="page-header">
       <h2 class="page-title">社区工作者岗位管理</h2>
       <p class="page-subtitle">管理社区工作者招录岗位信息</p>
@@ -129,12 +129,14 @@ onMounted(() => { fetchData() })
 </template>
 
 <style scoped>
-.page-container { min-height: 100vh; background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%); padding: 24px; position: relative; }
-.page-watermark { position: fixed; width: 300px; height: 300px; background: url('@/assets/images/logo-main.png') no-repeat center; background-size: contain; opacity: 0.05; pointer-events: none; }
-.page-watermark.top-right { top: 20px; right: 20px; }
-.page-watermark.bottom-left { bottom: 20px; left: 20px; }
-.page-header { margin-bottom: 20px; }
+.page-x { position: relative; min-height: calc(100vh - 60px); background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%); padding: 24px; overflow: hidden; }
+.watermark-left, .watermark-right { position: absolute; opacity: 0.05; pointer-events: none; z-index: 0; }
+.watermark-left { top: -60px; right: 40px; transform: rotate(18deg); }
+.watermark-right { bottom: -40px; left: 30px; transform: rotate(-12deg); }
+.watermark-left img, .watermark-right img { width: 180px; height: auto; }
+.page-header { position: relative; z-index: 1; margin-bottom: 24px; }
 .page-title { font-size: 22px; font-weight: 700; color: #1f2937; margin: 0 0 4px; }
-.page-subtitle { font-size: 14px; color: #9ca3af; margin: 0; }
-.table-card { background: #fff; border-radius: 12px; border-top: 3px solid #F97316; border-bottom: 3px solid #FB923C; padding: 20px; }
+.page-subtitle { font-size: 13px; color: #9ca3af; margin: 0; }
+.table-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid rgba(249,115,22,0.1); border-top: 3px solid #F97316; border-bottom: 3px solid #FB923C; transition: all .3s ease; }
+.table-card:hover { box-shadow: 0 4px 16px rgba(249,115,22,0.08); }
 </style>

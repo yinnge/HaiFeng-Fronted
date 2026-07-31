@@ -37,7 +37,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <el-dialog :model-value="visible" title="修改基层服务项目岗位" width="1000px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
+  <el-dialog :model-value="visible" title="修改基层服务项目岗位" width="1000px" :close-on-click-modal="false" class="grassroots-form-dialog" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="项目与岗位信息" name="basic">
@@ -133,15 +133,32 @@ const handleSubmit = async () => {
       </el-tabs>
     </div>
     <template #footer>
-      <button type="button" class="btn-cancel" @click="emit('update:visible', false)">取消</button>
-      <button type="button" class="btn-submit" @click="handleSubmit">确定</button>
+      <div class="dialog-footer">
+        <button type="button" class="exit-btn" @click="emit('update:visible', false)">取消</button>
+        <button type="button" class="save-btn" @click="handleSubmit">确定</button>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <style scoped>
-.btn-cancel { background: #fff; color: #6b7280; border: 1px solid #d1d5db; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-cancel:hover { border-color: #F97316; color: #F97316; }
-.btn-submit { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-submit:hover { filter: brightness(1.1); }
+.grassroots-form-dialog :deep(.el-dialog) { border-radius: 12px; overflow: hidden; }
+.grassroots-form-dialog :deep(.el-dialog__header) { border-bottom: 2px solid rgba(249,115,22,0.15); padding: 20px 24px; margin: 0; }
+.grassroots-form-dialog :deep(.el-dialog__title) { font-size: 16px; font-weight: 600; color: #1f2937; }
+.grassroots-form-dialog :deep(.el-dialog__body) { padding: 24px; }
+.grassroots-form-dialog :deep(.el-dialog__footer) { border-top: 1px solid #f3f4f6; padding: 16px 24px; }
+.grassroots-form-dialog :deep(.el-input__wrapper), .grassroots-form-dialog :deep(.el-textarea__inner), .grassroots-form-dialog :deep(.el-select__wrapper) { border-radius: 8px; transition: all .25s ease; }
+.grassroots-form-dialog :deep(.el-input__wrapper:hover), .grassroots-form-dialog :deep(.el-textarea__inner:hover), .grassroots-form-dialog :deep(.el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249,115,22,0.3) inset; }
+.grassroots-form-dialog :deep(.el-input__wrapper.is-focus), .grassroots-form-dialog :deep(.el-textarea__inner:focus), .grassroots-form-dialog :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.grassroots-form-dialog :deep(.el-radio__input.is-checked .el-radio__inner) { background-color: #F97316; border-color: #F97316; }
+.grassroots-form-dialog :deep(.el-radio__input.is-checked + .el-radio__label) { color: #F97316; }
+.grassroots-form-dialog :deep(.el-tabs__item.is-active) { color: #F97316; }
+.grassroots-form-dialog :deep(.el-tabs__active-bar) { background-color: #F97316; }
+.grassroots-form-dialog :deep(.el-tabs__item:hover) { color: #F97316; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
+.exit-btn { display: inline-flex; align-items: center; padding: 8px 20px; background: #fff; color: #6b7280; border: 1px solid #d1d5db; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .25s ease; }
+.exit-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
+.save-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 24px; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .25s ease; box-shadow: 0 2px 8px rgba(249,115,22,0.3); }
+.save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249,115,22,0.4); }
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

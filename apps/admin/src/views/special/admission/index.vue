@@ -146,19 +146,13 @@ onMounted(() => { fetchData() })
 </script>
 
 <template>
-  <div class="page-wrapper">
-    <div class="watermark-top-right">
-      <img src="@/assets/images/logo-main.png" alt="" />
-    </div>
-    <div class="watermark-bottom-left">
-      <img src="@/assets/images/logo-main.png" alt="" />
-    </div>
+  <div class="page-x">
+    <div class="watermark-left"><img src="@/assets/images/logo-main.png" alt="" /></div>
+    <div class="watermark-right"><img src="@/assets/images/logo-main.png" alt="" /></div>
 
     <div class="page-header">
-      <div class="page-title-group">
-        <h1 class="page-title">通道管理</h1>
-        <p class="page-subtitle">管理展示通道配置与内容类型</p>
-      </div>
+      <h1 class="page-title">通道管理</h1>
+      <p class="page-subtitle">管理展示通道配置与内容类型</p>
     </div>
 
     <AdmissionSearch
@@ -200,59 +194,37 @@ onMounted(() => { fetchData() })
 </template>
 
 <style scoped>
-.page-wrapper {
+.page-x {
   position: relative;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 60px);
   background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
-  padding: 24px 32px 40px;
+  padding: 24px;
   overflow: hidden;
 }
 
-.watermark-top-right {
+.watermark-left,
+.watermark-right {
   position: absolute;
-  top: -30px;
-  right: -30px;
-  width: 320px;
-  height: 320px;
   opacity: 0.05;
   pointer-events: none;
+  z-index: 0;
 }
-
-.watermark-bottom-left {
-  position: absolute;
-  bottom: -30px;
-  left: -30px;
-  width: 320px;
-  height: 320px;
-  opacity: 0.05;
-  pointer-events: none;
-}
-
-.watermark-top-right img,
-.watermark-bottom-left img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
+.watermark-left { top: -60px; right: 40px; transform: rotate(18deg); }
+.watermark-right { bottom: -40px; left: 30px; transform: rotate(-12deg); }
+.watermark-left img,
+.watermark-right img { width: 180px; height: auto; }
 
 .page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  position: relative;
+  z-index: 1;
   margin-bottom: 24px;
-}
-
-.page-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .page-title {
   font-size: 22px;
   font-weight: 700;
   color: #1f2937;
-  margin: 0;
+  margin: 0 0 4px 0;
   line-height: 1.3;
 }
 

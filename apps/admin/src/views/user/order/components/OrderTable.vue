@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OrderListVO } from '@/types/user/order'
-import { MemberTypeLabel } from '@haifeng/shared'
+import { MemberTypeLabel, OrderStatusLabel, OrderStatusTagClass, OrderStatus } from '@haifeng/shared'
 
 defineProps<{
   data: OrderListVO[]
@@ -16,8 +16,9 @@ const emit = defineEmits<{
   (e: 'size-change', size: number): void
   (e: 'detail', id: string): void
   (e: 'wechat', row: OrderListVO): void
-  (e: 'disable', id: string): void
-  (e: 'restore', id: string): void
+  (e: 'confirm', id: string): void
+  (e: 'cancel', id: string): void
+  (e: 'revoke', id: string): void
   (e: 'hard-delete', id: string): void
 }>()
 
@@ -28,7 +29,6 @@ const pageSizes = [10, 20, 30, 50, 100]
   <div class="table-card">
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
         <el-table-column prop="memberName" label="会员名称" min-width="100" />
         <el-table-column prop="phone" label="手机号" width="120" />
@@ -60,14 +60,22 @@ const pageSizes = [10, 20, 30, 50, 100]
             <span class="amount-text">¥{{ row.amount?.toFixed(2) }}</span>
           </template>
         </el-table-column>
+        <el-table-column prop="status" label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <span :class="['status-tag', OrderStatusTagClass[row.status as OrderStatus]]">
+              {{ OrderStatusLabel[row.status as OrderStatus] }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="280" align="center" fixed="right">
+        <el-table-column label="操作" width="360" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
               <button type="button" class="action-btn action-wechat" @click="emit('wechat', row)">查看微信</button>
-              <button type="button" class="action-btn action-disable" @click="emit('disable', row.id)">禁用</button>
-              <button type="button" class="action-btn action-restore" @click="emit('restore', row.id)">恢复</button>
+              <button v-if="row.status === 'pending'" type="button" class="action-btn action-confirm" @click="emit('confirm', row.id)">确认支付</button>
+              <button v-if="row.status === 'pending'" type="button" class="action-btn action-cancel" @click="emit('cancel', row.id)">取消</button>
+              <button v-if="row.status === 'completed'" type="button" class="action-btn action-revoke" @click="emit('revoke', row.id)">撤销</button>
               <button type="button" class="action-btn action-hard-delete" @click="emit('hard-delete', row.id)">硬删除</button>
             </div>
           </template>
@@ -163,6 +171,36 @@ const pageSizes = [10, 20, 30, 50, 100]
   color: #F97316;
 }
 
+/* 状态标签 */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: #fff;
+}
+
+.status-completed {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+
+.status-cancelled {
+  background: linear-gradient(135deg, #9ca3af, #d1d5db);
+  color: #fff;
+}
+
+.status-revoked {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+
 .type-tag {
   display: inline-flex;
   align-items: center;
@@ -215,21 +253,30 @@ const pageSizes = [10, 20, 30, 50, 100]
   transform: translateY(-1px);
 }
 
-.action-disable {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-}
-.action-disable:hover {
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-  transform: translateY(-1px);
-}
-
-.action-restore {
+.action-confirm {
   background: linear-gradient(135deg, #10b981, #34d399);
   color: #fff;
 }
-.action-restore:hover {
+.action-confirm:hover {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-cancel {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+  color: #fff;
+}
+.action-cancel:hover {
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-revoke {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-revoke:hover {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
 }
 

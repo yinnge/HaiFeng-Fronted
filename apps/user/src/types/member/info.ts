@@ -14,6 +14,10 @@ export interface MemberInfoVO {
   commissionTotalPaid: number
   memberType: MemberType
   expireAt: string | null
+  /** 挂起的会员类型（VIP活跃时，显示待恢复的Pro） */
+  suspendedMemberType: string | null
+  /** 挂起会员的恢复日期（VIP到期日） */
+  suspendedExpireAt: string | null
 }
 
 /**

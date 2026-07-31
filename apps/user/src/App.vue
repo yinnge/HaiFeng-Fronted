@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
+const route = useRoute()
 const userStore = useUserStore()
+
+const useDefaultLayout = computed(() => route.meta.layout !== 'blank')
 
 onMounted(async () => {
   if (userStore.isLoggedIn() && !userStore.userInfo) {
@@ -12,7 +17,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <router-view />
+  <DefaultLayout v-if="useDefaultLayout">
+    <router-view />
+  </DefaultLayout>
+  <router-view v-else />
 </template>
 
 <style>

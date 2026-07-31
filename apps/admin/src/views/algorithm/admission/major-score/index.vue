@@ -407,7 +407,6 @@ onMounted(() => {
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" min-width="70" />
         <el-table-column prop="groupId" label="专业组ID" min-width="90" />
         <el-table-column prop="majorCode" label="专业代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />

@@ -5,8 +5,6 @@ import { ElMessage } from 'element-plus'
 import { getModelProviderDetail, createModelProvider, updateModelProvider } from '@/api/system/provider'
 import type { ModelProviderCreateDTO, ModelProviderUpdateDTO } from '@/types/system/provider'
 import { ProviderType, ProviderTypeLabel } from '@/types/system/provider'
-import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
-
 const props = defineProps<{
   visible: boolean
   providerId?: string
@@ -19,8 +17,6 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const showExitConfirm = ref(false)
-const originalData = ref<string>('')
 
 const isEdit = computed(() => !!props.providerId)
 const title = computed(() => (isEdit.value ? '编辑服务商' : '新增服务商'))
@@ -53,10 +49,6 @@ const rules: FormRules = {
   ],
 }
 
-const hasChanges = computed(() => {
-  return JSON.stringify(form) !== originalData.value
-})
-
 const fetchDetail = async () => {
   if (!props.providerId) return
   loading.value = true
@@ -72,7 +64,6 @@ const fetchDetail = async () => {
       form.type = data.type
       form.description = data.description || ''
       form.status = data.status
-      originalData.value = JSON.stringify(form)
     }
   } catch (error) {
     ElMessage.error('获取服务商详情失败')
@@ -90,21 +81,10 @@ const resetForm = () => {
   form.type = ProviderType.AI
   form.description = ''
   form.status = 1
-  originalData.value = ''
   formRef.value?.resetFields()
 }
 
 const handleClose = () => {
-  if (hasChanges.value) {
-    showExitConfirm.value = true
-  } else {
-    emit('update:visible', false)
-    resetForm()
-  }
-}
-
-const handleDiscard = () => {
-  showExitConfirm.value = false
   emit('update:visible', false)
   resetForm()
 }
@@ -128,7 +108,6 @@ const handleSave = async () => {
       const res = await updateModelProvider(props.providerId, data)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
-        showExitConfirm.value = false
         emit('update:visible', false)
         emit('success')
         resetForm()
@@ -162,17 +141,11 @@ const handleSave = async () => {
   }
 }
 
-const handleSaveAndClose = async () => {
-  await handleSave()
-}
-
 watch(
   () => props.visible,
   (val) => {
     if (val && props.providerId) {
       fetchDetail()
-    } else if (val) {
-      originalData.value = JSON.stringify(form)
     }
   }
 )
@@ -251,13 +224,6 @@ watch(
       </div>
     </template>
   </el-dialog>
-
-  <ExitConfirmModal
-    v-model:visible="showExitConfirm"
-    @cancel="showExitConfirm = false"
-    @discard="handleDiscard"
-    @save="handleSaveAndClose"
-  />
 </template>
 
 <style scoped>

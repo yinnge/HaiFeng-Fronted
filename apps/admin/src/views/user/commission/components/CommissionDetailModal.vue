@@ -43,6 +43,11 @@ const formatMoney = (val: number) => val?.toFixed(2) || '0.00'
           <span class="money-highlight primary">¥{{ formatMoney(data.commissionAmount) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ data.createdAt }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="data.deleted ? 'danger' : 'success'" size="small" effect="light">
+            {{ data.deleted ? '已撤回' : '有效' }}
+          </el-tag>
+        </el-descriptions-item>
       </el-descriptions>
     </div>
     <template #footer>

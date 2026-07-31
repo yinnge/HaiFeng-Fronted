@@ -99,18 +99,6 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center px-6 py-4">
-        <button class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors" @click="router.push('/special')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回列表</span>
-        </button>
-        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16" v-if="detail">{{ detail.channelName }}</h1>
-      </div>
-    </header>
-
     <main class="container mx-auto px-6 py-8" v-loading="loading">
       <template v-if="detail">
         <!-- 基本信息 -->

@@ -2,7 +2,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import SiteFooter from '@/components/SiteFooter.vue'
 import { getCityList } from '@/api/city'
 import type { CityListVO, CityQueryDTO } from '@/types/city'
 import { ProvinceOptions } from '@haifeng/shared'
@@ -75,18 +74,6 @@ onMounted(fetchList)
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center px-6 py-4">
-        <button class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors" @click="router.push('/')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回首页</span>
-        </button>
-        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16">城市查询</h1>
-      </div>
-    </header>
-
     <main class="container mx-auto px-6 py-8 flex-1">
       <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-6 mb-6 border border-orange-100">
         <p class="text-sm text-gray-600 leading-relaxed">
@@ -161,6 +148,5 @@ onMounted(fetchList)
       </div>
     </main>
 
-    <SiteFooter />
   </div>
 </template>

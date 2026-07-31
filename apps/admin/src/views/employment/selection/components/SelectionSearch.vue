@@ -37,106 +37,105 @@ const positionStatusOptions = ['在招', '已结束', '未发布']
 
     <div class="search-form">
       <el-form inline>
-        <el-form-item label="职位名称">
-          <el-input
-            :model-value="positionName"
-            placeholder="职位名称"
-            clearable
-            style="width: 160px"
-            @update:model-value="emit('update:positionName', $event)"
-            @keyup.enter="emit('search')"
-          />
-        </el-form-item>
-
-        <el-form-item label="用人单位">
-          <el-input
-            :model-value="targetUnit"
-            placeholder="用人单位"
-            clearable
-            style="width: 160px"
-            @update:model-value="emit('update:targetUnit', $event)"
-            @keyup.enter="emit('search')"
-          />
-        </el-form-item>
-
-        <el-form-item label="组织部门">
-          <el-input
-            :model-value="organizingDept"
-            placeholder="组织部门"
-            clearable
-            style="width: 160px"
-            @update:model-value="emit('update:organizingDept', $event)"
-            @keyup.enter="emit('search')"
-          />
-        </el-form-item>
-
-        <el-form-item label="选调类型">
-          <el-select
-            :model-value="selectionType"
-            placeholder="全部"
-            clearable
-            style="width: 150px"
-            @update:model-value="emit('update:selectionType', $event)"
-          >
-            <el-option v-for="item in selectionTypeOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-
-        <br />
-
-        <el-form-item label="年份">
-          <el-input
-            :model-value="year"
-            placeholder="年份"
-            clearable
-            style="width: 100px"
-            @update:model-value="emit('update:year', $event)"
-            @keyup.enter="emit('search')"
-          />
-        </el-form-item>
-
-        <el-form-item label="省份">
-          <el-input
-            :model-value="province"
-            placeholder="省份"
-            clearable
-            style="width: 100px"
-            @update:model-value="emit('update:province', $event)"
-            @keyup.enter="emit('search')"
-          />
-        </el-form-item>
-
-        <el-form-item label="政治面貌">
-          <el-select
-            :model-value="politicalStatus"
-            placeholder="全部"
-            clearable
-            style="width: 130px"
-            @update:model-value="emit('update:politicalStatus', $event)"
-          >
-            <el-option v-for="item in politicalStatusOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="职位状态">
-          <el-select
-            :model-value="positionStatus"
-            placeholder="全部"
-            clearable
-            style="width: 130px"
-            @update:model-value="emit('update:positionStatus', $event)"
-          >
-            <el-option v-for="item in positionStatusOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item class="search-actions">
-          <button type="button" class="search-btn" @click="emit('search')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            查询
-          </button>
-          <button type="button" class="reset-btn" @click="emit('reset')">重置</button>
-        </el-form-item>
+        <el-row :gutter="12">
+          <el-col :span="6">
+            <el-form-item label="职位名称">
+              <el-input
+                :model-value="positionName"
+                placeholder="职位名称"
+                clearable
+                style="width: 160px"
+                @update:model-value="emit('update:positionName', $event)"
+                @keyup.enter="emit('search')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="用人单位">
+              <el-input
+                :model-value="targetUnit"
+                placeholder="用人单位"
+                clearable
+                style="width: 160px"
+                @update:model-value="emit('update:targetUnit', $event)"
+                @keyup.enter="emit('search')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="组织部门">
+              <el-input
+                :model-value="organizingDept"
+                placeholder="组织部门"
+                clearable
+                style="width: 160px"
+                @update:model-value="emit('update:organizingDept', $event)"
+                @keyup.enter="emit('search')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="选调类型">
+              <el-select
+                :model-value="selectionType"
+                placeholder="全部"
+                clearable
+                style="width: 150px"
+                @update:model-value="emit('update:selectionType', $event)"
+              >
+                <el-option v-for="item in selectionTypeOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="12">
+          <el-col :span="6">
+            <el-form-item label="年份">
+              <el-input
+                :model-value="year"
+                placeholder="年份"
+                clearable
+                style="width: 100px"
+                @update:model-value="emit('update:year', $event)"
+                @keyup.enter="emit('search')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="省份">
+              <el-input
+                :model-value="province"
+                placeholder="省份"
+                clearable
+                style="width: 100px"
+                @update:model-value="emit('update:province', $event)"
+                @keyup.enter="emit('search')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="政治面貌">
+              <el-select
+                :model-value="politicalStatus"
+                placeholder="全部"
+                clearable
+                style="width: 130px"
+                @update:model-value="emit('update:politicalStatus', $event)"
+              >
+                <el-option v-for="item in politicalStatusOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item class="search-actions">
+              <button type="button" class="search-btn" @click="emit('search')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                查询
+              </button>
+              <button type="button" class="reset-btn" @click="emit('reset')">重置</button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </div>
   </div>

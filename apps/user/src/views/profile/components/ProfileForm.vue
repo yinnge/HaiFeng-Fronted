@@ -8,6 +8,11 @@ import {
   ProvinceOptions,
   Identity,
   canEditSchoolByIdentity,
+  showMajorByIdentity,
+  showEducationLevelByIdentity,
+  showGradeByIdentity,
+  getGradeOptionsByIdentity,
+  getEducationLevelConfigByIdentity,
   getCityOptionsByProvince,
 } from '@haifeng/shared'
 import type { MemberProfileVO, MemberProfileUpdateDTO } from '@/types/member/profile'
@@ -25,7 +30,6 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const form = ref<MemberProfileUpdateDTO>({
-  realName: '',
   email: '',
   gender: '',
   identity: '',
@@ -42,7 +46,6 @@ watch(
   (val) => {
     if (val) {
       form.value = {
-        realName: val.realName || '',
         email: val.email || '',
         gender: val.gender || '',
         identity: val.identity || '',
@@ -58,19 +61,57 @@ watch(
   { immediate: true }
 )
 
-const showSchoolField = computed(() => {
-  return canEditSchoolByIdentity(form.value.identity as Identity)
-})
+// ========== 联动计算 ==========
 
-const cityOptions = computed(() => {
-  return getCityOptionsByProvince(form.value.province || '')
-})
+const showSchoolField = computed(() => canEditSchoolByIdentity(form.value.identity as Identity))
+const showMajorField = computed(() => showMajorByIdentity(form.value.identity as Identity))
+const showEducationLevelField = computed(() => showEducationLevelByIdentity(form.value.identity as Identity))
+const showGradeField = computed(() => showGradeByIdentity(form.value.identity as Identity))
+const gradeOptions = computed(() => getGradeOptionsByIdentity(form.value.identity as Identity))
+const educationLevelConfig = computed(() => getEducationLevelConfigByIdentity(form.value.identity as Identity))
+const educationLevelIsFixed = computed(() => educationLevelConfig.value.fixed !== null)
+const educationLevelOptions = computed(() => educationLevelConfig.value.options)
+
+const cityOptions = computed(() => getCityOptionsByProvince(form.value.province || ''))
+
+// ========== 身份切换联动 ==========
 
 watch(
   () => form.value.identity,
   (newVal, oldVal) => {
-    if (oldVal && !canEditSchoolByIdentity(newVal as Identity)) {
+    if (oldVal === newVal) return
+    const identity = newVal as Identity
+
+    // 切换身份时清空年级
+    form.value.grade = ''
+
+    // 高中生：清空专业和学历层次
+    if (identity === Identity.HIGH_SCHOOL || identity === Identity.OTHER) {
+      form.value.major = ''
+      form.value.educationLevel = ''
+    }
+
+    // 研究生/博士：固定学历层次
+    if (identity === Identity.POSTGRADUATE) {
+      form.value.educationLevel = '硕士'
+    }
+    if (identity === Identity.DOCTOR) {
+      form.value.educationLevel = '博士'
+    }
+
+    // 非学校身份清空学校
+    if (!canEditSchoolByIdentity(identity)) {
       form.value.schoolName = ''
+    }
+  }
+)
+
+// 学历层次固定值自动填充
+watch(
+  () => educationLevelConfig.value.fixed,
+  (fixedVal) => {
+    if (fixedVal !== null) {
+      form.value.educationLevel = fixedVal
     }
   }
 )
@@ -81,6 +122,8 @@ watch(
     form.value.city = ''
   }
 )
+
+// ========== 搜索 ==========
 
 async function handleUniversitySearch(query: string, cb: (items: { value: string }[]) => void) {
   if (!query) {
@@ -108,6 +151,8 @@ async function handleMajorSearch(query: string, cb: (items: { value: string }[])
   }
 }
 
+// ========== 提交 ==========
+
 async function handleSave() {
   loading.value = true
   try {
@@ -133,9 +178,6 @@ async function handleSave() {
         基本信息
       </h3>
       <div class="form-grid">
-        <el-form-item label="姓名">
-          <el-input v-model="form.realName" placeholder="请输入姓名" maxlength="50" />
-        </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="100" />
         </el-form-item>
@@ -199,15 +241,35 @@ async function handleSave() {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="专业">
+
+        <!-- 年级：其他身份不显示，其余下拉选择 -->
+        <el-form-item v-if="showGradeField" label="年级">
+          <el-select
+            v-model="form.grade"
+            placeholder="请选择年级"
+            class="w-full"
+          >
+            <el-option
+              v-for="item in gradeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <!-- 专业：高中生隐藏 -->
+        <el-form-item v-if="showMajorField" label="专业">
           <el-autocomplete
             v-model="form.major"
             :fetch-suggestions="handleMajorSearch"
-            placeholder="请输入专业"
+            placeholder="请输入或搜索专业"
             class="w-full"
             clearable
           />
         </el-form-item>
+
+        <!-- 学校：仅大学生/研究生/博士显示 -->
         <el-form-item v-if="showSchoolField" label="学校">
           <el-autocomplete
             v-model="form.schoolName"
@@ -217,11 +279,25 @@ async function handleSave() {
             clearable
           />
         </el-form-item>
-        <el-form-item label="年级">
-          <el-input v-model="form.grade" placeholder="如：高一、大三、研一" maxlength="20" />
-        </el-form-item>
-        <el-form-item label="学历层次">
-          <el-input v-model="form.educationLevel" placeholder="如：本科、硕士" maxlength="20" />
+
+        <!-- 学历层次：高中生隐藏，博士/研究生固定值，大学生下拉，其他自由输入 -->
+        <el-form-item v-if="showEducationLevelField" label="学历层次">
+          <template v-if="educationLevelIsFixed">
+            <el-input :model-value="educationLevelConfig.fixed" disabled />
+          </template>
+          <template v-else-if="educationLevelOptions.length > 0">
+            <el-select v-model="form.educationLevel" placeholder="请选择学历层次" class="w-full">
+              <el-option
+                v-for="item in educationLevelOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </template>
+          <template v-else>
+            <el-input v-model="form.educationLevel" placeholder="如：本科、硕士" maxlength="20" />
+          </template>
         </el-form-item>
       </div>
     </div>

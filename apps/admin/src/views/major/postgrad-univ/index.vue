@@ -191,7 +191,6 @@ onMounted(() => { fetchData() })
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="universityName" label="大学名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="postgradMajorName" label="考研专业名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="sortOrder" label="排序权重" width="100" align="center" />

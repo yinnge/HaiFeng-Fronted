@@ -220,10 +220,10 @@ const handleClose = () => {
 
     <template #footer>
       <div class="dialog-footer">
-        <button type="button" class="cancel-btn" @click="handleClose">
+        <button type="button" class="exit-btn" @click="handleClose">
           {{ mode === 'detail' ? '关闭' : '取消' }}
         </button>
-        <button v-if="mode !== 'detail'" type="button" class="submit-btn" :disabled="formLoading" @click="handleSubmit">
+        <button v-if="mode !== 'detail'" type="button" class="save-btn" :disabled="formLoading" @click="handleSubmit">
           <span v-if="formLoading" class="loading-spinner"></span>
           确定
         </button>
@@ -359,7 +359,7 @@ const handleClose = () => {
   gap: 12px;
 }
 
-.cancel-btn {
+.exit-btn {
   display: inline-flex;
   align-items: center;
   padding: 8px 20px;
@@ -373,13 +373,13 @@ const handleClose = () => {
   transition: all 0.25s ease;
 }
 
-.cancel-btn:hover {
+.exit-btn:hover {
   color: #374151;
   border-color: #9ca3af;
   background: #f9fafb;
 }
 
-.submit-btn {
+.save-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -395,12 +395,12 @@ const handleClose = () => {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 
-.submit-btn:hover:not(:disabled) {
+.save-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
-.submit-btn:disabled {
+.save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

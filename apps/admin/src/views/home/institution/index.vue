@@ -287,7 +287,6 @@ onMounted(() => { fetchData() })
     <div class="table-card">
       <div class="custom-table" v-loading="loading">
         <el-table :data="tableData" stripe>
-          <el-table-column prop="id" label="ID" width="140" />
           <el-table-column prop="name" label="名称" min-width="160" show-overflow-tooltip />
           <el-table-column prop="type" label="类别" width="140" />
           <el-table-column prop="phone" label="电话" width="140">

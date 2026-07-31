@@ -75,13 +75,9 @@ export function getCityOptionsByProvince(province: string): CityOption[] {
 
   for (const [, cityName] of Object.entries(cityMap)) {
     if (cityName === '市辖区') {
-      // 直辖市：展开到区级
-      const districtMap: Record<string, string> = data[provinceCode.replace(/00$/, '01')] || {}
-      for (const [, districtName] of Object.entries(districtMap)) {
-        if (districtName !== '市辖区') {
-          result.push({ value: districtName as string, label: districtName as string })
-        }
-      }
+      // 直辖市：直接用城市名（如"北京"），用户无需手动选城市
+      const cityNameShort = fullName.replace(/市$/, '')
+      result.push({ value: cityNameShort, label: cityNameShort })
     } else {
       // 普通地级市：去掉"市"后缀
       const cleanName = (cityName as string).replace(/市$/, '')

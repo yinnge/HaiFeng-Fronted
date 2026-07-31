@@ -25,6 +25,7 @@ const handleReset = () => {
   queryParams.refereePhone = ''
   queryParams.refereeName = ''
   queryParams.orderNo = ''
+  queryParams.deleted = null
   queryParams.page = 1
   emit('update:modelValue', { ...queryParams })
   emit('reset')
@@ -91,6 +92,17 @@ const handleKeyup = (e: KeyboardEvent) => {
           style="width: 160px"
           @keyup="handleKeyup"
         />
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select
+          v-model="queryParams.deleted"
+          placeholder="全部"
+          clearable
+          style="width: 120px"
+        >
+          <el-option :value="false" label="有效" />
+          <el-option :value="true" label="已撤回" />
+        </el-select>
       </el-form-item>
       <el-form-item class="search-actions">
         <button type="button" class="search-btn" @click="handleSearch">

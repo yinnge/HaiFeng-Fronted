@@ -7,7 +7,6 @@ import {
   addMajor,
   deleteMajor,
   batchDeleteMajor,
-  toggleMajorStatus,
   importMajorExcel,
   getDictPage,
 } from '@/api/algorithm/constraint'
@@ -53,7 +52,6 @@ const queryParams = reactive<MajorConstraintQueryDTO>({
   majorName: '',
   constraintCode: '',
   constraintName: '',
-  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -81,7 +79,6 @@ const fetchData = async () => {
     if (queryParams.majorName) params.majorName = queryParams.majorName
     if (queryParams.constraintCode) params.constraintCode = queryParams.constraintCode
     if (queryParams.constraintName) params.constraintName = queryParams.constraintName
-    if (queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getMajorPage(params as MajorConstraintQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -106,7 +103,6 @@ const handleReset = () => {
   queryParams.majorName = ''
   queryParams.constraintCode = ''
   queryParams.constraintName = ''
-  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -184,26 +180,10 @@ const handleSubmit = async () => {
   }
 }
 
-const handleToggleStatus = async (row: MajorConstraintListVO) => {
-  const actionText = row.isDeleted ? '启用' : '禁用'
-  try {
-    await ElMessageBox.confirm(`确定${actionText}该关联吗？`, '提示')
-    const res = await toggleMajorStatus(row.id)
-    if (res.data.code === 200) {
-      ElMessage.success(`${actionText}成功`)
-      fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
-    }
-  } catch {
-    // 取消
-  }
-}
-
 const handleDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm(
-      '确定删除该关联吗？此操作不可恢复。',
+      '确定删除该关联吗？删除后可恢复。',
       '确认删除',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
@@ -219,24 +199,24 @@ const handleDelete = async (id: string) => {
   }
 }
 
-const handleBatchDisable = async () => {
+const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要禁用的关联')
+    ElMessage.warning('请先选择要删除的关联')
     return
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量禁用选中的 ${selectedIds.value.length} 条关联吗？禁用后可启用。`,
-      '确认批量禁用',
-      { type: 'warning', confirmButtonText: '确定批量禁用', cancelButtonText: '取消' }
+      `确定批量删除选中的 ${selectedIds.value.length} 条关联吗？删除后可恢复。`,
+      '确认批量删除',
+      { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
     const res = await batchDeleteMajor(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量禁用成功')
+      ElMessage.success('批量删除成功')
       selectedIds.value = []
       fetchData()
     } else {
-      ElMessage.error(res.data.msg || '批量禁用失败')
+      ElMessage.error(res.data.msg || '批量删除失败')
     }
   } catch {
     // 取消
@@ -280,21 +260,19 @@ const handleImportSubmit = async () => {
   }
 }
 
-const statusLabel = (val: boolean) => (val ? '禁用' : '启用')
-
 onMounted(() => {
   fetchData()
 })
 </script>
 
 <template>
-  <div class="page-wrap">
-    <img class="watermark watermark-tr" :src="logoMain" alt="" />
-    <img class="watermark watermark-bl" :src="logoMain" alt="" />
+  <div class="page-x">
+    <div class="watermark-left"><img :src="logoMain" alt="" /></div>
+    <div class="watermark-right"><img :src="logoMain" alt="" /></div>
 
     <div class="page-header">
-      <h2 class="title">专业约束关联</h2>
-      <p class="subtitle">管理专业与约束字典的关联关系</p>
+      <h1 class="page-title">专业约束关联</h1>
+      <p class="page-subtitle">管理专业与约束字典的关联关系</p>
     </div>
 
     <div class="search-card">
@@ -320,20 +298,13 @@ onMounted(() => {
             <label>约束名称</label>
             <el-input v-model="queryParams.constraintName" placeholder="精确搜索" clearable style="width: 160px" @keyup.enter="handleSearch" />
           </div>
-          <div class="form-item">
-            <label>状态</label>
-            <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 100px" @change="handleSearch">
-              <el-option label="启用" :value="false" />
-              <el-option label="禁用" :value="true" />
-            </el-select>
-          </div>
         </div>
         <div class="search-actions">
-          <button class="btn btn-search" @click="handleSearch">
+          <button class="search-btn" @click="handleSearch">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2a5.5 5.5 0 0 1 4.383 8.823l3.147 3.147a.75.75 0 0 1-1.06 1.06l-3.147-3.147A5.5 5.5 0 1 1 6.5 2Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
             <span>查询</span>
           </button>
-          <button class="btn btn-reset" @click="handleReset">
+          <button class="reset-btn" @click="handleReset">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 8a5.5 5.5 0 0 1 10.434-2.5H10.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 .75-.75v-3.5a.75.75 0 0 0-1.5 0v1.585A7.001 7.001 0 0 0 1.003 8.74a.75.75 0 0 0 1.497-.24A5.502 5.502 0 0 1 2.5 8Z"/></svg>
             <span>重置</span>
           </button>
@@ -343,7 +314,7 @@ onMounted(() => {
 
     <div class="action-bar">
       <div class="left-actions">
-        <button class="btn btn-add" @click="openDialog('add')">
+        <button class="btn-primary" @click="openDialog('add')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5H2.75a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
           <span>新增关联</span>
         </button>
@@ -351,9 +322,9 @@ onMounted(() => {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v2.5A1.75 1.75 0 0 0 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-2.5a.75.75 0 0 0-1.5 0v2.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-2.5Z"/></svg>
           <span>Excel导入</span>
         </button>
-        <button class="btn btn-batch-disable" :disabled="selectedIds.length === 0" @click="handleBatchDisable">
+        <button class="btn btn-batch-delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
-          <span>批量禁用</span>
+          <span>批量删除</span>
         </button>
       </div>
       <div class="right-actions">
@@ -371,24 +342,12 @@ onMounted(() => {
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="constraintCode" label="约束代码" min-width="180" show-overflow-tooltip />
         <el-table-column prop="constraintName" label="约束名称" min-width="160" show-overflow-tooltip />
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="操作" width="160" align="center" fixed="right">
           <template #default="{ row }">
-            <span class="status-pill" :class="!row.isDeleted ? 'status-on' : 'status-off'">
-              {{ statusLabel(row.isDeleted) }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
-          <template #default="{ row }">
-            <button class="action-pill action-detail" @click="openDialog('detail', row.id)">详情</button>
-            <button
-              class="action-pill"
-              :class="row.isDeleted ? 'action-enable' : 'action-disable'"
-              @click="handleToggleStatus(row)"
-            >
-              {{ row.isDeleted ? '启用' : '禁用' }}
-            </button>
-            <button class="action-pill action-delete" @click="handleDelete(row.id)">删除</button>
+            <div class="action-group">
+              <button class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
+              <button class="action-btn action-delete" @click="handleDelete(row.id)">删除</button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -412,20 +371,16 @@ onMounted(() => {
       width="650px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
-      class="uni-dialog"
+      class="major-dialog"
     >
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border>
+            <el-descriptions-item label="ID" :span="2">{{ detailData.id }}</el-descriptions-item>
             <el-descriptions-item label="专业代码">{{ detailData.majorCode }}</el-descriptions-item>
             <el-descriptions-item label="专业名称">{{ detailData.majorName }}</el-descriptions-item>
             <el-descriptions-item label="约束代码">{{ detailData.constraintCode }}</el-descriptions-item>
             <el-descriptions-item label="约束名称">{{ detailData.constraintName }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <span class="status-pill" :class="!detailData.isDeleted ? 'status-on' : 'status-off'">
-                {{ statusLabel(detailData.isDeleted) }}
-              </span>
-            </el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
             <el-descriptions-item label="创建时间" :span="2">{{ detailData.createdAt }}</el-descriptions-item>
           </el-descriptions>
@@ -462,8 +417,8 @@ onMounted(() => {
 
       <template #footer>
         <div class="dialog-footer">
-          <button class="btn btn-cancel" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
-          <button v-if="dialogMode === 'add'" class="btn btn-confirm" @click="handleSubmit">确定</button>
+          <button class="exit-btn" @click="dialogVisible = false">{{ dialogMode === 'detail' ? '关闭' : '取消' }}</button>
+          <button v-if="dialogMode === 'add'" class="save-btn" @click="handleSubmit">确定</button>
         </div>
       </template>
     </el-dialog>
@@ -472,7 +427,7 @@ onMounted(() => {
       v-model="importDialogVisible"
       title="Excel导入专业约束关联"
       width="500px"
-      class="uni-dialog"
+      class="major-dialog"
     >
       <el-upload
         drag
@@ -492,8 +447,8 @@ onMounted(() => {
       </el-upload>
       <template #footer>
         <div class="dialog-footer">
-          <button class="btn btn-cancel" @click="importDialogVisible = false">取消</button>
-          <button class="btn btn-confirm" :disabled="importLoading" @click="handleImportSubmit">
+          <button class="exit-btn" @click="importDialogVisible = false">取消</button>
+          <button class="save-btn" :disabled="importLoading" @click="handleImportSubmit">
             {{ importLoading ? '导入中...' : '确定导入' }}
           </button>
         </div>
@@ -504,50 +459,42 @@ onMounted(() => {
 
 <style scoped>
 /* ===== 页面包装器 ===== */
-.page-wrap {
-  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
-  min-height: calc(100vh - 60px);
-  padding: 24px;
+.page-x {
   position: relative;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
+  padding: 24px;
   overflow: hidden;
 }
 
-/* ===== 水印枫叶 ===== */
-.watermark {
+/* ===== 水印 ===== */
+.watermark-left,
+.watermark-right {
   position: absolute;
-  width: 180px;
   opacity: 0.05;
   pointer-events: none;
-  user-select: none;
+  z-index: 0;
 }
-.watermark-tr {
-  top: -60px;
-  right: 40px;
-  transform: rotate(18deg);
-}
-.watermark-bl {
-  bottom: -40px;
-  left: 30px;
-  transform: rotate(-12deg);
-}
+.watermark-left { top: -60px; right: 40px; transform: rotate(18deg); }
+.watermark-right { bottom: -40px; left: 30px; transform: rotate(-12deg); }
+.watermark-left img,
+.watermark-right img { width: 180px; height: auto; }
 
 /* ===== 页面标题 ===== */
 .page-header {
-  margin-bottom: 24px;
   position: relative;
   z-index: 1;
+  margin-bottom: 24px;
 }
-.page-header .title {
+.page-title {
   font-size: 22px;
   font-weight: 700;
   color: #1f2937;
-  margin: 0 0 4px 0;
-  letter-spacing: 0.02em;
+  margin-bottom: 4px;
 }
-.page-header .subtitle {
+.page-subtitle {
   font-size: 13px;
   color: #9ca3af;
-  margin: 0;
 }
 
 /* ===== 搜索卡片 ===== */
@@ -609,52 +556,55 @@ onMounted(() => {
   margin-left: auto;
 }
 
-.btn-search {
+.search-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
   border: none;
-  padding: 8px 24px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-search:hover {
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+.search-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
-.btn-reset {
+.reset-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 8px 20px;
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 20px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
 }
-.btn-reset:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+.reset-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
 
 /* ===== 操作栏 ===== */
 .action-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .left-actions,
 .right-actions {
@@ -681,14 +631,24 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.btn-add {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-add:hover {
+.btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
 .btn-outline {
@@ -705,12 +665,12 @@ onMounted(() => {
   background: #fff7ed;
 }
 
-.btn-batch-disable {
+.btn-batch-delete {
   background: linear-gradient(135deg, #ef4444, #f87171);
   color: #fff;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
-.btn-batch-disable:hover:not(:disabled) {
+.btn-batch-delete:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }
@@ -734,10 +694,18 @@ onMounted(() => {
   border: 1px solid rgba(249, 115, 22, 0.1);
   border-top: 3px solid #F97316;
   border-bottom: 3px solid #FB923C;
+  transition: all 0.3s ease;
 }
+.table-card:hover { box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08); }
 
-/* ===== 表格头部 ===== */
-.custom-table :deep(.el-table th.el-table__cell) {
+/* ===== 表格 ===== */
+.custom-table :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.custom-table :deep(.el-table__header th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
   color: #1f2937 !important;
   font-weight: 600;
@@ -745,182 +713,142 @@ onMounted(() => {
   border-bottom: 2px solid #F97316 !important;
   padding: 14px 0;
 }
-.custom-table :deep(.el-table th.el-table__cell .cell) {
-  color: #1f2937 !important;
-}
-
-/* ===== 表格行悬停 ===== */
-.custom-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+.custom-table :deep(.el-table__header th .cell) { color: #1f2937; }
+.custom-table :deep(.el-table__body tr) { transition: background-color 0.2s ease; }
+.custom-table :deep(.el-table__body tr:hover > td) {
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.03), rgba(251, 146, 60, 0.07)) !important;
 }
-
-/* ===== 表格条纹行 ===== */
-.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background-color: rgba(255, 247, 237, 0.3);
+.custom-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
 }
-
-/* ===== 状态药丸 ===== */
-.status-pill {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.5;
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255, 247, 237, 0.3);
 }
-.status-on {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  color: #059669;
-}
-.status-off {
-  background: #f3f4f6;
-  color: #6b7280;
-}
+.custom-table :deep(.el-table__empty-block) { min-height: 200px; }
 
 /* ===== 操作胶囊 ===== */
-.action-pill {
-  display: inline-block;
-  padding: 2px 12px;
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-  margin: 0 2px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
-.action-detail {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-}
-.action-detail:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-}
-.action-enable {
-  background: linear-gradient(135deg, #059669, #34d399);
-  color: #fff;
-}
-.action-enable:hover {
-  background: linear-gradient(135deg, #047857, #059669);
-}
-.action-disable {
-  background: #fef3c7;
-  color: #d97706;
-}
-.action-disable:hover {
-  background: #fde68a;
-}
-.action-delete {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-}
-.action-delete:hover {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-}
+.action-detail { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; }
+.action-detail:hover { box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); transform: translateY(-1px); }
+.action-edit { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; }
+.action-edit:hover { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }
+.action-status { background: #fff; color: #d97706; border: 1px solid #fbbf24; }
+.action-status:hover { background: #fffbeb; }
+.action-delete { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+.action-delete:hover { box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transform: translateY(-1px); }
 
 /* ===== 分页 ===== */
 .custom-pagination {
-  border-top: 1px solid #f3f4f6;
-  padding-top: 16px;
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
+.custom-pagination :deep(.el-pagination) { --el-pagination-hover-color: #F97316; }
+.custom-pagination :deep(.el-pager li) { border-radius: 8px; transition: all 0.2s ease; font-weight: 500; }
+.custom-pagination :deep(.el-pager li:hover) { color: #F97316; }
 .custom-pagination :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #f97316, #fb923c) !important;
-  color: #fff !important;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
-.custom-pagination :deep(.el-pager li:hover) {
-  color: #f97316;
-}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) { border-radius: 8px; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) { border-radius: 8px; }
 .custom-pagination :deep(.btn-prev:hover),
-.custom-pagination :deep(.btn-next:hover) {
-  color: #f97316;
-}
+.custom-pagination :deep(.btn-next:hover) { color: #F97316; }
 
 /* ===== 对话框 ===== */
-.uni-dialog :deep(.el-dialog) {
+.major-dialog :deep(.el-dialog) {
   border-radius: 12px;
+  overflow: hidden;
 }
-.uni-dialog :deep(.el-dialog__header) {
+.major-dialog :deep(.el-dialog__header) {
   border-bottom: 2px solid rgba(249, 115, 22, 0.15);
-  padding-bottom: 16px;
-  margin-bottom: 0;
+  padding: 20px 24px;
+  margin: 0;
 }
-.uni-dialog :deep(.el-dialog__title) {
-  font-size: 17px;
-  font-weight: 700;
+.major-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
   color: #1f2937;
 }
-.uni-dialog :deep(.el-descriptions__label) {
+.major-dialog :deep(.el-dialog__body) { padding: 24px; }
+.major-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+.major-dialog :deep(.el-descriptions__label) {
   background: rgba(249, 115, 22, 0.06);
   color: #f97316;
   font-weight: 600;
 }
-.uni-dialog :deep(.el-input__wrapper) {
-  border-radius: 8px;
-}
-.uni-dialog :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-textarea__inner) {
-  border-radius: 8px;
-}
-.uni-dialog :deep(.el-textarea__inner:focus) {
-  border-color: #f97316;
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-.uni-dialog :deep(.el-form-item) {
-  margin-bottom: 18px;
-}
+.major-dialog :deep(.el-input__wrapper),
+.major-dialog :deep(.el-textarea__inner),
+.major-dialog :deep(.el-select__wrapper) { border-radius: 8px; transition: all 0.25s ease; }
+.major-dialog :deep(.el-input__wrapper:hover),
+.major-dialog :deep(.el-textarea__inner:hover),
+.major-dialog :deep(.el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.major-dialog :deep(.el-input__wrapper.is-focus),
+.major-dialog :deep(.el-textarea__inner:focus),
+.major-dialog :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+.major-dialog :deep(.el-form-item) { margin-bottom: 18px; }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
-.btn-cancel {
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 8px 24px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
 }
-.btn-cancel:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
-}
-.btn-confirm {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+.exit-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
   border: none;
-  padding: 8px 24px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.btn-confirm:hover {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
-  transform: translateY(-1px);
-}
-.btn-confirm:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

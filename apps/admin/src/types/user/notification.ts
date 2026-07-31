@@ -10,12 +10,17 @@ export interface NotificationListVO {
   isRead: boolean
   createdAt: string
   readAt: string | null
+  recipientCount?: number
+  broadcastId?: string
+  disabledCount?: number
+  disabled?: boolean
 }
 
 export interface NotificationQueryDTO extends BasePageQuery {
   memberId?: number
   notificationType?: string
   isRead?: boolean
+  showDisabled?: boolean
 }
 
 export interface BroadcastDTO {

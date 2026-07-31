@@ -6,6 +6,8 @@ import { Line, Column } from '@antv/g2plot'
 
 const loading = ref(true)
 const errorMsg = ref('')
+const trendError = ref('')
+const overviewError = ref('')
 const stats = ref<DashboardStatsVO | null>(null)
 const overview = ref<DashboardOverviewVO | null>(null)
 const activeDays = ref(7)
@@ -42,13 +44,13 @@ const entityCards = ref<{ label: string; value: number; color: string }[]>([])
 async function fetchStats() {
   loading.value = true
   errorMsg.value = ''
+  trendError.value = ''
+  overviewError.value = ''
   try {
     const res = await getDashboardStats()
     if (res.data.code === 200 && res.data.data) {
       stats.value = res.data.data
       buildStatCards()
-      await nextTick()
-      renderEntityCompareChart()
     } else {
       errorMsg.value = res.data.msg || '获取数据失败'
     }
@@ -74,6 +76,7 @@ async function fetchTrends() {
     }
   } catch (e: any) {
     console.error('获取趋势数据失败:', e)
+    trendError.value = e?.message || '获取趋势数据失败'
   }
 }
 
@@ -85,6 +88,7 @@ async function fetchOverview() {
     }
   } catch (e: any) {
     console.error('获取概览数据失败:', e)
+    overviewError.value = e?.message || '获取概览数据失败'
   }
 }
 
@@ -139,6 +143,7 @@ function renderMemberTrendChart(data: TrendDataVO) {
   memberTrendChart?.destroy()
 
   memberTrendChart = new Line(memberTrendRef.value, {
+    autoFit: true,
     data: data.dates.map((date, i) => ({ date, value: data.values[i] })),
     xField: 'date',
     yField: 'value',
@@ -203,6 +208,7 @@ function renderOrderTrendChart(data: TrendDataVO) {
   orderTrendChart?.destroy()
 
   orderTrendChart = new Line(orderTrendRef.value, {
+    autoFit: true,
     data: data.dates.map((date, i) => ({ date, value: data.values[i] })),
     xField: 'date',
     yField: 'value',
@@ -267,11 +273,11 @@ function renderEntityCompareChart() {
   entityCompareChart?.destroy()
 
   entityCompareChart = new Column(entityCompareRef.value, {
-    data: entityCards.value.map((item) => ({ type: item.label, value: item.value })),
+    autoFit: true,
+    data: entityCards.value.map((item) => ({ type: item.label, value: item.value, color: item.color })),
     xField: 'type',
     yField: 'value',
-    seriesField: 'type',
-    color: entityCards.value.map((item) => item.color),
+    color: (datum: any) => datum.color,
     columnWidthRatio: 0.6,
     label: {
       position: 'top',
@@ -334,6 +340,8 @@ function formatTime(timeStr: string): string {
 onMounted(async () => {
   await Promise.all([fetchStats(), fetchOverview()])
   await fetchTrends()
+  await nextTick()
+  renderEntityCompareChart()
 })
 
 onBeforeUnmount(() => {
@@ -369,7 +377,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 加载中 -->
-    <div v-loading="loading" class="min-h-[400px] rounded-xl bg-white p-6" />
+    <div v-if="loading" v-loading="loading" class="min-h-[400px] rounded-xl bg-white p-6" />
 
     <!-- 错误提示 -->
     <el-alert
@@ -411,6 +419,7 @@ onBeforeUnmount(() => {
           <span class="chart-badge">折线图</span>
         </div>
         <div ref="memberTrendRef" class="chart-container" />
+        <div v-if="trendError" class="chart-empty">{{ trendError }}</div>
       </div>
 
       <!-- 左下：订单趋势 -->
@@ -420,6 +429,7 @@ onBeforeUnmount(() => {
           <span class="chart-badge chart-badge--blue">折线图</span>
         </div>
         <div ref="orderTrendRef" class="chart-container" />
+        <div v-if="trendError" class="chart-empty">{{ trendError }}</div>
       </div>
 
       <!-- 中下：实体数据对比 -->
@@ -431,60 +441,66 @@ onBeforeUnmount(() => {
         <div ref="entityCompareRef" class="chart-container" />
       </div>
 
-      <!-- 右下：系统信息 + 待办事项 -->
-      <div v-if="overview" class="bento-cell bento-cell--overview">
-        <!-- 系统信息 -->
-        <div class="overview-section">
-          <div class="overview-header">
-            <span class="overview-icon">⚙️</span>
-            <h3 class="overview-title">系统信息</h3>
-          </div>
-          <div class="overview-list">
-            <div class="overview-item">
-              <span class="overview-label">站点名称</span>
-              <span class="overview-value">{{ overview.systemInfo.siteName || '-' }}</span>
+      <!-- 底部：待办事项（独立模块，占原位置） -->
+      <template v-if="overview">
+        <div class="bento-cell bento-cell--overview">
+          <div class="overview-section">
+            <div class="overview-header">
+              <span class="overview-icon">📋</span>
+              <h3 class="overview-title">待办事项</h3>
+              <span class="overview-badge">{{ overview.todoList.pendingOrderCount }} 笔待处理</span>
             </div>
-            <div class="overview-item">
-              <span class="overview-label">应用版本</span>
-              <span class="overview-value overview-value--tag">v{{ overview.systemInfo.appVersion }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">AI 模型</span>
-              <span class="overview-value">{{ overview.systemInfo.aiProvider }} / {{ overview.systemInfo.aiModel }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">管理员数</span>
-              <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
+            <div class="todo-list">
+              <div
+                v-for="order in overview.todoList.pendingOrders"
+                :key="order.id"
+                class="todo-item"
+              >
+                <div class="todo-item__info">
+                  <span class="todo-item__name">{{ order.memberName }}</span>
+                  <span class="todo-item__time">{{ formatTime(order.createdAt) }}</span>
+                </div>
+                <span class="todo-item__amount">¥{{ order.amount }}</span>
+              </div>
+              <div v-if="overview.todoList.pendingOrders.length === 0" class="todo-empty">
+                暂无待处理订单
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 分割线 -->
-        <div class="overview-divider" />
-
-        <!-- 待办事项 -->
-        <div class="overview-section">
-          <div class="overview-header">
-            <span class="overview-icon">📋</span>
-            <h3 class="overview-title">待办事项</h3>
-            <span class="overview-badge">{{ overview.todoList.pendingOrderCount }} 笔待处理</span>
-          </div>
-          <div class="todo-list">
-            <div
-              v-for="order in overview.todoList.pendingOrders"
-              :key="order.id"
-              class="todo-item"
-            >
-              <div class="todo-item__info">
-                <span class="todo-item__name">{{ order.memberName }}</span>
-                <span class="todo-item__time">{{ formatTime(order.createdAt) }}</span>
+        <!-- 底部：系统信息（待办事项右侧） -->
+        <div class="bento-cell bento-cell--overview">
+          <div class="overview-section">
+            <div class="overview-header">
+              <span class="overview-icon">⚙️</span>
+              <h3 class="overview-title">系统信息</h3>
+            </div>
+            <div class="overview-list">
+              <div class="overview-item">
+                <span class="overview-label">站点名称</span>
+                <span class="overview-value">{{ overview.systemInfo.siteName || '-' }}</span>
               </div>
-              <span class="todo-item__amount">¥{{ order.amount }}</span>
-            </div>
-            <div v-if="overview.todoList.pendingOrders.length === 0" class="todo-empty">
-              暂无待处理订单
+              <div class="overview-item">
+                <span class="overview-label">应用版本</span>
+                <span class="overview-value overview-value--tag">v{{ overview.systemInfo.appVersion }}</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">AI 模型</span>
+                <span class="overview-value">{{ overview.systemInfo.aiProvider }} / {{ overview.systemInfo.aiModel }}</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">管理员数</span>
+                <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
+              </div>
             </div>
           </div>
+        </div>
+      </template>
+      <div v-else class="bento-cell bento-cell--overview">
+        <div class="chart-empty">
+          <template v-if="overviewError">{{ overviewError }}</template>
+          <template v-else>暂无数据</template>
         </div>
       </div>
     </div>
@@ -691,7 +707,7 @@ onBeforeUnmount(() => {
   min-height: 220px;
 }
 
-/* 右下：系统信息 + 待办事项 */
+/* 底部：待办事项 / 系统信息 */
 .bento-cell--overview {
   display: flex;
   flex-direction: column;
@@ -770,12 +786,6 @@ onBeforeUnmount(() => {
   color: #F97316;
 }
 
-.overview-divider {
-  height: 1px;
-  margin: 12px 0;
-  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
-}
-
 .todo-list {
   display: flex;
   flex-direction: column;
@@ -827,6 +837,15 @@ onBeforeUnmount(() => {
   text-align: center;
   font-size: 12px;
   color: #9ca3af;
+}
+
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 /* 响应式 */

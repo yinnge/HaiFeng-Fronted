@@ -55,19 +55,19 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login/index.vue'),
-    meta: { title: '登录' },
+    meta: { title: '登录', layout: 'blank' },
   },
   {
     path: '/register',
     name: 'Register',
     component: () => import('@/views/register/index.vue'),
-    meta: { title: '注册' },
+    meta: { title: '注册', layout: 'blank' },
   },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: () => import('@/views/forgot-password/index.vue'),
-    meta: { title: '重置密码' },
+    meta: { title: '重置密码', layout: 'blank' },
   },
   {
     path: '/profile',
@@ -361,7 +361,7 @@ const routes: RouteRecordRaw[] = [
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
-    meta: { title: '页面不存在' },
+    meta: { title: '页面不存在', layout: 'blank' },
   },
 ]
 

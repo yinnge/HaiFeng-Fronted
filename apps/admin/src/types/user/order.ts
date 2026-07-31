@@ -11,6 +11,8 @@ export interface OrderListVO {
   afterType: 'normal' | 'pro' | 'vip'
   durationMonths: number
   amount: number
+  status: 'pending' | 'completed' | 'cancelled' | 'revoked'
+  paymentMethod?: 'offline' | 'wechat'
   createdAt: string
 }
 
@@ -29,4 +31,14 @@ export interface OrderQueryDTO extends BasePageQuery {
   wechatId?: string
   operatorName?: string
   orderType?: 'new' | 'renewal'
+  orderStatus?: 'pending' | 'completed' | 'cancelled' | 'revoked'
+}
+
+export interface OrderCreateDTO {
+  memberId: string
+  targetType: 'pro' | 'vip'
+  durationMonths: number
+  amount?: number
+  remark?: string
+  paymentMethod?: 'offline' | 'wechat'
 }
