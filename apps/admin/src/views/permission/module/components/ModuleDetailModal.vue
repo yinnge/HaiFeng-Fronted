@@ -4,7 +4,6 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { addModule, updateModule } from '@/api/permission/module'
 import type { ModuleTreeVO, ModuleAddDTO, ModuleUpdateDTO } from '@/types/permission/module'
-import ExitConfirmModal from '@/components/ExitConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -20,8 +19,6 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const showExitConfirm = ref(false)
-const originalData = ref<string>('')
 
 const isEdit = computed(() => !!props.moduleId)
 const title = computed(() => (isEdit.value ? '编辑模块' : '新增模块'))
@@ -81,10 +78,6 @@ const treeProps = {
   children: 'children',
 }
 
-const hasChanges = computed(() => {
-  return JSON.stringify(form) !== originalData.value
-})
-
 const initForm = () => {
   if (props.currentModule) {
     const data = props.currentModule
@@ -97,9 +90,6 @@ const initForm = () => {
     form.sortOrder = data.sortOrder
     form.level = data.level
     form.description = data.description || ''
-    originalData.value = JSON.stringify(form)
-  } else {
-    originalData.value = JSON.stringify(form)
   }
 }
 
@@ -113,21 +103,10 @@ const resetForm = () => {
   form.sortOrder = 0
   form.level = 1
   form.description = ''
-  originalData.value = ''
   formRef.value?.resetFields()
 }
 
 const handleClose = () => {
-  if (hasChanges.value) {
-    showExitConfirm.value = true
-  } else {
-    emit('update:visible', false)
-    resetForm()
-  }
-}
-
-const handleDiscard = () => {
-  showExitConfirm.value = false
   emit('update:visible', false)
   resetForm()
 }
@@ -152,7 +131,6 @@ const handleSave = async () => {
       const res = await updateModule(props.moduleId, data)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
-        showExitConfirm.value = false
         emit('update:visible', false)
         emit('success')
         resetForm()
@@ -185,10 +163,6 @@ const handleSave = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const handleSaveAndClose = async () => {
-  await handleSave()
 }
 
 watch(
@@ -271,13 +245,6 @@ watch(
       </div>
     </template>
   </el-dialog>
-
-  <ExitConfirmModal
-    v-model:visible="showExitConfirm"
-    @cancel="showExitConfirm = false"
-    @discard="handleDiscard"
-    @save="handleSaveAndClose"
-  />
 </template>
 
 <style scoped>

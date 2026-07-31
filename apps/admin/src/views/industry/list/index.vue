@@ -788,8 +788,6 @@ onMounted(() => { fetchData() })
 
         <el-table-column type="selection" width="50" />
 
-        <el-table-column prop="id" label="ID" width="140" />
-
         <el-table-column prop="industryName" label="行业名称" min-width="180" />
 
         <el-table-column prop="category" label="行业分类" width="120" />

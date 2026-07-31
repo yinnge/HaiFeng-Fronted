@@ -53,7 +53,7 @@ const rules: FormRules = {
   ],
   captchaCode: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
   referrerCode: [
-    { min: 8, max: 8, message: '邀请码必须是8位', trigger: 'blur' },
+    { min: 8, max: 16, message: '邀请码必须是8-16位', trigger: 'blur' },
   ],
 }
 

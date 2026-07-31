@@ -21,7 +21,7 @@ watch(() => props.visible, async (val) => {
 </script>
 
 <template>
-  <el-dialog :model-value="visible" title="备考指南详情" width="800px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
+  <el-dialog :model-value="visible" title="备考指南详情" width="800px" :close-on-click-modal="false" class="detail-dialog" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
       <el-descriptions v-if="detail" :column="2" border>
         <el-descriptions-item label="标题" :span="2">{{ detail.title }}</el-descriptions-item>
@@ -58,16 +58,46 @@ watch(() => props.visible, async (val) => {
       </el-descriptions>
     </div>
     <template #footer>
-      <button type="button" class="btn-close" @click="emit('update:visible', false)">关闭</button>
+      <div class="dialog-footer">
+        <button type="button" class="close-btn" @click="emit('update:visible', false)">关闭</button>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <style scoped>
-.pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-.pill-orange { background: #ffedd5; color: #ea580c; }
-.pill-red { background: #fee2e2; color: #dc2626; }
+.detail-dialog :deep(.el-dialog) { border-radius: 12px; overflow: hidden; }
+.detail-dialog :deep(.el-dialog__header) { border-bottom: 2px solid rgba(249, 115, 22, 0.15); padding: 20px 24px; margin: 0; }
+.detail-dialog :deep(.el-dialog__title) { font-size: 16px; font-weight: 600; color: #1f2937; }
+.detail-dialog :deep(.el-dialog__body) { padding: 24px; }
+.detail-dialog :deep(.el-dialog__footer) { border-top: 1px solid #f3f4f6; padding: 16px 24px; }
+
+.detail-dialog :deep(.el-descriptions__label) { background: rgba(249, 115, 22, 0.06); font-weight: 500; }
+
+.pill { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.pill-orange { background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(251,146,60,0.12)); color: #C2410C; border: 1px solid rgba(249,115,22,0.2); }
+.pill-red { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(248,113,113,0.12)); color: #DC2626; border: 1px solid rgba(239,68,68,0.2); }
 .pill-gray { background: #f3f4f6; color: #6b7280; }
-.btn-close { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-close:hover { filter: brightness(1.1); }
+
+.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
+
+.close-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.close-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+.close-btn:active { transform: translateY(0); }
 </style>

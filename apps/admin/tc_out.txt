@@ -1,0 +1,84 @@
+src/views/employment/civil/index.vue(139,40): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/community/index.vue(72,44): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/community/index.vue(109,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(109,63): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(110,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(110,69): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(111,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(111,55): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/community/index.vue(112,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/content/notice/components/NoticeDialog.vue(82,53): error TS2345: Argument of type '{ [x: string]: any; }' is not assignable to parameter of type 'NoticeUpdateDTO'.
+  Type '{ [x: string]: any; }' is missing the following properties from type 'NoticeUpdateDTO': noticeCategory, noticeType, title, content, and 4 more.
+src/views/employment/content/notice/index.vue(122,41): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/finance/index.vue(139,42): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/grassroots/index.vue(608,45): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/grassroots/project/index.vue(75,45): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/grassroots/project/index.vue(112,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(112,63): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(113,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(113,61): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(114,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(114,47): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(115,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(115,55): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(116,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/grassroots/project/index.vue(116,51): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/healthcare/index.vue(143,45): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/institution/index.vue(142,46): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/military/index.vue(136,43): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/selection/index.vue(145,44): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/teacher/index.vue(147,42): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/teacher/index.vue(181,23): error TS2554: Expected 1 arguments, but got 0.
+src/views/employment/welfare/index.vue(74,42): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'number[]'.
+  Type 'string' is not assignable to type 'number'.
+src/views/employment/welfare/index.vue(111,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(111,63): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(112,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(112,65): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(113,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(113,55): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(114,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/employment/welfare/index.vue(115,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/views/system/log/components/LogDetailModal.vue(24,40): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/views/system/log/components/LogTable.vue(47,7): error TS2322: Type 'string[] | undefined' is not assignable to type 'number[] | undefined'.
+  Type 'string[]' is not assignable to type 'number[]'.
+    Type 'string' is not assignable to type 'number'.
+src/views/system/log/index.vue(101,10): error TS2322: Type 'string | undefined' is not assignable to type 'number | undefined'.
+  Type 'string' is not assignable to type 'number'.
+src/views/user/list/components/UserDetailModal.vue(130,53): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.

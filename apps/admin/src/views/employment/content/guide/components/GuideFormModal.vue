@@ -19,7 +19,7 @@ const handleSubmit = async () => {
   if (!formData.value.guideCategory) { ElMessage.warning('请选择指南类别'); return }
   if (!formData.value.id) return
   try {
-    const res = await updateExamGuide(formData.value.id, { ...formData.value })
+    const res = await updateExamGuide(formData.value.id, { ...formData.value } as any)
     if (res.data.code === 200) { ElMessage.success('修改成功'); emit('update:visible', false); emit('submit') }
     else { ElMessage.error(res.data.msg || '修改失败') }
   } catch { ElMessage.error('修改失败') }
@@ -27,7 +27,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <el-dialog :model-value="visible" title="修改备考指南" width="800px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
+  <el-dialog :model-value="visible" title="修改备考指南" width="800px" :close-on-click-modal="false" class="detail-dialog" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
       <el-form :model="formData" label-width="100px">
         <el-row :gutter="20">
@@ -109,15 +109,72 @@ const handleSubmit = async () => {
       </el-form>
     </div>
     <template #footer>
-      <button type="button" class="btn-cancel" @click="emit('update:visible', false)">取消</button>
-      <button type="button" class="btn-submit" @click="handleSubmit">确定</button>
+      <div class="dialog-footer">
+        <button type="button" class="cancel-btn" @click="emit('update:visible', false)">取消</button>
+        <button type="button" class="submit-btn" @click="handleSubmit">确定</button>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <style scoped>
-.btn-cancel { background: #fff; color: #6b7280; border: 1px solid #d1d5db; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-cancel:hover { border-color: #F97316; color: #F97316; }
-.btn-submit { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-submit:hover { filter: brightness(1.1); }
+.detail-dialog :deep(.el-dialog) { border-radius: 12px; overflow: hidden; }
+.detail-dialog :deep(.el-dialog__header) { border-bottom: 2px solid rgba(249, 115, 22, 0.15); padding: 20px 24px; margin: 0; }
+.detail-dialog :deep(.el-dialog__title) { font-size: 16px; font-weight: 600; color: #1f2937; }
+.detail-dialog :deep(.el-dialog__body) { padding: 24px; }
+.detail-dialog :deep(.el-dialog__footer) { border-top: 1px solid #f3f4f6; padding: 16px 24px; }
+
+.detail-dialog :deep(.el-form-item) { margin-bottom: 18px; }
+
+.detail-dialog :deep(.el-input__wrapper) { border-radius: 8px; transition: all 0.25s ease; }
+.detail-dialog :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.detail-dialog :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px #F97316 inset; }
+
+.detail-dialog :deep(.el-textarea__inner) { border-radius: 8px; transition: all 0.25s ease; }
+.detail-dialog :deep(.el-textarea__inner:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.detail-dialog :deep(.el-textarea__inner:focus) { box-shadow: 0 0 0 1px #F97316 inset; }
+
+.detail-dialog :deep(.el-select__wrapper) { border-radius: 8px; transition: all 0.25s ease; }
+.detail-dialog :deep(.el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.detail-dialog :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
+
+.detail-dialog :deep(.el-input-number .el-input__wrapper) { border-radius: 8px; }
+.detail-dialog :deep(.el-checkbox__input.is-checked .el-checkbox__inner) { background-color: #F97316; border-color: #F97316; }
+.detail-dialog :deep(.el-checkbox__input.is-checked + .el-checkbox__label) { color: #F97316; }
+
+.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
+
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.cancel-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
+.cancel-btn:active { background: #f3f4f6; }
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
+.submit-btn:active { transform: translateY(0); }
 </style>

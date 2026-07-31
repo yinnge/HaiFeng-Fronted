@@ -2,8 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import SiteFooter from '@/components/SiteFooter.vue'
-import logoMain from '@/assets/images/logo-main.png'
 import { getSelectionDetail } from '@/api/employment/selection'
 import type { SelectionPositionDetailVO } from '@/types/employment/selection'
 import { SelectionStatusTag } from '@/types/employment/selection'
@@ -40,18 +38,6 @@ onMounted(fetchDetail)
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center justify-between px-6 py-4">
-        <div class="flex items-center gap-3">
-          <img :src="logoMain" alt="海枫未来规划院" class="h-10 w-10 object-contain" />
-          <h1 class="text-xl font-bold text-gray-800">海枫未来规划院</h1>
-        </div>
-        <div class="flex items-center gap-6">
-          <div class="text-gray-600 font-medium">岗位详情</div>
-        </div>
-      </div>
-    </header>
-
     <main class="flex-1 container mx-auto px-6 py-6 max-w-3xl" v-loading="loading">
       <button class="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors text-sm mb-4" @click="goBack">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -141,7 +127,5 @@ onMounted(fetchDetail)
 
       <div v-if="!loading && !detail" class="py-20 text-center text-gray-400">未找到岗位信息</div>
     </main>
-
-    <SiteFooter />
   </div>
 </template>

@@ -24,6 +24,7 @@ const handleReset = () => {
   queryParams.memberId = undefined
   queryParams.notificationType = undefined
   queryParams.isRead = undefined
+  queryParams.showDisabled = false
   queryParams.page = 1
   emit('update:modelValue', { ...queryParams })
   emit('reset')
@@ -81,6 +82,9 @@ const handleKeyup = (e: KeyboardEvent) => {
           <el-option label="已读" :value="true" />
           <el-option label="未读" :value="false" />
         </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-checkbox v-model="queryParams.showDisabled" @change="handleSearch">显示已禁用</el-checkbox>
       </el-form-item>
       <el-form-item class="search-actions">
         <button type="button" class="search-btn" @click="handleSearch">

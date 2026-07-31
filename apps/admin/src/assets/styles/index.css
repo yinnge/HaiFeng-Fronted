@@ -16,3 +16,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   scrollbar-gutter: stable;
 }
+
+/* 修复弹窗打开时滚动条消失导致页面抖动 */
+.el-popup-parent--hidden {
+  overflow: scroll !important;
+}

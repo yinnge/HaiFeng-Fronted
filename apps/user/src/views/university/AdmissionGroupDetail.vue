@@ -75,18 +75,6 @@ onMounted(fetchDetail)
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center px-6 py-4">
-        <button class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors" @click="goBack">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回</span>
-        </button>
-        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16" v-if="detail">{{ detail.universityName }} · {{ detail.groupName }}</h1>
-      </div>
-    </header>
-
     <main class="container mx-auto px-6 py-8" v-loading="loading">
       <!-- VIP 引导卡片 -->
       <div v-if="!isVip && !detail && !loading" class="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 p-8 text-center border border-orange-100 shadow-lg max-w-lg mx-auto">

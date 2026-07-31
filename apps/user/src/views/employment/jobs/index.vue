@@ -3,8 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import SiteFooter from '@/components/SiteFooter.vue'
-import AppHeader from '@/components/AppHeader.vue'
 import { ProvinceOptions } from '@haifeng/shared'
 import { getJobList } from '@/api/employment/jobIndex'
 import type { JobIndexListVO, JobSearchDTO } from '@/types/employment/jobIndex'
@@ -197,8 +195,6 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <AppHeader :show-nav-links="true" />
-
     <main class="flex-1">
       <div class="container mx-auto px-6 py-12 text-center">
         <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -425,7 +421,5 @@ onMounted(() => {
         </div>
       </div>
     </main>
-
-    <SiteFooter />
   </div>
 </template>

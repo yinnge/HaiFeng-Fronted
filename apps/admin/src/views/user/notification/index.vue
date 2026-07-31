@@ -8,6 +8,7 @@ import {
   restoreNotification,
 } from '@/api/user/notification'
 import type { NotificationListVO, NotificationQueryDTO } from '@/types/user/notification'
+import { NotificationTypeLabel } from '@haifeng/shared'
 import NotificationSearch from './components/NotificationSearch.vue'
 import NotificationTable from './components/NotificationTable.vue'
 import NotificationDetailModal from './components/NotificationDetailModal.vue'
@@ -29,17 +30,6 @@ const dialogVisible = ref(false)
 const broadcastVisible = ref(false)
 const detailData = ref<NotificationListVO | null>(null)
 
-const notificationTypeLabel: Record<string, string> = {
-  member_expire_soon: '会员即将到期',
-  member_expired: '会员已过期',
-  commission_earned: '佣金到账',
-  commission_paid: '佣金已发放',
-  commission_rejected: '提现被拒绝',
-  system_notice: '系统公告',
-  member_renewed: '会员续费成功',
-  member_activation_success: '会员开通成功',
-}
-
 const fetchData = async () => {
   loading.value = true
   try {
@@ -47,6 +37,7 @@ const fetchData = async () => {
     if (queryParams.memberId) params.memberId = queryParams.memberId
     if (queryParams.notificationType) params.notificationType = queryParams.notificationType
     if (queryParams.isRead !== undefined && queryParams.isRead !== null) params.isRead = queryParams.isRead
+    if (queryParams.showDisabled !== undefined && queryParams.showDisabled !== null) params.showDisabled = queryParams.showDisabled
     const res = await getNotificationPage(params as NotificationQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -96,6 +87,7 @@ const handleDelete = async (id: string) => {
     const res = await deleteNotification(id)
     if (res.data.code === 200) {
       ElMessage.success('禁用成功')
+      queryParams.showDisabled = true
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '禁用失败')
@@ -114,6 +106,14 @@ const handleRestore = async (id: string) => {
       ElMessage.error(res.data.msg || '恢复失败')
     }
   } catch { /* 取消 */ }
+}
+
+const handleToggleDisable = async (id: string, disabled: boolean) => {
+  if (disabled) {
+    await handleDelete(id)
+  } else {
+    await handleRestore(id)
+  }
 }
 
 const handleHardDelete = async (id: string) => {
@@ -167,7 +167,7 @@ onMounted(() => {
 
     <NotificationSearch
       :model-value="queryParams"
-      :notification-type-label="notificationTypeLabel"
+      :notification-type-label="NotificationTypeLabel"
       @update:model-value="Object.assign(queryParams, $event)"
       @search="handleSearch"
       @reset="handleReset"
@@ -179,10 +179,9 @@ onMounted(() => {
       :total="total"
       :page="queryParams.page"
       :size="queryParams.size"
-      :notification-type-label="notificationTypeLabel"
+      :notification-type-label="NotificationTypeLabel"
       @detail="openDetail"
-      @disable="handleDelete"
-      @restore="handleRestore"
+      @toggle-disable="handleToggleDisable"
       @hard-delete="handleHardDelete"
       @refresh="fetchData"
       @page-change="handlePageChange"
@@ -192,7 +191,7 @@ onMounted(() => {
     <NotificationDetailModal
       v-model:visible="dialogVisible"
       :data="detailData"
-      :notification-type-label="notificationTypeLabel"
+      :notification-type-label="NotificationTypeLabel"
     />
 
     <BroadcastModal

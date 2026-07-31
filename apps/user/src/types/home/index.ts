@@ -17,6 +17,8 @@ export interface SiteInfoVO {
   siteIcp: string
   contactUrl: ContactUrl
   basicMessage: BasicMessage
+  proPrice: number
+  vipPrice: number
 }
 
 export interface HomePageResult<T> {

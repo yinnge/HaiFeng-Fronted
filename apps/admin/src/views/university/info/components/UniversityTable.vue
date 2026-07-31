@@ -82,7 +82,6 @@ const handleSelectionChange = (selection: UniversityListVO[]) => {
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="160" />
         <el-table-column prop="name" label="院校名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="provinceName" label="省份" width="100" />
         <el-table-column prop="cityName" label="城市" width="100" />

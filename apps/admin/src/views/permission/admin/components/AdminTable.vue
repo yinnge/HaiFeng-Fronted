@@ -88,8 +88,12 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
               <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
               <button
                 type="button"
-                :class="['action-btn', row.status === 1 ? 'action-disable' : 'action-enable']"
-                @click="handleToggleStatus(row)"
+                :class="['action-btn', row.roleCode === 'super_admin'
+                  ? 'action-btn-locked'
+                  : (row.status === 1 ? 'action-disable' : 'action-enable')]"
+                :disabled="row.roleCode === 'super_admin'"
+                :title="row.roleCode === 'super_admin' ? '超级管理员不可禁用' : ''"
+                @click="row.roleCode !== 'super_admin' && handleToggleStatus(row)"
               >
                 {{ row.status === 1 ? '禁用' : '启用' }}
               </button>
@@ -258,6 +262,14 @@ const pageSizes = [10, 20, 30, 50, 100, 200, 500, 1000]
 }
 .action-enable:hover {
   background: #a7f3d0;
+}
+
+.action-btn-locked {
+  background: #f3f4f6;
+  color: #d1d5db;
+  border: 1px solid #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .action-delete {

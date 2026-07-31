@@ -13,8 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'detail', row: NotificationListVO): void
-  (e: 'disable', id: string): void
-  (e: 'restore', id: string): void
+  (e: 'toggle-disable', id: string, disabled: boolean): void
   (e: 'hardDelete', id: string): void
   (e: 'refresh'): void
   (e: 'page-change', page: number): void
@@ -40,10 +39,16 @@ const typeColorMap: Record<string, { bg: string; color: string; border: string }
   system_notice: { bg: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(96,165,250,0.12))', color: '#2563eb', border: 'rgba(59,130,246,0.2)' },
   member_renewed: { bg: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(52,211,153,0.12))', color: '#059669', border: 'rgba(16,185,129,0.2)' },
   member_activation_success: { bg: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(52,211,153,0.12))', color: '#059669', border: 'rgba(16,185,129,0.2)' },
+  member_revoked: { bg: 'linear-gradient(135deg, rgba(249,115,22,0.08), rgba(251,146,60,0.12))', color: '#C2410C', border: 'rgba(249,115,22,0.2)' },
+  commission_reversed: { bg: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(248,113,113,0.12))', color: '#dc2626', border: 'rgba(239,68,68,0.2)' },
 }
 
 const getTypeStyle = (type: string) => {
   return typeColorMap[type] || { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' }
+}
+
+const getRowClassName = ({ row }: { row: NotificationListVO }) => {
+  return row.disabled ? 'disabled-row' : ''
 }
 </script>
 
@@ -69,8 +74,7 @@ const getTypeStyle = (type: string) => {
       </button>
     </div>
 
-    <el-table :data="data" v-loading="loading" stripe class="custom-table">
-      <el-table-column prop="id" label="ID" width="140" />
+    <el-table :data="data" v-loading="loading" stripe class="custom-table" :row-class-name="getRowClassName">
       <el-table-column prop="memberId" label="用户ID" width="100" />
       <el-table-column prop="memberName" label="用户名" width="100" />
       <el-table-column prop="notificationType" label="通知类型" width="140">
@@ -97,7 +101,7 @@ const getTypeStyle = (type: string) => {
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="180" />
-      <el-table-column label="操作" width="300" align="center" fixed="right">
+      <el-table-column label="操作" width="260" align="center" fixed="right">
         <template #default="{ row }">
           <div class="action-group">
             <button type="button" class="action-btn detail-btn" @click="emit('detail', row)">
@@ -107,19 +111,25 @@ const getTypeStyle = (type: string) => {
               </svg>
               详情
             </button>
-            <button type="button" class="action-btn disable-btn" @click="emit('disable', row.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-              </svg>
-              禁用
-            </button>
-            <button type="button" class="action-btn restore-btn" @click="emit('restore', row.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="1 4 1 10 7 10"/>
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-              </svg>
-              恢复
+            <button
+              type="button"
+              :class="['action-btn', row.disabled ? 'restore-btn' : 'disable-btn']"
+              @click="emit('toggle-disable', row.id, !row.disabled)"
+            >
+              <template v-if="row.disabled">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                恢复
+              </template>
+              <template v-else>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+                禁用
+              </template>
             </button>
             <button type="button" class="action-btn hard-delete-btn" @click="emit('hardDelete', row.id)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -234,6 +244,15 @@ const getTypeStyle = (type: string) => {
 
 .custom-table :deep(.el-table__body td) {
   border-bottom-color: rgba(249, 115, 22, 0.06);
+}
+
+.custom-table :deep(.disabled-row td) {
+  background: rgba(156, 163, 175, 0.08) !important;
+  color: #9ca3af;
+}
+
+.custom-table :deep(.disabled-row:hover > td) {
+  background: rgba(156, 163, 175, 0.12) !important;
 }
 
 .custom-table :deep(.el-table--border::after),

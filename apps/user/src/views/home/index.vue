@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import SiteFooter from '@/components/SiteFooter.vue'
-import AppHeader from '@/components/AppHeader.vue'
 import { getAnnouncements, getPlanners, getInstitutions } from '@/api/home'
 import type { AnnouncementListVO, PlannerListVO, InstitutionListVO } from '@/types/home'
 import { ProvinceOptions } from '@haifeng/shared'
@@ -205,8 +203,6 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <AppHeader :show-nav-links="true" />
-
     <main class="flex-1">
       <div class="container mx-auto px-6 py-20 text-center">
         <div class="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -503,8 +499,6 @@ onUnmounted(() => {
         </div>
       </section>
     </main>
-
-    <SiteFooter />
   </div>
 </template>
 

@@ -3,7 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Motion } from 'motion-v'
-import SiteFooter from '@/components/SiteFooter.vue'
 import { getCompetitionDetail, getCompetitionMajors } from '@/api/certificate'
 import type { CompetitionDetailVO, CompetitionMajorBriefVO } from '@/types/certificate'
 import { useUserStore } from '@/store'
@@ -76,18 +75,6 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div class="container mx-auto flex items-center px-6 py-4">
-        <button class="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors" @click="router.back()">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="font-medium">返回</span>
-        </button>
-        <h1 class="flex-1 text-center text-xl font-bold text-gray-800 mr-16" v-if="detail">竞赛详情</h1>
-      </div>
-    </header>
-
     <main class="container mx-auto px-6 py-8" v-loading="loading">
       <template v-if="detail">
         <!-- Basic Info -->
@@ -271,6 +258,5 @@ onMounted(() => {
       </template>
     </main>
 
-    <SiteFooter />
   </div>
 </template>

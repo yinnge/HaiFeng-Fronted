@@ -6,6 +6,7 @@ import {
   disableModelProvider,
   updateModelProviderStatus,
 } from '@/api/system/provider'
+import { updateProviderModel, getSystemSettings } from '@/api/system/settings'
 import type { ModelProviderVO, ModelProviderQueryDTO } from '@/types/system/provider'
 import { ProviderTypeLabel, ProviderTypeTag } from '@/types/system/provider'
 import ProviderEditModal from './ProviderEditModal.vue'
@@ -25,6 +26,27 @@ const queryParams = reactive<ModelProviderQueryDTO>({
 
 const showEditModal = ref(false)
 const currentProviderId = ref<string | undefined>()
+
+// 当前选中的 AI 服务商 / 模型（来自 system_settings，决定 dashboard 展示）
+const currentProviderName = ref('')
+const currentModelName = ref('')
+
+const fetchCurrent = async () => {
+  try {
+    const res = await getSystemSettings()
+    if (res.data.code === 200 && res.data.data) {
+      currentProviderName.value = res.data.data.providerName || ''
+      currentModelName.value = res.data.data.modelName || ''
+    }
+  } catch {
+    // 忽略：拿不到当前配置不影响列表展示
+  }
+}
+
+const isCurrent = (row: ModelProviderVO) =>
+  !!currentProviderName.value &&
+  currentProviderName.value === row.providerName &&
+  currentModelName.value === row.modelName
 
 const pageSizes = [10, 20, 30, 50, 100]
 
@@ -122,8 +144,33 @@ const handleToggleStatus = async (row: ModelProviderVO) => {
   }
 }
 
+const handleSetActive = async (row: ModelProviderVO) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定将「${row.providerName} / ${row.modelName}」设为当前 AI 模型吗？\n设置后控制面板的「系统信息」将展示该服务商与模型。`,
+      '设为当前模型',
+      { type: 'warning' }
+    )
+    const res = await updateProviderModel({
+      providerName: row.providerName,
+      modelName: row.modelName,
+    })
+    if (res.data.code === 200) {
+      ElMessage.success('已设为当前模型')
+      currentProviderName.value = row.providerName
+      currentModelName.value = row.modelName
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '设置失败')
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
 onMounted(() => {
   fetchData()
+  fetchCurrent()
 })
 </script>
 
@@ -215,7 +262,14 @@ onMounted(() => {
     <div class="table-card">
       <div class="custom-table" v-loading="loading">
         <el-table :data="tableData" stripe>
-          <el-table-column prop="providerName" label="服务商名称" min-width="120" />
+          <el-table-column prop="providerName" label="服务商名称" min-width="140">
+            <template #default="{ row }">
+              <span class="provider-name">
+                {{ row.providerName }}
+                <span v-if="isCurrent(row)" class="current-tag">当前</span>
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column prop="modelName" label="模型名称" min-width="120">
             <template #default="{ row }">
               <span class="code-text">{{ row.modelName }}</span>
@@ -249,10 +303,18 @@ onMounted(() => {
               <span v-else class="status-tag status-off">禁用</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center" fixed="right">
+          <el-table-column label="操作" width="230" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button type="button" class="action-btn action-detail" @click="handleEdit(row.id)">编辑</button>
+                <button
+                  v-if="row.status === 1 && !isCurrent(row)"
+                  type="button"
+                  class="action-btn action-active"
+                  @click="handleSetActive(row)"
+                >
+                  设为当前
+                </button>
                 <button
                   v-if="row.status === 1"
                   type="button"
@@ -601,6 +663,33 @@ onMounted(() => {
 }
 .action-enable:hover {
   background: #a7f3d0;
+}
+
+.action-active {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: #fff;
+}
+.action-active:hover {
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 当前选中服务商标识 */
+.provider-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.current-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
 }
 
 /* 自定义分页 */

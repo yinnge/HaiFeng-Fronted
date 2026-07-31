@@ -381,7 +381,6 @@ onMounted(() => { fetchData() })
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="majorCode" label="专业代码" width="90" />
         <el-table-column prop="degreeType" label="学位类型" width="100" />

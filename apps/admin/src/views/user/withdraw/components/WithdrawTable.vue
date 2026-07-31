@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { getWithdrawWechat, deleteWithdraw, restoreWithdraw, hardDeleteWithdraw } from '@/api/user/withdraw'
+import { getWithdrawWechat, hardDeleteWithdraw } from '@/api/user/withdraw'
 import type { WithdrawListVO } from '@/types/user/withdraw'
 
 defineProps<{
@@ -19,12 +19,6 @@ const emit = defineEmits<{
   (e: 'refresh'): void
 }>()
 
-const statusLabel: Record<string, string> = {
-  pending: '待处理',
-  paid: '已支付',
-  rejected: '已拒绝',
-}
-
 const handleViewWechat = async (row: WithdrawListVO) => {
   try {
     const res = await getWithdrawWechat(row.id)
@@ -36,32 +30,6 @@ const handleViewWechat = async (row: WithdrawListVO) => {
   } catch {
     ElMessage.error('获取微信号失败')
   }
-}
-
-const handleDelete = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要禁用该提现记录吗？', '提示', { type: 'warning' })
-    const res = await deleteWithdraw(id)
-    if (res.data.code === 200) {
-      ElMessage.success('禁用成功')
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.msg || '禁用失败')
-    }
-  } catch { /* 取消 */ }
-}
-
-const handleRestore = async (id: string) => {
-  try {
-    await ElMessageBox.confirm('确定要恢复该提现记录吗？', '提示', { type: 'warning' })
-    const res = await restoreWithdraw(id)
-    if (res.data.code === 200) {
-      ElMessage.success('恢复成功')
-      emit('refresh')
-    } else {
-      ElMessage.error(res.data.msg || '恢复失败')
-    }
-  } catch { /* 取消 */ }
 }
 
 const handleHardDelete = async (id: string) => {
@@ -114,7 +82,7 @@ const pageSizes = [10, 20, 30, 50, 100]
           <template #default="{ row }">{{ row.remark || '-' }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="320" align="center" fixed="right">
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row)">详情</button>
@@ -127,8 +95,6 @@ const pageSizes = [10, 20, 30, 50, 100]
               >
                 处理提现
               </button>
-              <button type="button" class="action-btn action-disable" @click="handleDelete(row.id)">禁用</button>
-              <button type="button" class="action-btn action-enable" @click="handleRestore(row.id)">恢复</button>
               <button type="button" class="action-btn action-delete" @click="handleHardDelete(row.id)">硬删除</button>
             </div>
           </template>
@@ -281,24 +247,6 @@ const pageSizes = [10, 20, 30, 50, 100]
 .action-process:hover {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   transform: translateY(-1px);
-}
-
-.action-disable {
-  background: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fde68a;
-}
-.action-disable:hover {
-  background: #fde68a;
-}
-
-.action-enable {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-.action-enable:hover {
-  background: #a7f3d0;
 }
 
 .action-delete {

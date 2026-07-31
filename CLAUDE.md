@@ -386,17 +386,6 @@ const formatMoney = (value: number) => value.toFixed(2)
 
 ---
 
-## Playwright-Cli使用规范
-
-  请使用 Playwright 截图查看的本地网站
-
-  步骤：
-  1. 用 `npx playwright screenshot <url> <filename>` 截图
-  2. 用 Read 工具查看截图
-  3. 告诉我页面上有什么内容、布局如何
-  4. 如果需要，可以多截几张不同页面的图
-
-  截图保存到photos/目录下即可。
 
 ## 列表页分页规范
 

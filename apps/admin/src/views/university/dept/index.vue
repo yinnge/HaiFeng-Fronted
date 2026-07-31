@@ -402,7 +402,6 @@ onMounted(() => {
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="universityName" label="院校名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="departmentName" label="院系名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="departmentType" label="院系类型" width="120" />

@@ -660,7 +660,7 @@ onMounted(() => {
 
 <template>
 
-  <div class="page-wrap">
+  <div class="page-x">
 
     <div class="watermark-left"><img src="@/assets/images/logo-main.png" /></div>
 
@@ -680,7 +680,9 @@ onMounted(() => {
 
       <div class="section-label">筛选条件</div>
 
-      <el-form :model="queryParams" inline>
+      <el-form class="search-form" :model="queryParams" inline>
+
+        <div class="filter-fields">
 
         <el-form-item label="证书名称">
 
@@ -790,13 +792,12 @@ onMounted(() => {
 
         </el-form-item>
 
-        <el-form-item>
+        </div>
 
-          <el-button class="btn-search" @click="handleSearch">查询</el-button>
-
-          <el-button class="btn-reset" @click="handleReset">重置</el-button>
-
-        </el-form-item>
+        <div class="search-actions">
+          <el-button class="search-btn" @click="handleSearch">查询</el-button>
+          <el-button class="reset-btn" @click="handleReset">重置</el-button>
+        </div>
 
       </el-form>
 
@@ -810,7 +811,7 @@ onMounted(() => {
 
       <div class="action-left">
 
-        <el-button class="btn-add" @click="openDialog('add')">+ 新增证书</el-button>
+        <el-button class="btn-primary" @click="openDialog('add')">+ 新增证书</el-button>
 
       </div>
 
@@ -840,6 +841,7 @@ onMounted(() => {
 
     <div class="table-card">
 
+      <div class="custom-table">
       <el-table
 
         :data="tableData"
@@ -854,19 +856,19 @@ onMounted(() => {
 
         <el-table-column type="selection" width="50" />
 
-        <el-table-column prop="certName" label="证书名称" width="150" show-overflow-tooltip />
+        <el-table-column prop="certName" label="证书名称" min-width="150" show-overflow-tooltip />
 
-        <el-table-column prop="category" label="分类" width="100" />
+        <el-table-column prop="category" label="分类" min-width="100" />
 
-        <el-table-column prop="certLevel" label="等级" width="80" />
+        <el-table-column prop="certLevel" label="等级" min-width="80" />
 
-        <el-table-column prop="applicableMajor" label="适用专业" width="150" show-overflow-tooltip />
+        <el-table-column prop="applicableMajor" label="适用专业" min-width="150" show-overflow-tooltip />
 
-        <el-table-column prop="registrationTime" label="报名时间" width="150" />
+        <el-table-column prop="registrationTime" label="报名时间" min-width="150" />
 
-        <el-table-column prop="examTime" label="考试时间" width="150" />
+        <el-table-column prop="examTime" label="考试时间" min-width="150" />
 
-        <el-table-column prop="examFee" label="考试费用(元)" width="110">
+        <el-table-column prop="examFee" label="考试费用(元)" min-width="110">
 
           <template #default="{ row }">
 
@@ -876,7 +878,7 @@ onMounted(() => {
 
         </el-table-column>
 
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
+        <el-table-column prop="updatedAt" label="更新时间" min-width="180" />
 
         <el-table-column prop="isDeleted" label="状态" width="80" align="center">
 
@@ -896,23 +898,26 @@ onMounted(() => {
 
           <template #default="{ row }">
 
-            <span class="action-link" @click="openDialog('detail', row.id)">详情</span>
+            <div class="action-group">
+              <span class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</span>
 
-            <span class="action-link" @click="openDialog('edit', row.id)">修改</span>
+              <span class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</span>
 
-            <span class="action-link" @click="handleToggleStatus(row)">
+              <span class="action-btn action-status" @click="handleToggleStatus(row)">
 
-              {{ row.isDeleted ? '启用' : '禁用' }}
+                {{ row.isDeleted ? '启用' : '禁用' }}
 
-            </span>
+              </span>
 
-            <span class="action-link action-danger" @click="handleHardDelete(row.id, row.certName)">删除</span>
+              <span class="action-btn action-delete" @click="handleHardDelete(row.id, row.certName)">删除</span>
+            </div>
 
           </template>
 
         </el-table-column>
 
       </el-table>
+      </div>
 
 
 
@@ -954,7 +959,7 @@ onMounted(() => {
 
       :close-on-click-modal="false"
 
-      class="uni-dialog"
+      class="certificate-dialog"
 
     >
 
@@ -1152,13 +1157,13 @@ onMounted(() => {
 
         <span class="dialog-footer">
 
-          <el-button class="btn-outline" @click="dialogVisible = false">
+          <el-button class="exit-btn" @click="dialogVisible = false">
 
             {{ dialogMode === 'detail' ? '关闭' : '取消' }}
 
           </el-button>
 
-          <el-button v-if="dialogMode !== 'detail'" class="btn-add" @click="handleSubmit">
+          <el-button v-if="dialogMode !== 'detail'" class="save-btn" @click="handleSubmit">
 
             确定
 
@@ -1175,11 +1180,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.page-wrap {
-  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
-  min-height: calc(100vh - 60px);
-  padding: 24px;
+.page-x {
   position: relative;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%);
+  padding: 24px;
   overflow: hidden;
 }
 
@@ -1223,73 +1228,111 @@ onMounted(() => {
   margin: 0;
 }
 
+.table-card,
 .search-card {
-  position: relative;
-  z-index: 1;
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(249,115,22,0.1);
   border-top: 3px solid #F97316;
   border-bottom: 3px solid #FB923C;
-  box-shadow: 0 2px 12px rgba(249,115,22,0.08);
+  transition: all .3s ease;
+}
+.search-card {
+  margin-bottom: 16px;
+}
+.table-card:hover,
+.search-card:hover {
+  box-shadow: 0 4px 16px rgba(249,115,22,0.08);
 }
 .section-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
   background: linear-gradient(135deg, #F97316, #FB923C);
   color: #fff;
-  font-size: 12px;
-  padding: 3px 12px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 20px;
 }
 
-.btn-search {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  border: none !important;
-  color: #fff !important;
-  border-radius: 20px !important;
-  padding: 8px 20px !important;
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
 }
-.btn-search:hover {
-  opacity: 0.9;
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
 }
-.btn-reset {
-  background: #fff !important;
-  border: 1px solid #F97316 !important;
-  color: #F97316 !important;
-  border-radius: 20px !important;
-  padding: 8px 20px !important;
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .25s ease;
 }
-.btn-reset:hover {
-  background: #FFF7ED !important;
+.reset-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
 
 .action-bar {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
-.action-left, .action-right {
+.action-left,
+.action-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-.btn-add {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  border: none !important;
-  color: #fff !important;
-  border-radius: 20px !important;
-  padding: 8px 20px !important;
-  font-weight: 500;
+.action-right {
+  margin-left: auto;
 }
-.btn-add:hover {
-  opacity: 0.9;
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
 }
 
 .btn-outline {
@@ -1338,17 +1381,15 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.table-card {
-  position: relative;
-  z-index: 1;
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #FED7AA;
-  box-shadow: 0 2px 12px rgba(249,115,22,0.06);
-}
 
-.table-card :deep(.el-table__header-wrapper th) {
+
+.custom-table :deep(.el-table) {
+  --el-table-border-color: #f3f4f6;
+  --el-table-header-bg-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.custom-table :deep(.el-table__header th) {
   background: linear-gradient(180deg, #fff7ed, #ffedd5) !important;
   color: #1f2937 !important;
   font-weight: 600;
@@ -1356,8 +1397,24 @@ onMounted(() => {
   border-bottom: 2px solid #F97316 !important;
   padding: 14px 0;
 }
-.table-card :deep(.el-table__header-wrapper th .cell) {
-  color: #1f2937 !important;
+.custom-table :deep(.el-table__header th .cell) {
+  color: #1f2937;
+}
+.custom-table :deep(.el-table__body tr) {
+  transition: background-color .2s ease;
+}
+.custom-table :deep(.el-table__body tr:hover > td) {
+  background: linear-gradient(90deg, rgba(249,115,22,0.03), rgba(251,146,60,0.07)) !important;
+}
+.custom-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
+}
+.custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(255,247,237,0.3);
+}
+.custom-table :deep(.el-table__empty-block) {
+  min-height: 200px;
 }
 
 .status-pill {
@@ -1376,49 +1433,141 @@ onMounted(() => {
   color: #6B7280;
 }
 
-.action-link {
-  color: #F97316;
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 13px;
-  margin: 0 6px;
-  transition: color 0.2s;
+  transition: all .2s ease;
+  white-space: nowrap;
 }
-.action-link:hover {
-  color: #FB923C;
+.action-detail {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
-.action-danger {
-  color: #DC2626;
+.action-detail:hover {
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
+  transform: translateY(-1px);
 }
-.action-danger:hover {
-  color: #EF4444;
+.action-edit {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.action-edit:hover {
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+  transform: translateY(-1px);
+}
+.action-status {
+  background: #fff;
+  color: #d97706;
+  border: 1px solid #fbbf24;
+}
+.action-status:hover {
+  background: #fffbeb;
+}
+.action-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-delete:hover {
+  box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+  transform: translateY(-1px);
 }
 
 .custom-pagination {
-  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
-.custom-pagination :deep(.el-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
-  border-radius: 6px;
+.custom-pagination :deep(.el-pagination) {
+  --el-pagination-hover-color: #F97316;
 }
-.custom-pagination :deep(.el-pagination .el-pager li.is-active:hover) {
-  color: #fff !important;
+.custom-pagination :deep(.el-pager li) {
+  border-radius: 8px;
+  transition: all .2s ease;
+  font-weight: 500;
+}
+.custom-pagination :deep(.el-pager li:hover) {
+  color: #F97316;
+}
+.custom-pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) {
+  border-radius: 8px;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.3) inset;
+}
+.custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.custom-pagination :deep(.btn-prev),
+.custom-pagination :deep(.btn-next) {
+  border-radius: 8px;
 }
 .custom-pagination :deep(.btn-prev:hover),
 .custom-pagination :deep(.btn-next:hover) {
-  color: #F97316 !important;
+  color: #F97316;
 }
 
-.uni-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid #F97316;
-  padding-bottom: 16px;
-  margin-bottom: 20px;
+.certificate-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
 }
-.uni-dialog :deep(.el-dialog__title) {
-  font-size: 17px;
+.certificate-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249,115,22,0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+.certificate-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
   font-weight: 600;
-  color: #9A3412;
+  color: #1f2937;
+}
+.certificate-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+.certificate-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+.certificate-dialog :deep(.el-input__wrapper),
+.certificate-dialog :deep(.el-textarea__inner),
+.certificate-dialog :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all .25s ease;
+}
+.certificate-dialog :deep(.el-input__wrapper:hover),
+.certificate-dialog :deep(.el-textarea__inner:hover),
+.certificate-dialog :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.3) inset;
+}
+.certificate-dialog :deep(.el-input__wrapper.is-focus),
+.certificate-dialog :deep(.el-textarea__inner:focus),
+.certificate-dialog :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.certificate-dialog :deep(.el-radio__input.is-checked .el-radio__inner) {
+  background-color: #F97316;
+  border-color: #F97316;
+}
+.certificate-dialog :deep(.el-radio__input.is-checked + .el-radio__label) {
+  color: #F97316;
 }
 
 .uni-descriptions :deep(.el-descriptions__label) {
@@ -1427,27 +1576,91 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.uni-dialog :deep(.el-form-item__label) {
-  color: #9A3412;
-  font-weight: 500;
-}
-.uni-dialog :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #F97316 inset !important;
-}
-.uni-dialog :deep(.el-select .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #F97316 inset !important;
-}
-.uni-dialog :deep(.el-textarea__inner:focus) {
-  border-color: #F97316;
-  box-shadow: 0 0 0 1px #F97316;
-}
-.uni-dialog :deep(.el-input-number .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #F97316 inset !important;
-}
-
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.search-form {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.filter-fields {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+.search-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+}
+.search-form :deep(.el-input__wrapper),
+.search-form :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all .25s ease;
+}
+.search-form :deep(.el-input__wrapper:hover),
+.search-form :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.3) inset;
+}
+.search-form :deep(.el-input__wrapper.is-focus),
+.search-form :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.exit-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+.exit-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
+}
+.save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+}
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

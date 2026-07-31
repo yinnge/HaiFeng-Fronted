@@ -218,22 +218,51 @@ loadCommission()
     </template>
 
     <!-- 提现弹窗 -->
-    <el-dialog v-model="withdrawVisible" title="申请提现" width="400px" class="brand-dialog">
-      <div class="space-y-4">
-        <p>当前可提现余额：<strong class="text-green-500">¥{{ commission?.commissionBalance.toFixed(2) }}</strong></p>
-        <div>
-          <span class="mr-4">选择提现金额：</span>
-          <el-radio-group v-model="withdrawAmount">
-            <el-radio :value="50" :disabled="!canWithdraw50">50元</el-radio>
-            <el-radio :value="100" :disabled="!canWithdraw100">100元</el-radio>
-          </el-radio-group>
+    <el-dialog v-model="withdrawVisible" title="申请提现" width="420px" class="brand-dialog">
+      <div class="withdraw-dialog-body">
+        <!-- 余额展示 -->
+        <div class="withdraw-balance-card">
+          <span class="withdraw-balance-label">当前可提现余额</span>
+          <span class="withdraw-balance-value">¥{{ commission?.commissionBalance.toFixed(2) }}</span>
         </div>
+
+        <!-- 金额选择 -->
+        <div class="withdraw-amount-title">选择提现金额</div>
+        <div class="withdraw-amount-grid">
+          <div
+            :class="['withdraw-amount-card', { 'withdraw-amount-card-active': withdrawAmount === 50, 'withdraw-amount-card-disabled': !canWithdraw50 }]"
+            @click="canWithdraw50 && (withdrawAmount = 50)"
+          >
+            <span class="withdraw-amount-icon">💰</span>
+            <span class="withdraw-amount-num">¥50</span>
+            <span class="withdraw-amount-desc">标准提现</span>
+          </div>
+          <div
+            :class="['withdraw-amount-card', { 'withdraw-amount-card-active': withdrawAmount === 100, 'withdraw-amount-card-disabled': !canWithdraw100 }]"
+            @click="canWithdraw100 && (withdrawAmount = 100)"
+          >
+            <span class="withdraw-amount-icon">💎</span>
+            <span class="withdraw-amount-num">¥100</span>
+            <span class="withdraw-amount-desc">大额提现</span>
+          </div>
+        </div>
+
+        <!-- 提示 -->
+        <div v-if="!canWithdraw50" class="withdraw-tip">余额不足50元，暂不可提现</div>
       </div>
       <template #footer>
-        <el-button @click="withdrawVisible = false">取消</el-button>
-        <el-button type="primary" :loading="withdrawLoading" class="dialog-btn" @click="handleWithdraw">
-          确认提现
-        </el-button>
+        <div class="withdraw-dialog-footer">
+          <button type="button" class="withdraw-cancel-btn" @click="withdrawVisible = false">取消</button>
+          <button
+            type="button"
+            class="withdraw-submit-btn"
+            :disabled="withdrawLoading || (!canWithdraw50 && !canWithdraw100)"
+            @click="handleWithdraw"
+          >
+            <span v-if="withdrawLoading" class="withdraw-spinner"></span>
+            确认提现
+          </button>
+        </div>
       </template>
     </el-dialog>
 
@@ -549,6 +578,164 @@ loadCommission()
   background: linear-gradient(135deg, #e8722a, #d4661a) !important;
 }
 
+/* 提现弹窗 */
+.withdraw-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.withdraw-balance-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+}
+
+.withdraw-balance-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.withdraw-balance-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.withdraw-amount-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.withdraw-amount-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.withdraw-amount-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.25rem 0.75rem;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.withdraw-amount-card:hover:not(.withdraw-amount-card-disabled) {
+  border-color: #e8722a;
+  background: #fff7ed;
+}
+
+.withdraw-amount-card-active {
+  border-color: #e8722a !important;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5) !important;
+  box-shadow: 0 0 0 3px rgba(232, 114, 42, 0.15);
+}
+
+.withdraw-amount-card-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.withdraw-amount-icon {
+  font-size: 1.5rem;
+}
+
+.withdraw-amount-num {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.withdraw-amount-card-active .withdraw-amount-num {
+  color: #e8722a;
+}
+
+.withdraw-amount-desc {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.withdraw-tip {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #ef4444;
+  padding: 0.5rem;
+  background: #fef2f2;
+  border-radius: 0.375rem;
+}
+
+.withdraw-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.withdraw-cancel-btn {
+  padding: 0.5rem 1.25rem;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.withdraw-cancel-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.withdraw-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(232, 114, 42, 0.3);
+}
+
+.withdraw-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e8722a, #d4661a);
+  box-shadow: 0 4px 12px rgba(232, 114, 42, 0.4);
+  transform: translateY(-1px);
+}
+
+.withdraw-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.withdraw-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
 :deep(.el-dialog) {
   border-radius: 0.75rem;
 }
@@ -561,5 +748,9 @@ loadCommission()
 :deep(.el-dialog__footer) {
   border-top: 1px solid #f3f4f6;
   padding-top: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

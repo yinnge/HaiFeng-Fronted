@@ -98,7 +98,7 @@ const handleUpgrade = (row: MemberListVO) => {
 }
 
 const handleUpgradeSuccess = () => {
-  fetchData()
+  // 创建待支付订单，用户状态未变更，无需刷新列表
 }
 
 onMounted(() => {

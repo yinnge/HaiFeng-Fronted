@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { upgradeUser } from '@/api/user'
+import { createOrder } from '@/api/user/order'
 import { MemberTypeLabel } from '@haifeng/shared'
-import type { MemberListVO, MemberUpgradeDTO } from '@/types/user'
+import type { MemberListVO } from '@/types/user'
+import type { OrderCreateDTO } from '@/types/user/order'
 
 const props = defineProps<{
   visible: boolean
@@ -18,7 +19,12 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
-const form = ref<MemberUpgradeDTO>({
+const form = ref<{
+  targetType: 'pro' | 'vip'
+  durationMonths: number
+  amount?: number
+  remark: string
+}>({
   targetType: 'pro',
   durationMonths: 12,
   amount: undefined,
@@ -53,26 +59,28 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    const data: MemberUpgradeDTO = {
+    const data: OrderCreateDTO = {
+      memberId: props.user.id,
       targetType: form.value.targetType,
       durationMonths: form.value.durationMonths,
       remark: form.value.remark || undefined,
+      paymentMethod: 'offline',
     }
     if (amountMode.value === 'manual' && form.value.amount !== undefined) {
       data.amount = form.value.amount
     }
 
-    const res = await upgradeUser(props.user.id, data)
+    const res = await createOrder(data)
     if (res.data.code === 200) {
-      ElMessage.success('升级成功')
+      ElMessage.success('订单已创建，请等待用户付款后在订单页确认')
       emit('success')
       handleClose()
     } else {
-      ElMessage.error(res.data.msg || '升级失败')
+      ElMessage.error(res.data.msg || '创建订单失败')
     }
   } catch (error) {
-    console.error('会员升级失败:', error)
-    ElMessage.error('升级失败')
+    console.error('创建订单失败:', error)
+    ElMessage.error(error instanceof Error ? error.message : '创建订单失败')
   } finally {
     loading.value = false
   }
@@ -86,7 +94,7 @@ const handleClose = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="会员升级"
+    title="创建升级订单"
     width="500px"
     class="upgrade-dialog"
     :close-on-click-modal="false"
@@ -165,7 +173,7 @@ const handleClose = () => {
             <polyline points="20 6 9 17 4 12"/>
           </svg>
           <span v-if="loading" class="loading-spinner"></span>
-          确认升级
+          创建订单
         </button>
       </div>
     </template>

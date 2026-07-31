@@ -508,7 +508,6 @@ onMounted(() => {
     <div class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="id" label="ID" width="140" />
         <el-table-column prop="cityName" label="城市名称" min-width="120" />
         <el-table-column prop="province" label="省份" width="120" />
         <el-table-column prop="collegeCount" label="高校数量" width="100" align="center" />

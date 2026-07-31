@@ -20,7 +20,7 @@ watch(() => props.visible, async (val) => {
 </script>
 
 <template>
-  <el-dialog :model-value="visible" title="社区工作者岗位详情" width="1000px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
+  <el-dialog class="community-dialog" :model-value="visible" title="社区工作者岗位详情" width="1000px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
       <el-descriptions v-if="detail" :column="2" border>
         <el-descriptions-item label="街道办事处乡镇">{{ detail.streetOffice }}</el-descriptions-item>
@@ -67,7 +67,7 @@ watch(() => props.visible, async (val) => {
       </el-descriptions>
     </div>
     <template #footer>
-      <button type="button" class="btn-close" @click="emit('update:visible', false)">关闭</button>
+      <button type="button" class="exit-btn" @click="emit('update:visible', false)">关闭</button>
     </template>
   </el-dialog>
 </template>
@@ -77,6 +77,15 @@ watch(() => props.visible, async (val) => {
 .status-pill.success { background: #dcfce7; color: #16a34a; }
 .status-pill.warning { background: #fef3c7; color: #d97706; }
 .status-pill.info { background: #f3f4f6; color: #6b7280; }
-.btn-close { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 14px; cursor: pointer; }
-.btn-close:hover { filter: brightness(1.1); }
+.community-dialog :deep(.el-dialog) { border-radius: 12px; overflow: hidden; }
+.community-dialog :deep(.el-dialog__header) { border-bottom: 2px solid rgba(249,115,22,0.15); padding: 20px 24px; margin: 0; }
+.community-dialog :deep(.el-dialog__title) { font-size: 16px; font-weight: 600; color: #1f2937; }
+.community-dialog :deep(.el-dialog__body) { padding: 24px; }
+.community-dialog :deep(.el-dialog__footer) { border-top: 1px solid #f3f4f6; padding: 16px 24px; }
+.community-dialog :deep(.el-descriptions__label) { font-weight: 600; color: #374151; background: rgba(249, 115, 22, 0.06) !important; }
+.community-dialog :deep(.el-descriptions__content) { color: #1f2937; }
+.community-dialog :deep(.el-descriptions__cell) { border-color: rgba(249, 115, 22, 0.1); }
+.community-dialog :deep(.el-descriptions__body) { border-radius: 8px; overflow: hidden; }
+.exit-btn { display: inline-flex; align-items: center; padding: 8px 20px; background: #fff; color: #6b7280; border: 1px solid #d1d5db; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .25s ease; }
+.exit-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
 </style>
