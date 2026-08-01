@@ -1,7 +1,11 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import JSONBig from 'json-bigint'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth'
 import { ErrorCode, ErrorMessage } from '../constants/errorCode'
 import type { R } from '../types/api'
+
+// 使用 json-bigint 解析响应，避免雪花 ID 等大数字精度丢失
+const jsonBigParser = JSONBig({ storeAsString: true })
 
 // 是否正在刷新 Token
 let isRefreshing = false
@@ -18,6 +22,15 @@ const createRequest = (baseURL: string): AxiosInstance => {
     headers: {
       'Content-Type': 'application/json',
     },
+    transformResponse: [
+      (data: string) => {
+        try {
+          return jsonBigParser.parse(data)
+        } catch {
+          return data
+        }
+      },
+    ],
   })
 
   // 请求拦截器
