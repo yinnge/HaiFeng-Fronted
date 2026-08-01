@@ -1,25 +1,72 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getWelfareDetail, updateWelfare } from '@/api/employment/welfare'
+import type { FormInstance, FormRules } from 'element-plus'
+import { addWelfare, getWelfareDetail, updateWelfare } from '@/api/employment/welfare'
+import type { WelfareAddDTO } from '@/types/employment/welfare'
 
-const props = defineProps<{ visible: boolean; initialData: Record<string, any> }>()
+const props = defineProps<{ visible: boolean; initialData: Record<string, any>; mode?: 'add' | 'edit' }>()
 const emit = defineEmits<{ 'update:visible': [val: boolean]; submit: [] }>()
 
 const loading = ref(false)
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
 
-const positionCategoryOptions = ['公共管理', '公共服务', '公共环境', '公共安全', '设施维护', '其他']
+const formRefBasic = ref<FormInstance>()
+const formRefLocation = ref<FormInstance>()
+const formRefBenefits = ref<FormInstance>()
+
+// 必填校验（与后端 PublicWelfarePositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  developingUnit: [{ required: true, message: '请输入开发单位', trigger: 'blur' }],
+  positionName: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+  positionCategory: [{ required: true, message: '请选择岗位类别', trigger: 'change' }],
+}
+const locationRules: FormRules = {
+  province: [{ required: true, message: '请输入省份', trigger: 'blur' }],
+  city: [{ required: true, message: '请输入城市', trigger: 'blur' }],
+}
+const benefitsRules: FormRules = {
+  contractPeriod: [{ required: true, message: '请输入合同期限', trigger: 'blur' }],
+}
+
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增公益性岗位' : '修改公益性岗位'))
+
+const positionCategoryOptions = ['公共管理类', '公共服务类', '公共环境类', '公共安全类', '设施维护类', '其他']
 const educationOptions = ['不限', '初中', '高中', '大专', '本科']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
 watch(() => props.visible, (val) => {
-  if (val) { activeTab.value = 'basic'; formData.value = { ...props.initialData } }
+  if (val) {
+    activeTab.value = 'basic'
+    formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+      formRefLocation.value?.clearValidate()
+      formRefBenefits.value?.clearValidate()
+    })
+  }
 })
 
 const handleSubmit = async () => {
-  if (!formData.value.id) return
+  if (props.mode !== 'add' && !formData.value.id) return
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
+  try {
+    await formRefLocation.value?.validate()
+  } catch {
+    activeTab.value = 'location'
+    return
+  }
+  try {
+    await formRefBenefits.value?.validate()
+  } catch {
+    activeTab.value = 'benefits'
+    return
+  }
   try {
     const data: Record<string, any> = {}
     const stringFields = ['developingUnit', 'employingUnit', 'positionName', 'positionCategory', 'workContent', 'province', 'city', 'district', 'workLocation', 'educationRequirement', 'ageRange', 'healthRequirement', 'householdRequirement', 'otherRequirement', 'contractPeriod', 'monthlySalary', 'salarySource', 'subsidyStandard', 'socialInsuranceInfo', 'otherBenefits', 'workSchedule', 'regStartDate', 'regEndDate', 'applyMethod', 'applyAddress', 'requiredDocuments', 'positionStatus', 'contactPhone', 'contactPerson', 'remark', 'content']
@@ -29,35 +76,35 @@ const handleSubmit = async () => {
     const booleanFields = ['employmentDifficultyCert', 'isRenewable', 'isShiftWork']
     booleanFields.forEach((f) => { data[f] = !!formData.value[f] })
     if (formData.value.targetGroup && formData.value.targetGroup.length > 0) data.targetGroup = formData.value.targetGroup
-    const res = await updateWelfare(formData.value.id, data)
-    if (res.data.code === 200) { ElMessage.success('修改成功'); emit('update:visible', false); emit('submit') }
+    const res = props.mode === 'add' ? await addWelfare(data as WelfareAddDTO) : await updateWelfare(formData.value.id, data)
+    if (res.data.code === 200) { ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功'); emit('update:visible', false); emit('submit') }
     else { ElMessage.error(res.data.msg || '操作失败') }
-  } catch (err: any) { ElMessage.error(err.response?.data?.msg || '操作失败') }
+  } catch (err: any) { ElMessage.error(err.response?.data?.msg || err.message || '操作失败') }
 }
 </script>
 
 <template>
-  <el-dialog class="welfare-form-dialog" :model-value="visible" title="修改公益性岗位" width="1000px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
+  <el-dialog class="welfare-form-dialog" :model-value="visible" :title="dialogTitle" width="1000px" :close-on-click-modal="false" @update:model-value="emit('update:visible', $event)">
     <div v-loading="loading">
       <el-tabs v-model="activeTab" class="welfare-form-tabs">
         <el-tab-pane label="单位与岗位信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="12"><el-form-item label="开发单位"><el-input v-model="formData.developingUnit" placeholder="开发单位" maxlength="200" show-word-limit /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="开发单位" prop="developingUnit"><el-input v-model="formData.developingUnit" placeholder="开发单位" maxlength="200" show-word-limit /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="用工单位"><el-input v-model="formData.employingUnit" placeholder="用工单位" maxlength="200" show-word-limit /></el-form-item></el-col>
             </el-row>
             <el-row :gutter="20">
-              <el-col :span="12"><el-form-item label="岗位名称"><el-input v-model="formData.positionName" placeholder="岗位名称" maxlength="200" show-word-limit /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="岗位类别"><el-select v-model="formData.positionCategory" placeholder="请选择" clearable style="width: 100%"><el-option v-for="item in positionCategoryOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="岗位名称" prop="positionName"><el-input v-model="formData.positionName" placeholder="岗位名称" maxlength="200" show-word-limit /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="岗位类别" prop="positionCategory"><el-select v-model="formData.positionCategory" placeholder="请选择" clearable style="width: 100%"><el-option v-for="item in positionCategoryOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
             </el-row>
             <el-form-item label="工作内容"><el-input v-model="formData.workContent" type="textarea" :rows="2" placeholder="工作内容" /></el-form-item>
           </el-form>
         </el-tab-pane>
         <el-tab-pane label="地区与报名要求" name="location">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefLocation" :model="formData" :rules="locationRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="8"><el-form-item label="省份"><el-input v-model="formData.province" placeholder="省份" maxlength="30" /></el-form-item></el-col>
-              <el-col :span="8"><el-form-item label="城市"><el-input v-model="formData.city" placeholder="城市" maxlength="50" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="省份" prop="province"><el-input v-model="formData.province" placeholder="省份" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="城市" prop="city"><el-input v-model="formData.city" placeholder="城市" maxlength="50" /></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="区域"><el-input v-model="formData.district" placeholder="请输入区域" maxlength="50" /></el-form-item></el-col>
             </el-row>
             <el-row :gutter="20">
@@ -78,9 +125,9 @@ const handleSubmit = async () => {
           </el-form>
         </el-tab-pane>
         <el-tab-pane label="岗位期限与待遇" name="benefits">
-          <el-form :model="formData" label-width="140px" class="mt-2">
+          <el-form ref="formRefBenefits" :model="formData" :rules="benefitsRules" label-width="140px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="12"><el-form-item label="合同期限"><el-input v-model="formData.contractPeriod" placeholder="合同期限" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="合同期限" prop="contractPeriod"><el-input v-model="formData.contractPeriod" placeholder="合同期限" maxlength="30" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="可续期"><el-switch v-model="formData.isRenewable" /></el-form-item></el-col>
             </el-row>
             <el-row :gutter="20">

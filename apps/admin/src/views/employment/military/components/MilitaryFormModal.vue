@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const props = defineProps<{
   visible: boolean
   initialData: Record<string, any>
+  mode?: 'add' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -14,19 +16,36 @@ const emit = defineEmits<{
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
 
+const formRefBasic = ref<FormInstance>()
+
+// 必填校验（与后端 MilitaryPositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  positionName: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+}
+
 const positionTypeOptions = ['管理岗', '专业技术岗', '专业技能岗']
-const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
+const educationOptions = ['本科及以上', '硕士及以上', '博士']
+
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增军队文职职位' : '修改军队文职职位'))
 
 watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+    })
   }
 })
 
 const handleClose = () => { emit('update:visible', false) }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
   const data: Record<string, any> = {}
   for (const [key, val] of Object.entries(formData.value)) {
     if (val !== '' && val !== null && val !== undefined) {
@@ -40,7 +59,7 @@ const handleSubmit = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="修改军队文职职位"
+    :title="dialogTitle"
     width="900px"
     class="form-dialog"
     :close-on-click-modal="false"
@@ -49,10 +68,10 @@ const handleSubmit = () => {
     <div class="dialog-content">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="基本信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="职位名称">
+                <el-form-item label="职位名称" prop="positionName">
                   <el-input v-model="formData.positionName" placeholder="职位名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>

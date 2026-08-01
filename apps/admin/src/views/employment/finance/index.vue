@@ -3,13 +3,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getFinancePage,
+  addFinance,
   updateFinance,
   deleteFinance,
   updateFinanceStatus,
   batchDeleteFinance,
   importFinance,
 } from '@/api/employment/finance'
-import type { FinanceListVO, FinanceQueryDTO } from '@/types/employment/finance'
+import type { FinanceListVO, FinanceQueryDTO, FinanceAddDTO } from '@/types/employment/finance'
 import FinanceSearch from './components/FinanceSearch.vue'
 import FinanceTable from './components/FinanceTable.vue'
 import FinanceDetailModal from './components/FinanceDetailModal.vue'
@@ -36,6 +37,7 @@ const detailVisible = ref(false)
 const formVisible = ref(false)
 const currentId = ref<string | null>(null)
 const editFormData = ref<Record<string, any>>({})
+const formMode = ref<'add' | 'edit'>('edit')
 
 const fetchData = async () => {
   loading.value = true
@@ -92,6 +94,7 @@ const openEdit = async (row: FinanceListVO) => {
   try {
     const res = await import('@/api/employment/finance').then(m => m.getFinanceDetail(row.id))
     if (res.data.code === 200) {
+      formMode.value = 'edit'
       editFormData.value = res.data.data
       currentId.value = row.id
       formVisible.value = true
@@ -103,19 +106,25 @@ const openEdit = async (row: FinanceListVO) => {
   }
 }
 
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  editFormData.value = {}
+  formVisible.value = true
+}
+
 const handleSubmitForm = async (data: Record<string, any>) => {
-  if (!currentId.value) return
   try {
-    const res = await updateFinance(currentId.value, data)
+    const res = formMode.value === 'add' ? await addFinance(data as FinanceAddDTO) : await updateFinance(currentId.value!, data)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -157,7 +166,7 @@ const handleStatusChange = async (row: FinanceListVO, newStatus: string) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -181,7 +190,7 @@ const handleImportSubmit = async () => {
       ElMessage.error(res.data.msg || '导入失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -232,6 +241,7 @@ onMounted(() => { fetchData() })
       :page="queryParams.page"
       :size="queryParams.size"
       :selected-ids="selectedIds"
+      @add="handleAdd"
       @detail="openDetail"
       @edit="openEdit"
       @delete="handleDelete"
@@ -252,6 +262,7 @@ onMounted(() => { fetchData() })
     <FinanceFormModal
       v-model:visible="formVisible"
       :initial-data="editFormData"
+      :mode="formMode"
       @submit="handleSubmitForm"
     />
 

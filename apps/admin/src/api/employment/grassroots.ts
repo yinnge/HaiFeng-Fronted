@@ -5,6 +5,7 @@ import type {
   GrassrootsDetailVO,
   GrassrootsQueryDTO,
   GrassrootsUpdateDTO,
+  GrassrootsAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/grassroots'
 
@@ -16,6 +17,10 @@ export const getGrassrootsPage = (params: GrassrootsQueryDTO) => {
 
 export const getGrassrootsDetail = (id: string) => {
   return request.get<R<GrassrootsDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addGrassroots = (data: GrassrootsAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateGrassroots = (id: string, data: GrassrootsUpdateDTO) => {

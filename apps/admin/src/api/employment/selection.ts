@@ -4,6 +4,7 @@ import type {
   SelectionListVO,
   SelectionDetailVO,
   SelectionQueryDTO,
+  SelectionAddDTO,
   SelectionUpdateDTO,
   SelectionStatusDTO,
 } from '@/types/employment/selection'
@@ -16,6 +17,10 @@ export const getSelectionPage = (params: SelectionQueryDTO) => {
 
 export const getSelectionDetail = (id: string) => {
   return request.get<R<SelectionDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addSelection = (data: SelectionAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateSelection = (id: string, data: SelectionUpdateDTO) => {

@@ -21,7 +21,7 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
-const positionStatusOptions = ['在招', '已结束', '未发布']
+const positionStatusOptions = ['招聘中', '已结束']
 </script>
 
 <template>

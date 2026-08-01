@@ -5,6 +5,7 @@ import type {
   CommunityDetailVO,
   CommunityQueryDTO,
   CommunityUpdateDTO,
+  CommunityAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/community'
 
@@ -16,6 +17,10 @@ export const getCommunityPage = (params: CommunityQueryDTO) => {
 
 export const getCommunityDetail = (id: string) => {
   return request.get<R<CommunityDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addCommunity = (data: CommunityAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateCommunity = (id: string, data: CommunityUpdateDTO) => {

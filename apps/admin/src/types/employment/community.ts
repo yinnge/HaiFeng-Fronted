@@ -104,6 +104,45 @@ export interface CommunityUpdateDTO {
   sortOrder?: number
 }
 
+export interface CommunityAddDTO {
+  streetOffice?: string
+  communityName?: string
+  supervisingDept?: string
+  district?: string
+  positionName?: string
+  positionType?: string
+  employmentType?: string
+  province?: string
+  city?: string
+  workLocation?: string
+  educationRequirement?: string
+  ageLimit?: number
+  recruitmentCount?: number
+  majorRequirement?: string
+  householdRequirement?: string
+  politicalStatus?: string
+  workExperience?: string
+  socialWorkCert?: string
+  communityExperience?: string
+  residenceRequirement?: string
+  salaryRange?: string
+  salaryComposition?: string
+  benefits?: string
+  examContent?: string
+  interviewForm?: string
+  regStartDate?: string
+  regEndDate?: string
+  examTime?: string
+  positionStatus?: string
+  applyLink?: string
+  applyMethod?: string
+  contactPhone?: string
+  contactAddress?: string
+  remark?: string
+  content?: string
+  sortOrder?: number
+}
+
 export interface PositionStatusDTO {
   positionStatus: string
 }

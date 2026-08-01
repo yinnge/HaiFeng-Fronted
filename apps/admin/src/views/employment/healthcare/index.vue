@@ -3,13 +3,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getHealthcarePage,
+  addHealthcare,
   updateHealthcare,
   deleteHealthcare,
   updateHealthcareStatus,
   batchDeleteHealthcare,
   importHealthcare,
 } from '@/api/employment/healthcare'
-import type { HealthcareListVO, HealthcareQueryDTO } from '@/types/employment/healthcare'
+import type { HealthcareListVO, HealthcareQueryDTO, HealthcareAddDTO } from '@/types/employment/healthcare'
 import HealthcareSearch from './components/HealthcareSearch.vue'
 import HealthcareTable from './components/HealthcareTable.vue'
 import HealthcareDetailModal from './components/HealthcareDetailModal.vue'
@@ -37,6 +38,7 @@ const detailVisible = ref(false)
 const formVisible = ref(false)
 const currentId = ref<string | null>(null)
 const editFormData = ref<Record<string, any>>({})
+const formMode = ref<'add' | 'edit'>('edit')
 
 const fetchData = async () => {
   loading.value = true
@@ -96,6 +98,7 @@ const openEdit = async (row: HealthcareListVO) => {
     const { getHealthcareDetail } = await import('@/api/employment/healthcare')
     const res = await getHealthcareDetail(row.id)
     if (res.data.code === 200) {
+      formMode.value = 'edit'
       editFormData.value = res.data.data
       currentId.value = row.id
       formVisible.value = true
@@ -107,19 +110,25 @@ const openEdit = async (row: HealthcareListVO) => {
   }
 }
 
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  editFormData.value = {}
+  formVisible.value = true
+}
+
 const handleSubmitForm = async (data: Record<string, any>) => {
-  if (!currentId.value) return
   try {
-    const res = await updateHealthcare(currentId.value, data)
+    const res = formMode.value === 'add' ? await addHealthcare(data as HealthcareAddDTO) : await updateHealthcare(currentId.value!, data)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -161,7 +170,7 @@ const handleStatusChange = async (row: HealthcareListVO, newStatus: string) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -185,7 +194,7 @@ const handleImportSubmit = async () => {
       ElMessage.error(res.data.msg || '导入失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -238,6 +247,7 @@ onMounted(() => { fetchData() })
       :page="queryParams.page"
       :size="queryParams.size"
       :selected-ids="selectedIds"
+      @add="handleAdd"
       @detail="openDetail"
       @edit="openEdit"
       @delete="handleDelete"
@@ -258,6 +268,7 @@ onMounted(() => { fetchData() })
     <HealthcareFormModal
       v-model:visible="formVisible"
       :initial-data="editFormData"
+      :mode="formMode"
       @submit="handleSubmitForm"
     />
 

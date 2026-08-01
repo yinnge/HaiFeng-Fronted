@@ -5,6 +5,7 @@ import type {
   WelfareDetailVO,
   WelfareQueryDTO,
   WelfareUpdateDTO,
+  WelfareAddDTO,
   PositionStatusDTO,
 } from '@/types/employment/welfare'
 
@@ -16,6 +17,10 @@ export const getWelfarePage = (params: WelfareQueryDTO) => {
 
 export const getWelfareDetail = (id: string) => {
   return request.get<R<WelfareDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addWelfare = (data: WelfareAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateWelfare = (id: string, data: WelfareUpdateDTO) => {

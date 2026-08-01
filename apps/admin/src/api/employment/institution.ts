@@ -4,6 +4,7 @@ import type {
   InstitutionListVO,
   InstitutionDetailVO,
   InstitutionQueryDTO,
+  InstitutionAddDTO,
   InstitutionUpdateDTO,
   InstitutionStatusDTO,
 } from '@/types/employment/institution'
@@ -16,6 +17,10 @@ export const getInstitutionPage = (params: InstitutionQueryDTO) => {
 
 export const getInstitutionDetail = (id: string) => {
   return request.get<R<InstitutionDetailVO>>(`${PREFIX}/${id}/detail`)
+}
+
+export const addInstitution = (data: InstitutionAddDTO) => {
+  return request.post<R<number>>(`${PREFIX}/create`, data)
 }
 
 export const updateInstitution = (id: string, data: InstitutionUpdateDTO) => {

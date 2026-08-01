@@ -19,7 +19,7 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
-const examTypeOptions = ['国家级', '省级']
+const examTypeOptions = ['国考', '省考']
 const regStatusOptions = ['报名中', '已结束', '即将开始']
 const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
 </script>

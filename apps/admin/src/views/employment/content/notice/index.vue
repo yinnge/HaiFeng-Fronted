@@ -28,10 +28,11 @@ const queryParams = reactive<NoticeQueryDTO>({
   year: undefined,
   isTop: undefined,
   isImportant: undefined,
+  status: undefined,
 })
 
 const dialogVisible = ref(false)
-const dialogMode = ref<'detail' | 'edit'>('detail')
+const dialogMode = ref<'detail' | 'edit' | 'add'>('detail')
 const currentId = ref<string | null>(null)
 
 const fetchData = async () => {
@@ -46,6 +47,7 @@ const fetchData = async () => {
     if (queryParams.year) params.year = queryParams.year
     if (queryParams.isTop !== undefined) params.isTop = queryParams.isTop
     if (queryParams.isImportant !== undefined) params.isImportant = queryParams.isImportant
+    if (queryParams.status !== undefined) params.status = queryParams.status
     const res = await getNoticePage(params as NoticeQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -71,6 +73,7 @@ const handleReset = () => {
   queryParams.year = undefined
   queryParams.isTop = undefined
   queryParams.isImportant = undefined
+  queryParams.status = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -85,6 +88,12 @@ const handleSelectionChange = (rows: NoticeListVO[]) => {
 const openDetail = (id: string) => {
   dialogMode.value = 'detail'
   currentId.value = id
+  dialogVisible.value = true
+}
+
+const openAdd = () => {
+  dialogMode.value = 'add'
+  currentId.value = null
   dialogVisible.value = true
 }
 
@@ -132,13 +141,29 @@ const handleBatchDelete = async () => {
 
 const handleDisable = async (row: NoticeListVO) => {
   try {
-    await ElMessageBox.confirm('确定禁用该公告？禁用后将从列表隐藏？', '提示', {
+    await ElMessageBox.confirm('确定禁用该公告？禁用后将从列表隐藏', '提示', {
       confirmButtonText: '确定禁用',
       cancelButtonText: '取消',
     })
     const res = await updateNoticeStatus(row.id, { status: 0 })
     if (res.data.code === 200) {
       ElMessage.success('禁用成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '操作失败')
+    }
+  } catch { /* cancel */ }
+}
+
+const handleEnable = async (row: NoticeListVO) => {
+  try {
+    await ElMessageBox.confirm('确定启用该公告？启用后将恢复显示', '提示', {
+      confirmButtonText: '确定启用',
+      cancelButtonText: '取消',
+    })
+    const res = await updateNoticeStatus(row.id, { status: 1 })
+    if (res.data.code === 200) {
+      ElMessage.success('启用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -174,6 +199,7 @@ onMounted(() => { fetchData() })
       :year="queryParams.year"
       :is-top="queryParams.isTop"
       :is-important="queryParams.isImportant"
+      :status="queryParams.status"
       @update:title="queryParams.title = $event"
       @update:notice-category="queryParams.noticeCategory = $event"
       @update:notice-type="queryParams.noticeType = $event"
@@ -182,6 +208,7 @@ onMounted(() => { fetchData() })
       @update:year="queryParams.year = $event"
       @update:is-top="queryParams.isTop = $event"
       @update:is-important="queryParams.isImportant = $event"
+      @update:status="queryParams.status = $event"
       @search="handleSearch"
       @reset="handleReset"
     />
@@ -194,9 +221,11 @@ onMounted(() => { fetchData() })
       :size="queryParams.size"
       :selected-ids="selectedIds"
       @detail="openDetail"
+      @add="openAdd"
       @edit="openEdit"
       @delete="handleDelete"
       @disable="handleDisable"
+      @enable="handleEnable"
       @batch-delete="handleBatchDelete"
       @refresh="fetchData"
       @selection-change="handleSelectionChange"

@@ -15,7 +15,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   detail: [id: string]
   edit: [id: string]
+  add: []
   disable: [row: ExamGuideListVO]
+  enable: [row: ExamGuideListVO]
   delete: [id: string]
   'batch-delete': []
   refresh: []
@@ -32,6 +34,12 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
 <template>
   <div>
     <div class="toolbar">
+      <button type="button" class="btn-tool btn-orange" @click="emit('add')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        新增备考指南
+      </button>
       <button type="button" class="btn-tool btn-outline" @click="emit('refresh')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -40,7 +48,7 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
         </svg>
         刷新
       </button>
-      <button v-if="selectedIds.length > 0" type="button" class="btn-tool btn-red" @click="emit('batch-delete')">批量硬删除</button>
+      <button v-if="selectedIds.length > 0" type="button" class="btn-tool btn-red" @click="emit('batch-delete')">批量删除</button>
     </div>
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe @selection-change="emit('selection-change', $event)">
@@ -63,13 +71,19 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
         </el-table-column>
         <el-table-column prop="viewCount" label="阅读" width="70" align="center" />
         <el-table-column prop="likeCount" label="点赞" width="70" align="center" />
+        <el-table-column label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <span :class="['pill', row.isDeleted ? 'pill-gray' : 'pill-orange']">{{ row.isDeleted ? '禁用' : '启用' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
               <button type="button" class="action-btn action-edit" @click="emit('edit', row.id)">修改</button>
-              <button type="button" class="action-btn action-disable" @click="emit('disable', row)">禁用</button>
-              <button type="button" class="action-btn action-delete" @click="emit('delete', row.id)">硬删除</button>
+              <button v-if="!row.isDeleted" type="button" class="action-btn action-disable" @click="emit('disable', row)">禁用</button>
+              <button v-else type="button" class="action-btn action-enable" @click="emit('enable', row)">启用</button>
+              <button type="button" class="action-btn action-delete" @click="emit('delete', row.id)">删除</button>
             </div>
           </template>
         </el-table-column>
@@ -87,6 +101,8 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
 .btn-tool:hover { transform: translateY(-1px); }
 .btn-outline { background: #fff; color: #6b7280; border: 1px solid #d1d5db; }
 .btn-outline:hover { border-color: #F97316; color: #F97316; }
+.btn-orange { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; }
+.btn-orange:hover { box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); }
 .btn-red { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
 .btn-red:hover { box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); }
 
@@ -134,6 +150,7 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
 .pill { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .pill-orange { background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(251,146,60,0.12)); color: #C2410C; border: 1px solid rgba(249,115,22,0.2); }
 .pill-red { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(248,113,113,0.12)); color: #DC2626; border: 1px solid rgba(239,68,68,0.2); }
+.pill-gray { background: linear-gradient(135deg, rgba(107,114,128,0.08), rgba(156,163,175,0.12)); color: #6b7280; border: 1px solid rgba(107,114,128,0.2); }
 
 .action-group { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
 
@@ -175,6 +192,15 @@ const categoryLabel = (cat: string) => GuideCategoryLabel[cat] || cat
 }
 .action-disable:hover {
   background: #fde68a;
+}
+
+.action-enable {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+.action-enable:hover {
+  background: #bbf7d0;
 }
 
 .action-delete {

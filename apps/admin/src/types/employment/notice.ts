@@ -9,6 +9,7 @@ export interface NoticeListVO {
   isTop: boolean
   isImportant: boolean
   viewCount: number
+  isDeleted: boolean
 }
 
 export interface NoticeDetailVO {
@@ -50,6 +51,31 @@ export interface NoticeQueryDTO {
   year?: string
   isTop?: boolean
   isImportant?: boolean
+  /** 状态筛选：0=启用，1=禁用，不传=全部 */
+  status?: number
+}
+
+export interface NoticeAddDTO {
+  noticeCategory: string
+  noticeType: string
+  title: string
+  summary?: string
+  content: string
+  province?: string
+  city?: string
+  tags?: string[]
+  year?: string
+  source?: string
+  sourceUrl?: string
+  publishDate: string
+  publishUnit?: string
+  regStartDate?: string
+  regEndDate?: string
+  examTime?: string
+  recruitmentCount?: number
+  isTop: boolean
+  isImportant: boolean
+  sortOrder: number
 }
 
 export interface NoticeUpdateDTO {

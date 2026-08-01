@@ -6,6 +6,7 @@ const props = defineProps<{
   guideCategory: string | undefined
   guideType: string | undefined
   isTop: boolean | undefined
+  status: number | undefined
 }>()
 
 const emit = defineEmits<{
@@ -13,9 +14,15 @@ const emit = defineEmits<{
   'update:guideCategory': [val: string | undefined]
   'update:guideType': [val: string | undefined]
   'update:isTop': [val: boolean | undefined]
+  'update:status': [val: number | undefined]
   search: []
   reset: []
 }>()
+
+const statusOptions = [
+  { label: '启用', value: 0 },
+  { label: '禁用', value: 1 },
+]
 </script>
 
 <template>
@@ -48,6 +55,11 @@ const emit = defineEmits<{
           <el-select :model-value="isTop" placeholder="全部" clearable style="width: 120px" @update:model-value="emit('update:isTop', $event)">
             <el-option label="置顶" :value="true" />
             <el-option label="未置顶" :value="false" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select :model-value="status" placeholder="全部" clearable style="width: 110px" @update:model-value="emit('update:status', $event === '' || $event === undefined ? undefined : $event)">
+            <el-option v-for="s in statusOptions" :key="s.value" :label="s.label" :value="s.value" />
           </el-select>
         </el-form-item>
       </div>

@@ -8,6 +8,7 @@ export interface ExamGuideListVO {
   isRecommended: boolean
   viewCount: number
   likeCount: number
+  isDeleted: boolean
 }
 
 export interface ExamGuideDetailVO {
@@ -35,6 +36,25 @@ export interface ExamGuideDetailVO {
   updatedAt: string
 }
 
+export interface ExamGuideAddDTO {
+  guideCategory: string
+  guideType: string
+  title: string
+  subtitle?: string
+  coverImage?: string
+  iconClass?: string
+  summary?: string
+  content: string
+  tags?: string[]
+  difficultyLevel?: string
+  targetAudience?: string
+  authorName?: string
+  authorTitle?: string
+  isTop: boolean
+  isRecommended: boolean
+  sortOrder: number
+}
+
 export interface ExamGuideQueryDTO {
   page: number
   size: number
@@ -43,6 +63,8 @@ export interface ExamGuideQueryDTO {
   guideCategory?: string
   guideType?: string
   isTop?: boolean
+  /** 状态筛选：0=启用，1=禁用，不传=全部 */
+  status?: number
 }
 
 export interface ExamGuideUpdateDTO {

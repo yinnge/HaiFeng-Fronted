@@ -66,6 +66,43 @@ export interface TeacherQueryDTO {
   positionStatus?: string
 }
 
+export interface TeacherAddDTO {
+  schoolName: string
+  schoolType: string
+  schoolNature?: string
+  supervisingDept?: string
+  positionName: string
+  subject: string
+  recruitmentType: string
+  province: string
+  city?: string
+  district?: string
+  educationRequirement?: string
+  degreeRequirement?: string
+  majorRequirement?: string
+  ageLimit?: number
+  recruitmentCount?: number
+  teacherCertRequirement?: string
+  teacherCertSubject?: string
+  putonghuaLevel?: string
+  otherCertRequirement?: string
+  workExperience?: string
+  isNormalMajor?: string
+  salaryRange?: string
+  benefits?: string
+  examContent?: string
+  interviewForm?: string
+  regStartDate?: string
+  regEndDate?: string
+  examTime?: string
+  positionStatus?: string
+  applyLink?: string
+  contactPhone?: string
+  remark?: string
+  content?: string
+  sortOrder?: number
+}
+
 export interface TeacherUpdateDTO {
   schoolName?: string
   schoolType?: string

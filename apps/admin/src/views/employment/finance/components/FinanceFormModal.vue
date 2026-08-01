@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const props = defineProps<{
   visible: boolean
   initialData: Record<string, any>
+  mode?: 'add' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -12,8 +14,20 @@ const emit = defineEmits<{
   (e: 'submit', data: Record<string, any>): void
 }>()
 
+const dialogTitle = computed(() => (props.mode === 'add' ? '新增银行/金融岗位' : '修改银行/金融岗位'))
+
 const activeTab = ref('basic')
 const formData = ref<Record<string, any>>({})
+
+const formRefBasic = ref<FormInstance>()
+
+// 必填校验（与后端 FinancePositionAddDTO @NotBlank 字段对齐）
+const basicRules: FormRules = {
+  institutionName: [{ required: true, message: '请输入机构名称', trigger: 'blur' }],
+  institutionCategory: [{ required: true, message: '请选择机构大类', trigger: 'change' }],
+  positionName: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+  recruitmentType: [{ required: true, message: '请选择招聘类型', trigger: 'change' }],
+}
 
 const institutionCategoryOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技']
 const recruitmentTypeOptions = ['秋招', '春招', '社招', '实习', '定向']
@@ -24,12 +38,20 @@ watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     formData.value = { ...props.initialData }
+    nextTick(() => {
+      formRefBasic.value?.clearValidate()
+    })
   }
 })
 
 const handleClose = () => { emit('update:visible', false) }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  try {
+    await formRefBasic.value?.validate()
+  } catch {
+    return
+  }
   const data: Record<string, any> = {}
   const stringFields = ['institutionName', 'institutionCategory', 'institutionType', 'institutionLogo', 'branchName', 'positionName', 'positionCategory', 'recruitmentType', 'province', 'city', 'workLocation', 'educationRequirement', 'degreeRequirement', 'majorRequirement', 'workExperience', 'languageRequirement', 'computerRequirement', 'otherRequirement', 'salaryText', 'benefits', 'examContent', 'examTime', 'interviewRounds', 'regStartDate', 'regEndDate', 'applyLink', 'positionStatus', 'contactInfo', 'remark', 'content']
   stringFields.forEach((f) => { if (formData.value[f]) data[f] = formData.value[f] })
@@ -49,7 +71,7 @@ const handleSubmit = () => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="修改银行/金融岗位"
+    :title="dialogTitle"
     width="900px"
     class="form-dialog"
     :close-on-click-modal="false"
@@ -58,15 +80,15 @@ const handleSubmit = () => {
     <div class="dialog-content">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="机构与岗位信息" name="basic">
-          <el-form :model="formData" label-width="120px" class="mt-2">
+          <el-form ref="formRefBasic" :model="formData" :rules="basicRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="机构名称">
+                <el-form-item label="机构名称" prop="institutionName">
                   <el-input v-model="formData.institutionName" placeholder="机构名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="机构大类">
+                <el-form-item label="机构大类" prop="institutionCategory">
                   <el-select v-model="formData.institutionCategory" placeholder="请选择" clearable style="width: 100%">
                     <el-option v-for="item in institutionCategoryOptions" :key="item" :label="item" :value="item" />
                   </el-select>
@@ -90,7 +112,7 @@ const handleSubmit = () => {
             </el-form-item>
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="岗位名称">
+                <el-form-item label="岗位名称" prop="positionName">
                   <el-input v-model="formData.positionName" placeholder="岗位名称" maxlength="200" show-word-limit />
                 </el-form-item>
               </el-col>
@@ -100,7 +122,7 @@ const handleSubmit = () => {
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="招聘类型">
+            <el-form-item label="招聘类型" prop="recruitmentType">
               <el-select v-model="formData.recruitmentType" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="item in recruitmentTypeOptions" :key="item" :label="item" :value="item" />
               </el-select>

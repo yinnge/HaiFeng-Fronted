@@ -4,6 +4,7 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getCivilPage,
   getCivilDetail,
+  addCivil,
   updateCivil,
   deleteCivil,
   updateCivilStatus,
@@ -11,7 +12,7 @@ import {
   preValidateCivil,
   importCivil,
 } from '@/api/employment/civil'
-import type { CivilListVO, CivilDetailVO, CivilQueryDTO } from '@/types/employment/civil'
+import type { CivilListVO, CivilDetailVO, CivilQueryDTO, CivilAddDTO } from '@/types/employment/civil'
 import CivilSearch from './components/CivilSearch.vue'
 import CivilTable from './components/CivilTable.vue'
 import CivilDetailModal from './components/CivilDetailModal.vue'
@@ -36,6 +37,7 @@ const queryParams = reactive<CivilQueryDTO>({
 
 const detailVisible = ref(false)
 const formVisible = ref(false)
+const formMode = ref<'add' | 'edit'>('edit')
 const currentId = ref<string | null>(null)
 const editFormData = ref<Record<string, any>>({})
 
@@ -94,6 +96,7 @@ const openEdit = async (row: CivilListVO) => {
     if (res.data.code === 200) {
       editFormData.value = res.data.data
       currentId.value = row.id
+      formMode.value = 'edit'
       formVisible.value = true
     } else {
       ElMessage.error(res.data.msg || '获取详情失败')
@@ -103,19 +106,25 @@ const openEdit = async (row: CivilListVO) => {
   }
 }
 
+const handleAdd = () => {
+  formMode.value = 'add'
+  currentId.value = null
+  editFormData.value = {}
+  formVisible.value = true
+}
+
 const handleSubmitForm = async (data: Record<string, any>) => {
-  if (!currentId.value) return
   try {
-    const res = await updateCivil(currentId.value, data)
+    const res = formMode.value === 'add' ? await addCivil(data as CivilAddDTO) : await updateCivil(currentId.value!, data)
     if (res.data.code === 200) {
-      ElMessage.success('修改成功')
+      ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -158,7 +167,7 @@ const handleStatusChange = async (row: CivilListVO, newStatus: string) => {
       ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '操作失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '操作失败')
   }
 }
 
@@ -178,7 +187,7 @@ const handlePreValidateSubmit = async (file: File) => {
       ElMessage.error(res.data.msg || '校验失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '校验失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '校验失败')
   } finally {
     preValidateLoading.value = false
   }
@@ -196,7 +205,7 @@ const handleImportSubmit = async (file: File) => {
       ElMessage.error(res.data.msg || '导入失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || '导入失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -250,6 +259,7 @@ onMounted(() => { fetchData() })
       @delete="handleDelete"
       @status-change="handleStatusChange"
       @batch-delete="handleBatchDelete"
+      @add="handleAdd"
       @pre-validate="preValidateDialogVisible = true"
       @import="importDialogVisible = true"
       @refresh="fetchData"
@@ -266,6 +276,7 @@ onMounted(() => { fetchData() })
     <CivilFormModal
       v-model:visible="formVisible"
       :initial-data="editFormData"
+      :mode="formMode"
       @submit="handleSubmitForm"
     />
 
