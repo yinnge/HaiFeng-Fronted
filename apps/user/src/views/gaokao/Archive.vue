@@ -48,7 +48,7 @@ const showIdentityCondition = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const saved = ref(false)
-const archiveId = ref<number | null>(null)
+const archiveId = ref<string | null>(null)
 
 // 约束相关
 const constraintList = ref<ConstraintItem[]>([])

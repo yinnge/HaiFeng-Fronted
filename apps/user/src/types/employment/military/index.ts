@@ -10,7 +10,7 @@ export interface MilitaryPositionSearchDTO {
 }
 
 export interface MilitaryPositionListVO {
-  id: number
+  id: string
   positionName: string
   employerUnit: string
   department: string
@@ -24,7 +24,7 @@ export interface MilitaryPositionListVO {
 }
 
 export interface MilitaryPositionDetailVO {
-  id: number
+  id: string
   positionName: string
   employerUnit: string
   department: string

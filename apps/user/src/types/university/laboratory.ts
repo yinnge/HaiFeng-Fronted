@@ -1,5 +1,5 @@
 export interface LaboratoryListVO {
-  id: number
+  id: string
   name: string
   labType: string
 }

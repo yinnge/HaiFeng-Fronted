@@ -7,7 +7,7 @@ export interface CityQueryDTO extends BasePageQuery {
 }
 
 export interface CityListVO {
-  id: number
+  id: string
   cityName: string
   province: string
   region: string

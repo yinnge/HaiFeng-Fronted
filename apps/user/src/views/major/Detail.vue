@@ -70,7 +70,7 @@ function onCompPageChange(page: number) {
   fetchCompetitions()
 }
 
-function goCompetitionDetail(id: number) {
+function goCompetitionDetail(id: string) {
   router.push(`/competition/${id}`)
 }
 
@@ -81,7 +81,7 @@ const directionPageSize = ref(10)
 const directionLoading = ref(false)
 
 const dialogVisible = ref(false)
-const selectedDirectionId = ref<number | null>(null)
+const selectedDirectionId = ref<string | null>(null)
 
 async function fetchPostgradDirections() {
   const id = route.params.id as string
@@ -105,7 +105,7 @@ function onDirectionPageChange(page: number) {
   fetchPostgradDirections()
 }
 
-function showDirectionDetail(id: number) {
+function showDirectionDetail(id: string) {
   selectedDirectionId.value = id
   dialogVisible.value = true
 }

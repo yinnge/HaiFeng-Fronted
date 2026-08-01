@@ -13,7 +13,7 @@ export interface CivilPositionSearchDTO {
 }
 
 export interface CivilPositionListVO {
-  id: number
+  id: string
   positionName: string
   examType: string
   recruitingDept: string
@@ -30,7 +30,7 @@ export interface CivilPositionListVO {
 }
 
 export interface CivilPositionDetailVO {
-  id: number
+  id: string
   positionName: string
   examType: string
   recruitingDept: string

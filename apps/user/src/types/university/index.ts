@@ -12,7 +12,7 @@ export interface UniversityQueryDTO extends BasePageQuery {
 }
 
 export interface UniversityListVO {
-  id: number
+  id: string
   name: string
   tags: string[]
   cityName: string
@@ -93,7 +93,7 @@ export interface ChannelOptionVO {
 
 // === 录取专业组 ===
 export interface AdmissionGroupListVO {
-  id: number
+  id: string
   groupCode: string
   groupName: string
   year: number
@@ -113,8 +113,8 @@ export interface AdmissionGroupListVO {
 }
 
 export interface AdmissionGroupDetailVO {
-  id: number
-  universityId: number
+  id: string
+  universityId: string
   universityName: string
   cityName: string
   year: number
@@ -141,8 +141,8 @@ export interface AdmissionGroupDetailVO {
 }
 
 export interface MajorScoreVO {
-  id: number
-  groupId: number
+  id: string
+  groupId: string
   majorCode: string
   majorName: string
   educationLevel: string

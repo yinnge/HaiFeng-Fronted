@@ -1,7 +1,7 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
 export interface MajorListVO {
-  id: number
+  id: string
   majorCode: string
   majorName: string
   disciplineName: string
@@ -60,6 +60,6 @@ export interface MajorRankingQueryDTO extends BasePageQuery {
 }
 
 export interface UndergraduateMajorDirectionBriefVO {
-  id: number
+  id: string
   majorName: string
 }

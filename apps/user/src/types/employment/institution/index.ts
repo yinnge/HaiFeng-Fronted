@@ -13,7 +13,7 @@ export interface InstitutionPositionSearchDTO {
 }
 
 export interface InstitutionPositionListVO {
-  id: number
+  id: string
   positionName: string
   supervisingDept: string
   institution: string
@@ -30,7 +30,7 @@ export interface InstitutionPositionListVO {
 }
 
 export interface InstitutionPositionDetailVO {
-  id: number
+  id: string
   positionName: string
   supervisingDept: string
   institution: string

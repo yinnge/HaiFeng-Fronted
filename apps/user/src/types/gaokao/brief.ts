@@ -1,6 +1,6 @@
 /** 城市简要信息 VO */
 export interface CityBriefVO {
-  id: number
+  id: string
   cityName: string
   province: string
   region: string
@@ -10,7 +10,7 @@ export interface CityBriefVO {
 
 /** 院校简要信息 VO */
 export interface UniversityBriefVO {
-  id: number
+  id: string
   name: string
   provinceName: string
   cityName: string

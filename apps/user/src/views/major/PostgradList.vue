@@ -28,7 +28,7 @@ const query = reactive<PostgradMajorQueryDTO>({
 })
 
 const dialogVisible = ref(false)
-const selectedMajorId = ref<number | null>(null)
+const selectedMajorId = ref<string | null>(null)
 
 const disciplineOptions = ['哲学', '经济学', '法学', '教育学', '文学', '历史学', '理学', '工学', '农学', '医学', '军事学', '管理学', '艺术学']
 const popularityOptions = ['热门', '一般', '冷门']
@@ -74,7 +74,7 @@ function switchDegree(degree: string) {
   fetchList()
 }
 
-function showDetail(id: number) {
+function showDetail(id: string) {
   selectedMajorId.value = id
   dialogVisible.value = true
 }

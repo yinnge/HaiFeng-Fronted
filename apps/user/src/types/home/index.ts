@@ -31,21 +31,21 @@ export interface HomePageResult<T> {
 }
 
 export interface AnnouncementListVO {
-  id: number
+  id: string
   title: string
   tag: string
   updatedAt: string
 }
 
 export interface AnnouncementDetailVO {
-  id: number
+  id: string
   title: string
   content: string
   tag: string
 }
 
 export interface PlannerListVO {
-  id: number
+  id: string
   name: string
   region: string
   position: string
@@ -55,7 +55,7 @@ export interface PlannerListVO {
 }
 
 export interface PlannerDetailVO {
-  id: number
+  id: string
   name: string
   position: string
   region: string
@@ -70,7 +70,7 @@ export interface PlannerDetailVO {
 }
 
 export interface InstitutionListVO {
-  id: number
+  id: string
   name: string
   type: string
   description: string
@@ -78,7 +78,7 @@ export interface InstitutionListVO {
 }
 
 export interface InstitutionDetailVO {
-  id: number
+  id: string
   name: string
   type: string
   phone: string

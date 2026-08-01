@@ -18,7 +18,7 @@ export interface WelfareQueryDTO {
 }
 
 export interface WelfarePositionListVO {
-  id: number
+  id: string
   developingUnit: string
   employingUnit: string
   positionName: string
@@ -37,7 +37,7 @@ export interface WelfarePositionListVO {
 }
 
 export interface WelfarePositionDetailVO {
-  id: number
+  id: string
   developingUnit: string
   employingUnit: string
   positionName: string

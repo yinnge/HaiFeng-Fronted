@@ -5,7 +5,7 @@ import { getExamGuideDetail } from '@/api/employment/content/examGuide'
 import type { ExamGuideDetailVO } from '@/types/employment/content/examGuide'
 
 const props = defineProps<{
-  id: number
+  id: string
 }>()
 
 const loading = ref(false)

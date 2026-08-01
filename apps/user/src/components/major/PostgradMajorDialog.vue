@@ -10,7 +10,7 @@ import { MemberType } from '@haifeng/shared'
 
 const props = defineProps<{
   visible: boolean
-  majorId: number | null
+  majorId: string | null
 }>()
 
 const emit = defineEmits<{
@@ -67,7 +67,7 @@ async function fetchUniversities() {
   }
 }
 
-function goUniversity(id: number) {
+function goUniversity(id: string) {
   emit('update:visible', false)
   router.push(`/university/${id}`)
 }
@@ -107,7 +107,7 @@ function onUndergradPageChange(page: number) {
   fetchUndergraduateMajors()
 }
 
-function goMajor(id: number) {
+function goMajor(id: string) {
   emit('update:visible', false)
   router.push(`/major/${id}`)
 }

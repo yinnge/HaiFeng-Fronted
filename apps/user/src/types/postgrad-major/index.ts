@@ -1,7 +1,7 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
 export interface PostgradMajorListVO {
-  id: number
+  id: string
   majorName: string
   majorCode: string
   degreeType: string
@@ -37,18 +37,18 @@ export interface PostgradMajorQueryDTO extends BasePageQuery {
 }
 
 export interface PostgradMajorBriefVO {
-  id: number
+  id: string
   majorName: string
   degreeType: string
 }
 
 export interface UniversityBriefForPostgradVO {
-  id: number
+  id: string
   name: string
   category: string
 }
 
 export interface PostgradMajorDirectionBriefVO {
-  id: number
+  id: string
   postgradMajorName: string
 }

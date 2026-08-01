@@ -1,6 +1,6 @@
 // ==== Special Channel (特殊招生通道) ====
 export interface SpecialChannelListVO {
-  id: number
+  id: string
   channelCode: string
   channelName: string
   subtitle: string
@@ -16,7 +16,7 @@ export interface SpecialChannelQueryDTO {
 }
 
 export interface SpecialChannelDetailVO {
-  id: number
+  id: string
   channelCode: string
   channelName: string
   subtitle: string
@@ -27,7 +27,7 @@ export interface SpecialChannelDetailVO {
 
 // ==== Channel-University Association (通道-大学关联) ====
 export interface ChannelUniversityListVO {
-  universityId: number
+  universityId: string
   universityName: string
   year: number
   regionTag: string
@@ -45,10 +45,10 @@ export interface ChannelUniversityQueryDTO {
 }
 
 export interface ChannelUniversityDetailVO {
-  id: number
+  id: string
   channelCode: string
   channelName: string
-  universityId: number
+  universityId: string
   universityName: string
   year: number
   regionTag: string
@@ -61,8 +61,8 @@ export interface ChannelUniversityDetailVO {
 
 // ==== Strong Base Score (强基计划数据) ====
 export interface StrongBaseScoreListVO {
-  id: number
-  universityId: number
+  id: string
+  universityId: string
   universityName: string
   year: number
   province: string
@@ -90,8 +90,8 @@ export interface StrongBaseScoreQueryDTO {
 }
 
 export interface StrongBaseScoreDetailVO {
-  id: number
-  universityId: number
+  id: string
+  universityId: string
   universityName: string
   year: number
   province: string
@@ -111,8 +111,8 @@ export interface StrongBaseScoreDetailVO {
 
 // ==== Strong Base University Config (强基院校配置) ====
 export interface StrongBaseUniversityDetailVO {
-  id: number
-  universityId: number
+  id: string
+  universityId: string
   universityName: string
   isPilot: boolean
   pilotYear: number

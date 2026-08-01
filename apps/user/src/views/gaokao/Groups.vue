@@ -46,12 +46,12 @@ const groups = ref<AdmissionGroupVO[]>([])
 const loading = ref(false)
 
 // 展开的专业组 ID
-const expandedGroupId = ref<number | null>(null)
+const expandedGroupId = ref<string | null>(null)
 const majorLoading = ref(false)
 const majors = ref<AdmissionMajorVO[]>([])
 
 // 冲突检查结果
-const groupConflicts = ref<Map<number, ConstraintCheckResult>>(new Map())
+const groupConflicts = ref<Map<string, ConstraintCheckResult>>(new Map())
 
 // 简要信息抽屉
 const drawerVisible = ref(false)
@@ -137,7 +137,7 @@ function handleSizeChange(size: number) {
 }
 
 // 展开/收起专业组
-async function toggleExpand(groupId: number) {
+async function toggleExpand(groupId: string) {
   if (expandedGroupId.value === groupId) {
     expandedGroupId.value = null
     majors.value = []

@@ -41,7 +41,7 @@ async function fetchList() {
   }
 }
 
-function goDetail(deptId: number) {
+function goDetail(deptId: string) {
   router.push(`/university/departments/${deptId}`)
 }
 

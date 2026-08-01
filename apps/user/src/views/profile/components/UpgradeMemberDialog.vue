@@ -99,7 +99,7 @@ const upgradeOptions = computed(() => {
 /** 年价格 */
 const yearPrice = computed(() => {
   if (!props.siteInfo) return 0
-  return targetType.value === 'pro' ? props.siteInfo.proPrice : props.siteInfo.vipPrice
+  return targetType.value === 'pro' ? (props.siteInfo.proPrice ?? 0) : (props.siteInfo.vipPrice ?? 0)
 })
 
 /** 计算金额 */

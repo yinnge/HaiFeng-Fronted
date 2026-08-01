@@ -27,7 +27,7 @@ async function fetchList() {
   }
 }
 
-function goDetail(id: number) {
+function goDetail(id: string) {
   router.push(`/competition/${id}`)
 }
 

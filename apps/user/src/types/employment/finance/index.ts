@@ -18,7 +18,7 @@ export interface FinanceQueryDTO {
 }
 
 export interface FinancePositionListVO {
-  id: number
+  id: string
   institutionName: string
   institutionCategory: string
   positionName: string
@@ -42,7 +42,7 @@ export interface FinancePositionListVO {
 }
 
 export interface FinancePositionDetailVO {
-  id: number
+  id: string
   institutionName: string
   institutionCategory: string
   institutionType: string

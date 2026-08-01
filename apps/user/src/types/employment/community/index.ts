@@ -19,7 +19,7 @@ export interface CommunityQueryDTO {
 }
 
 export interface CommunityPositionListVO {
-  id: number
+  id: string
   communityName: string
   district: string
   positionName: string
@@ -35,7 +35,7 @@ export interface CommunityPositionListVO {
 }
 
 export interface CommunityPositionDetailVO {
-  id: number
+  id: string
   streetOffice: string
   communityName: string
   supervisingDept: string

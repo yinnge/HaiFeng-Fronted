@@ -63,7 +63,7 @@ function onMajorsPageChange(page: number) {
   fetchMajors()
 }
 
-function goMajorDetail(majorId: number) {
+function goMajorDetail(majorId: string) {
   router.push(`/major/${majorId}`)
 }
 

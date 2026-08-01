@@ -5,7 +5,7 @@ import { getNoticeDetail } from '@/api/employment/content/notice'
 import type { NoticeDetailVO } from '@/types/employment/content/notice'
 
 const props = defineProps<{
-  id: number
+  id: string
 }>()
 
 const loading = ref(false)

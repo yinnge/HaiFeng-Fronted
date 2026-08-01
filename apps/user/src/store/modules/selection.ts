@@ -4,14 +4,14 @@ import { ref, computed } from 'vue'
 const STORAGE_KEY = 'haifeng:selected-majors'
 
 export interface SelectedMajor {
-  majorId: number
+  majorId: string
   majorName: string
   levelShort: string
   safetyLevel: number
 }
 
 export interface SelectedGroup {
-  groupId: number
+  groupId: string
   groupName: string
   universityName: string
   levelShort: string
@@ -19,7 +19,7 @@ export interface SelectedGroup {
   majors: SelectedMajor[]
 }
 
-export type SelectionMap = Record<number, SelectedGroup>
+export type SelectionMap = Record<string, SelectedGroup>
 
 function loadFromStorage(): SelectionMap {
   try {
@@ -59,7 +59,7 @@ export const useSelectionStore = defineStore('selection', () => {
     return counts
   })
 
-  function isMajorSelected(majorId: number): boolean {
+  function isMajorSelected(majorId: string): boolean {
     for (const group of Object.values(selections.value)) {
       if (group.majors.some(m => m.majorId === majorId)) return true
     }
@@ -67,7 +67,7 @@ export const useSelectionStore = defineStore('selection', () => {
   }
 
   function toggleMajor(
-    groupId: number,
+    groupId: string,
     groupInfo: { groupName: string; universityName: string; levelShort: string; safetyLevel: number },
     majorInfo: SelectedMajor
   ) {
