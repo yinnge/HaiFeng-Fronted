@@ -14,7 +14,7 @@ export interface WishPlanLimitVO {
 }
 
 export interface WishPlanListVO {
-  id: number
+  id: string
   planName: string
   planYear: number
   planProvince: string
@@ -31,11 +31,11 @@ export interface WishPlanListVO {
 }
 
 export interface WishPlanGroupVO {
-  id: number
-  groupId: number
-  planId: number
+  id: string
+  groupId: string
+  planId: string
   groupSortOrder: number
-  universityId: number
+  universityId: string
   universityName: string
   cityName: string
   category: string
@@ -56,9 +56,9 @@ export interface WishPlanGroupVO {
 }
 
 export interface WishPlanMajorVO {
-  id: number
-  groupSnapshotId: number
-  majorId: number
+  id: string
+  groupSnapshotId: string
+  majorId: string
   majorSortOrder: number
   majorCode: string
   majorName: string
@@ -117,10 +117,10 @@ export const getPlanGroupMajors = (planId: string, groupSnapshotId: string, para
     `${PREFIX}/${planId}/groups/${groupSnapshotId}/majors`, { params }
   )
 
-export const sortPlanGroups = (planId: string, items: { groupId: number; sortOrder: number }[]) =>
+export const sortPlanGroups = (planId: string, items: { groupId: string; sortOrder: number }[]) =>
   request.put<R<null>>(`${PREFIX}/${planId}/groups/sort`, { items })
 
-export const sortPlanGroupMajors = (planId: string, groupSnapshotId: string, items: { majorId: number; sortOrder: number }[]) =>
+export const sortPlanGroupMajors = (planId: string, groupSnapshotId: string, items: { majorId: string; sortOrder: number }[]) =>
   request.put<R<null>>(`${PREFIX}/${planId}/groups/${groupSnapshotId}/majors/sort`, { items })
 
 export const toggleMajorExport = (planId: string, majorId: string, isExported: boolean) =>

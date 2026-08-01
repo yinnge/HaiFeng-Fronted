@@ -1,7 +1,7 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
 export interface CertificateListVO {
-  id: number
+  id: string
   certName: string
   category: string
   certLevel: string
@@ -13,7 +13,7 @@ export interface CertificateListVO {
 }
 
 export interface CertificateDetailVO {
-  id: number
+  id: string
   certName: string
   category: string
   certLevel: string
@@ -28,15 +28,15 @@ export interface CertificateDetailVO {
 }
 
 export interface CompetitionListVO {
-  id: number
+  id: string
   compName: string
   compLevel: string
   registrationTime: string
 }
 
 export interface CompetitionDetailVO {
-  id: number
-  competitionId: number
+  id: string
+  competitionId: string
   basicInfo: Record<string, any> | null
   awards: string[] | null
   background: string | null
@@ -49,12 +49,12 @@ export interface CompetitionDetailVO {
 }
 
 export interface CompetitionMajorBriefVO {
-  majorId: number
+  majorId: string
   majorName: string
 }
 
 export interface CompetitionBriefVO {
-  competitionId: number
+  competitionId: string
   competitionName: string
 }
 

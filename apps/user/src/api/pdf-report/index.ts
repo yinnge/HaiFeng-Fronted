@@ -7,16 +7,16 @@ const PREFIX = '/api/v1/app/algorithm/pdf'
 // ========== 类型定义 ==========
 
 export interface PdfRecordListVO {
-  id: number
-  planId: number
+  id: string
+  planId: string
   planName: string
   status: number // 0=生成中, 1=成功, 2=失败
   createdAt: string
 }
 
 export interface PdfRecordDetailVO {
-  id: number
-  planId: number
+  id: string
+  planId: string
   planName: string
   status: number
   mapResults: string | null
@@ -35,11 +35,11 @@ export interface PdfRecordListResult {
 }
 
 export interface MapResultItem {
-  universityId: number
+  universityId: string
   universityName: string
   cityName: string
   groupName: string
-  groupSnapshotId: number
+  groupSnapshotId: string
   majors: MapResultMajor[]
   commentary: string | null
   success: boolean

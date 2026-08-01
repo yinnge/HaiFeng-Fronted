@@ -74,7 +74,7 @@ function onSizeChange(s: number) {
   fetchList()
 }
 
-function goDetail(groupId: number) {
+function goDetail(groupId: string) {
   router.push(`/university/admission-group/${groupId}`)
 }
 

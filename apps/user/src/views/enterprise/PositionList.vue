@@ -54,7 +54,7 @@ async function fetchIndustries() {
   }
 }
 
-function goIndustry(id: number) {
+function goIndustry(id: string) {
   router.push(`/industry/${id}`)
 }
 

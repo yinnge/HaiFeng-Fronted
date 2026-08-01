@@ -63,7 +63,7 @@ async function fetchRelatedEnterprises() {
   }
 }
 
-function goEnterprisePositions(enterpriseId: number, enterpriseNameVal: string) {
+function goEnterprisePositions(enterpriseId: string, enterpriseNameVal: string) {
   router.push({
     path: `/enterprise/${enterpriseId}/positions`,
     query: { name: enterpriseNameVal },

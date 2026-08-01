@@ -12,7 +12,7 @@ export interface NoticeQueryDTO {
 }
 
 export interface NoticeListVO {
-  id: number
+  id: string
   title: string
   summary: string
   publishDate: string
@@ -27,7 +27,7 @@ export interface NoticeListVO {
 }
 
 export interface NoticeDetailVO {
-  id: number
+  id: string
   noticeCategory: string
   noticeType: string
   title: string

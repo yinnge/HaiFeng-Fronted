@@ -11,7 +11,7 @@ export interface ExamGuideQueryDTO {
 }
 
 export interface ExamGuideListVO {
-  id: number
+  id: string
   guideCategory: string
   guideType: string
   title: string
@@ -22,7 +22,7 @@ export interface ExamGuideListVO {
 }
 
 export interface ExamGuideDetailVO {
-  id: number
+  id: string
   guideCategory: string
   guideType: string
   title: string

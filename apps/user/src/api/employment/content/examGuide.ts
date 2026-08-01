@@ -6,6 +6,6 @@ export const getExamGuideList = (params: ExamGuideQueryDTO) => {
   return request.get<R<PageResult<ExamGuideListVO>>>('/api/v1/app/employment/content/exam-guide/list', { params })
 }
 
-export const getExamGuideDetail = (id: number) => {
+export const getExamGuideDetail = (id: string) => {
   return request.get<R<ExamGuideDetailVO>>(`/api/v1/app/employment/content/exam-guide/${id}`)
 }

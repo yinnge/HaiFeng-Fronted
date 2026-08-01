@@ -82,7 +82,7 @@ function onReset() {
 }
 function onPageChange(newPage: number) { page.value = newPage; fetchList() }
 function onPageSizeChange(newSize: number) { pageSize.value = newSize; page.value = 1; fetchList() }
-async function goDetail(id: number) {
+async function goDetail(id: string) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
     try {

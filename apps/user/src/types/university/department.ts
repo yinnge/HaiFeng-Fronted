@@ -1,5 +1,5 @@
 export interface DepartmentListVO {
-  id: number
+  id: string
   departmentName: string
   departmentType: string
 }

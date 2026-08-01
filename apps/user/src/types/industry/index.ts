@@ -5,7 +5,7 @@ export interface IndustryQueryDTO extends BasePageQuery {
 }
 
 export interface IndustryListVO {
-  id: number
+  id: string
   industryName: string
   category: string
   description: string

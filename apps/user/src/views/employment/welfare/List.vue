@@ -87,7 +87,7 @@ function onPageSizeChange(newSize: number) {
   fetchList()
 }
 
-async function goDetail(id: number) {
+async function goDetail(id: string) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
     try {

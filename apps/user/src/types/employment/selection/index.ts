@@ -15,7 +15,7 @@ export interface SelectionPositionSearchDTO {
 }
 
 export interface SelectionPositionListVO {
-  id: number
+  id: string
   positionName: string
   selectionType: string
   year: string
@@ -37,7 +37,7 @@ export interface SelectionPositionListVO {
 }
 
 export interface SelectionPositionDetailVO {
-  id: number
+  id: string
   positionName: string
   selectionType: string
   year: string

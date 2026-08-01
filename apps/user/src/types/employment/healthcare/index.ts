@@ -18,7 +18,7 @@ export interface HealthcareQueryDTO {
 }
 
 export interface HealthcarePositionListVO {
-  id: number
+  id: string
   institutionName: string
   institutionLevel: string
   positionName: string
@@ -38,7 +38,7 @@ export interface HealthcarePositionListVO {
 }
 
 export interface HealthcarePositionDetailVO {
-  id: number
+  id: string
   institutionName: string
   institutionType: string
   institutionLevel: string

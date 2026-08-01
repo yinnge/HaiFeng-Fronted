@@ -29,7 +29,7 @@ const degreeOptions = [
 ]
 
 const dialogVisible = ref(false)
-const selectedMajorId = ref<number | null>(null)
+const selectedMajorId = ref<string | null>(null)
 
 async function fetchList() {
   loading.value = true
@@ -56,7 +56,7 @@ function switchDegree(degree: string) {
   fetchList()
 }
 
-function showDetail(id: number) {
+function showDetail(id: string) {
   selectedMajorId.value = id
   dialogVisible.value = true
 }

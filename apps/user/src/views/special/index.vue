@@ -107,11 +107,11 @@ function onPageChange(page: number) {
   fetchData()
 }
 
-function viewChannelDetail(id: number) {
+function viewChannelDetail(id: string) {
   router.push(`/special/channel/${id}`)
 }
 
-function viewStrongBaseDetail(id: number) {
+function viewStrongBaseDetail(id: string) {
   router.push(`/special/strong-base/${id}`)
 }
 

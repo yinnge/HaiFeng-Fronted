@@ -21,7 +21,7 @@ const searchName = ref('')
 
 const downloadDialogVisible = ref(false)
 const currentResourceUrl = ref<ResourceUrlVO | null>(null)
-const downloadingId = ref<number | null>(null)
+const downloadingId = ref<string | null>(null)
 
 async function fetchCategories() {
   try {
@@ -64,7 +64,7 @@ function handleReset() {
   fetchList()
 }
 
-async function handleDownload(id: number) {
+async function handleDownload(id: string) {
   if (!userStore.isLoggedIn()) {
     userStore.setRedirectPath(router.currentRoute.value.fullPath)
     try {

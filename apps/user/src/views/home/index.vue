@@ -93,7 +93,7 @@ const currentAnnouncement = computed(() => {
   return announcements.value[currentAnnouncementIndex.value]
 })
 
-const goAnnouncementDetail = (id: number) => {
+const goAnnouncementDetail = (id: string) => {
   router.push(`/home/announcement/${id}`)
 }
 
@@ -149,7 +149,7 @@ const searchPlanner = () => {
 const institutions = ref<InstitutionListVO[]>([])
 const institutionTotal = ref(0)
 const institutionPage = ref(1)
-const institutionPageSize = ref(8)
+const institutionPageSize = ref(10)
 const institutionName = ref('')
 
 const fetchInstitutions = async () => {
@@ -173,7 +173,7 @@ const onInstitutionPageChange = (page: number) => {
   fetchInstitutions()
 }
 
-const goInstitutionDetail = (id: number) => {
+const goInstitutionDetail = (id: string) => {
   router.push(`/home/institution/${id}`)
 }
 

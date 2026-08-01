@@ -26,7 +26,7 @@ const planId = route.params.id as string
 
 const loading = ref(false)
 const planGroups = ref<WishPlanGroupVO[]>([])
-const expandedGroupId = ref<number | null>(null)
+const expandedGroupId = ref<string | null>(null)
 const majors = ref<WishPlanMajorVO[]>([])
 const majorLoading = ref(false)
 const saving = ref(false)
@@ -65,7 +65,7 @@ async function loadGroups() {
   }
 }
 
-async function toggleExpand(groupSnapshotId: number) {
+async function toggleExpand(groupSnapshotId: string) {
   if (expandedGroupId.value === groupSnapshotId) {
     expandedGroupId.value = null
     majors.value = []
@@ -169,7 +169,7 @@ function groupAllExported(group: WishPlanGroupVO): boolean {
   return true
 }
 
-async function handleToggleGroupExportAll(groupSnapshotId: number, allExported: boolean) {
+async function handleToggleGroupExportAll(groupSnapshotId: string, allExported: boolean) {
   try {
     await toggleGroupExportAll(planId, String(groupSnapshotId), !allExported)
   } catch (e: any) {

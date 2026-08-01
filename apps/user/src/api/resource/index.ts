@@ -10,5 +10,5 @@ export const getResourceCategories = () =>
 export const getResourceList = (params: ResourceQueryDTO) =>
   request.get<R<PageResult<ResourceListVO>>>(`${PREFIX}/list`, { params })
 
-export const getResourceUrl = (id: number) =>
+export const getResourceUrl = (id: string) =>
   request.get<R<ResourceUrlVO>>(`${PREFIX}/${id}/url`)

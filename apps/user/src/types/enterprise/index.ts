@@ -9,7 +9,7 @@ export interface EnterpriseQueryDTO extends BasePageQuery {
 }
 
 export interface EnterpriseListVO {
-  id: number
+  id: string
   cityName: string
   enterpriseName: string
   enterpriseNature: string
@@ -41,21 +41,21 @@ export interface EnterprisePositionVO {
 }
 
 export interface EnterpriseIndustryGroupVO {
-  enterpriseId: number
+  enterpriseId: string
   industries: IndustryJumpVO[]
 }
 
 export interface IndustryJumpVO {
-  industryId: number
+  industryId: string
   industryName: string
 }
 
 export interface IndustryEnterpriseGroupVO {
-  industryId: number
+  industryId: string
   enterprises: EnterpriseJumpVO[]
 }
 
 export interface EnterpriseJumpVO {
-  enterpriseId: number
+  enterpriseId: string
   enterpriseName: string
 }

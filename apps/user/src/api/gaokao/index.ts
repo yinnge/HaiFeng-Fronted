@@ -41,7 +41,7 @@ export interface YearScoreVO {
 }
 
 export interface AdmissionGroupVO {
-  id: number
+  id: string
   masked: boolean
   safetyLevel: number
   levelShort: string
@@ -63,7 +63,7 @@ export interface AdmissionGroupVO {
 }
 
 export interface AdmissionMajorVO {
-  id: number
+  id: string
   safetyLevel: number
   levelShort: string
   safetyDescription: string
@@ -146,7 +146,7 @@ export interface GaokaoArchiveForm {
 }
 
 export interface GaokaoArchiveVO extends GaokaoArchiveForm {
-  id: number
+  id: string
   reformModel: string
   scoreAboveLine: number
 }
@@ -181,7 +181,7 @@ export const matchConstraints = () =>
 export const getConstraintDetails = (codes: string[]) =>
   request.post<R<{ constraints: ConstraintItem[] }>>(`${CONSTRAINT_PREFIX}/details`, { codes })
 
-export const checkGroupConstraint = (groupId: number) =>
+export const checkGroupConstraint = (groupId: string) =>
   request.post<R<ConstraintCheckResult>>(`${CONSTRAINT_PREFIX}/check-group`, { groupId })
 
 // ========== 录取查询接口 ==========
@@ -196,7 +196,7 @@ export const getGroupPage = (params: {
 }) => request.get<R<PageResult<AdmissionGroupVO>>>(`${ADMISSION_PREFIX}/group/page`, { params })
 
 export const getMajorPage = (params: {
-  groupId: number
+  groupId: string
   majorName?: string
   majorCode?: string
   page?: number

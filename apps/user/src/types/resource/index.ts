@@ -6,7 +6,7 @@ export interface ResourceQueryDTO extends BasePageQuery {
 }
 
 export interface ResourceListVO {
-  id: number
+  id: string
   resourceName: string
   coverUrl: string
   description: string

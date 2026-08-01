@@ -87,11 +87,11 @@ function onSizeChange(size: number) {
   fetchList()
 }
 
-function goDetail(id: number) {
+function goDetail(id: string) {
   router.push(`/university/${id}`)
 }
 
-function goGuide(id: number) {
+function goGuide(id: string) {
   router.push(`/university/${id}/guide`)
 }
 

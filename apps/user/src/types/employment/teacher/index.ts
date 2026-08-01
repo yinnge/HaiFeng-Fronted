@@ -17,7 +17,7 @@ export interface TeacherQueryDTO {
 }
 
 export interface TeacherPositionListVO {
-  id: number
+  id: string
   schoolName: string
   schoolType: string
   schoolNature: string
@@ -40,7 +40,7 @@ export interface TeacherPositionListVO {
 }
 
 export interface TeacherPositionDetailVO {
-  id: number
+  id: string
   schoolName: string
   schoolType: string
   schoolNature: string

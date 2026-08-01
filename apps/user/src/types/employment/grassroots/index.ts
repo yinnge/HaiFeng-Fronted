@@ -22,7 +22,7 @@ export interface GrassrootsQueryDTO {
 }
 
 export interface GrassrootsPositionListVO {
-  id: number
+  id: string
   projectType: string
   year: string
   positionName: string
@@ -45,7 +45,7 @@ export interface GrassrootsPositionListVO {
 }
 
 export interface GrassrootsPositionDetailVO {
-  id: number
+  id: string
   projectType: string
   year: string
   positionName: string

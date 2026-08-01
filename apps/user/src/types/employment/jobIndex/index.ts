@@ -14,7 +14,7 @@ export interface JobSearchDTO {
 }
 
 export interface JobIndexListVO {
-  id: number
+  id: string
   categoryLabel: string
   positionName: string
   organizationName: string
@@ -26,9 +26,9 @@ export interface JobIndexListVO {
 }
 
 export interface JobIndexDetailVO {
-  id: number
+  id: string
   sourceType: string
-  sourceId: number
+  sourceId: string
   categoryLabel: string
   positionName: string
   organizationName: string

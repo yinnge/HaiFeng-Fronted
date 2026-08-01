@@ -60,7 +60,7 @@ const authorTitle = ref('')
 const authorName = ref('')
 
 const currentView = ref<'list' | 'detail'>('list')
-const currentId = ref<number | null>(null)
+const currentId = ref<string | null>(null)
 
 function buildParams(): ExamGuideQueryDTO {
   return {
@@ -108,7 +108,7 @@ function onPageSizeChange(newSize: number) {
   fetchList()
 }
 
-async function goDetail(id: number) {
+async function goDetail(id: string) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
     try {
