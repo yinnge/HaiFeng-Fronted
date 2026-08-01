@@ -27,7 +27,7 @@ const isPro = computed(() => {
 })
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     error.value = '竞赛ID不存在'
     return
@@ -44,7 +44,7 @@ async function fetchDetail() {
 }
 
 async function fetchMajors() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id || !isPro.value) return
   majorsLoading.value = true
   try {

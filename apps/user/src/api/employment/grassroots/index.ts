@@ -6,6 +6,6 @@ export const getGrassrootsList = (params: GrassrootsQueryDTO) => {
   return request.get<R<PageResult<GrassrootsPositionListVO>>>('/api/v1/app/employment/grassroots/project/list', { params })
 }
 
-export const getGrassrootsDetail = (id: number) => {
+export const getGrassrootsDetail = (id: string) => {
   return request.get<R<GrassrootsPositionDetailVO>>(`/api/v1/app/employment/grassroots/project/${id}/detail`)
 }

@@ -10,17 +10,17 @@ export const getSiteInfo = () =>
 export const getAnnouncements = (params: { page?: number; size?: number; tag?: string }) =>
   request.get<R<HomePageResult<AnnouncementListVO>>>(`${PREFIX}/announcements`, { params })
 
-export const getAnnouncementDetail = (id: number) =>
+export const getAnnouncementDetail = (id: string) =>
   request.get<R<AnnouncementDetailVO>>(`${PREFIX}/announcements/${id}`)
 
 export const getPlanners = (params: { page?: number; size?: number; region?: string }) =>
   request.get<R<HomePageResult<PlannerListVO>>>(`${PREFIX}/planners`, { params })
 
-export const getPlannerDetail = (id: number) =>
+export const getPlannerDetail = (id: string) =>
   request.get<R<PlannerDetailVO>>(`${PREFIX}/planners/${id}`)
 
 export const getInstitutions = (params: { page?: number; size?: number; name?: string }) =>
   request.get<R<HomePageResult<InstitutionListVO>>>(`${PREFIX}/institutions`, { params })
 
-export const getInstitutionDetail = (id: number) =>
+export const getInstitutionDetail = (id: string) =>
   request.get<R<InstitutionDetailVO>>(`${PREFIX}/institutions/${id}`)

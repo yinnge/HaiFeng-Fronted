@@ -6,6 +6,6 @@ export const getCommunityList = (params: CommunityQueryDTO) => {
   return request.get<R<PageResult<CommunityPositionListVO>>>('/api/v1/app/employment/grassroots/community/list', { params })
 }
 
-export const getCommunityDetail = (id: number) => {
+export const getCommunityDetail = (id: string) => {
   return request.get<R<CommunityPositionDetailVO>>(`/api/v1/app/employment/grassroots/community/${id}/detail`)
 }

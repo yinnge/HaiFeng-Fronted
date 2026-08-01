@@ -9,7 +9,7 @@ const PREFIX = '/api/v1/app/major'
 export const getMajorList = (params: MajorQueryDTO) =>
   request.get<R<PageResult<MajorListVO>>>(`${PREFIX}/list`, { params })
 
-export const getMajorDetail = (majorId: number) =>
+export const getMajorDetail = (majorId: string) =>
   request.get<R<MajorDetailVO>>(`${PREFIX}/${majorId}/detail`)
 
 export const getMajorCategoryStats = () =>
@@ -18,8 +18,8 @@ export const getMajorCategoryStats = () =>
 export const getMajorRanking = (params: MajorRankingQueryDTO) =>
   request.get<R<PageResult<MajorListVO>>>(`${PREFIX}/ranking`, { params })
 
-export const getMajorCompetitions = (majorId: number, params: { page: number; size: number }) =>
+export const getMajorCompetitions = (majorId: string, params: { page: number; size: number }) =>
   request.get<R<PageResult<CompetitionBriefVO>>>(`${PREFIX}/${majorId}/competitions`, { params })
 
-export const getMajorPostgradDirections = (majorId: number, params: { page: number; size: number }) =>
+export const getMajorPostgradDirections = (majorId: string, params: { page: number; size: number }) =>
   request.get<R<PageResult<PostgradMajorDirectionBriefVO>>>(`${PREFIX}/${majorId}/postgrad-directions`, { params })

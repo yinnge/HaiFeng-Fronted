@@ -7,5 +7,5 @@ const PREFIX = '/api/v1/app/city'
 export const getCityList = (params: CityQueryDTO) =>
   request.get<R<PageResult<CityListVO>>>(`${PREFIX}/list`, { params })
 
-export const getCityDetail = (cityId: number) =>
+export const getCityDetail = (cityId: string) =>
   request.get<R<CityDetailVO>>(`${PREFIX}/${cityId}/detail`)

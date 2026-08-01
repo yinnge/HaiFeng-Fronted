@@ -6,6 +6,6 @@ export const getInstitutionList = (params: InstitutionPositionSearchDTO) => {
   return request.get<R<PageResult<InstitutionPositionListVO>>>('/api/v1/app/employment/civil-service/institution/list', { params })
 }
 
-export const getInstitutionDetail = (id: number) => {
+export const getInstitutionDetail = (id: string) => {
   return request.get<R<InstitutionPositionDetailVO>>(`/api/v1/app/employment/civil-service/institution/${id}/detail`)
 }

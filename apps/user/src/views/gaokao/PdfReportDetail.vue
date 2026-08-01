@@ -17,7 +17,7 @@ import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
-const recordId = Number(route.params.recordId)
+const recordId = route.params.recordId as string
 
 const loading = ref(true)
 const record = ref<PdfRecordDetailVO | null>(null)
@@ -135,7 +135,7 @@ async function handleDelete() {
   }
 }
 
-function handleGenerateSuccess(newRecordId: number) {
+function handleGenerateSuccess(newRecordId: string) {
   if (newRecordId && newRecordId !== recordId) {
     router.replace(`/gaokao/pdf-report/${newRecordId}`)
   } else {
@@ -358,7 +358,7 @@ function renderMd(md: string | null | undefined) {
     <!-- 重新生成弹窗 -->
     <PdfGenerateDialog
       v-model:visible="showGenerateDialog"
-      :plan-id="record?.planId || 0"
+      :plan-id="String(record?.planId || '')"
       :is-regenerate="true"
       :record-id="recordId"
       @success="handleGenerateSuccess"

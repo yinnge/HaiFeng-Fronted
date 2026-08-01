@@ -152,7 +152,7 @@ const handleEdit = async (id: string) => {
         website: d.website || '',
         historyGroupScore: d.historyGroupScore ?? undefined,
         scienceGroupScore: d.scienceGroupScore ?? undefined,
-        carouselImagesStr: (d.carouselImages || []).join(','),
+        carouselImages: d.carouselImages || [],
         detailIntroduction: d.detailIntroduction || '',
         rankings: {
           ruanke: d.rankings?.ruanke ?? undefined,
@@ -191,7 +191,7 @@ const handleSubmit = async (form: UniversityFormData, detail: UniversityDetailFo
         website: detail.website || undefined,
         historyGroupScore: detail.historyGroupScore ?? undefined,
         scienceGroupScore: detail.scienceGroupScore ?? undefined,
-        carouselImages: detail.carouselImagesStr ? detail.carouselImagesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        carouselImages: detail.carouselImages?.length ? detail.carouselImages : undefined,
         introduction: detail.detailIntroduction || undefined,
         rankings: Object.values(detail.rankings).some(v => v !== undefined) ? detail.rankings as Record<string, number> : undefined,
         abroadRate: detail.abroadRate || undefined,

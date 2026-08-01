@@ -8,7 +8,7 @@ import { useUserStore } from '@/store'
 import { MemberType } from '@haifeng/shared'
 
 const props = defineProps<{
-  universityId: number
+  universityId: string
 }>()
 
 const userStore = useUserStore()

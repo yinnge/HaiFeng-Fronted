@@ -11,7 +11,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const id = Number(route.params.id)
+    const id = route.params.id as string
     const res = await getPlannerDetail(id)
     detail.value = res.data.data
   } catch {

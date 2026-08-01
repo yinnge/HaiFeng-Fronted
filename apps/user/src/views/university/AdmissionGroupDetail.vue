@@ -21,7 +21,7 @@ const isVip = computed(() => {
 })
 
 async function fetchDetail() {
-  const groupId = Number(route.params.groupId)
+  const groupId = route.params.groupId as string
   if (!groupId) {
     ElMessage.error('专业组ID不存在')
     return
@@ -43,7 +43,7 @@ async function fetchDetail() {
 }
 
 async function fetchScores() {
-  const groupId = Number(route.params.groupId)
+  const groupId = route.params.groupId as string
   scoresLoading.value = true
   try {
     const res = await getMajorScores(groupId)

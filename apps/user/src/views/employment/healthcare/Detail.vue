@@ -7,7 +7,7 @@ import type { HealthcarePositionDetailVO } from '@/types/employment/healthcare'
 
 const route = useRoute()
 const router = useRouter()
-const jobId = Number(route.params.id)
+const jobId = route.params.id as string
 
 const loading = ref(false)
 const job = ref<HealthcarePositionDetailVO | null>(null)

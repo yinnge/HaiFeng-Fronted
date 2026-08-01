@@ -8,7 +8,7 @@ import type { EnterprisePositionVO, EnterpriseIndustryGroupVO } from '@/types/en
 const router = useRouter()
 const route = useRoute()
 
-const enterpriseId = Number(route.params.id)
+const enterpriseId = route.params.id as string
 const enterpriseName = (route.query.name as string) || ''
 const enterpriseNature = (route.query.nature as string) || ''
 const enterpriseCity = (route.query.city as string) || ''

@@ -6,6 +6,6 @@ export const getSelectionList = (params: SelectionPositionSearchDTO) => {
   return request.get<R<PageResult<SelectionPositionListVO>>>('/api/v1/app/employment/civil-service/selection/list', { params })
 }
 
-export const getSelectionDetail = (id: number) => {
+export const getSelectionDetail = (id: string) => {
   return request.get<R<SelectionPositionDetailVO>>(`/api/v1/app/employment/civil-service/selection/${id}/detail`)
 }

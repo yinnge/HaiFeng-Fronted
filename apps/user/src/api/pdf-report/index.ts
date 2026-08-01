@@ -75,7 +75,7 @@ export interface PdfRecordListQuery {
   page?: number
   size?: number
   status?: number
-  planId?: number
+  planId?: string | number
 }
 
 // ========== API 函数 ==========
@@ -83,14 +83,14 @@ export interface PdfRecordListQuery {
 /**
  * 获取 PDF 报告生成的 SSE URL（供 ssePost 使用）
  */
-export function getGeneratePdfUrl(planId: number): string {
+export function getGeneratePdfUrl(planId: string): string {
   return `${PREFIX}/generate/${planId}`
 }
 
 /**
  * 获取 PDF 报告重新生成的 SSE URL（供 ssePost 使用）
  */
-export function getRegeneratePdfUrl(recordId: number): string {
+export function getRegeneratePdfUrl(recordId: string): string {
   return `${PREFIX}/records/${recordId}/regenerate`
 }
 
@@ -104,14 +104,14 @@ export function getPdfRecords(params: PdfRecordListQuery = {}) {
 /**
  * 获取报告记录详情
  */
-export function getPdfRecordDetail(recordId: number) {
+export function getPdfRecordDetail(recordId: string) {
   return request.get<R<PdfRecordDetailVO>>(`${PREFIX}/records/${recordId}`)
 }
 
 /**
  * 下载/查看 PDF（返回 blob）
  */
-export async function downloadPdf(recordId: number): Promise<{ blob: Blob; filename: string }> {
+export async function downloadPdf(recordId: string): Promise<{ blob: Blob; filename: string }> {
   const token = getAccessToken()
   const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
   const url = `${baseUrl}${PREFIX}/records/${recordId}/pdf`
@@ -141,6 +141,6 @@ export async function downloadPdf(recordId: number): Promise<{ blob: Blob; filen
 /**
  * 删除报告记录（软删除）
  */
-export function deletePdfRecord(recordId: number) {
+export function deletePdfRecord(recordId: string) {
   return request.delete<R<null>>(`${PREFIX}/records/${recordId}`)
 }

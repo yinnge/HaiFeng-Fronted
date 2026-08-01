@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
 import type { UniversityAddDTO } from '@/types/university/info'
 
 export interface UniversityFormData extends UniversityAddDTO {
@@ -12,7 +13,7 @@ export interface UniversityDetailFormData {
   website: string
   historyGroupScore: number | undefined
   scienceGroupScore: number | undefined
-  carouselImagesStr: string
+  carouselImages: string[]
   detailIntroduction: string
   rankings: {
     ruanke: number | undefined
@@ -49,7 +50,7 @@ const formData = reactive<UniversityFormData>({
 const detailFormData = reactive<UniversityDetailFormData>({
   address: '', admissionPhone: '', website: '',
   historyGroupScore: undefined, scienceGroupScore: undefined,
-  carouselImagesStr: '', detailIntroduction: '',
+  carouselImages: [], detailIntroduction: '',
   rankings: { ruanke: undefined, xiaoyouhui: undefined, wushulian: undefined, qs: undefined, usnews: undefined },
   abroadRate: '', genderRatio: '',
 })
@@ -80,7 +81,7 @@ watch(
             website: detail.website || '',
             historyGroupScore: detail.historyGroupScore ?? undefined,
             scienceGroupScore: detail.scienceGroupScore ?? undefined,
-            carouselImagesStr: detail.carouselImagesStr || '',
+            carouselImages: detail.carouselImages || [],
             detailIntroduction: detail.detailIntroduction || '',
             rankings: detail.rankings ? { ...detail.rankings } : { ruanke: undefined, xiaoyouhui: undefined, wushulian: undefined, qs: undefined, usnews: undefined },
             abroadRate: detail.abroadRate || '', genderRatio: detail.genderRatio || '',
@@ -97,7 +98,7 @@ watch(
         Object.assign(detailFormData, {
           address: '', admissionPhone: '', website: '',
           historyGroupScore: undefined, scienceGroupScore: undefined,
-          carouselImagesStr: '', detailIntroduction: '',
+          carouselImages: [], detailIntroduction: '',
           rankings: { ruanke: undefined, xiaoyouhui: undefined, wushulian: undefined, qs: undefined, usnews: undefined },
           abroadRate: '', genderRatio: '',
         })
@@ -113,6 +114,9 @@ const handleSubmit = () => {
 
 const handleClose = () => { emit('update:visible', false) }
 const dialogTitle = () => (props.mode === 'add' ? '新增院校' : '修改院校')
+
+const addCarouselImage = () => { detailFormData.carouselImages.push('') }
+const removeCarouselImage = (index: number) => { detailFormData.carouselImages.splice(index, 1) }
 </script>
 
 <template>
@@ -268,7 +272,21 @@ const dialogTitle = () => (props.mode === 'add' ? '新增院校' : '修改院校
               </el-col>
             </el-row>
             <el-form-item label="轮播图片">
-              <el-input v-model="detailFormData.carouselImagesStr" type="textarea" :rows="2" placeholder="多张图片URL用逗号分隔" />
+              <div class="carousel-images-list">
+                <div v-for="(img, idx) in detailFormData.carouselImages" :key="idx" class="carousel-image-row">
+                  <el-input v-model="detailFormData.carouselImages[idx]" placeholder="图片URL地址" maxlength="500" class="carousel-image-input" />
+                  <el-image
+                    v-if="img"
+                    :src="img"
+                    :preview-src-list="[img]"
+                    fit="cover"
+                    class="carousel-image-thumb"
+                    preview-teleported
+                  />
+                  <el-button type="danger" :icon="Delete" circle size="small" @click="removeCarouselImage(idx)" />
+                </div>
+                <el-button type="primary" :icon="Plus" plain size="small" @click="addCarouselImage">新增轮播图片</el-button>
+              </div>
             </el-form-item>
             <el-form-item label="院校详细介绍">
               <el-input v-model="detailFormData.detailIntroduction" type="textarea" :rows="3" maxlength="5000" show-word-limit />
@@ -386,4 +404,9 @@ const dialogTitle = () => (props.mode === 'add' ? '新增院校' : '修改院校
 }
 .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
 .submit-btn:active { transform: translateY(0); }
+
+.carousel-images-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.carousel-image-row { display: flex; align-items: center; gap: 8px; }
+.carousel-image-input { flex: 1; }
+.carousel-image-thumb { width: 64px; height: 64px; border-radius: 6px; border: 1px solid #e5e7eb; flex-shrink: 0; }
 </style>

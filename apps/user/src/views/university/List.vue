@@ -12,11 +12,11 @@ const loading = ref(false)
 const list = ref<UniversityListVO[]>([])
 const total = ref(0)
 const currentPage = ref(1)
-const pageSize = ref(9)
+const pageSize = ref(12)
 
 const query = reactive<UniversityQueryDTO>({
   page: 1,
-  size: 9,
+  size: 12,
   name: '',
   provinceName: '',
   nature: '',
@@ -216,7 +216,7 @@ onMounted(fetchList)
           background
           layout="total, sizes, prev, pager, next"
           :total="total"
-          :page-sizes="[9, 18, 30]"
+          :page-sizes="[12, 24, 36]"
           :page-size="pageSize"
           :current-page="currentPage"
           @current-change="onPageChange"

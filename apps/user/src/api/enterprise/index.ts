@@ -14,15 +14,15 @@ const INDUSTRY_PREFIX = '/api/v1/app/industry'
 export const getEnterpriseList = (params: EnterpriseQueryDTO) =>
   request.get<R<PageResult<EnterpriseListVO>>>(`${ENTERPRISE_PREFIX}/list`, { params })
 
-export const getPositions = (enterpriseId: number) =>
+export const getPositions = (enterpriseId: string) =>
   request.get<R<EnterprisePositionVO[]>>(`${ENTERPRISE_PREFIX}/${enterpriseId}/positions`)
 
-export const getEnterpriseIndustries = (enterpriseIds: number[]) =>
+export const getEnterpriseIndustries = (enterpriseIds: string[]) =>
   request.get<R<EnterpriseIndustryGroupVO[]>>(`${ENTERPRISE_PREFIX}/industries`, {
     params: { enterpriseIds },
   })
 
-export const getIndustryEnterprises = (industryIds: number[]) =>
+export const getIndustryEnterprises = (industryIds: string[]) =>
   request.get<R<IndustryEnterpriseGroupVO[]>>(`${INDUSTRY_PREFIX}/enterprises`, {
     params: { industryIds },
   })

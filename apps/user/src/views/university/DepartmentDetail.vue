@@ -12,7 +12,7 @@ const loading = ref(false)
 const report = ref<DepartmentReportVO | null>(null)
 
 async function fetchReport() {
-  const deptId = Number(route.params.deptId)
+  const deptId = route.params.deptId as string
   if (!deptId) {
     ElMessage.error('院系ID不存在')
     return

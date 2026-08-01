@@ -34,7 +34,7 @@ const isPro = computed(() => {
 })
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     error.value = '专业ID不存在'
     return
@@ -51,7 +51,7 @@ async function fetchDetail() {
 }
 
 async function fetchCompetitions() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id || !isPro.value) return
   compLoading.value = true
   try {
@@ -84,7 +84,7 @@ const dialogVisible = ref(false)
 const selectedDirectionId = ref<number | null>(null)
 
 async function fetchPostgradDirections() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id || !isPro.value) return
   directionLoading.value = true
   try {

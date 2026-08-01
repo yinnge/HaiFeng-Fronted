@@ -11,6 +11,7 @@ const showWechatDialog = ref(false)
 
 const mockSiteInfo: SiteInfoVO = {
   siteIcp: '晋ICP备12345678号 | 公安备案号：晋公网安备11010802012345号',
+  siteDescription: '© 2026 海枫未来规划院 版权所有',
   contactUrl: {
     wechat: 'https://via.placeholder.com/200x200?text=WeChat+QR',
     weibo: 'https://weibo.com/haifeng',
@@ -178,7 +179,7 @@ const handleSocialClick = (url: string, name: string) => {
     </div>
 
     <div class="footer-bottom">
-      <p class="copyright">© 2026 海枫未来规划院 版权所有</p>
+      <p class="copyright">{{ siteInfo?.siteDescription }}</p>
       <p class="icp">ICP备案号：{{ siteInfo?.siteIcp ?? '加载中...' }}</p>
     </div>
 

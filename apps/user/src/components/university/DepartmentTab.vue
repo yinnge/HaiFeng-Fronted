@@ -5,7 +5,7 @@ import { getDepartmentPage } from '@/api/university/department'
 import type { DepartmentListVO } from '@/types/university/department'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{ universityId: number }>()
+const props = defineProps<{ universityId: string }>()
 const router = useRouter()
 
 const loading = ref(false)

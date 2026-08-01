@@ -86,15 +86,15 @@ async function handleCreate() {
 
 async function createPlanAndAddMajors(planName: string) {
   const groups = Object.values(selectionStore.selections)
-  let planId: number | null = null
+  let planId: string | null = null
   let hasError = false
 
   for (const group of groups) {
-    const majorIds = group.majors.map(m => m.majorId)
+    const majorIds = group.majors.map(m => String(m.majorId))
     try {
-      const res = await addMajors({ planId, groupId: group.groupId, majorIds })
+      const res = await addMajors({ planId, groupId: String(group.groupId), majorIds })
       if (!planId && res.data.data?.id) {
-        planId = res.data.data.id
+        planId = String(res.data.data.id)
       }
     } catch (e: any) {
       ElMessage.error(e?.message || `添加「${group.universityName}」专业组失败`)
@@ -117,7 +117,7 @@ async function handleDelete(plan: WishPlanListVO) {
       '删除确认',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
-    await deletePlan(plan.id)
+    await deletePlan(String(plan.id))
     ElMessage.success('已删除')
     plans.value = plans.value.filter(p => p.id !== plan.id)
   } catch {

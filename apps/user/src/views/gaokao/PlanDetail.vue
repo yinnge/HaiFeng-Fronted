@@ -22,7 +22,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const planId = Number(route.params.id)
+const planId = route.params.id as string
 
 const loading = ref(false)
 const planGroups = ref<WishPlanGroupVO[]>([])
@@ -74,7 +74,7 @@ async function toggleExpand(groupSnapshotId: number) {
   expandedGroupId.value = groupSnapshotId
   majorLoading.value = true
   try {
-    const res = await getPlanGroupMajors(planId, groupSnapshotId, { page: 1, size: 100 })
+    const res = await getPlanGroupMajors(planId, String(groupSnapshotId), { page: 1, size: 100 })
     majors.value = res.data.data.records
   } catch (e: any) {
     ElMessage.error(e?.message || '加载专业明细失败')
@@ -155,7 +155,7 @@ function onDropMajor(e: DragEvent, targetIndex: number) {
 
 async function handleToggleMajorExport(major: WishPlanMajorVO) {
   try {
-    await toggleMajorExport(planId, major.id, !majorIsExported(major))
+    await toggleMajorExport(planId, String(major.id), !majorIsExported(major))
   } catch (e: any) {
     ElMessage.error(e?.message || '操作失败')
   }
@@ -171,7 +171,7 @@ function groupAllExported(group: WishPlanGroupVO): boolean {
 
 async function handleToggleGroupExportAll(groupSnapshotId: number, allExported: boolean) {
   try {
-    await toggleGroupExportAll(planId, groupSnapshotId, !allExported)
+    await toggleGroupExportAll(planId, String(groupSnapshotId), !allExported)
   } catch (e: any) {
     ElMessage.error(e?.message || '操作失败')
   }
@@ -189,7 +189,7 @@ async function handleSave() {
     // 保存展开的专业排序
     if (expandedGroupId.value && majors.value.length > 0) {
       const majorItems = majors.value.map((m, i) => ({ majorId: m.id, sortOrder: i + 1 }))
-      await sortPlanGroupMajors(planId, expandedGroupId.value, majorItems)
+      await sortPlanGroupMajors(planId, String(expandedGroupId.value), majorItems)
     }
 
     ElMessage.success('保存成功')
@@ -250,7 +250,7 @@ function handleAiAnalysis() {
   showGenerateDialog.value = true
 }
 
-function handleGenerateSuccess(recordId: number) {
+function handleGenerateSuccess(recordId: string) {
   router.push(`/gaokao/pdf-report/${recordId}`)
 }
 

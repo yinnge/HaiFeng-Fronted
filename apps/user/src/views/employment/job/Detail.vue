@@ -7,7 +7,7 @@ import type { JobIndexDetailVO } from '@/types/employment/jobIndex'
 
 const route = useRoute()
 const router = useRouter()
-const jobId = Number(route.params.id)
+const jobId = route.params.id as string
 
 const loading = ref(false)
 const job = ref<JobIndexDetailVO | null>(null)

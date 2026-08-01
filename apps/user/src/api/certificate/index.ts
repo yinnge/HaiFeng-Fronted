@@ -18,14 +18,14 @@ export const getCertificateCategories = () =>
 export const getCertificateList = (params: CertificateQueryDTO) =>
   request.get<R<PageResult<CertificateListVO>>>(`${CERT_PREFIX}/list`, { params })
 
-export const getCertificateDetail = (certId: number) =>
+export const getCertificateDetail = (certId: string) =>
   request.get<R<CertificateDetailVO>>(`${CERT_PREFIX}/${certId}/detail`)
 
 export const getCompetitionList = (params: { page: number; size: number }) =>
   request.get<R<PageResult<CompetitionListVO>>>(`${COMP_PREFIX}/list`, { params })
 
-export const getCompetitionDetail = (compId: number) =>
+export const getCompetitionDetail = (compId: string) =>
   request.get<R<CompetitionDetailVO>>(`${COMP_PREFIX}/${compId}/detail`)
 
-export const getCompetitionMajors = (compId: number, params: { page: number; size: number }) =>
+export const getCompetitionMajors = (compId: string, params: { page: number; size: number }) =>
   request.get<R<PageResult<CompetitionMajorBriefVO>>>(`${COMP_PREFIX}/${compId}/majors`, { params })

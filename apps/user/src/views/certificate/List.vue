@@ -62,7 +62,7 @@ function handleSearch() {
   fetchList()
 }
 
-async function openDetail(certId: number) {
+async function openDetail(certId: string) {
   detailLoading.value = true
   showDetail.value = true
   try {
@@ -169,7 +169,7 @@ onMounted(() => {
                   <td class="py-3 text-sm">
                     <button
                       class="text-orange-500 hover:text-orange-600 font-medium transition-colors"
-                      @click="openDetail(item.id)"
+                      @click="openDetail(String(item.id))"
                     >
                       报名指南
                     </button>

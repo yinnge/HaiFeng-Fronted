@@ -21,6 +21,12 @@
 - `adminCount`：`sys_admin` 表 `status=1` 计数（`sysAdminMapper.selectCount`）。
 - 关键区分：面板上的「AI 模型」仅是展示配置字符串，**dashboard 不发起 AI 调用**；真正调 AI 大模型由 `system_settings` 的 providerName+modelName+apiNumber(API Key) 驱动，逻辑在后端 AI/对话模块（common 的 AI 客户端），不在 admin system 包。
 
+## 后端分页参数硬约束（所有继承 BasePageQueryDTO 的接口通用）
+- 后端 `haifeng-common/.../dto/common/BasePageQueryDTO.java`：`size` 字段 `@Min(10,"每页最小10条")` + `@Max(100,"每页最大100条")`，默认 10；`page` `@Min(1)`。
+- **前端坑**：user 端 `university/List.vue` 曾默认 `pageSize=9`、`page-sizes=[9,18,30]`，全 < 10 → 后端返回 `400 每页最小10条`，分页永远失败。已改为默认 12、`page-sizes=[12,24,36]`（3 列卡片网格，12 正好铺满 4 行）。
+- **经验**：任何调用带 `size` 的分页接口的前端页面，`page-size` 默认值与 `page-sizes` 档位都必须落在 **[10,100]**，否则被 `@Min/@Max` 拦截。新增分页页前先确认后端该 DTO 的下限。
+- 校验链路：`@Valid` 在 Controller 方法参数（`UniversityController.list(@Valid UniversityQueryDTO)`）→ Spring Validation 抛 `MethodArgumentNotValidException` → 全局异常处理器转 `R.fail(400, msg)`。
+
 ## 就业管理模块：前后端枚举值必须对齐（后端 @Pattern 是权威）
 - 后端 `haifeng-admin` DTO 里用 `@Pattern` 硬编码枚举（如公务员 examType `国考|省考`、学历/学位/政治面貌/报名状态；事业单位学历 `无要求/...`、学位 `无要求/...`、状态 `招聘中|已结束`、标签 `热门|无|急招`）。**前端下拉选项必须与之一字不差**，否则新增/修改直接 400。
 - 2026-07-31 踩坑：admin 公务员表单/搜索写 `['国家级','省级']`（user 端是 `['国考','省考']`），事业单位写 `['不限']`/`['在招','未发布']`，且标签用自由输入框 → 全部必报错。已修：civil 2 处、institution 5 处（含 positionTag 改 select）。

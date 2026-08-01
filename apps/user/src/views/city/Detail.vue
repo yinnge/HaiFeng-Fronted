@@ -12,7 +12,7 @@ const loading = ref(false)
 const detail = ref<CityDetailVO | null>(null)
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     ElMessage.error('城市ID不存在')
     return

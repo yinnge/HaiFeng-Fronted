@@ -13,7 +13,7 @@ import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
-const planId = Number(route.params.planId)
+const planId = route.params.planId as string
 
 const loading = ref(false)
 const records = ref<PdfRecordListVO[]>([])
@@ -23,7 +23,7 @@ const pageSize = ref(10)
 
 // SSE 重新生成弹窗
 const showGenerateDialog = ref(false)
-const regenerateRecordId = ref(0)
+const regenerateRecordId = ref('')
 
 const statusMap: Record<number, { label: string; color: string; bg: string }> = {
   0: { label: '生成中', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -57,7 +57,7 @@ function handlePageChange(val: number) {
 
 async function handleDownload(record: PdfRecordListVO) {
   try {
-    const { blob, filename } = await downloadPdf(record.id)
+    const { blob, filename } = await downloadPdf(String(record.id))
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -77,7 +77,7 @@ async function handleRegenerate(record: PdfRecordListVO) {
       cancelButtonText: '取消',
       type: record.status === 1 ? 'warning' : 'info',
     })
-    regenerateRecordId.value = record.id
+    regenerateRecordId.value = String(record.id)
     showGenerateDialog.value = true
   } catch {}
 }
@@ -89,7 +89,7 @@ async function handleDelete(record: PdfRecordListVO) {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await deletePdfRecord(record.id)
+    await deletePdfRecord(String(record.id))
     ElMessage.success('删除成功')
     loadRecords()
   } catch (e: any) {

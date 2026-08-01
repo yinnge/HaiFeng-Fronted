@@ -16,7 +16,7 @@ const univConfig = ref<StrongBaseUniversityDetailVO | null>(null)
 const configLoading = ref(false)
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     ElMessage.error('数据ID不存在')
     return
@@ -26,7 +26,7 @@ async function fetchDetail() {
     const res = await getStrongBaseScoreDetail(id)
     detail.value = res.data.data
     if (detail.value) {
-      fetchUnivConfig(detail.value.universityId)
+      fetchUnivConfig(String(detail.value.universityId))
     }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.msg || '获取强基数据详情失败')
@@ -35,7 +35,7 @@ async function fetchDetail() {
   }
 }
 
-async function fetchUnivConfig(universityId: number) {
+async function fetchUnivConfig(universityId: string) {
   configLoading.value = true
   try {
     const res = await getStrongBaseUniversityDetail(universityId)

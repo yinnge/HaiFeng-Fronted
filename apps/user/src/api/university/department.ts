@@ -4,8 +4,8 @@ import type { DepartmentListVO, DepartmentReportVO } from '@/types/university/de
 
 const PREFIX = '/api/v1/app/university'
 
-export const getDepartmentPage = (universityId: number, params: { page?: number; size?: number }) =>
+export const getDepartmentPage = (universityId: string, params: { page?: number; size?: number }) =>
   request.get<R<PageResult<DepartmentListVO>>>(`${PREFIX}/${universityId}/departments`, { params })
 
-export const getDepartmentReport = (departmentId: number) =>
+export const getDepartmentReport = (departmentId: string) =>
   request.get<R<DepartmentReportVO>>(`${PREFIX}/departments/${departmentId}/report`)

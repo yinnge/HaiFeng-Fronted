@@ -34,7 +34,7 @@ const categories = [
 ]
 
 async function fetchOverview() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) return
   try {
     const res = await getGuideOverview(id)
@@ -63,7 +63,7 @@ async function handleCategoryClick(cat: typeof categories[0]) {
     return
   }
 
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) return
 
   loading.value = true
@@ -89,7 +89,7 @@ async function handleCategoryClick(cat: typeof categories[0]) {
 }
 
 async function fetchGallery() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) return
   galleryLoading.value = true
   try {
