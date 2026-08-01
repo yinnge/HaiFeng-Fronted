@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const positionTypeOptions = ['管理岗', '专业技术岗', '专业技能岗']
-const positionStatusOptions = ['在招', '已结束', '未发布']
+const positionStatusOptions = ['进行中', '已结束']
 </script>
 
 <template>

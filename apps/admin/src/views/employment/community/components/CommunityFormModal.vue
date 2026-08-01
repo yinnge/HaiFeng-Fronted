@@ -34,6 +34,8 @@ const employmentTypeOptions = ['事业编制', '合同制', '政府购买服务'
 const educationOptions = ['不限', '高中', '大专', '本科', '硕士']
 const socialWorkCertOptions = ['不要求', '初级社工师', '中级社工师', '高级社工师', '优先']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '群众']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -98,7 +100,7 @@ const handleSubmit = async () => {
         <el-tab-pane label="地区与报考要求" name="location">
           <el-form ref="formRefLocation" :model="formData" :rules="locationRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="8"><el-form-item label="省份" prop="province"><el-input v-model="formData.province" placeholder="省份" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="省份" prop="province"><el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%"><el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="城市" prop="city"><el-input v-model="formData.city" placeholder="城市" maxlength="50" /></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="工作地点"><el-input v-model="formData.workLocation" placeholder="工作地点" maxlength="200" /></el-form-item></el-col>
             </el-row>
@@ -110,7 +112,7 @@ const handleSubmit = async () => {
             <el-form-item label="专业要求"><el-input v-model="formData.majorRequirement" placeholder="专业要求" maxlength="500" show-word-limit /></el-form-item>
             <el-row :gutter="20">
               <el-col :span="8"><el-form-item label="户籍要求"><el-input v-model="formData.householdRequirement" placeholder="户籍要求" maxlength="100" /></el-form-item></el-col>
-              <el-col :span="8"><el-form-item label="政治面貌"><el-input v-model="formData.politicalStatus" placeholder="政治面貌" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="政治面貌"><el-select v-model="formData.politicalStatus" placeholder="请选择" clearable style="width: 100%"><el-option v-for="item in politicalStatusOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="工作经验"><el-input v-model="formData.workExperience" placeholder="工作经验" maxlength="50" /></el-form-item></el-col>
             </el-row>
           </el-form>

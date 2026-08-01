@@ -30,6 +30,8 @@ const emit = defineEmits<{
 const projectTypeOptions = ['三支一扶', '西部计划']
 const serviceTypeOptions = ['支教', '支农', '支医', '帮扶乡村振兴', '基础教育', '服务三农', '医疗卫生', '基层青年工作', '基层社会管理', '服务新疆', '服务西藏']
 const positionStatusOptions = ['招募中', '已结束', '即将开始']
+const yearOptions = ['2027', '2026', '2025', '2024', '2023', '2022']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 </script>
 
 <template>
@@ -66,7 +68,9 @@ const positionStatusOptions = ['招募中', '已结束', '即将开始']
       <el-row :gutter="12">
         <el-col :span="6">
           <el-form-item label="招募年份">
-            <el-input :model-value="year" placeholder="招募年份" clearable style="width: 160px" @update:model-value="emit('update:year', $event)" @keyup.enter="emit('search')" />
+            <el-select :model-value="year" placeholder="招募年份" clearable filterable allow-create default-first-option style="width: 140px" @update:model-value="emit('update:year', $event)">
+              <el-option v-for="item in yearOptions" :key="item" :label="item" :value="item" />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -78,7 +82,9 @@ const positionStatusOptions = ['招募中', '已结束', '即将开始']
         </el-col>
         <el-col :span="6">
           <el-form-item label="省份">
-            <el-input :model-value="province" placeholder="省份" clearable style="width: 100px" @update:model-value="emit('update:province', $event)" @keyup.enter="emit('search')" />
+            <el-select :model-value="province" placeholder="省份" clearable filterable allow-create default-first-option style="width: 120px" @update:model-value="emit('update:province', $event)">
+              <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="6">

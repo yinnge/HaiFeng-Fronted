@@ -34,6 +34,7 @@ const selectionTypeOptions = ['定向选调', '非定向选调', '急需紧缺�
 const educationOptions = ['本科', '硕士', '博士', '本科及以上', '硕士及以上']
 const degreeOptions = ['不限', '学士', '硕士', '博士']
 const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '不限']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 const majorCategoryOptions: string[] = []
 
 const dialogTitle = computed(() => (props.mode === 'add' ? '新增选调生职位' : '修改选调生职位'))
@@ -108,7 +109,9 @@ const handleSubmit = async () => {
               </el-col>
               <el-col :span="12">
                 <el-form-item label="省份" prop="province">
-                  <el-input v-model="formData.province" placeholder="省份" maxlength="50" />
+                  <el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%">
+                    <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>

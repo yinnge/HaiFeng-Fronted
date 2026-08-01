@@ -6,6 +6,9 @@ import { getNoticeDetail, updateNotice, addNotice } from '@/api/employment/notic
 import type { NoticeDetailVO, NoticeUpdateDTO, NoticeAddDTO } from '@/types/employment/notice'
 import { NoticeCategoryLabel, NoticeTypeOptions } from '@/types/employment/notice'
 
+const sourceOptions = ['官方网站', '微信公众号', '人社局官网', '教育局官网', '考试院官网', '政务服务平台', '媒体新闻', '其他']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
+
 const props = defineProps<{
   visible: boolean
   mode: 'detail' | 'edit' | 'add'
@@ -196,7 +199,9 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : props.mode 
           <el-row :gutter="20">
             <el-col :span="8">
               <el-form-item label="省份">
-                <el-input v-model="formData.province" placeholder="省份" />
+                <el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%">
+                  <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
@@ -213,7 +218,9 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : props.mode 
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="来源">
-                <el-input v-model="formData.source" placeholder="来源名称" />
+                <el-select v-model="formData.source" placeholder="来源名称" clearable filterable allow-create default-first-option style="width: 100%">
+                  <el-option v-for="item in sourceOptions" :key="item" :label="item" :value="item" />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">

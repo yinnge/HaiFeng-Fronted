@@ -35,6 +35,7 @@ const dialogTitle = computed(() => (props.mode === 'add' ? '新增公益性岗�
 const positionCategoryOptions = ['公共管理类', '公共服务类', '公共环境类', '公共安全类', '设施维护类', '其他']
 const educationOptions = ['不限', '初中', '高中', '大专', '本科']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -103,7 +104,7 @@ const handleSubmit = async () => {
         <el-tab-pane label="地区与报名要求" name="location">
           <el-form ref="formRefLocation" :model="formData" :rules="locationRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="8"><el-form-item label="省份" prop="province"><el-input v-model="formData.province" placeholder="省份" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="省份" prop="province"><el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%"><el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="城市" prop="city"><el-input v-model="formData.city" placeholder="城市" maxlength="50" /></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="区域"><el-input v-model="formData.district" placeholder="请输入区域" maxlength="50" /></el-form-item></el-col>
             </el-row>

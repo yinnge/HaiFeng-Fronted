@@ -29,6 +29,7 @@ const schoolTypeOptions = ['幼儿园', '小学', '初中', '高中', '中职', 
 const schoolNatureOptions = ['公办', '民办']
 const recruitmentTypeOptions = ['编制', '合同制', '特岗教师', '人事代理', '编外聘用']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 </script>
 
 <template>
@@ -99,14 +100,18 @@ const positionStatusOptions = ['招聘中', '已结束', '即将开始']
         </el-form-item>
 
         <el-form-item label="省份">
-          <el-input
+          <el-select
             :model-value="province"
             placeholder="省份"
             clearable
-            style="width: 100px"
+            filterable
+            allow-create
+            default-first-option
+            style="width: 120px"
             @update:model-value="emit('update:province', $event)"
-            @keyup.enter="emit('search')"
-          />
+          >
+            <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="城市">

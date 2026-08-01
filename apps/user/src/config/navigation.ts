@@ -43,11 +43,11 @@ export const navItems: NavItem[] = [
   {
     id: 'employment',
     label: '就业信息专栏',
-    route: '/employment/jobs',
+    route: '/employment/civil',
     subItems: [
-      { label: '体制内招录管理', route: '/employment/jobs' },
-      { label: '基层服务管理', route: '/employment/jobs' },
-      { label: '行业专项招聘管理', route: '/employment/jobs' },
+      { label: '体制内招录招聘', route: '/employment/civil' },
+      { label: '基层服务招聘', route: '/employment/grassroots' },
+      { label: '行业专项招聘', route: '/employment/teacher' },
     ],
   },
   { id: 'cet', label: '英语四六级' },
