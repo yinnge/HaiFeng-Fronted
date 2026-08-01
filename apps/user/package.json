@@ -17,6 +17,7 @@
     "china-area-data": "^5.0.1",
     "dompurify": "^3.4.12",
     "element-plus": "^2.7.3",
+    "json-bigint": "^1.0.0",
     "marked": "^18.0.7",
     "motion-v": "^2.2.1",
     "pinia": "^2.1.7",
