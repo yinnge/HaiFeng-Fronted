@@ -5,7 +5,7 @@ import { getLaboratoryPage } from '@/api/university/laboratory'
 import type { LaboratoryListVO } from '@/types/university/laboratory'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{ universityId: number }>()
+const props = defineProps<{ universityId: string }>()
 const router = useRouter()
 
 const loading = ref(false)

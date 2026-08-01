@@ -8,7 +8,7 @@ import { MemberType } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
 import type { AdmissionGroupListVO, AdmissionGroupQueryDTO } from '@/types/university'
 
-const props = defineProps<{ universityId: number }>()
+const props = defineProps<{ universityId: string }>()
 const router = useRouter()
 const userStore = useUserStore()
 

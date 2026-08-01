@@ -28,7 +28,7 @@ const univDetail = ref<ChannelUniversityDetailVO | null>(null)
 const univDetailLoading = ref(false)
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     ElMessage.error('通道ID不存在')
     return
@@ -75,7 +75,7 @@ function onUnivPageChange(page: number) {
   fetchUniversityList()
 }
 
-async function viewUnivDetail(universityId: number) {
+async function viewUnivDetail(universityId: string) {
   univDetailLoading.value = true
   showUnivDialog.value = true
   try {
@@ -175,7 +175,7 @@ onMounted(async () => {
                 </p>
                 <button
                   class="w-full rounded-lg border border-orange-200 py-1.5 text-sm text-orange-500 font-medium hover:bg-orange-50 transition-all"
-                  @click="viewUnivDetail(item.universityId)"
+                  @click="viewUnivDetail(String(item.universityId))"
                 >
                   查看详情
                 </button>

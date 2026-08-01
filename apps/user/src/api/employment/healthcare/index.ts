@@ -6,6 +6,6 @@ export const getHealthcareList = (params: HealthcareQueryDTO) => {
   return request.get<R<PageResult<HealthcarePositionListVO>>>('/api/v1/app/employment/healthcare/list', { params })
 }
 
-export const getHealthcareDetail = (id: number) => {
+export const getHealthcareDetail = (id: string) => {
   return request.get<R<HealthcarePositionDetailVO>>(`/api/v1/app/employment/healthcare/${id}/detail`)
 }

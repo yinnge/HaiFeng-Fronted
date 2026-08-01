@@ -7,7 +7,7 @@ import type { GrassrootsPositionDetailVO } from '@/types/employment/grassroots'
 
 const route = useRoute()
 const router = useRouter()
-const jobId = Number(route.params.id)
+const jobId = route.params.id as string
 
 const loading = ref(false)
 const job = ref<GrassrootsPositionDetailVO | null>(null)

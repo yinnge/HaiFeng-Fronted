@@ -20,7 +20,7 @@ export const getChannelList = (params: SpecialChannelQueryDTO) => {
 }
 
 // 1.2 通道详情
-export const getChannelDetail = (id: number) => {
+export const getChannelDetail = (id: string) => {
   return request.get<R<SpecialChannelDetailVO>>(`/api/v1/app/special/channel/${id}`)
 }
 
@@ -30,7 +30,7 @@ export const getChannelUniversityList = (params: ChannelUniversityQueryDTO) => {
 }
 
 // 2.2 关联大学详情
-export const getChannelUniversityDetail = (id: number) => {
+export const getChannelUniversityDetail = (id: string) => {
   return request.get<R<ChannelUniversityDetailVO>>(`/api/v1/app/special/channel-univ/${id}`)
 }
 
@@ -40,11 +40,11 @@ export const getStrongBaseScoreList = (params: StrongBaseScoreQueryDTO) => {
 }
 
 // 3.2 强基数据详情
-export const getStrongBaseScoreDetail = (id: number) => {
+export const getStrongBaseScoreDetail = (id: string) => {
   return request.get<R<StrongBaseScoreDetailVO>>(`/api/v1/app/special/strong-base-score/${id}`)
 }
 
 // 4.1 强基院校配置
-export const getStrongBaseUniversityDetail = (universityId: number) => {
+export const getStrongBaseUniversityDetail = (universityId: string) => {
   return request.get<R<StrongBaseUniversityDetailVO>>(`/api/v1/app/special/strong-base-univ/${universityId}`)
 }

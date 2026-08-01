@@ -11,7 +11,7 @@ export const getPostgradMajorList = (params: PostgradMajorQueryDTO) =>
 export const getPostgradMajorDetail = (majorId: number) =>
   request.get<R<PostgradMajorDetailVO>>(`${PREFIX}/${majorId}/detail`)
 
-export const getPostgradMajorsByUniversity = (universityId: number, params: { page?: number; size?: number; degreeType?: string }) =>
+export const getPostgradMajorsByUniversity = (universityId: string, params: { page?: number; size?: number; degreeType?: string }) =>
   request.get<R<PageResult<PostgradMajorBriefVO>>>(`/api/v1/app/university/${universityId}/postgrad-majors`, { params })
 
 export const getUniversitiesByPostgradMajor = (majorId: number, params: { page?: number; size?: number; category?: string }) =>

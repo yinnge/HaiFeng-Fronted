@@ -7,6 +7,6 @@ export const getJobList = (params: JobSearchDTO) => {
   return request.get<R<PageResult<JobIndexListVO>>>('/api/v1/app/employment/job/list', { params })
 }
 
-export const getJobDetail = (id: number) => {
+export const getJobDetail = (id: string) => {
   return request.get<R<JobIndexDetailVO>>(`/api/v1/app/employment/job/${id}/detail`)
 }

@@ -2,7 +2,7 @@
  * 统一响应结构 (与后端 R<T> 对应)
  */
 export interface R<T = any> {
-  code: number
+  code: number | string
   msg: string
   data: T
   timestamp: number

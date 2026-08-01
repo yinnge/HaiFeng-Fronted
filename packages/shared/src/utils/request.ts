@@ -38,17 +38,20 @@ const createRequest = (baseURL: string): AxiosInstance => {
       const { data } = response
 
       // 业务错误处理
-      if (data.code !== ErrorCode.SUCCESS) {
+      if (Number(data.code) !== ErrorCode.SUCCESS) {
         // 20001: TOTP 二次验证，不是错误，放行给调用方处理
-        if (data.code === ErrorCode.TOTP_REQUIRED) {
+        if (Number(data.code) === ErrorCode.TOTP_REQUIRED) {
+          data.code = ErrorCode.TOTP_REQUIRED
           return response
         }
 
-        const message = data.msg || ErrorMessage[data.code] || '请求失败'
+        const message = data.msg || ErrorMessage[Number(data.code)] || '请求失败'
         console.error(`[API Error] ${data.code}: ${message}`)
         return Promise.reject(new Error(message))
       }
 
+      // 归一化 code 为 number，下游无需处理字符串类型
+      data.code = Number(data.code)
       return response
     },
     async (error) => {

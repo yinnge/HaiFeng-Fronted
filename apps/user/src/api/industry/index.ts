@@ -10,5 +10,5 @@ export const getIndustryCategories = () =>
 export const getIndustryList = (params: IndustryQueryDTO) =>
   request.get<R<PageResult<IndustryListVO>>>(`${PREFIX}/list`, { params })
 
-export const getIndustryDetail = (industryId: number) =>
+export const getIndustryDetail = (industryId: string) =>
   request.get<R<IndustryDetailVO>>(`${PREFIX}/${industryId}/detail`)

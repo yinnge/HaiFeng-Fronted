@@ -14,7 +14,7 @@ const loading = ref(false)
 const detail = ref<IndustryDetailVO | null>(null)
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     ElMessage.error('行业ID不存在')
     return
@@ -47,7 +47,7 @@ const relatedLoading = ref(false)
 const isProRelated = ref(false)
 
 async function fetchRelatedEnterprises() {
-  const industryId = Number(route.params.id)
+  const industryId = route.params.id as string
   if (!industryId) return
   relatedLoading.value = true
   try {

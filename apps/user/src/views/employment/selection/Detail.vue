@@ -15,7 +15,7 @@ const detail = ref<SelectionPositionDetailVO | null>(null)
 async function fetchDetail() {
   loading.value = true
   try {
-    const id = Number(route.params.id)
+    const id = route.params.id as string
     const res = await getSelectionDetail(id)
     detail.value = res.data.data
   } catch (e: any) {

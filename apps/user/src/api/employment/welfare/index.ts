@@ -6,6 +6,6 @@ export const getWelfareList = (params: WelfareQueryDTO) => {
   return request.get<R<PageResult<WelfarePositionListVO>>>('/api/v1/app/employment/grassroots/welfare/list', { params })
 }
 
-export const getWelfareDetail = (id: number) => {
+export const getWelfareDetail = (id: string) => {
   return request.get<R<WelfarePositionDetailVO>>(`/api/v1/app/employment/grassroots/welfare/${id}/detail`)
 }

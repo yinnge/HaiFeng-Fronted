@@ -4,7 +4,7 @@ import { getGradeStats, getSubjectEvaluationPage } from '@/api/university/subjec
 import type { GradeStatVO, SubjectEvaluationVO } from '@/types/university/subject-evaluation'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{ universityId: number }>()
+const props = defineProps<{ universityId: string }>()
 
 const loading = ref(false)
 const stats = ref<GradeStatVO[]>([])

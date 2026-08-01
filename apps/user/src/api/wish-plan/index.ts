@@ -98,48 +98,48 @@ export interface WishPlanExportFileVO {
 export const getDefaultLimits = () =>
   request.get<R<WishPlanLimitVO>>(`${PREFIX}/default-limits`)
 
-export const addMajors = (data: { planId: number | null; groupId: number; majorIds: number[] }) =>
+export const addMajors = (data: { planId: string | null; groupId: string; majorIds: string[] }) =>
   request.post<R<WishPlanListVO>>(`${PREFIX}/add-majors`, data)
 
 export const getMyPlans = () =>
   request.get<R<WishPlanListVO[]>>(`${PREFIX}/my-plans`)
 
-export const deletePlan = (planId: number) =>
+export const deletePlan = (planId: string) =>
   request.delete<R<null>>(`${PREFIX}/${planId}`)
 
-export const getPlanGroups = (planId: number, params?: { page?: number; size?: number }) =>
+export const getPlanGroups = (planId: string, params?: { page?: number; size?: number }) =>
   request.get<R<{ records: WishPlanGroupVO[]; total: number; size: number; current: number; pages: number }>>(
     `${PREFIX}/${planId}/groups`, { params }
   )
 
-export const getPlanGroupMajors = (planId: number, groupSnapshotId: number, params?: { page?: number; size?: number }) =>
+export const getPlanGroupMajors = (planId: string, groupSnapshotId: string, params?: { page?: number; size?: number }) =>
   request.get<R<{ records: WishPlanMajorVO[]; total: number; size: number; current: number; pages: number }>>(
     `${PREFIX}/${planId}/groups/${groupSnapshotId}/majors`, { params }
   )
 
-export const sortPlanGroups = (planId: number, items: { groupId: number; sortOrder: number }[]) =>
+export const sortPlanGroups = (planId: string, items: { groupId: number; sortOrder: number }[]) =>
   request.put<R<null>>(`${PREFIX}/${planId}/groups/sort`, { items })
 
-export const sortPlanGroupMajors = (planId: number, groupSnapshotId: number, items: { majorId: number; sortOrder: number }[]) =>
+export const sortPlanGroupMajors = (planId: string, groupSnapshotId: string, items: { majorId: number; sortOrder: number }[]) =>
   request.put<R<null>>(`${PREFIX}/${planId}/groups/${groupSnapshotId}/majors/sort`, { items })
 
-export const toggleMajorExport = (planId: number, majorId: number, isExported: boolean) =>
+export const toggleMajorExport = (planId: string, majorId: string, isExported: boolean) =>
   request.put<R<null>>(`${PREFIX}/${planId}/majors/${majorId}/export`, { isExported })
 
-export const toggleGroupExportAll = (planId: number, groupSnapshotId: number, isExported: boolean) =>
+export const toggleGroupExportAll = (planId: string, groupSnapshotId: string, isExported: boolean) =>
   request.put<R<null>>(`${PREFIX}/${planId}/groups/${groupSnapshotId}/export-all`, { isExported })
 
-export const getExportProgress = (planId: number) =>
+export const getExportProgress = (planId: string) =>
   request.get<R<WishPlanExportProgressVO>>(`${PREFIX}/${planId}/export/progress`)
 
-export const generateExport = (planId: number) =>
+export const generateExport = (planId: string) =>
   request.post<R<WishPlanExportFileVO>>(`${PREFIX}/${planId}/export/generate`)
 
-export const downloadExport = (planId: number, file: string) =>
+export const downloadExport = (planId: string, file: string) =>
   request.get(`${PREFIX}/${planId}/export/download`, {
     params: { file },
     responseType: 'blob',
   })
 
-export const saveExportStatus = (planId: number) =>
+export const saveExportStatus = (planId: string) =>
   request.post<R<null>>(`${PREFIX}/${planId}/export/save`)

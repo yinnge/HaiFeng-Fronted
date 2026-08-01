@@ -7,14 +7,14 @@ import { getGeneratePdfUrl, getRegeneratePdfUrl } from '@/api/pdf-report'
 
 const props = defineProps<{
   visible: boolean
-  planId: number
+  planId: string
   isRegenerate?: boolean
-  recordId?: number
+  recordId?: string
 }>()
 
 const emit = defineEmits<{
   'update:visible': [val: boolean]
-  success: [recordId: number]
+  success: [recordId: string]
 }>()
 
 const router = useRouter()
@@ -27,7 +27,7 @@ const currentUniversity = ref('')
 const phase = ref<'idle' | 'quota' | 'map' | 'reduce' | 'done' | 'error'>('idle')
 const errorMsg = ref('')
 const errorCode = ref(0)
-const successRecordId = ref(0)
+const successRecordId = ref('')
 
 let abortController: AbortController | null = null
 
@@ -51,7 +51,7 @@ function resetState() {
   phase.value = 'idle'
   errorMsg.value = ''
   errorCode.value = 0
-  successRecordId.value = 0
+  successRecordId.value = ''
 }
 
 async function startGenerate() {
@@ -84,7 +84,7 @@ function handleEvent(event: SseEvent) {
       phase.value = 'map'
       statusText.value = '正在分析各校数据...'
       progress.value = 10
-      if (event.recordId) successRecordId.value = event.recordId
+      if (event.recordId) successRecordId.value = String(event.recordId)
       break
 
     case 'map':
@@ -114,7 +114,7 @@ function handleEvent(event: SseEvent) {
       phase.value = 'done'
       progress.value = 100
       statusText.value = '生成完成！'
-      if (event.recordId) successRecordId.value = event.recordId
+      if (event.recordId) successRecordId.value = String(event.recordId)
       setTimeout(() => {
         emit('success', successRecordId.value)
         emit('update:visible', false)
@@ -126,7 +126,7 @@ function handleEvent(event: SseEvent) {
       errorMsg.value = event.message || '生成失败'
       errorCode.value = event.code || 500
       statusText.value = errorMsg.value
-      if (event.recordId) successRecordId.value = event.recordId
+      if (event.recordId) successRecordId.value = String(event.recordId)
       break
   }
 }

@@ -27,7 +27,7 @@ const tabs = [
 ]
 
 async function fetchDetail() {
-  const id = Number(route.params.id)
+  const id = route.params.id as string
   if (!id) {
     ElMessage.error('院校ID不存在')
     return
@@ -134,12 +134,12 @@ onMounted(fetchDetail)
 
         <!-- Tab 内容区 -->
         <section class="min-h-[200px] mb-8">
-          <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="Number(route.params.id)" />
-          <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="Number(route.params.id)" />
-          <DepartmentTab v-else-if="activeTab === 'department'" :university-id="Number(route.params.id)" />
-          <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="Number(route.params.id)" />
-          <ChannelTab v-else-if="activeTab === 'channel'" :university-id="Number(route.params.id)" />
-          <AdmissionGroupTab v-else-if="activeTab === 'admission'" :university-id="Number(route.params.id)" />
+          <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="route.params.id as string" />
+          <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="route.params.id as string" />
+          <DepartmentTab v-else-if="activeTab === 'department'" :university-id="route.params.id as string" />
+          <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="route.params.id as string" />
+          <ChannelTab v-else-if="activeTab === 'channel'" :university-id="route.params.id as string" />
+          <AdmissionGroupTab v-else-if="activeTab === 'admission'" :university-id="route.params.id as string" />
         </section>
 
         <!-- 操作 -->

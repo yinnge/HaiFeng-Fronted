@@ -6,6 +6,6 @@ export const getTeacherList = (params: TeacherQueryDTO) => {
   return request.get<R<PageResult<TeacherPositionListVO>>>('/api/v1/app/employment/teacher/list', { params })
 }
 
-export const getTeacherDetail = (id: number) => {
+export const getTeacherDetail = (id: string) => {
   return request.get<R<TeacherPositionDetailVO>>(`/api/v1/app/employment/teacher/${id}/detail`)
 }

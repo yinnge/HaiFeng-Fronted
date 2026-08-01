@@ -4,8 +4,8 @@ import type { GradeStatVO, SubjectEvaluationVO } from '@/types/university/subjec
 
 const PREFIX = '/api/v1/app/university'
 
-export const getGradeStats = (universityId: number) =>
+export const getGradeStats = (universityId: string) =>
   request.get<R<GradeStatVO[]>>(`${PREFIX}/${universityId}/subject-evaluations/grade-stats`)
 
-export const getSubjectEvaluationPage = (universityId: number, params: { page?: number; size?: number }) =>
+export const getSubjectEvaluationPage = (universityId: string, params: { page?: number; size?: number }) =>
   request.get<R<PageResult<SubjectEvaluationVO>>>(`${PREFIX}/${universityId}/subject-evaluations`, { params })

@@ -15,10 +15,11 @@ export interface BasicMessage {
 
 export interface SiteInfoVO {
   siteIcp: string
+  siteDescription: string
   contactUrl: ContactUrl
   basicMessage: BasicMessage
-  proPrice: number
-  vipPrice: number
+  proPrice?: number
+  vipPrice?: number
 }
 
 export interface HomePageResult<T> {

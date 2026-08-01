@@ -5,7 +5,7 @@ import { ProvinceOptions } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
 import type { ChannelListVO, ChannelOptionVO, ChannelQueryDTO } from '@/types/university'
 
-const props = defineProps<{ universityId: number }>()
+const props = defineProps<{ universityId: string }>()
 
 const loading = ref(false)
 const list = ref<ChannelListVO[]>([])

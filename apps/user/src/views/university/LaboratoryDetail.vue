@@ -12,7 +12,7 @@ const loading = ref(false)
 const detail = ref<LaboratoryDetailVO | null>(null)
 
 async function fetchDetail() {
-  const labId = Number(route.params.labId)
+  const labId = route.params.labId as string
   if (!labId) {
     ElMessage.error('实验室ID不存在')
     return
