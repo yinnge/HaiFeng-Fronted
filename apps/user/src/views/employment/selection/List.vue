@@ -7,6 +7,7 @@ import { getSelectionList } from '@/api/employment/selection'
 import type { SelectionPositionListVO, SelectionPositionSearchDTO } from '@/types/employment/selection'
 import { SelectionStatusTag } from '@/types/employment/selection'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
+import EmploymentTabs from '@/components/employment/EmploymentTabs.vue'
 
 const router = useRouter()
 
@@ -112,11 +113,6 @@ onMounted(fetchList)
     <main class="flex-1">
       <div class="container mx-auto px-6 py-6 flex gap-6">
         <div class="flex-1 min-w-0">
-        <button class="flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors text-sm mb-4" @click="router.push('/employment/jobs')">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-          返回岗位搜索
-        </button>
-
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
             <span class="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
@@ -125,6 +121,8 @@ onMounted(fetchList)
           <h2 class="mb-2 text-3xl font-bold text-gray-800">选调生招录</h2>
           <p class="text-gray-500">定向选调/非定向选调/急需紧缺专业选调岗位查询</p>
         </div>
+
+        <EmploymentTabs module="civilService" />
 
         <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
           <div class="flex gap-3 mb-4">

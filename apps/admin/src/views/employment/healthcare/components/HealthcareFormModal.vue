@@ -38,6 +38,8 @@ const institutionNatureOptions = ['公立', '民营']
 const positionCategoryOptions = ['临床医师', '护理', '药学', '医技', '公共卫生', '行政后勤', '科研']
 const recruitmentTypeOptions = ['编制', '合同制', '人事代理', '规培', '进修']
 const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
+const degreeOptions = ['不限', '学士', '硕士', '博士']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 const titleOptions = ['不限', '初级', '中级', '副高级', '正高级']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
@@ -154,7 +156,9 @@ const handleSubmit = async () => {
             <el-row :gutter="20">
               <el-col :span="8">
                 <el-form-item label="省份" prop="province">
-                  <el-input v-model="formData.province" placeholder="省份" maxlength="30" />
+                  <el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%">
+                    <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
@@ -178,7 +182,9 @@ const handleSubmit = async () => {
               </el-col>
               <el-col :span="12">
                 <el-form-item label="学位要求">
-                  <el-input v-model="formData.degreeRequirement" placeholder="学位要求" maxlength="30" />
+                  <el-select v-model="formData.degreeRequirement" placeholder="请选择" clearable style="width: 100%">
+                    <el-option v-for="item in degreeOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>

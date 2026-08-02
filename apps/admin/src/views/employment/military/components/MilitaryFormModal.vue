@@ -25,6 +25,7 @@ const basicRules: FormRules = {
 
 const positionTypeOptions = ['管理岗', '专业技术岗', '专业技能岗']
 const educationOptions = ['本科及以上', '硕士及以上', '博士']
+const positionStatusOptions = ['进行中', '已结束']
 
 const dialogTitle = computed(() => (props.mode === 'add' ? '新增军队文职职位' : '修改军队文职职位'))
 
@@ -130,6 +131,13 @@ const handleSubmit = async () => {
               <el-col :span="12">
                 <el-form-item label="报名截止">
                   <el-date-picker v-model="formData.regDeadline" type="datetime" placeholder="报名截止" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="招聘状态">
+                  <el-select v-model="formData.positionStatus" placeholder="请选择" clearable style="width: 100%">
+                    <el-option v-for="item in positionStatusOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>

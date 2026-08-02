@@ -171,7 +171,7 @@ async function goDetail(id: string) {
         cancelButtonText: '取消',
         type: 'warning',
       })
-      userStore.setRedirectPath(`/employment/job/${id}`)
+      userStore.setRedirectPath(router.currentRoute.value.fullPath)
       router.push({ name: 'Login' })
     } catch {
       // cancelled

@@ -20,7 +20,7 @@ async function fetchDetail() {
     detail.value = res.data.data
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.msg || '获取岗位详情失败')
-    router.push('/employment/jobs')
+    router.push('/employment/selection')
   } finally {
     loading.value = false
   }

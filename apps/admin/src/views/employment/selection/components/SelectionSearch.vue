@@ -26,6 +26,8 @@ const emit = defineEmits<{
 const selectionTypeOptions = ['定向选调', '非定向选调', '急需紧缺专业选调']
 const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '不限']
 const positionStatusOptions = ['报名中', '笔试阶段', '面试阶段', '已结束', '即将开始']
+const yearOptions = ['2027', '2026', '2025', '2024', '2023', '2022']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 </script>
 
 <template>
@@ -91,26 +93,34 @@ const positionStatusOptions = ['报名中', '笔试阶段', '面试阶段', '已
         <el-row :gutter="12">
           <el-col :span="6">
             <el-form-item label="年份">
-              <el-input
+              <el-select
                 :model-value="year"
                 placeholder="年份"
                 clearable
-                style="width: 100px"
+                filterable
+                allow-create
+                default-first-option
+                style="width: 120px"
                 @update:model-value="emit('update:year', $event)"
-                @keyup.enter="emit('search')"
-              />
+              >
+                <el-option v-for="item in yearOptions" :key="item" :label="item" :value="item" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="省份">
-              <el-input
+              <el-select
                 :model-value="province"
                 placeholder="省份"
                 clearable
-                style="width: 100px"
+                filterable
+                allow-create
+                default-first-option
+                style="width: 120px"
                 @update:model-value="emit('update:province', $event)"
-                @keyup.enter="emit('search')"
-              />
+              >
+                <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">

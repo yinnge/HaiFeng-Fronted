@@ -34,6 +34,8 @@ const projectTypeOptions = ['三支一扶', '西部计划']
 const serviceTypeOptions = ['支教', '支农', '支医', '帮扶乡村振兴', '基础教育', '服务三农', '医疗卫生', '基层青年工作', '基层社会管理', '服务新疆', '服务西藏']
 const educationOptions = ['大专', '本科', '硕士', '大专及以上', '本科及以上']
 const positionStatusOptions = ['招募中', '已结束', '即将开始']
+const politicalStatusOptions = ['中共党员', '中共预备党员', '共青团员', '群众']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -97,7 +99,7 @@ const handleSubmit = async () => {
         <el-tab-pane label="服务地点与要求" name="location">
           <el-form ref="formRefLocation" :model="formData" :rules="locationRules" label-width="120px" class="mt-2">
             <el-row :gutter="20">
-              <el-col :span="8"><el-form-item label="省份" prop="province"><el-input v-model="formData.province" placeholder="省份" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="8"><el-form-item label="省份" prop="province"><el-select v-model="formData.province" placeholder="请选择" clearable filterable allow-create default-first-option style="width: 100%"><el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="城市"><el-input v-model="formData.city" placeholder="城市" maxlength="50" /></el-form-item></el-col>
               <el-col :span="8"><el-form-item label="区域"><el-input v-model="formData.county" placeholder="请输入区域" maxlength="50" /></el-form-item></el-col>
             </el-row>
@@ -120,7 +122,7 @@ const handleSubmit = async () => {
             <el-form-item label="专业要求"><el-input v-model="formData.majorRequirement" placeholder="专业要求" maxlength="500" show-word-limit /></el-form-item>
             <el-row :gutter="20">
               <el-col :span="12"><el-form-item label="户籍要求"><el-input v-model="formData.householdRequirement" placeholder="户籍要求" maxlength="100" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="政治面貌"><el-input v-model="formData.politicalStatus" placeholder="政治面貌" maxlength="30" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="政治面貌"><el-select v-model="formData.politicalStatus" placeholder="请选择" clearable style="width: 100%"><el-option v-for="item in politicalStatusOptions" :key="item" :label="item" :value="item" /></el-select></el-form-item></el-col>
             </el-row>
             <el-form-item label="其他要求"><el-input v-model="formData.otherRequirement" type="textarea" :rows="2" placeholder="其他要求" /></el-form-item>
           </el-form>

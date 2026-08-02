@@ -208,18 +208,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '企业岗位', requiresAuth: true },
   },
   {
-    path: '/employment/jobs',
-    name: 'EmploymentJobList',
-    component: () => import('@/views/employment/jobs/index.vue'),
-    meta: { title: '统一岗位搜索' },
-  },
-  {
-    path: '/employment/job/:id',
-    name: 'EmploymentJobDetail',
-    component: () => import('@/views/employment/job/Detail.vue'),
-    meta: { title: '岗位详情', requiresAuth: true },
-  },
-  {
     path: '/employment/teacher',
     name: 'EmploymentTeacherList',
     component: () => import('@/views/employment/teacher/List.vue'),
