@@ -19,3 +19,6 @@ export const getUniversitiesByPostgradMajor = (majorId: string, params: { page?:
 
 export const getPostgradMajorUndergraduateMajors = (postgradMajorId: string, params: { page: number; size: number }) =>
   request.get<R<PageResult<UndergraduateMajorDirectionBriefVO>>>(`/api/v1/app/postgrad-major/${postgradMajorId}/undergraduate-majors`, { params })
+
+export const getPostgradMajorDisciplineCategories = () =>
+  request.get<R<string[]>>(`${PREFIX}/discipline-categories`)

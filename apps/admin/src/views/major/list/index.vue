@@ -41,7 +41,8 @@ const queryParams = reactive<MajorQueryDTO>({
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
-const dialogMode = ref<'detail' | 'add' | 'edit' | 'editDetail'>('detail')
+const dialogMode = ref<'detail' | 'add' | 'edit'>('detail')
+const activeEditTab = ref<'basic' | 'detail'>('basic')
 const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const detailData = ref<MajorDetailVO | null>(null)
@@ -52,6 +53,13 @@ const formData = reactive<MajorAddDTO>({
   majorType: '',
   disciplineName: '',
   majorCategory: '',
+  parentCategory: '',
+  majorTags: '',
+  degreeAwarded: '',
+  employmentRate: undefined,
+  salaryMin: undefined,
+  salaryMax: undefined,
+  description: '',
 })
 
 const detailFormData = reactive<MajorDetailUpdateDTO>({
@@ -64,9 +72,10 @@ const detailFormData = reactive<MajorDetailUpdateDTO>({
   trainingRequirement: '',
   subjectRequirement: '',
   careerProspect: '',
-  mainCourses: [],
-  knowledgeSkills: [],
 })
+// 数组型字段用独立 ref，保证 v-for + v-model 回填万无一失（规避嵌套 reactive 数组重赋值 + 模板内 ! 断言的响应式陷阱）
+const courseList = ref<string[]>([])
+const skillList = ref<string[]>([])
 
 const fetchData = async () => {
   loading.value = true
@@ -107,7 +116,7 @@ const handleSelectionChange = (rows: MajorListVO[]) => {
   selectedIds.value = rows.map(r => r.id)
 }
 
-const openDialog = async (mode: 'detail' | 'add' | 'edit' | 'editDetail', id?: string) => {
+const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
   dialogMode.value = mode
   currentId.value = id || null
 
@@ -118,33 +127,39 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit' | 'editDetail', id?: s
     formData.majorType = ''
     formData.disciplineName = ''
     formData.majorCategory = ''
+    formData.parentCategory = ''
+    formData.majorTags = ''
+    formData.degreeAwarded = ''
+    formData.employmentRate = undefined
+    formData.salaryMin = undefined
+    formData.salaryMax = undefined
+    formData.description = ''
+    courseList.value = []
+    skillList.value = []
+    activeEditTab.value = 'basic'
     detailData.value = null
   } else if (mode === 'edit' && id) {
     dialogTitle.value = '修改专业'
+    activeEditTab.value = 'basic'
     formLoading.value = true
     try {
       const res = await getMajorDetail(id)
       if (res.data.code === 200) {
         const d = res.data.data
+        // 基本资料
         formData.majorCode = d.majorCode
         formData.majorName = d.majorName
         formData.majorType = d.majorType
         formData.disciplineName = d.disciplineName || ''
         formData.majorCategory = d.majorCategory || ''
-      }
-    } catch {
-      ElMessage.error('获取详情失败')
-    } finally {
-      formLoading.value = false
-    }
-    detailData.value = null
-  } else if (mode === 'editDetail' && id) {
-    dialogTitle.value = '修改专业详情'
-    formLoading.value = true
-    try {
-      const res = await getMajorDetail(id)
-      if (res.data.code === 200) {
-        const d = res.data.data
+        formData.parentCategory = d.parentCategory || ''
+        formData.majorTags = d.majorTags || ''
+        formData.degreeAwarded = d.degreeAwarded || ''
+        formData.employmentRate = d.employmentRate ?? undefined
+        formData.salaryMin = d.salaryMin ?? undefined
+        formData.salaryMax = d.salaryMax ?? undefined
+        formData.description = d.description || ''
+        // 专业详情
         detailFormData.courseCount = d.courseCount ?? undefined
         detailFormData.graduateScale = d.graduateScale || ''
         detailFormData.maleRatio = d.maleRatio ?? undefined
@@ -154,8 +169,9 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit' | 'editDetail', id?: s
         detailFormData.trainingRequirement = d.trainingRequirement || ''
         detailFormData.subjectRequirement = d.subjectRequirement || ''
         detailFormData.careerProspect = d.careerProspect || ''
-        detailFormData.mainCourses = d.mainCourses || []
-        detailFormData.knowledgeSkills = d.knowledgeSkills || []
+        // 数组字段：用顶层 ref 直接承接，保证回显
+        courseList.value = d.mainCourses && d.mainCourses.length ? [...d.mainCourses] : []
+        skillList.value = d.knowledgeSkills && d.knowledgeSkills.length ? [...d.knowledgeSkills] : []
       }
     } catch {
       ElMessage.error('获取详情失败')
@@ -197,29 +213,52 @@ const handleSubmit = async () => {
       }
       if (formData.disciplineName) data.disciplineName = formData.disciplineName
       if (formData.majorCategory) data.majorCategory = formData.majorCategory
+      if (formData.parentCategory) data.parentCategory = formData.parentCategory
+      if (formData.majorTags) data.majorTags = formData.majorTags
+      if (formData.degreeAwarded) data.degreeAwarded = formData.degreeAwarded
+      if (formData.employmentRate !== undefined) data.employmentRate = formData.employmentRate
+      if (formData.salaryMin !== undefined) data.salaryMin = formData.salaryMin
+      if (formData.salaryMax !== undefined) data.salaryMax = formData.salaryMax
+      if (formData.description) data.description = formData.description
       res = await addMajor(data)
     } else if (dialogMode.value === 'edit' && currentId.value) {
-      const data: MajorUpdateDTO = {}
-      if (formData.majorCode) data.majorCode = formData.majorCode
-      if (formData.majorName) data.majorName = formData.majorName
-      if (formData.majorType) data.majorType = formData.majorType
-      if (formData.disciplineName) data.disciplineName = formData.disciplineName
-      if (formData.majorCategory) data.majorCategory = formData.majorCategory
-      res = await updateMajor(currentId.value, data)
-    } else if (dialogMode.value === 'editDetail' && currentId.value) {
-      const data: MajorDetailUpdateDTO = {}
-      if (detailFormData.courseCount !== undefined) data.courseCount = detailFormData.courseCount
-      if (detailFormData.graduateScale) data.graduateScale = detailFormData.graduateScale
-      if (detailFormData.maleRatio !== undefined) data.maleRatio = detailFormData.maleRatio
-      if (detailFormData.femaleRatio !== undefined) data.femaleRatio = detailFormData.femaleRatio
-      if (detailFormData.majorDescription) data.majorDescription = detailFormData.majorDescription
-      if (detailFormData.trainingObjective) data.trainingObjective = detailFormData.trainingObjective
-      if (detailFormData.trainingRequirement) data.trainingRequirement = detailFormData.trainingRequirement
-      if (detailFormData.subjectRequirement) data.subjectRequirement = detailFormData.subjectRequirement
-      if (detailFormData.careerProspect) data.careerProspect = detailFormData.careerProspect
-      if (detailFormData.mainCourses && detailFormData.mainCourses.length > 0) data.mainCourses = detailFormData.mainCourses
-      if (detailFormData.knowledgeSkills && detailFormData.knowledgeSkills.length > 0) data.knowledgeSkills = detailFormData.knowledgeSkills
-      res = await updateMajorDetail(currentId.value, data)
+      // 1) 保存基本资料
+      const basicData: MajorUpdateDTO = {}
+      if (formData.majorCode) basicData.majorCode = formData.majorCode
+      if (formData.majorName) basicData.majorName = formData.majorName
+      if (formData.majorType) basicData.majorType = formData.majorType
+      if (formData.disciplineName) basicData.disciplineName = formData.disciplineName
+      if (formData.majorCategory) basicData.majorCategory = formData.majorCategory
+      if (formData.parentCategory) basicData.parentCategory = formData.parentCategory
+      if (formData.majorTags) basicData.majorTags = formData.majorTags
+      if (formData.degreeAwarded) basicData.degreeAwarded = formData.degreeAwarded
+      if (formData.employmentRate !== undefined) basicData.employmentRate = formData.employmentRate
+      if (formData.salaryMin !== undefined) basicData.salaryMin = formData.salaryMin
+      if (formData.salaryMax !== undefined) basicData.salaryMax = formData.salaryMax
+      if (formData.description) basicData.description = formData.description
+      res = await updateMajor(currentId.value, basicData)
+      if (res.data.code !== 200) {
+        ElMessage.error(res.data.msg || '保存基本资料失败')
+        return
+      }
+      // 2) 保存专业详情（含主要课程 / 知识技能）
+      const detailDataDto: MajorDetailUpdateDTO = {}
+      if (detailFormData.courseCount !== undefined) detailDataDto.courseCount = detailFormData.courseCount
+      if (detailFormData.graduateScale) detailDataDto.graduateScale = detailFormData.graduateScale
+      if (detailFormData.maleRatio !== undefined) detailDataDto.maleRatio = detailFormData.maleRatio
+      if (detailFormData.femaleRatio !== undefined) detailDataDto.femaleRatio = detailFormData.femaleRatio
+      if (detailFormData.majorDescription) detailDataDto.majorDescription = detailFormData.majorDescription
+      if (detailFormData.trainingObjective) detailDataDto.trainingObjective = detailFormData.trainingObjective
+      if (detailFormData.trainingRequirement) detailDataDto.trainingRequirement = detailFormData.trainingRequirement
+      if (detailFormData.subjectRequirement) detailDataDto.subjectRequirement = detailFormData.subjectRequirement
+      if (detailFormData.careerProspect) detailDataDto.careerProspect = detailFormData.careerProspect
+      detailDataDto.mainCourses = courseList.value.map(s => s.trim()).filter(Boolean)
+      detailDataDto.knowledgeSkills = skillList.value.map(s => s.trim()).filter(Boolean)
+      const res2 = await updateMajorDetail(currentId.value, detailDataDto)
+      if (res2.data.code !== 200) {
+        ElMessage.error(res2.data.msg || '保存专业详情失败')
+        return
+      }
     } else {
       return
     }
@@ -377,10 +416,6 @@ const handleImport = async (type: 'main' | 'detail') => {
   input.click()
 }
 
-const addArrayItem = (arr: string[] | undefined) => { if (arr) arr.push('') }
-const removeArrayItem = (arr: string[] | undefined, index: number) => { if (arr) arr.splice(index, 1) }
-const arrOrEmpty = (arr: string[] | undefined): string[] => arr || []
-
 const statusTag = (status: number) => status === 1 ? 'success' : 'info'
 const statusLabel = (status: number) => status === 1 ? '启用' : '禁用'
 
@@ -468,7 +503,6 @@ onMounted(() => { fetchData() })
             <div class="action-group">
               <span class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</span>
               <span class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</span>
-              <span class="action-btn action-edit" @click="openDialog('editDetail', row.id)">修改详情</span>
               <span class="action-btn action-status" @click="handleToggleStatus(row)">
                 {{ row.status === 1 ? '禁用' : '启用' }}
               </span>
@@ -492,7 +526,7 @@ onMounted(() => { fetchData() })
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="700px" :close-on-click-modal="false" class="major-dialog">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="720px" :close-on-click-modal="false" class="major-dialog">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border class="uni-descriptions">
@@ -540,7 +574,7 @@ onMounted(() => { fetchData() })
           </el-descriptions>
         </template>
 
-        <template v-if="dialogMode === 'add' || dialogMode === 'edit'">
+        <template v-else-if="dialogMode === 'add'">
           <el-form :model="formData" label-width="110px">
             <el-form-item label="专业代码" required>
               <el-input v-model="formData.majorCode" placeholder="请输入专业代码" maxlength="20" />
@@ -560,53 +594,121 @@ onMounted(() => { fetchData() })
             <el-form-item label="学科门类">
               <el-input v-model="formData.majorCategory" placeholder="如：工学、理学" maxlength="50" />
             </el-form-item>
+            <el-form-item label="专业类">
+              <el-input v-model="formData.parentCategory" placeholder="如：计算机类" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="专业标签">
+              <el-input v-model="formData.majorTags" placeholder="如：热门、紧缺" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="授予学位">
+              <el-input v-model="formData.degreeAwarded" placeholder="如：工学学士" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="就业率(%)">
+              <el-input-number v-model="formData.employmentRate" :min="0" :max="100" :precision="2" controls-position="right" />
+            </el-form-item>
+            <el-form-item label="薪资下限(元/月)">
+              <el-input-number v-model="formData.salaryMin" :min="0" controls-position="right" />
+            </el-form-item>
+            <el-form-item label="薪资上限(元/月)">
+              <el-input-number v-model="formData.salaryMax" :min="0" controls-position="right" />
+            </el-form-item>
+            <el-form-item label="专业描述">
+              <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入专业描述" />
+            </el-form-item>
           </el-form>
         </template>
 
-        <template v-if="dialogMode === 'editDetail'">
-          <el-form :model="detailFormData" label-width="120px">
-            <el-form-item label="课程数量">
-              <el-input-number v-model="detailFormData.courseCount" :min="0" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="毕业生规模">
-              <el-input v-model="detailFormData.graduateScale" placeholder="如：5000-10000人" maxlength="20" />
-            </el-form-item>
-            <el-form-item label="男生比例">
-              <el-input-number v-model="detailFormData.maleRatio" :min="0" :max="100" :precision="2" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="女生比例">
-              <el-input-number v-model="detailFormData.femaleRatio" :min="0" :max="100" :precision="2" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="专业描述">
-              <el-input v-model="detailFormData.majorDescription" type="textarea" :rows="3" placeholder="请输入专业详细描述" />
-            </el-form-item>
-            <el-form-item label="培养目标">
-              <el-input v-model="detailFormData.trainingObjective" type="textarea" :rows="3" placeholder="请输入培养目标" />
-            </el-form-item>
-            <el-form-item label="培养要求">
-              <el-input v-model="detailFormData.trainingRequirement" type="textarea" :rows="3" placeholder="请输入培养要求" />
-            </el-form-item>
-            <el-form-item label="学科要求">
-              <el-input v-model="detailFormData.subjectRequirement" type="textarea" :rows="3" placeholder="请输入学科要求" />
-            </el-form-item>
-            <el-form-item label="就业前景">
-              <el-input v-model="detailFormData.careerProspect" type="textarea" :rows="3" placeholder="请输入就业前景分析" />
-            </el-form-item>
-            <el-form-item label="主要课程">
-              <div v-for="(item, index) in arrOrEmpty(detailFormData.mainCourses)" :key="index" class="mb-2 flex items-center gap-2">
-                <el-input v-model="detailFormData.mainCourses![index]" placeholder="请输入课程名称" style="width: 400px" />
-                <el-button type="danger" link @click="removeArrayItem(detailFormData.mainCourses, index)">删除</el-button>
-              </div>
-              <el-button type="primary" link @click="addArrayItem(detailFormData.mainCourses)">+ 添加课程</el-button>
-            </el-form-item>
-            <el-form-item label="知识技能">
-              <div v-for="(item, index) in arrOrEmpty(detailFormData.knowledgeSkills)" :key="index" class="mb-2 flex items-center gap-2">
-                <el-input v-model="detailFormData.knowledgeSkills![index]" placeholder="请输入技能名称" style="width: 400px" />
-                <el-button type="danger" link @click="removeArrayItem(detailFormData.knowledgeSkills, index)">删除</el-button>
-              </div>
-              <el-button type="primary" link @click="addArrayItem(detailFormData.knowledgeSkills)">+ 添加技能</el-button>
-            </el-form-item>
-          </el-form>
+        <template v-else-if="dialogMode === 'edit'">
+          <el-tabs v-model="activeEditTab" class="major-edit-tabs">
+            <el-tab-pane label="基本资料" name="basic">
+              <el-form :model="formData" label-width="110px">
+                <el-form-item label="专业代码" required>
+                  <el-input v-model="formData.majorCode" placeholder="请输入专业代码" maxlength="20" disabled />
+                </el-form-item>
+                <el-form-item label="专业名称" required>
+                  <el-input v-model="formData.majorName" placeholder="请输入专业名称" maxlength="100" />
+                </el-form-item>
+                <el-form-item label="专业类型" required>
+                  <el-select v-model="formData.majorType" placeholder="请选择" style="width: 200px">
+                    <el-option label="本科" value="本科" />
+                    <el-option label="专科" value="专科" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="学科名称">
+                  <el-input v-model="formData.disciplineName" placeholder="请输入学科名称" maxlength="100" />
+                </el-form-item>
+                <el-form-item label="学科门类">
+                  <el-input v-model="formData.majorCategory" placeholder="如：工学、理学" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="专业类">
+                  <el-input v-model="formData.parentCategory" placeholder="如：计算机类" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="专业标签">
+                  <el-input v-model="formData.majorTags" placeholder="如：热门、紧缺" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="授予学位">
+                  <el-input v-model="formData.degreeAwarded" placeholder="如：工学学士" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="就业率(%)">
+                  <el-input-number v-model="formData.employmentRate" :min="0" :max="100" :precision="2" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="薪资下限(元/月)">
+                  <el-input-number v-model="formData.salaryMin" :min="0" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="薪资上限(元/月)">
+                  <el-input-number v-model="formData.salaryMax" :min="0" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="专业描述">
+                  <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入专业描述" />
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="专业详情" name="detail">
+              <el-form :model="detailFormData" label-width="120px">
+                <el-form-item label="课程数量">
+                  <el-input-number v-model="detailFormData.courseCount" :min="0" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="毕业生规模">
+                  <el-input v-model="detailFormData.graduateScale" placeholder="如：5000-10000人" maxlength="20" />
+                </el-form-item>
+                <el-form-item label="男生比例">
+                  <el-input-number v-model="detailFormData.maleRatio" :min="0" :max="100" :precision="2" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="女生比例">
+                  <el-input-number v-model="detailFormData.femaleRatio" :min="0" :max="100" :precision="2" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="专业描述">
+                  <el-input v-model="detailFormData.majorDescription" type="textarea" :rows="3" placeholder="请输入专业详细描述" />
+                </el-form-item>
+                <el-form-item label="培养目标">
+                  <el-input v-model="detailFormData.trainingObjective" type="textarea" :rows="3" placeholder="请输入培养目标" />
+                </el-form-item>
+                <el-form-item label="培养要求">
+                  <el-input v-model="detailFormData.trainingRequirement" type="textarea" :rows="3" placeholder="请输入培养要求" />
+                </el-form-item>
+                <el-form-item label="学科要求">
+                  <el-input v-model="detailFormData.subjectRequirement" type="textarea" :rows="3" placeholder="请输入学科要求" />
+                </el-form-item>
+                <el-form-item label="就业前景">
+                  <el-input v-model="detailFormData.careerProspect" type="textarea" :rows="3" placeholder="请输入就业前景分析" />
+                </el-form-item>
+                <el-form-item label="主要课程">
+                  <div v-for="(item, index) in courseList" :key="index" class="mb-2 flex items-center gap-2">
+                    <el-input v-model="courseList[index]" placeholder="请输入课程名称" style="width: 400px" />
+                    <el-button type="danger" link @click="courseList.splice(index, 1)">删除</el-button>
+                  </div>
+                  <el-button type="primary" link @click="courseList.push('')">+ 添加课程</el-button>
+                </el-form-item>
+                <el-form-item label="知识技能">
+                  <div v-for="(item, index) in skillList" :key="index" class="mb-2 flex items-center gap-2">
+                    <el-input v-model="skillList[index]" placeholder="请输入技能名称" style="width: 400px" />
+                    <el-button type="danger" link @click="skillList.splice(index, 1)">删除</el-button>
+                  </div>
+                  <el-button type="primary" link @click="skillList.push('')">+ 添加技能</el-button>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+          </el-tabs>
         </template>
       </div>
 
@@ -1030,6 +1132,29 @@ onMounted(() => { fetchData() })
 }
 .major-dialog :deep(.el-radio__input.is-checked + .el-radio__label) {
   color: #F97316;
+}
+
+.major-edit-tabs :deep(.el-tabs__header) {
+  margin-bottom: 20px;
+}
+.major-edit-tabs :deep(.el-tabs__nav-wrap::after) {
+  background-color: #f3f4f6;
+}
+.major-edit-tabs :deep(.el-tabs__item) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: color .2s ease;
+}
+.major-edit-tabs :deep(.el-tabs__item.is-active) {
+  color: #F97316;
+  font-weight: 600;
+}
+.major-edit-tabs :deep(.el-tabs__item:hover) {
+  color: #F97316;
+}
+.major-edit-tabs :deep(.el-tabs__active-bar) {
+  background-color: #F97316;
 }
 
 .uni-descriptions :deep(.el-descriptions__label) {

@@ -51,4 +51,5 @@ export interface UniversityBriefForPostgradVO {
 export interface PostgradMajorDirectionBriefVO {
   id: string
   postgradMajorName: string
+  category?: string
 }

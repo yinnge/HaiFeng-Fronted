@@ -45,6 +45,9 @@ export const getGuideLife = (id: string) =>
 export const getCampusGallery = (id: string, params: { page?: number; size?: number; imageType?: string }) =>
   request.get<R<PageResult<GalleryItemVO>>>(`${PREFIX}/${id}/gallery`, { params })
 
+export const getGalleryTypes = (id: string) =>
+  request.get<R<string[]>>(`${PREFIX}/${id}/gallery/types`)
+
 // === 通道-大学关联 ===
 export const getUniversityChannels = (universityId: string, params: ChannelQueryDTO) =>
   request.get<R<PageResult<ChannelListVO>>>(`${PREFIX}/${universityId}/channels`, { params })

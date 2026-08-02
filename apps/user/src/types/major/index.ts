@@ -62,4 +62,5 @@ export interface MajorRankingQueryDTO extends BasePageQuery {
 export interface UndergraduateMajorDirectionBriefVO {
   id: string
   majorName: string
+  category?: string
 }

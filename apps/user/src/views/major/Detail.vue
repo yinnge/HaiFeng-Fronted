@@ -80,6 +80,16 @@ const directionPage = ref(1)
 const directionPageSize = ref(10)
 const directionLoading = ref(false)
 
+const groupedDirections = computed(() => {
+  const map = new Map<string, PostgradMajorDirectionBriefVO[]>()
+  for (const d of directions.value) {
+    const key = d.category && d.category.trim() ? d.category : '其他'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(d)
+  }
+  return Array.from(map.entries()).map(([category, items]) => ({ category, items }))
+})
+
 const dialogVisible = ref(false)
 const selectedDirectionId = ref<string | null>(null)
 
@@ -146,14 +156,22 @@ onMounted(() => {
             <h3 class="mb-4 text-lg font-bold text-gray-800">考研方向</h3>
             <template v-if="isPro">
               <div v-loading="directionLoading" class="min-h-[100px]">
-                <div v-if="directions.length" class="flex flex-wrap gap-3">
-                  <button
-                    v-for="d in directions" :key="d.id"
-                    class="rounded-lg bg-orange-50 px-4 py-2 text-sm text-orange-700 hover:bg-orange-100 transition-colors"
-                    @click="showDirectionDetail(d.id)"
-                  >
-                    {{ d.postgradMajorName }}
-                  </button>
+                <div v-if="directions.length" class="space-y-4">
+                  <div v-for="group in groupedDirections" :key="group.category">
+                    <div class="mb-2 flex items-center gap-2">
+                      <span class="rounded-full bg-orange-100 px-3 py-0.5 text-xs font-medium text-orange-600">{{ group.category }}</span>
+                      <span class="text-xs text-gray-400">{{ group.items.length }} 个</span>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                      <button
+                        v-for="d in group.items" :key="d.id"
+                        class="rounded-lg bg-orange-50 px-4 py-2 text-sm text-orange-700 hover:bg-orange-100 transition-colors"
+                        @click="showDirectionDetail(d.id)"
+                      >
+                        {{ d.postgradMajorName }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div v-else-if="!directionLoading" class="text-sm text-gray-400">暂无考研方向数据</div>
               </div>

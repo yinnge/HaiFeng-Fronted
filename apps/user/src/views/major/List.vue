@@ -70,7 +70,9 @@ async function fetchList() {
 async function fetchStats() {
   try {
     const res = await getMajorCategoryStats()
-    stats.value = res.data.data
+    // 过滤脏数据：后端统计可能返回 majorCategory 为 'null'（空值被写成字符串）或为空的统计项
+    const raw = res.data.data || []
+    stats.value = raw.filter((s) => s.majorCategory && s.majorCategory !== 'null')
   } catch {
     // silently fail
   }

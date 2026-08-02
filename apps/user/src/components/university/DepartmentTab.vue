@@ -41,8 +41,11 @@ async function fetchList() {
   }
 }
 
-function goDetail(deptId: string) {
-  router.push(`/university/departments/${deptId}`)
+function goDetail(item: DepartmentListVO) {
+  router.push({
+    path: `/university/departments/${item.id}`,
+    query: { name: item.departmentName, type: item.departmentType },
+  })
 }
 
 function onPageChange(p: number) {
@@ -73,7 +76,7 @@ onMounted(fetchList)
         <div
           v-for="item in filteredList" :key="item.id"
           class="rounded-xl bg-white p-5 shadow-md border border-gray-100 cursor-pointer hover:shadow-lg hover:border-orange-200 transition-all"
-          @click="goDetail(item.id)"
+          @click="goDetail(item)"
         >
           <h4 class="font-semibold text-gray-800 mb-1">{{ item.departmentName }}</h4>
           <span class="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs text-blue-600">{{ item.departmentType }}</span>

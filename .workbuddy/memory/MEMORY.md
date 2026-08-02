@@ -68,3 +68,8 @@
 
 
 
+
+## 已知坑：git pull --rebase 静默丢弃未提交修改（2026-08-02 实踩）
+- 现象：某文件"修复过又变回旧版"——git log 全历史都查不到修复内容 = **修复从未 commit，被 `git pull --rebase` Fast-forward 覆盖丢弃**。
+- 找回：`git stash list`（WIP 条目保存了当时工作区）→ `git show "stash@{n}:完整路径" > 文件` 逐文件恢复（不弹栈、不破坏 stash）。恢复后 git status 呈 M/?? 状态，需重新 commit。
+- 预防：**每个任务收尾必 commit**（至少 `git add -A && git commit`），或暂不提交时 `git stash` 留底；`git pull --rebase` 前先确认 `git status` 干净。参考：城市模块 city/list + JsonbArrayEditor 曾整体丢失后从 stash@{2} 找回。

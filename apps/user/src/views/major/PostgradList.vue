@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
-import { getPostgradMajorList } from '@/api/postgrad-major'
+import { getPostgradMajorList, getPostgradMajorDisciplineCategories } from '@/api/postgrad-major'
 import type { PostgradMajorListVO, PostgradMajorQueryDTO } from '@/types/postgrad-major'
 import { Motion } from 'motion-v'
 
@@ -30,7 +30,7 @@ const query = reactive<PostgradMajorQueryDTO>({
 const dialogVisible = ref(false)
 const selectedMajorId = ref<string | null>(null)
 
-const disciplineOptions = ['哲学', '经济学', '法学', '教育学', '文学', '历史学', '理学', '工学', '农学', '医学', '军事学', '管理学', '艺术学']
+const disciplineOptions = ref<string[]>([])
 const popularityOptions = ['热门', '一般', '冷门']
 const difficultyOptions = ['高', '中', '低']
 
@@ -47,6 +47,15 @@ async function fetchList() {
     ElMessage.error('获取考研专业列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchDisciplineCategories() {
+  try {
+    const res = await getPostgradMajorDisciplineCategories()
+    disciplineOptions.value = res.data.data ?? []
+  } catch {
+    disciplineOptions.value = []
   }
 }
 
@@ -102,7 +111,10 @@ function getDifficultyTag(difficulty: string) {
   return 'success'
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchList()
+  fetchDisciplineCategories()
+})
 </script>
 
 <template>

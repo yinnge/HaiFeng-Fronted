@@ -3,13 +3,16 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getPostgradUnivPage,
+  addPostgradUniv,
   deletePostgradUniv,
   hardDeletePostgradUniv,
   batchSoftDeletePostgradUniv,
   batchHardDeletePostgradUniv,
   importPostgradUniv,
   restorePostgradUniv,
+  getPostgradMajorPage,
 } from '@/api/major'
+import { getUniversityPage } from '@/api/university/info'
 import type { PostgradUnivListVO, PostgradUnivQueryDTO } from '@/types/major'
 
 const loading = ref(false)
@@ -137,6 +140,84 @@ const handleImport = async () => {
 const statusTag = (status: number) => status === 1 ? 'success' : 'info'
 const statusLabel = (status: number) => status === 1 ? '启用' : '禁用'
 
+// ===== 新增关联 =====
+const dialogVisible = ref(false)
+const submitting = ref(false)
+const formData = reactive({
+  // 注意：id 是雪花 ID（19 位），后端序列化为字符串；必须原样传字符串，Number() 会丢精度
+  postgradMajorId: undefined as string | undefined,
+  universityId: undefined as string | undefined,
+  sortOrder: 0,
+})
+
+// 大学下拉（远程搜索）
+const universityOptions = ref<{ id: string; name: string }[]>([])
+const universityLoading = ref(false)
+const fetchUniversities = async (keyword = '') => {
+  universityLoading.value = true
+  try {
+    const res = await getUniversityPage({ page: 1, size: 100, name: keyword || undefined } as any)
+    if (res.data.code === 200) {
+      universityOptions.value = (res.data.data.records || []).map(r => ({ id: r.id, name: r.name }))
+    }
+  } catch {
+    // 静默失败，下拉为空时用户可搜索重试
+  } finally {
+    universityLoading.value = false
+  }
+}
+
+// 考研专业下拉（远程搜索）
+const postgradMajorOptions = ref<{ id: string; majorName: string }[]>([])
+const postgradMajorLoading = ref(false)
+const fetchPostgradMajors = async (keyword = '') => {
+  postgradMajorLoading.value = true
+  try {
+    const res = await getPostgradMajorPage({ page: 1, size: 100, majorName: keyword || undefined } as any)
+    if (res.data.code === 200) {
+      postgradMajorOptions.value = (res.data.data.records || []).map(r => ({ id: r.id, majorName: r.majorName }))
+    }
+  } catch {
+    // 静默失败
+  } finally {
+    postgradMajorLoading.value = false
+  }
+}
+
+const openAddDialog = () => {
+  formData.postgradMajorId = undefined
+  formData.universityId = undefined
+  formData.sortOrder = 0
+  dialogVisible.value = true
+  fetchUniversities()
+  fetchPostgradMajors()
+}
+
+const handleSubmit = async () => {
+  if (!formData.universityId) { ElMessage.warning('请选择大学'); return }
+  if (!formData.postgradMajorId) { ElMessage.warning('请选择考研专业'); return }
+  submitting.value = true
+  try {
+    const res = await addPostgradUniv({
+      // 原样传字符串 id，避免雪花 ID 精度丢失
+      universityId: formData.universityId,
+      postgradMajorId: formData.postgradMajorId,
+      sortOrder: formData.sortOrder ?? 0,
+    })
+    if (res.data.code === 200) {
+      ElMessage.success('新增关联成功')
+      dialogVisible.value = false
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '新增失败')
+    }
+  } catch (err: any) {
+    ElMessage.error(err?.message || '新增失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
 onMounted(() => { fetchData() })
 </script>
 
@@ -174,7 +255,8 @@ onMounted(() => { fetchData() })
 
     <div class="action-bar">
       <div class="action-left">
-        <el-button class="btn-add" @click="handleImport">导入关联数据</el-button>
+        <el-button class="btn-add" @click="openAddDialog">新增关联</el-button>
+        <el-button class="btn-outline" @click="handleImport">导入关联数据</el-button>
       </div>
       <div class="action-right">
         <el-button class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchSoftDelete">批量禁用</el-button>
@@ -228,6 +310,46 @@ onMounted(() => { fetchData() })
         />
       </div>
     </div>
+
+    <el-dialog v-model="dialogVisible" title="新增关联" width="560px" :close-on-click-modal="false" class="uni-dialog">
+      <el-form :model="formData" label-width="100px">
+        <el-form-item label="大学" required>
+          <el-select
+            v-model="formData.universityId"
+            filterable
+            remote
+            :remote-method="(kw: string) => fetchUniversities(kw)"
+            :loading="universityLoading"
+            placeholder="输入大学名称搜索选择"
+            style="width: 100%"
+          >
+            <el-option v-for="u in universityOptions" :key="u.id" :label="u.name" :value="u.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="考研专业" required>
+          <el-select
+            v-model="formData.postgradMajorId"
+            filterable
+            remote
+            :remote-method="(kw: string) => fetchPostgradMajors(kw)"
+            :loading="postgradMajorLoading"
+            placeholder="输入专业名称搜索选择"
+            style="width: 100%"
+          >
+            <el-option v-for="m in postgradMajorOptions" :key="m.id" :label="m.majorName" :value="m.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排序权重">
+          <el-input-number v-model="formData.sortOrder" :min="0" :max="9999" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button class="btn-outline" @click="dialogVisible = false">取消</el-button>
+          <el-button class="btn-add" :loading="submitting" @click="handleSubmit">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -464,5 +586,32 @@ onMounted(() => { fetchData() })
 .custom-pagination :deep(.btn-prev:hover),
 .custom-pagination :deep(.btn-next:hover) {
   color: #F97316 !important;
+}
+
+.uni-dialog {
+  border-radius: 12px;
+}
+.uni-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.uni-dialog :deep(.el-dialog__title) {
+  font-size: 17px;
+  font-weight: 600;
+  color: #9A3412;
+}
+.uni-dialog :deep(.el-form-item__label) {
+  color: #9A3412;
+  font-weight: 500;
+}
+.uni-dialog :deep(.el-input__wrapper.is-focus),
+.uni-dialog :deep(.el-select .el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #F97316 inset !important;
+}
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

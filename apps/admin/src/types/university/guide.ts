@@ -43,11 +43,39 @@ export interface UniversityGuideQueryDTO {
 export interface UniversityGuideAddDTO {
   universityId: string
   customTags?: string[]
+  campusFacilities?: Record<string, string[]>
+  dormitoryServices?: Record<string, string[]>
+  campusTransportation?: Record<string, string[]>
+  academicGuidance?: Record<string, string[]>
+  majorTransferGuidelines?: Record<string, string[]>
+  majorTransferConstriction?: Record<string, string[]>
+  academicSupportResources?: Record<string, string[]>
+  studentOrganizations?: Record<string, string[]>
+  campusEvents?: Record<string, string[]>
+  classDormSocial?: Record<string, string[]>
+  financialAid?: Record<string, string[]>
+  campusSecurity?: Record<string, string[]>
+  healthServices?: Record<string, string[]>
+  lifeServices?: Record<string, string[]>
   remark?: string
 }
 
 export interface UniversityGuideUpdateDTO {
   customTags?: string[]
+  campusFacilities?: Record<string, string[]>
+  dormitoryServices?: Record<string, string[]>
+  campusTransportation?: Record<string, string[]>
+  academicGuidance?: Record<string, string[]>
+  majorTransferGuidelines?: Record<string, string[]>
+  majorTransferConstriction?: Record<string, string[]>
+  academicSupportResources?: Record<string, string[]>
+  studentOrganizations?: Record<string, string[]>
+  campusEvents?: Record<string, string[]>
+  classDormSocial?: Record<string, string[]>
+  financialAid?: Record<string, string[]>
+  campusSecurity?: Record<string, string[]>
+  healthServices?: Record<string, string[]>
+  lifeServices?: Record<string, string[]>
   remark?: string
   status?: number
 }
