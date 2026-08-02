@@ -16,7 +16,7 @@ const emit = defineEmits<{
   (e: 'update:enterpriseType', val: string): void
   (e: 'update:recruitmentStatus', val: string | undefined): void
   (e: 'update:isDeleted', val: boolean | undefined): void
-  (e: 'confirm'): void
+  (e: 'search'): void
   (e: 'reset'): void
 }>()
 
@@ -50,7 +50,7 @@ const handleReset = () => {
             clearable
             style="width: 180px"
             @input="emit('update:enterpriseName', $event)"
-            @keyup.enter="emit('confirm')"
+            @keyup.enter="emit('search')"
           />
         </el-form-item>
         <el-form-item label="城市名称">
@@ -60,7 +60,7 @@ const handleReset = () => {
             clearable
             style="width: 150px"
             @input="emit('update:cityName', $event)"
-            @keyup.enter="emit('confirm')"
+            @keyup.enter="emit('search')"
           />
         </el-form-item>
         <el-form-item label="企业性质">
@@ -81,7 +81,7 @@ const handleReset = () => {
             clearable
             style="width: 150px"
             @input="emit('update:enterpriseType', $event)"
-            @keyup.enter="emit('confirm')"
+            @keyup.enter="emit('search')"
           />
         </el-form-item>
         <el-form-item label="招聘状态">
@@ -109,7 +109,7 @@ const handleReset = () => {
           </el-select>
         </el-form-item>
         <el-form-item class="search-actions">
-          <button type="button" class="confirm-btn" @click="emit('confirm')">
+          <button type="button" class="confirm-btn" @click="emit('search')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>

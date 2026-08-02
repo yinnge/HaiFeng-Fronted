@@ -532,143 +532,93 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
 
 
-const handleSubmitBasic = async () => {
+const buildBasicData = () => {
 
-  if (!formData.industryName) {
+  const data: Record<string, any> = { industryName: formData.industryName }
 
-    ElMessage.warning('请填写行业名称')
+  if (formData.category) data.category = formData.category
 
-    return false
+  if (formData.iconClass) data.iconClass = formData.iconClass
 
-  }
+  if (formData.description) data.description = formData.description
 
-  try {
+  if (formData.annualGrowthRate !== null) data.annualGrowthRate = formData.annualGrowthRate
 
-    const data: Record<string, any> = { industryName: formData.industryName }
+  if (formData.marketScale) data.marketScale = formData.marketScale
 
-    if (formData.category) data.category = formData.category
+  if (formData.talentGap) data.talentGap = formData.talentGap
 
-    if (formData.iconClass) data.iconClass = formData.iconClass
+  if (formData.investmentHeat !== null) data.investmentHeat = formData.investmentHeat
 
-    if (formData.description) data.description = formData.description
+  if (formData.growthTrend) data.growthTrend = formData.growthTrend
 
-    if (formData.annualGrowthRate !== null) data.annualGrowthRate = formData.annualGrowthRate
+  if (formData.marketTrend) data.marketTrend = formData.marketTrend
 
-    if (formData.marketScale) data.marketScale = formData.marketScale
+  if (formData.talentTrend) data.talentTrend = formData.talentTrend
 
-    if (formData.talentGap) data.talentGap = formData.talentGap
+  if (formData.investmentTrend) data.investmentTrend = formData.investmentTrend
 
-    if (formData.investmentHeat !== null) data.investmentHeat = formData.investmentHeat
-
-    if (formData.growthTrend) data.growthTrend = formData.growthTrend
-
-    if (formData.marketTrend) data.marketTrend = formData.marketTrend
-
-    if (formData.talentTrend) data.talentTrend = formData.talentTrend
-
-    if (formData.investmentTrend) data.investmentTrend = formData.investmentTrend
-
-
-
-    let res: any
-
-    if (dialogMode.value === 'add') {
-
-      res = await addIndustry(data as any)
-
-      if (res.data.code === 200 && res.data.data) {
-
-        currentId.value = res.data.data
-
-      }
-
-    } else if (dialogMode.value === 'edit' && currentId.value) {
-
-      res = await updateIndustry(currentId.value, data)
-
-    } else {
-
-      return false
-
-    }
-
-
-
-    if (res.data.code === 200) { ElMessage.success('基本信息保存成功'); return true }
-
-    else { ElMessage.error(res.data.msg || '保存失败'); return false }
-
-  } catch { ElMessage.error('保存失败'); return false }
+  return data
 
 }
 
 
 
-const handleSubmitDetail = async () => {
+const buildDetailData = () => {
 
-  if (!currentId.value) return false
+  const data: Record<string, any> = {}
 
-  try {
+  if (detailForm.shortDescription) data.shortDescription = detailForm.shortDescription
 
-    const data: Record<string, any> = {}
+  if (detailForm.detailedDescription) data.detailedDescription = detailForm.detailedDescription
 
-    if (detailForm.shortDescription) data.shortDescription = detailForm.shortDescription
+  const build = (field: string, defs: Record<string, 'string' | 'number' | 'array'>) => {
 
-    if (detailForm.detailedDescription) data.detailedDescription = detailForm.detailedDescription
+    const src = detailForm[field]
 
-    const build = (field: string, defs: Record<string, 'string' | 'number' | 'array'>) => {
+    if (!src || typeof src !== 'object') return
 
-      const src = detailForm[field]
+    const out: Record<string, any> = {}
 
-      if (!src || typeof src !== 'object') return
+    let has = false
 
-      const out: Record<string, any> = {}
+    Object.keys(defs).forEach((k) => {
 
-      let has = false
+      const v = src[k]
 
-      Object.keys(defs).forEach((k) => {
+      if (defs[k] === 'array') {
 
-        const v = src[k]
+        if (Array.isArray(v) && v.length) { out[k] = v; has = true }
 
-        if (defs[k] === 'array') {
+      } else if (v !== null && v !== undefined && v !== '') {
 
-          if (Array.isArray(v) && v.length) { out[k] = v; has = true }
+        out[k] = v; has = true
 
-        } else if (v !== null && v !== undefined && v !== '') {
+      }
 
-          out[k] = v; has = true
+    })
 
-        }
+    if (has) data[field] = out
 
-      })
+  }
 
-      if (has) data[field] = out
+  build('industryScale', { scaleValue: 'number', scaleLabel: 'string', scaleDescriptions: 'array' })
 
-    }
+  build('industryTalentDemand', { demandValue: 'number', demandLabel: 'string', demandDescriptions: 'array' })
 
-    build('industryScale', { scaleValue: 'number', scaleLabel: 'string', scaleDescriptions: 'array' })
+  build('industrySalary', { salaryRange: 'string', salaryLabel: 'string', salaryDescriptions: 'array' })
 
-    build('industryTalentDemand', { demandValue: 'number', demandLabel: 'string', demandDescriptions: 'array' })
+  build('policyInfo', { policyOverview: 'string', nationalPolicies: 'array', policyHighlights: 'string' })
 
-    build('industrySalary', { salaryRange: 'string', salaryLabel: 'string', salaryDescriptions: 'array' })
+  build('developmentSupportInfo', { regionalOverview: 'string', keyCities: 'array', cityPolicies: 'array' })
 
-    build('policyInfo', { policyOverview: 'string', nationalPolicies: 'array', policyHighlights: 'string' })
+  build('talentAnalysis', { analysisTitle: 'string', shortagePositions: 'array', educationRequirement: 'string', majorRequirement: 'string', talentTrendDescription: 'string' })
 
-    build('developmentSupportInfo', { regionalOverview: 'string', keyCities: 'array', cityPolicies: 'array' })
+  build('talentPolicy', { policyTitle: 'string', nationalPolicies: 'array', localPolicies: 'array', enterpriseDescription: 'string' })
 
-    build('talentAnalysis', { analysisTitle: 'string', shortagePositions: 'array', educationRequirement: 'string', majorRequirement: 'string', talentTrendDescription: 'string' })
+  build('salaryData', { salaryAnalysisTitle: 'string', salaryAnalysisDescription: 'string', regionalSalaryTitle: 'string', regionalSalaryDescription: 'string', salaryTrendAnalysis: 'string' })
 
-    build('talentPolicy', { policyTitle: 'string', nationalPolicies: 'array', localPolicies: 'array', enterpriseDescription: 'string' })
-
-    build('salaryData', { salaryAnalysisTitle: 'string', salaryAnalysisDescription: 'string', regionalSalaryTitle: 'string', regionalSalaryDescription: 'string', salaryTrendAnalysis: 'string' })
-
-    const res = await updateIndustryDetail(currentId.value, data)
-
-    if (res.data.code === 200) { ElMessage.success('详细信息保存成功'); return true }
-
-    else { ElMessage.error(res.data.msg || '保存失败'); return false }
-
-  } catch { ElMessage.error('保存失败'); return false }
+  return data
 
 }
 
@@ -678,17 +628,49 @@ const handleSubmit = async () => {
 
   if (dialogMode.value === 'detail') return
 
-  if (activeTab.value === 'basic') {
+  if (!formData.industryName) { ElMessage.warning('请填写行业名称'); return }
 
-    const ok = await handleSubmitBasic()
+  if (!formData.category) { ElMessage.warning('请填写行业分类'); return }
 
-    if (ok) { dialogVisible.value = false; fetchData() }
+  const basicData = buildBasicData()
 
-  } else {
+  const detailData = buildDetailData()
 
-    const ok = await handleSubmitDetail()
+  try {
 
-    if (ok) { dialogVisible.value = false; fetchData() }
+    if (dialogMode.value === 'add') {
+
+      const res = await addIndustry({ ...basicData, ...detailData } as any)
+
+      if (res.data.code !== 200) { ElMessage.error(res.data.msg || '新增失败'); return }
+
+      ElMessage.success('新增行业成功')
+
+    } else if (dialogMode.value === 'edit' && currentId.value) {
+
+      const res = await updateIndustry(currentId.value, basicData)
+
+      if (res.data.code !== 200) { ElMessage.error(res.data.msg || '保存失败'); return }
+
+      const detailRes = await updateIndustryDetail(currentId.value, detailData)
+
+      if (detailRes.data.code !== 200) { ElMessage.error(detailRes.data.msg || '保存失败'); return }
+
+      ElMessage.success('保存成功')
+
+    } else {
+
+      return
+
+    }
+
+    dialogVisible.value = false
+
+    fetchData()
+
+  } catch (err: any) {
+
+    ElMessage.error(err?.message || '保存失败')
 
   }
 
@@ -1116,7 +1098,7 @@ onMounted(() => { fetchData() })
 
                   <el-col :span="12">
 
-                    <el-form-item label="行业分类">
+                    <el-form-item label="行业分类" required>
 
                       <el-input v-model="formData.category" placeholder="行业分类" maxlength="50" />
 

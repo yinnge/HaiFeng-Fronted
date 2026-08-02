@@ -7,11 +7,19 @@ import {
   updateScore,
 } from '@/api/special/strong-base-score'
 import { getUniversityPage } from '@/api/university/info'
+import { getMajorPage } from '@/api/major'
 import type {
   StrongBaseScoreDetailVO,
   StrongBaseScoreAddDTO,
   StrongBaseScoreUpdateDTO,
 } from '@/types/special/strong-base-score'
+
+const provinceOptions = [
+  '北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏',
+  '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西',
+  '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆',
+  '香港', '澳门', '台湾',
+]
 
 const props = defineProps<{
   visible: boolean
@@ -28,7 +36,9 @@ const emit = defineEmits<{
 const formLoading = ref(false)
 const detailData = ref<StrongBaseScoreDetailVO | null>(null)
 const universityOptions = ref<{ label: string; value: string }[]>([])
+const majorOptions = ref<{ label: string; value: string; majorCode: string | null }[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+let majorSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const formData = ref<StrongBaseScoreAddDTO>({
   universityId: '',
@@ -84,6 +94,34 @@ const onUniversityChange = (id: string) => {
   }
 }
 
+const handleMajorSearch = (query: string) => {
+  if (majorSearchTimer) clearTimeout(majorSearchTimer)
+  majorSearchTimer = setTimeout(async () => {
+    if (!query) {
+      majorOptions.value = []
+      return
+    }
+    try {
+      const res = await getMajorPage({ page: 1, size: 20, majorName: query } as any)
+      if (res.data.code === 200) {
+        majorOptions.value = (res.data.data.records || []).map((r: any) => ({
+          label: r.majorName,
+          value: r.majorName,
+          majorCode: r.majorCode,
+        }))
+      }
+    } catch {
+      /* 忽略 */
+    }
+  }, 300)
+}
+
+const onMajorChange = (name: string) => {
+  const option = majorOptions.value.find((o) => o.value === name)
+  formData.value.majorName = name
+  formData.value.majorCode = option?.majorCode || ''
+}
+
 watch(
   () => props.visible,
   async (val) => {
@@ -91,6 +129,7 @@ watch(
       formLoading.value = true
       detailData.value = null
       universityOptions.value = []
+      majorOptions.value = []
 
       if (props.mode === 'add') {
         formData.value = {
@@ -135,6 +174,7 @@ watch(
               admissionCount: d.admissionCount ?? undefined,
               remark: d.remark || '',
             }
+            majorOptions.value = [{ label: d.majorName, value: d.majorName, majorCode: d.majorCode }]
           }
         } catch {
           ElMessage.error('获取详情失败，请稍后重试')
@@ -279,7 +319,16 @@ const handleClose = () => {
             <el-input-number v-model="formData.year" :min="2000" :max="2099" controls-position="right" style="width: 130px" />
           </el-form-item>
           <el-form-item label="省份" required>
-            <el-input v-model="formData.province" placeholder="请输入省份" maxlength="20" />
+            <el-select
+              v-model="formData.province"
+              placeholder="请选择省份"
+              filterable
+              allow-create
+              default-first-option
+              style="width: 200px"
+            >
+              <el-option v-for="item in provinceOptions" :key="item" :label="item" :value="item" />
+            </el-select>
           </el-form-item>
           <el-form-item label="科类" required>
             <el-select v-model="formData.subjectType" placeholder="请选择" style="width: 200px">
@@ -292,7 +341,18 @@ const handleClose = () => {
             </el-select>
           </el-form-item>
           <el-form-item label="专业名称" required>
-            <el-input v-model="formData.majorName" placeholder="请输入专业名称" maxlength="100" show-word-limit />
+            <el-select
+              v-model="formData.majorName"
+              filterable
+              remote
+              reserve-keyword
+              placeholder="请输入专业名称搜索"
+              :remote-method="handleMajorSearch"
+              style="width: 100%"
+              @change="onMajorChange"
+            >
+              <el-option v-for="item in majorOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </el-form-item>
           <el-form-item label="专业代码">
             <el-input v-model="formData.majorCode" placeholder="请输入专业代码" maxlength="20" style="width: 200px" />
