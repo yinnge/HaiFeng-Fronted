@@ -28,6 +28,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '专业组查询', requiresAuth: true },
   },
   {
+    path: '/gaokao/channel/:id',
+    name: 'GaokaoChannelUniversities',
+    component: () => import('@/views/gaokao/ChannelUniversities.vue'),
+    meta: { title: '通道大学', requiresAuth: true },
+  },
+  {
     path: '/gaokao/plans',
     name: 'GaokaoPlans',
     component: () => import('@/views/gaokao/PlansList.vue'),
