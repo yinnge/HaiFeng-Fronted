@@ -120,21 +120,95 @@ const detailForm = reactive<Record<string, any>>({
 
   detailedDescription: '',
 
-  industryScale: '',
+  industryScale: {
 
-  industryTalentDemand: '',
+    scaleValue: null,
 
-  industrySalary: '',
+    scaleLabel: '',
 
-  policyInfo: '',
+    scaleDescriptions: [] as string[],
 
-  developmentSupportInfo: '',
+  },
 
-  talentAnalysis: '',
+  industryTalentDemand: {
 
-  talentPolicy: '',
+    demandValue: null,
 
-  salaryData: '',
+    demandLabel: '',
+
+    demandDescriptions: [] as string[],
+
+  },
+
+  industrySalary: {
+
+    salaryRange: '',
+
+    salaryLabel: '',
+
+    salaryDescriptions: [] as string[],
+
+  },
+
+  policyInfo: {
+
+    policyOverview: '',
+
+    nationalPolicies: [] as string[],
+
+    policyHighlights: '',
+
+  },
+
+  developmentSupportInfo: {
+
+    regionalOverview: '',
+
+    keyCities: [] as string[],
+
+    cityPolicies: [] as string[],
+
+  },
+
+  talentAnalysis: {
+
+    analysisTitle: '',
+
+    shortagePositions: [] as string[],
+
+    educationRequirement: '',
+
+    majorRequirement: '',
+
+    talentTrendDescription: '',
+
+  },
+
+  talentPolicy: {
+
+    policyTitle: '',
+
+    nationalPolicies: [] as string[],
+
+    localPolicies: [] as string[],
+
+    enterpriseDescription: '',
+
+  },
+
+  salaryData: {
+
+    salaryAnalysisTitle: '',
+
+    salaryAnalysisDescription: '',
+
+    regionalSalaryTitle: '',
+
+    regionalSalaryDescription: '',
+
+    salaryTrendAnalysis: '',
+
+  },
 
 })
 
@@ -151,6 +225,16 @@ const importLoading = ref(false)
 
 
 const trendOptions = ['上升', '稳定', '下降']
+
+const hotPositionOptions = ['算法工程师', '数据科学家', '软件开发工程师', '架构师', '产品经理', '数据分析师', '测试工程师', '运维工程师', '市场营销', '销售工程师', '项目经理', '智能制造工程师', '新能源研发工程师']
+
+const keyCityOptions = ['北京', '上海', '深圳', '广州', '杭州', '成都', '武汉', '西安', '苏州', '南京']
+
+const nationalPolicyOptions = ['十四五规划', '新基建', '专精特新', '数字中国', '人工智能+', '绿色发展']
+
+const educationRequirementOptions = ['不限', '大专及以上', '本科及以上', '硕士及以上', '博士']
+
+const talentDemandLabelOptions = ['紧缺人才', '高技能人才紧缺', '复合型人才急需', '基础人才充足']
 
 
 
@@ -270,7 +354,31 @@ const resetForm = () => {
 
   formData.investmentTrend = ''
 
-  Object.keys(detailForm).forEach((k) => { detailForm[k] = '' })
+  resetDetailForm()
+
+}
+
+const resetDetailForm = () => {
+
+  detailForm.shortDescription = ''
+
+  detailForm.detailedDescription = ''
+
+  detailForm.industryScale = { scaleValue: null, scaleLabel: '', scaleDescriptions: [] }
+
+  detailForm.industryTalentDemand = { demandValue: null, demandLabel: '', demandDescriptions: [] }
+
+  detailForm.industrySalary = { salaryRange: '', salaryLabel: '', salaryDescriptions: [] }
+
+  detailForm.policyInfo = { policyOverview: '', nationalPolicies: [], policyHighlights: '' }
+
+  detailForm.developmentSupportInfo = { regionalOverview: '', keyCities: [], cityPolicies: [] }
+
+  detailForm.talentAnalysis = { analysisTitle: '', shortagePositions: [], educationRequirement: '', majorRequirement: '', talentTrendDescription: '' }
+
+  detailForm.talentPolicy = { policyTitle: '', nationalPolicies: [], localPolicies: [], enterpriseDescription: '' }
+
+  detailForm.salaryData = { salaryAnalysisTitle: '', salaryAnalysisDescription: '', regionalSalaryTitle: '', regionalSalaryDescription: '', salaryTrendAnalysis: '' }
 
 }
 
@@ -312,13 +420,47 @@ const fillDetailForm = (d: IndustryDetailVO) => {
 
   detailForm.detailedDescription = d.detailedDescription || ''
 
-  const jsonFields = ['industryScale', 'industryTalentDemand', 'industrySalary', 'policyInfo', 'developmentSupportInfo', 'talentAnalysis', 'talentPolicy', 'salaryData']
+  const obj = d as any
 
-  jsonFields.forEach((f) => {
+  const pick = (field: string, defaults: Record<string, any>) => {
 
-    detailForm[f] = (d as any)[f] ? JSON.stringify((d as any)[f], null, 2) : ''
+    const src = obj[field]
 
-  })
+    if (src && typeof src === 'object' && !Array.isArray(src)) {
+
+      const out: Record<string, any> = {}
+
+      Object.keys(defaults).forEach((k) => {
+
+        const v = src[k]
+
+        out[k] = Array.isArray(defaults[k]) ? (Array.isArray(v) ? v : []) : (v ?? defaults[k])
+
+      })
+
+      return out
+
+    }
+
+    return { ...defaults }
+
+  }
+
+  detailForm.industryScale = pick('industryScale', { scaleValue: null, scaleLabel: '', scaleDescriptions: [] })
+
+  detailForm.industryTalentDemand = pick('industryTalentDemand', { demandValue: null, demandLabel: '', demandDescriptions: [] })
+
+  detailForm.industrySalary = pick('industrySalary', { salaryRange: '', salaryLabel: '', salaryDescriptions: [] })
+
+  detailForm.policyInfo = pick('policyInfo', { policyOverview: '', nationalPolicies: [], policyHighlights: '' })
+
+  detailForm.developmentSupportInfo = pick('developmentSupportInfo', { regionalOverview: '', keyCities: [], cityPolicies: [] })
+
+  detailForm.talentAnalysis = pick('talentAnalysis', { analysisTitle: '', shortagePositions: [], educationRequirement: '', majorRequirement: '', talentTrendDescription: '' })
+
+  detailForm.talentPolicy = pick('talentPolicy', { policyTitle: '', nationalPolicies: [], localPolicies: [], enterpriseDescription: '' })
+
+  detailForm.salaryData = pick('salaryData', { salaryAnalysisTitle: '', salaryAnalysisDescription: '', regionalSalaryTitle: '', regionalSalaryDescription: '', salaryTrendAnalysis: '' })
 
 }
 
@@ -474,21 +616,51 @@ const handleSubmitDetail = async () => {
 
     if (detailForm.detailedDescription) data.detailedDescription = detailForm.detailedDescription
 
-    const jsonFields = ['industryScale', 'industryTalentDemand', 'industrySalary', 'policyInfo', 'developmentSupportInfo', 'talentAnalysis', 'talentPolicy', 'salaryData']
+    const build = (field: string, defs: Record<string, 'string' | 'number' | 'array'>) => {
 
-    jsonFields.forEach((f) => {
+      const src = detailForm[field]
 
-      if (detailForm[f]) {
+      if (!src || typeof src !== 'object') return
 
-        try { data[f] = JSON.parse(detailForm[f]) }
+      const out: Record<string, any> = {}
 
-        catch { ElMessage.warning(`${f} JSON格式错误，已跳过`) }
+      let has = false
 
-      }
+      Object.keys(defs).forEach((k) => {
 
-    })
+        const v = src[k]
 
+        if (defs[k] === 'array') {
 
+          if (Array.isArray(v) && v.length) { out[k] = v; has = true }
+
+        } else if (v !== null && v !== undefined && v !== '') {
+
+          out[k] = v; has = true
+
+        }
+
+      })
+
+      if (has) data[field] = out
+
+    }
+
+    build('industryScale', { scaleValue: 'number', scaleLabel: 'string', scaleDescriptions: 'array' })
+
+    build('industryTalentDemand', { demandValue: 'number', demandLabel: 'string', demandDescriptions: 'array' })
+
+    build('industrySalary', { salaryRange: 'string', salaryLabel: 'string', salaryDescriptions: 'array' })
+
+    build('policyInfo', { policyOverview: 'string', nationalPolicies: 'array', policyHighlights: 'string' })
+
+    build('developmentSupportInfo', { regionalOverview: 'string', keyCities: 'array', cityPolicies: 'array' })
+
+    build('talentAnalysis', { analysisTitle: 'string', shortagePositions: 'array', educationRequirement: 'string', majorRequirement: 'string', talentTrendDescription: 'string' })
+
+    build('talentPolicy', { policyTitle: 'string', nationalPolicies: 'array', localPolicies: 'array', enterpriseDescription: 'string' })
+
+    build('salaryData', { salaryAnalysisTitle: 'string', salaryAnalysisDescription: 'string', regionalSalaryTitle: 'string', regionalSalaryDescription: 'string', salaryTrendAnalysis: 'string' })
 
     const res = await updateIndustryDetail(currentId.value, data)
 
@@ -1100,87 +1272,331 @@ onMounted(() => { fetchData() })
 
                 </el-form-item>
 
-                <el-form-item label="发展规模(JSON)">
+                <el-form-item label="发展规模">
 
-                  <el-input v-model="detailForm.industryScale" type="textarea" :rows="3" placeholder='{"value":18000,"unit":"亿元"}' />
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">规模(万亿元)</span>
+
+                      <el-input-number v-model="detailForm.industryScale.scaleValue" :min="0" :precision="2" placeholder="如：1.8" style="width: 100%" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">标签</span>
+
+                      <el-input v-model="detailForm.industryScale.scaleLabel" placeholder="如：万亿级市场" maxlength="50" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">描述</span>
+
+                      <el-select v-model="detailForm.industryScale.scaleDescriptions" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in hotPositionOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                  </div>
 
                 </el-form-item>
 
-                <el-row :gutter="20">
+                <el-form-item label="人才需求">
 
-                  <el-col :span="12">
+                  <div class="jsonb-group">
 
-                    <el-form-item label="人才需求(JSON)">
+                    <div class="jsonb-item">
 
-                      <el-input v-model="detailForm.industryTalentDemand" type="textarea" :rows="3" />
+                      <span class="jsonb-sub-label">需求量(万人)</span>
 
-                    </el-form-item>
+                      <el-input-number v-model="detailForm.industryTalentDemand.demandValue" :min="0" :precision="2" placeholder="如：500" style="width: 100%" />
 
-                  </el-col>
+                    </div>
 
-                  <el-col :span="12">
+                    <div class="jsonb-item">
 
-                    <el-form-item label="行业薪资(JSON)">
+                      <span class="jsonb-sub-label">标签</span>
 
-                      <el-input v-model="detailForm.industrySalary" type="textarea" :rows="3" />
+                      <el-select v-model="detailForm.industryTalentDemand.demandLabel" filterable allow-create default-first-option :reserve-keyword="false" placeholder="可选择或输入新增" style="width: 100%">
 
-                    </el-form-item>
+                        <el-option v-for="item in talentDemandLabelOptions" :key="item" :label="item" :value="item" />
 
-                  </el-col>
+                      </el-select>
 
-                </el-row>
+                    </div>
 
-                <el-row :gutter="20">
+                    <div class="jsonb-item">
 
-                  <el-col :span="12">
+                      <span class="jsonb-sub-label">描述</span>
 
-                    <el-form-item label="政策信息(JSON)">
+                      <el-select v-model="detailForm.industryTalentDemand.demandDescriptions" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="热门岗位/缺口描述，可多选或输入新增" style="width: 100%">
 
-                      <el-input v-model="detailForm.policyInfo" type="textarea" :rows="3" />
+                        <el-option v-for="item in hotPositionOptions" :key="item" :label="item" :value="item" />
 
-                    </el-form-item>
+                      </el-select>
 
-                  </el-col>
+                    </div>
 
-                  <el-col :span="12">
+                  </div>
 
-                    <el-form-item label="发展支持(JSON)">
+                </el-form-item>
 
-                      <el-input v-model="detailForm.developmentSupportInfo" type="textarea" :rows="3" />
+                <el-form-item label="行业薪资">
 
-                    </el-form-item>
+                  <div class="jsonb-group">
 
-                  </el-col>
+                    <div class="jsonb-item">
 
-                </el-row>
+                      <span class="jsonb-sub-label">薪资范围(万元)</span>
 
-                <el-row :gutter="20">
+                      <el-input v-model="detailForm.industrySalary.salaryRange" placeholder="如：15-25" maxlength="50" />
 
-                  <el-col :span="12">
+                    </div>
 
-                    <el-form-item label="人才分析(JSON)">
+                    <div class="jsonb-item">
 
-                      <el-input v-model="detailForm.talentAnalysis" type="textarea" :rows="3" />
+                      <span class="jsonb-sub-label">标签</span>
 
-                    </el-form-item>
+                      <el-input v-model="detailForm.industrySalary.salaryLabel" placeholder="如：行业薪酬领先" maxlength="50" />
 
-                  </el-col>
+                    </div>
 
-                  <el-col :span="12">
+                    <div class="jsonb-item">
 
-                    <el-form-item label="人才政策(JSON)">
+                      <span class="jsonb-sub-label">描述</span>
 
-                      <el-input v-model="detailForm.talentPolicy" type="textarea" :rows="3" />
+                      <el-select v-model="detailForm.industrySalary.salaryDescriptions" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="薪资描述，可多选或输入新增" style="width: 100%" />
 
-                    </el-form-item>
+                    </div>
 
-                  </el-col>
+                  </div>
 
-                </el-row>
+                </el-form-item>
 
-                <el-form-item label="薪资数据(JSON)">
+                <el-form-item label="政策信息">
 
-                  <el-input v-model="detailForm.salaryData" type="textarea" :rows="3" />
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">政策概览</span>
+
+                      <el-input v-model="detailForm.policyInfo.policyOverview" type="textarea" :rows="2" placeholder="政策概览" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">国家政策</span>
+
+                      <el-select v-model="detailForm.policyInfo.nationalPolicies" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in nationalPolicyOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">政策亮点</span>
+
+                      <el-input v-model="detailForm.policyInfo.policyHighlights" placeholder="如：研发费用加计扣除" maxlength="200" />
+
+                    </div>
+
+                  </div>
+
+                </el-form-item>
+
+                <el-form-item label="发展支持">
+
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">地域概述</span>
+
+                      <el-input v-model="detailForm.developmentSupportInfo.regionalOverview" type="textarea" :rows="2" placeholder="地域发展概述" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">重点城市</span>
+
+                      <el-select v-model="detailForm.developmentSupportInfo.keyCities" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in keyCityOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">城市政策</span>
+
+                      <el-select v-model="detailForm.developmentSupportInfo.cityPolicies" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%" />
+
+                    </div>
+
+                  </div>
+
+                </el-form-item>
+
+                <el-form-item label="人才分析">
+
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">分析标题</span>
+
+                      <el-input v-model="detailForm.talentAnalysis.analysisTitle" placeholder="如：人才供需分析" maxlength="100" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">紧缺岗位</span>
+
+                      <el-select v-model="detailForm.talentAnalysis.shortagePositions" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in hotPositionOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">学历要求</span>
+
+                      <el-select v-model="detailForm.talentAnalysis.educationRequirement" filterable allow-create default-first-option :reserve-keyword="false" placeholder="可选择或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in educationRequirementOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">专业要求</span>
+
+                      <el-input v-model="detailForm.talentAnalysis.majorRequirement" placeholder="如：计算机、电子信息类" maxlength="100" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">人才趋势</span>
+
+                      <el-input v-model="detailForm.talentAnalysis.talentTrendDescription" type="textarea" :rows="2" placeholder="人才趋势描述" />
+
+                    </div>
+
+                  </div>
+
+                </el-form-item>
+
+                <el-form-item label="人才政策">
+
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">政策标题</span>
+
+                      <el-input v-model="detailForm.talentPolicy.policyTitle" placeholder="如：人才引进政策" maxlength="100" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">国家级政策</span>
+
+                      <el-select v-model="detailForm.talentPolicy.nationalPolicies" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%">
+
+                        <el-option v-for="item in nationalPolicyOptions" :key="item" :label="item" :value="item" />
+
+                      </el-select>
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">地方级政策</span>
+
+                      <el-select v-model="detailForm.talentPolicy.localPolicies" multiple filterable allow-create default-first-option :reserve-keyword="false" placeholder="可多选或输入新增" style="width: 100%" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">企业层面</span>
+
+                      <el-input v-model="detailForm.talentPolicy.enterpriseDescription" type="textarea" :rows="2" placeholder="企业层面描述" />
+
+                    </div>
+
+                  </div>
+
+                </el-form-item>
+
+                <el-form-item label="薪资数据">
+
+                  <div class="jsonb-group">
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">薪资分析标题</span>
+
+                      <el-input v-model="detailForm.salaryData.salaryAnalysisTitle" placeholder="如：行业薪资水平分析" maxlength="100" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">薪资分析描述</span>
+
+                      <el-input v-model="detailForm.salaryData.salaryAnalysisDescription" type="textarea" :rows="2" placeholder="薪资分析描述" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">地域差异标题</span>
+
+                      <el-input v-model="detailForm.salaryData.regionalSalaryTitle" placeholder="如：地域薪资差异" maxlength="100" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">地域差异描述</span>
+
+                      <el-input v-model="detailForm.salaryData.regionalSalaryDescription" type="textarea" :rows="2" placeholder="地域薪资差异描述" />
+
+                    </div>
+
+                    <div class="jsonb-item">
+
+                      <span class="jsonb-sub-label">趋势分析</span>
+
+                      <el-input v-model="detailForm.salaryData.salaryTrendAnalysis" type="textarea" :rows="2" placeholder="薪资趋势分析" />
+
+                    </div>
+
+                  </div>
 
                 </el-form-item>
 
@@ -1735,5 +2151,36 @@ onMounted(() => { fetchData() })
 }
 .uni-dialog :deep(.el-upload-dragger:hover) {
   border-color: #F97316;
+}
+
+/* JSONB structured fields */
+.jsonb-group {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 247, 237, 0.3);
+}
+.jsonb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.jsonb-item:last-child {
+  margin-bottom: 0;
+}
+.jsonb-sub-label {
+  flex-shrink: 0;
+  width: 88px;
+  font-size: 13px;
+  color: #6b7280;
+  text-align: right;
+}
+.jsonb-item :deep(.el-input),
+.jsonb-item :deep(.el-input-number),
+.jsonb-item :deep(.el-select),
+.jsonb-item :deep(.el-textarea) {
+  flex: 1;
 }
 </style>
