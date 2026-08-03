@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
-import { getGuideOverview, getGuideSurvival, getGuideAcademic, getGuideSocial, getGuideSafety, getGuideLife, getCampusGallery } from '@/api/university'
+import { getGuideOverview, getGuideSurvival, getGuideAcademic, getGuideSocial, getGuideSafety, getGuideLife, getCampusGallery, getGalleryTypes } from '@/api/university'
 import type { GuideOverviewVO, GuideCategoryVO, GalleryItemVO } from '@/types/university'
 import { MemberType } from '@haifeng/shared'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -19,6 +19,8 @@ const galleryList = ref<GalleryItemVO[]>([])
 const galleryLoading = ref(false)
 const galleryTotal = ref(0)
 const galleryPage = ref(1)
+const galleryTypes = ref<string[]>([])
+const selectedImageType = ref('')
 
 const isPro = computed(() => {
   return userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP
@@ -57,8 +59,18 @@ async function handleCategoryClick(cat: typeof categories[0]) {
   categoryData.value = null
   galleryList.value = []
   galleryTotal.value = 0
+  galleryTypes.value = []
+  selectedImageType.value = ''
 
   if (cat.key === 'gallery') {
+    const id = route.params.id as string
+    if (!id) return
+    try {
+      const typesRes = await getGalleryTypes(id)
+      galleryTypes.value = typesRes.data.data || []
+    } catch {
+      galleryTypes.value = []
+    }
     await fetchGallery()
     return
   }
@@ -93,7 +105,11 @@ async function fetchGallery() {
   if (!id) return
   galleryLoading.value = true
   try {
-    const res = await getCampusGallery(id, { page: galleryPage.value, size: 20 })
+    const params: { page: number; size: number; imageType?: string } = { page: galleryPage.value, size: 20 }
+    if (selectedImageType.value) {
+      params.imageType = selectedImageType.value
+    }
+    const res = await getCampusGallery(id, params)
     galleryList.value = res.data.data.records
     galleryTotal.value = res.data.data.total
   } catch {
@@ -101,6 +117,12 @@ async function fetchGallery() {
   } finally {
     galleryLoading.value = false
   }
+}
+
+function handleImageTypeChange(type: string) {
+  selectedImageType.value = type
+  galleryPage.value = 1
+  fetchGallery()
 }
 
 onMounted(fetchOverview)
@@ -171,20 +193,64 @@ onMounted(fetchOverview)
       <section v-loading="loading || galleryLoading" class="min-h-[200px]">
         <!-- JSONB 数据渲染 -->
         <template v-if="categoryData && Object.keys(categoryData).length > 0">
-          <div v-for="(value, key) in categoryData" :key="key" class="mb-6 rounded-2xl bg-white p-6 shadow-md border border-gray-100">
-            <h3 class="mb-4 text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">{{ key }}</h3>
-            <div v-if="typeof value === 'object' && value !== null" class="space-y-3">
-              <div v-for="(v, k) in value" :key="k" class="flex">
-                <span class="text-gray-500 w-32 shrink-0">{{ k }}：</span>
-                <span class="text-gray-700">{{ typeof v === 'object' ? JSON.stringify(v) : v }}</span>
+          <div v-for="(value, key) in categoryData" :key="key" class="guide-section">
+            <div class="guide-section-header">
+              <h2 class="guide-category-title">{{ key }}</h2>
+            </div>
+            <div v-if="typeof value === 'object' && value !== null" class="guide-section-body">
+              <div v-for="(v, k) in value" :key="k" class="guide-subsection">
+                <h4 class="guide-sub-title">
+                  <span class="guide-sub-icon"></span>
+                  {{ k }}
+                </h4>
+                <div v-if="Array.isArray(v)" class="guide-data-list">
+                  <div v-for="(item, idx) in v" :key="idx" class="guide-data-item" :style="{ animationDelay: `${idx * 60}ms` }">
+                    <span class="guide-data-bullet"></span>
+                    <span class="guide-data-text">{{ item }}</span>
+                  </div>
+                </div>
+                <div v-else class="guide-data-list">
+                  <div class="guide-data-item">
+                    <span class="guide-data-bullet"></span>
+                    <span class="guide-data-text">{{ v }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <p v-else class="text-gray-600">{{ value }}</p>
+            <p v-else class="text-gray-500 text-sm italic px-6 pb-5">暂无数据</p>
           </div>
         </template>
 
         <!-- 图册 -->
         <template v-if="activeCategory === 'gallery'">
+          <!-- 图片类型筛选 -->
+          <div v-if="galleryTypes.length > 0" class="mb-6 flex flex-wrap gap-2">
+            <button
+              :class="[
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all border',
+                selectedImageType === ''
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+              ]"
+              @click="handleImageTypeChange('')"
+            >
+              全部
+            </button>
+            <button
+              v-for="t in galleryTypes"
+              :key="t"
+              :class="[
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all border',
+                selectedImageType === t
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+              ]"
+              @click="handleImageTypeChange(t)"
+            >
+              {{ t }}
+            </button>
+          </div>
+
           <div v-if="galleryList.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <div v-for="(item, idx) in galleryList" :key="idx" class="group rounded-xl overflow-hidden shadow-md bg-white">
               <div class="aspect-[4/3] overflow-hidden">
@@ -205,9 +271,161 @@ onMounted(fetchOverview)
 
         <!-- 空状态 -->
         <div v-if="!activeCategory" class="py-16 text-center">
-          <p class="text-gray-400 text-lg">请点击上方分类按钮查看对应指南内容</p>
+          <div class="inline-flex flex-col items-center gap-4">
+            <div class="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
+              <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <p class="text-gray-400 text-lg">请点击上方分类按钮查看对应指南内容</p>
+          </div>
         </div>
       </section>
     </main>
   </div>
 </template>
+
+<style scoped>
+/* Guide Section - Category Card */
+.guide-section {
+  margin-bottom: 24px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(249, 115, 22, 0.08);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.guide-section:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Section Header */
+.guide-section-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.08);
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.6) 0%, rgba(255, 237, 213, 0.3) 100%);
+}
+.guide-category-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  padding-left: 12px;
+  border-left: 4px solid #F97316;
+  line-height: 1.3;
+}
+
+/* Section Body */
+.guide-section-body {
+  padding: 8px 0;
+}
+
+/* Sub-section */
+.guide-subsection {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+.guide-subsection:last-child {
+  border-bottom: none;
+}
+.guide-sub-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-sub-icon {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  flex-shrink: 0;
+}
+
+/* Data List */
+.guide-data-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 14px;
+}
+
+/* Data Item - Each on its own line */
+.guide-data-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 247, 237, 0.4);
+  border: 1px solid rgba(249, 115, 22, 0.06);
+  transition: all 0.2s ease;
+  animation: fadeInUp 0.3s ease forwards;
+  opacity: 0;
+}
+.guide-data-item:hover {
+  background: rgba(255, 247, 237, 0.8);
+  border-color: rgba(249, 115, 22, 0.15);
+  transform: translateX(4px);
+}
+
+/* Bullet */
+.guide-data-bullet {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #FB923C;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+
+/* Data Text */
+.guide-data-text {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.7;
+  flex: 1;
+}
+
+/* Gallery Card */
+.gallery-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.gallery-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Fade In Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .guide-section-header {
+    padding: 16px 16px 12px;
+  }
+  .guide-category-title {
+    font-size: 16px;
+  }
+  .guide-subsection {
+    padding: 12px 16px;
+  }
+  .guide-data-item {
+    padding: 6px 10px;
+  }
+}
+</style>

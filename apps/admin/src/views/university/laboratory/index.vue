@@ -810,53 +810,46 @@ onMounted(() => {
                 <!-- 核心团队 -->
                 <el-form-item label="核心团队">
                   <div class="w-full">
-                    <el-table :data="formData.coreTeam" size="small" stripe>
-                      <el-table-column label="成员姓名" width="160">
-                        <template #default="{ row, $index }">
-                          <el-input v-model="row.name" placeholder="姓名" size="small" />
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="职务" width="160">
-                        <template #default="{ row, $index }">
-                          <el-input v-model="row.position" placeholder="如：教授" size="small" />
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="岗位名称" width="160">
-                        <template #default="{ row, $index }">
-                          <el-input v-model="row.title" placeholder="如：课题负责人" size="small" />
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="操作" width="60" align="center">
-                        <template #default="{ $index }">
-                          <button class="btn-op btn-op-delete" @click="removeCoreTeamRow(formData.coreTeam, $index)">删除</button>
-                        </template>
-                      </el-table-column>
-                    </el-table>
-                    <button class="mt-2 btn-outline" style="padding:5px 14px;font-size:12px" @click="addCoreTeamRow(formData.coreTeam)">添加成员</button>
+                    <div class="jsonb-table-header grid gap-2 mb-1 px-2 py-1.5 rounded-t-lg text-xs font-medium text-gray-500" style="grid-template-columns: 160px 160px 160px 60px">
+                      <span>成员姓名</span>
+                      <span>职务</span>
+                      <span>岗位名称</span>
+                      <span class="text-center">操作</span>
+                    </div>
+                    <div v-if="formData.coreTeam && formData.coreTeam.length > 0" class="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
+                      <div v-for="(item, index) in formData.coreTeam" :key="index" class="grid gap-2 items-center px-2 py-1.5" style="grid-template-columns: 160px 160px 160px 60px">
+                        <el-input v-model="item.name" placeholder="姓名" size="small" />
+                        <el-input v-model="item.position" placeholder="如：教授" size="small" />
+                        <el-input v-model="item.title" placeholder="如：课题负责人" size="small" />
+                        <div class="text-center">
+                          <button type="button" class="btn-op btn-op-delete" @click="removeCoreTeamRow(formData.coreTeam, index)">删除</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="py-4 text-center text-sm text-gray-400 border border-gray-200 rounded-lg">暂无数据</div>
+                    <button type="button" class="mt-2 btn-outline" style="padding:5px 14px;font-size:12px" @click="addCoreTeamRow(formData.coreTeam)">添加成员</button>
                   </div>
                 </el-form-item>
 
                 <!-- 统计数据 -->
                 <el-form-item label="统计数据">
                   <div class="w-full">
-                    <el-table :data="formData.statistics" size="small" stripe>
-                      <el-table-column label="统计标签" width="200">
-                        <template #default="{ row, $index }">
-                          <el-input v-model="row.label" placeholder="如：发表论文数" size="small" />
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="数量" width="120">
-                        <template #default="{ row, $index }">
-                          <el-input-number v-model="row.count" :min="0" size="small" style="width: 120px" />
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="操作" width="60" align="center">
-                        <template #default="{ $index }">
-                          <button class="btn-op btn-op-delete" @click="removeStatisticsRow(formData.statistics, $index)">删除</button>
-                        </template>
-                      </el-table-column>
-                    </el-table>
-                    <button class="mt-2 btn-outline" style="padding:5px 14px;font-size:12px" @click="addStatisticsRow(formData.statistics)">添加统计项</button>
+                    <div class="jsonb-table-header grid gap-2 mb-1 px-2 py-1.5 rounded-t-lg text-xs font-medium text-gray-500" style="grid-template-columns: 200px 120px 60px">
+                      <span>统计标签</span>
+                      <span>数量</span>
+                      <span class="text-center">操作</span>
+                    </div>
+                    <div v-if="formData.statistics && formData.statistics.length > 0" class="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
+                      <div v-for="(item, index) in formData.statistics" :key="index" class="grid gap-2 items-center px-2 py-1.5" style="grid-template-columns: 200px 120px 60px">
+                        <el-input v-model="item.label" placeholder="如：发表论文数" size="small" />
+                        <el-input-number v-model="item.count" :min="0" size="small" style="width: 120px" />
+                        <div class="text-center">
+                          <button type="button" class="btn-op btn-op-delete" @click="removeStatisticsRow(formData.statistics, index)">删除</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="py-4 text-center text-sm text-gray-400 border border-gray-200 rounded-lg">暂无数据</div>
+                    <button type="button" class="mt-2 btn-outline" style="padding:5px 14px;font-size:12px" @click="addStatisticsRow(formData.statistics)">添加统计项</button>
                   </div>
                 </el-form-item>
               </el-form>
@@ -1195,5 +1188,11 @@ onMounted(() => {
 }
 .uni-dialog :deep(.el-tabs__item.is-active) {
   color: #F97316;
+}
+
+/* JSONB 行内编辑表头 */
+.jsonb-table-header {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5);
+  border-bottom: 2px solid #F97316;
 }
 </style>

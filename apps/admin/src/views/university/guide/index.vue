@@ -42,34 +42,45 @@ const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const detailData = ref<UniversityGuideDetailVO | null>(null)
 
-const formData = reactive<UniversityGuideAddDTO>({
+const JSONB_FIELDS: { key: string; label: string; subFields: string[] }[] = [
+  { key: 'campusFacilities', label: '校园设施', subFields: ['教学楼分布', '实验楼与图书馆', '宿舍区与食堂', '生活配套设施'] },
+  { key: 'dormitoryServices', label: '水电网与宿舍管理', subFields: ['水电费缴纳方式', '宿舍规章制度'] },
+  { key: 'campusTransportation', label: '校园通勤与校外交通', subFields: ['校内通勤方式', '校外交通情况'] },
+  { key: 'academicGuidance', label: '专业与课程核心信息', subFields: ['专业培养方案说明', '选课系统说明'] },
+  { key: 'majorTransferGuidelines', label: '转专业原则', subFields: ['基本申请条件', '申请时间与流程'] },
+  { key: 'majorTransferConstriction', label: '转专业限制', subFields: ['限制类型', '具体限制说明'] },
+  { key: 'academicSupportResources', label: '学习支持资源', subFields: ['师资力量', '学习场所', '学业帮扶'] },
+  { key: 'studentOrganizations', label: '学生组织与社团', subFields: ['官方组织', '社团类型'] },
+  { key: 'campusEvents', label: '校园活动与竞赛', subFields: ['院校品牌活动', '学科与技能竞赛'] },
+  { key: 'classDormSocial', label: '班级与宿舍社交', subFields: ['班级管理方式', '宿舍社交建议'] },
+  { key: 'financialAid', label: '奖助勤贷与权益保障', subFields: ['奖助学金政策', '勤工俭学岗位', '权益申诉渠道'] },
+  { key: 'campusSecurity', label: '校园安全与应急处理', subFields: ['安全设施', '安全规则'] },
+  { key: 'healthServices', label: '医保与心理健康', subFields: ['医保报销政策', '心理健康服务'] },
+  { key: 'lifeServices', label: '生活服务', subFields: ['校园生活服务', '医疗资源', '兼职实习资源'] },
+]
+
+const buildEmptyJsonb = () => {
+  const result: Record<string, Record<string, string[]>> = {}
+  JSONB_FIELDS.forEach(field => {
+    result[field.key] = {}
+    field.subFields.forEach(sub => { result[field.key][sub] = [] })
+  })
+  return result
+}
+
+const formData = reactive<UniversityGuideAddDTO & { jsonbData: Record<string, Record<string, string[]>> }>({
   universityId: '',
   customTags: [],
   remark: '',
+  jsonbData: buildEmptyJsonb(),
 })
 
-const editFormData = reactive<UniversityGuideUpdateDTO>({
+const editFormData = reactive<UniversityGuideUpdateDTO & { jsonbData: Record<string, Record<string, string[]>> }>({
   customTags: [],
   remark: '',
   status: 1,
+  jsonbData: buildEmptyJsonb(),
 })
-
-const JSONB_FIELDS: { key: string; label: string }[] = [
-  { key: 'campusFacilities', label: '校园设施' },
-  { key: 'dormitoryServices', label: '水电网与宿舍管理' },
-  { key: 'campusTransportation', label: '校园通勤与校外交通' },
-  { key: 'academicGuidance', label: '专业与课程核心信息' },
-  { key: 'majorTransferGuidelines', label: '转专业原则' },
-  { key: 'majorTransferConstriction', label: '转专业限制' },
-  { key: 'academicSupportResources', label: '学习支持资源' },
-  { key: 'studentOrganizations', label: '学生组织与社团' },
-  { key: 'campusEvents', label: '校园活动与竞赛' },
-  { key: 'classDormSocial', label: '班级与宿舍社交' },
-  { key: 'financialAid', label: '奖助勤贷与权益保障' },
-  { key: 'campusSecurity', label: '校园安全与应急处理' },
-  { key: 'healthServices', label: '医保与心理健康' },
-  { key: 'lifeServices', label: '生活服务' },
-]
 
 const fetchUniversityOptions = async (name?: string) => {
   try {
@@ -137,6 +148,45 @@ const handleSelectionChange = (selection: UniversityGuideListVO[]) => {
   selectedIds.value = selection.map((item) => item.id)
 }
 
+const jsonbInputValue = ref('')
+const jsonbInputTarget = ref<{ fieldKey: string; subKey: string } | null>(null)
+
+const showJsonbInput = (fieldKey: string, subKey: string) => {
+  jsonbInputTarget.value = { fieldKey, subKey }
+  jsonbInputValue.value = ''
+}
+
+const addJsonbItem = (fieldKey: string, subKey: string, target: Record<string, Record<string, string[]>>, value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return
+  if (!target[fieldKey][subKey]) target[fieldKey][subKey] = []
+  target[fieldKey][subKey].push(trimmed)
+}
+
+const removeJsonbItem = (fieldKey: string, subKey: string, target: Record<string, Record<string, string[]>>, index: number) => {
+  target[fieldKey][subKey].splice(index, 1)
+}
+
+const confirmJsonbInput = (target: Record<string, Record<string, string[]>>) => {
+  if (!jsonbInputTarget.value || !jsonbInputValue.value.trim()) {
+    jsonbInputTarget.value = null
+    jsonbInputValue.value = ''
+    return
+  }
+  const { fieldKey, subKey } = jsonbInputTarget.value
+  addJsonbItem(fieldKey, subKey, target, jsonbInputValue.value)
+  jsonbInputValue.value = ''
+  jsonbInputTarget.value = null
+}
+
+const getDetailArray = (fieldKey: string, subKey: string): string[] => {
+  if (!detailData.value) return []
+  const rawVal = (detailData.value as any)[fieldKey]
+  if (!rawVal || typeof rawVal !== 'object' || Array.isArray(rawVal)) return []
+  const arr = rawVal[subKey]
+  return Array.isArray(arr) ? arr.map(String) : []
+}
+
 const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
   dialogMode.value = mode
   currentId.value = id || null
@@ -145,6 +195,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     formData.universityId = ''
     formData.customTags = []
     formData.remark = ''
+    formData.jsonbData = buildEmptyJsonb()
     detailData.value = null
     await fetchUniversityOptions()
   } else if (mode === 'edit' && id) {
@@ -157,6 +208,18 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         editFormData.customTags = d.customTags || []
         editFormData.remark = d.remark || ''
         editFormData.status = d.status
+        editFormData.jsonbData = buildEmptyJsonb()
+        JSONB_FIELDS.forEach(field => {
+          const key = field.key as keyof UniversityGuideDetailVO
+          const rawVal = d[key]
+          if (rawVal && typeof rawVal === 'object' && !Array.isArray(rawVal)) {
+            const obj = rawVal as Record<string, any>
+            field.subFields.forEach(sub => {
+              const arr = obj[sub]
+              editFormData.jsonbData[field.key][sub] = Array.isArray(arr) ? arr.map(String) : []
+            })
+          }
+        })
       }
     } catch { ElMessage.error('获取详情失败') } finally { formLoading.value = false }
     detailData.value = null
@@ -175,10 +238,19 @@ const handleSubmit = async () => {
   if (dialogMode.value === 'add') {
     if (!formData.universityId) { ElMessage.warning('请选择院校'); return }
     try {
+      const jsonbPayload: Record<string, Record<string, string[]>> = {}
+      JSONB_FIELDS.forEach(field => {
+        const fieldData = formData.jsonbData[field.key]
+        const hasValues = Object.values(fieldData).some(arr => arr.length > 0)
+        if (hasValues) {
+          jsonbPayload[field.key] = { ...fieldData }
+        }
+      })
       const res = await addGuide({
         universityId: formData.universityId,
         customTags: formData.customTags?.length ? formData.customTags : undefined,
         remark: formData.remark || undefined,
+        ...jsonbPayload,
       })
       if (res.data.code === 200) { ElMessage.success('新增成功'); dialogVisible.value = false; fetchData() }
       else ElMessage.error(res.data.msg || '操作失败')
@@ -189,6 +261,15 @@ const handleSubmit = async () => {
       if (editFormData.customTags?.length) data.customTags = editFormData.customTags
       if (editFormData.remark) data.remark = editFormData.remark
       data.status = editFormData.status
+      JSONB_FIELDS.forEach(field => {
+        const fieldData = editFormData.jsonbData[field.key]
+        const hasValues = Object.values(fieldData).some(arr => arr.length > 0)
+        if (hasValues) {
+          ;(data as any)[field.key] = { ...fieldData }
+        } else {
+          ;(data as any)[field.key] = null
+        }
+      })
       const res = await updateGuide(currentId.value, data)
       if (res.data.code === 200) { ElMessage.success('修改成功'); dialogVisible.value = false; fetchData() }
       else ElMessage.error(res.data.msg || '操作失败')
@@ -344,7 +425,7 @@ onMounted(() => { fetchData() })
     </div>
 
     <!-- Dialog -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="750px" class="uni-dialog" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="950px" class="uni-dialog" :close-on-click-modal="false">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border style="margin-bottom:16px">
@@ -366,9 +447,15 @@ onMounted(() => { fetchData() })
           <el-collapse>
             <el-collapse-item v-for="field in JSONB_FIELDS" :key="field.key" :title="field.label" :name="field.key">
               <template v-if="detailData[field.key as keyof UniversityGuideDetailVO]">
-                <el-descriptions :column="1" border size="small">
-                  <el-descriptions-item v-for="(value, key) in detailData[field.key as keyof UniversityGuideDetailVO] as Record<string, any>" :key="key" :label="key">{{ formatJsonbValue(value) }}</el-descriptions-item>
-                </el-descriptions>
+                <div v-for="sub in field.subFields" :key="sub" class="jsonb-detail-row">
+                  <div class="jsonb-detail-label">{{ sub }}</div>
+                  <div class="jsonb-detail-items">
+                    <template v-if="getDetailArray(field.key, sub).length">
+                      <span v-for="(item, idx) in getDetailArray(field.key, sub)" :key="idx" class="jsonb-detail-item">{{ item }}</span>
+                    </template>
+                    <span v-else class="dim-text">暂无数据</span>
+                  </div>
+                </div>
               </template>
               <span v-else class="dim-text">暂无数据</span>
             </el-collapse-item>
@@ -387,6 +474,26 @@ onMounted(() => { fetchData() })
             <el-form-item label="备注">
               <el-input v-model="formData.remark" type="textarea" :rows="3" placeholder="备注信息" />
             </el-form-item>
+            <el-divider content-position="left">
+              <span style="font-size:13px;font-weight:600;color:#C2410C;">院校适应指南详情</span>
+            </el-divider>
+            <el-collapse>
+              <el-collapse-item v-for="field in JSONB_FIELDS" :key="field.key" :title="field.label" :name="field.key">
+                <div v-for="sub in field.subFields" :key="sub" style="margin-bottom:12px;">
+                  <div style="font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">{{ sub }}</div>
+                  <div class="jsonb-tag-list">
+                    <span v-for="(item, idx) in formData.jsonbData[field.key][sub]" :key="idx" class="jsonb-tag">
+                      {{ item }}
+                      <button type="button" class="jsonb-tag-remove" @click="removeJsonbItem(field.key, sub, formData.jsonbData, idx)">×</button>
+                    </span>
+                    <template v-if="jsonbInputTarget?.fieldKey === field.key && jsonbInputTarget?.subKey === sub">
+                      <el-input v-model="jsonbInputValue" size="small" style="width:160px;" placeholder="输入内容" @keyup.enter="confirmJsonbInput(formData.jsonbData)" @blur="confirmJsonbInput(formData.jsonbData)" />
+                    </template>
+                    <button v-else type="button" class="jsonb-add-btn" @click="showJsonbInput(field.key, sub)">+ 添加</button>
+                  </div>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
           </el-form>
         </template>
         <template v-if="dialogMode === 'edit'">
@@ -400,6 +507,26 @@ onMounted(() => { fetchData() })
             <el-form-item label="状态">
               <el-switch v-model="editFormData.status" :active-value="1" :inactive-value="0" />
             </el-form-item>
+            <el-divider content-position="left">
+              <span style="font-size:13px;font-weight:600;color:#C2410C;">院校适应指南详情</span>
+            </el-divider>
+            <el-collapse>
+              <el-collapse-item v-for="field in JSONB_FIELDS" :key="field.key" :title="field.label" :name="field.key">
+                <div v-for="sub in field.subFields" :key="sub" style="margin-bottom:12px;">
+                  <div style="font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">{{ sub }}</div>
+                  <div class="jsonb-tag-list">
+                    <span v-for="(item, idx) in editFormData.jsonbData[field.key][sub]" :key="idx" class="jsonb-tag">
+                      {{ item }}
+                      <button type="button" class="jsonb-tag-remove" @click="removeJsonbItem(field.key, sub, editFormData.jsonbData, idx)">×</button>
+                    </span>
+                    <template v-if="jsonbInputTarget?.fieldKey === field.key && jsonbInputTarget?.subKey === sub">
+                      <el-input v-model="jsonbInputValue" size="small" style="width:160px;" placeholder="输入内容" @keyup.enter="confirmJsonbInput(editFormData.jsonbData)" @blur="confirmJsonbInput(editFormData.jsonbData)" />
+                    </template>
+                    <button v-else type="button" class="jsonb-add-btn" @click="showJsonbInput(field.key, sub)">+ 添加</button>
+                  </div>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
           </el-form>
         </template>
       </div>
@@ -412,17 +539,18 @@ onMounted(() => { fetchData() })
 </template>
 
 <style scoped>
+/* Page */
 .page-wrap { min-height:calc(100vh - 60px); background:linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%); padding:24px; position:relative; overflow:hidden; }
 .watermark-left,.watermark-right { position:absolute; opacity:0.05; pointer-events:none; z-index:0; }
 .watermark-left { top:-60px; right:40px; transform:rotate(18deg); }
 .watermark-right { bottom:-40px; left:30px; transform:rotate(-12deg); }
 .watermark-left img,.watermark-right img { width:180px; height:auto; }
 .page-header { position:relative; z-index:1; margin-bottom:24px; }
-.page-title { font-size:22px; font-weight:700; color:#1f2937; margin-bottom:4px; }
+.page-title { font-size:22px; font-weight:700; color:#1f2937; margin-bottom:4px; letter-spacing:-0.02em; }
 .page-subtitle { font-size:13px; color:#9ca3af; }
 
-/* Search */
-.search-card { background:#fff; border-radius:12px; padding:24px; margin-bottom:16px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s ease; }
+/* Search Card */
+.search-card { background:#fff; border-radius:12px; padding:24px; margin-bottom:16px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
 .search-card:hover { box-shadow:0 4px 16px rgba(249,115,22,0.08); transform:translateY(-1px); }
 .section-label { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; font-size:13px; font-weight:600; border-radius:20px; margin-bottom:20px; }
 .label-icon { display:flex; align-items:center; }
@@ -430,36 +558,44 @@ onMounted(() => { fetchData() })
 .filter-fields { display:flex; align-items:flex-start; flex-wrap:wrap; gap:8px; }
 .search-form :deep(.el-form-item) { margin-bottom:0; }
 .search-form :deep(.el-form-item__label) { font-weight:500; color:#374151; }
-.search-form :deep(.el-input__wrapper),.search-form :deep(.el-select__wrapper) { border-radius:8px; transition:all 0.25s ease; }
+.search-form :deep(.el-input__wrapper),.search-form :deep(.el-select__wrapper) { border-radius:8px; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .search-form :deep(.el-input__wrapper:hover),.search-form :deep(.el-select__wrapper:hover) { box-shadow:0 0 0 1px rgba(249,115,22,0.3) inset; }
 .search-form :deep(.el-input__wrapper.is-focus),.search-form :deep(.el-select__wrapper.is-focused) { box-shadow:0 0 0 1px #F97316 inset; }
 .search-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
-.search-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s ease; box-shadow:0 2px 8px rgba(249,115,22,0.3); }
+
+/* Buttons - Micro-animations */
+.search-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .search-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.search-btn:active { transform:translateY(0); }
-.reset-btn { display:inline-flex; align-items:center; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s ease; }
+.search-btn:active { transform:translateY(0) scale(0.98); box-shadow:0 1px 4px rgba(249,115,22,0.3); }
+.reset-btn { display:inline-flex; align-items:center; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .reset-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
+.reset-btn:active { transform:scale(0.98); }
 
-/* Action bar */
+/* Action Bar */
 .action-bar { position:relative; z-index:1; display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-.primary-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s ease; box-shadow:0 2px 8px rgba(249,115,22,0.3); }
+.primary-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .primary-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.outline-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#374151; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s ease; }
+.primary-btn:active { transform:translateY(0) scale(0.98); }
+.outline-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#374151; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .outline-btn:hover { color:#F97316; border-color:#F97316; background:rgba(249,115,22,0.04); }
-.danger-btn { display:inline-flex; align-items:center; padding:8px 20px; background:linear-gradient(135deg,#ef4444,#f87171); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s ease; box-shadow:0 2px 8px rgba(239,68,68,0.3); }
+.outline-btn:active { transform:scale(0.98); }
+.danger-btn { display:inline-flex; align-items:center; padding:8px 20px; background:linear-gradient(135deg,#ef4444,#f87171); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(239,68,68,0.3); }
 .danger-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(239,68,68,0.4); }
+.danger-btn:active { transform:translateY(0) scale(0.98); }
 .danger-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
-.refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s ease; }
+.refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .refresh-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
+.refresh-btn:active { transform:scale(0.98); }
 
-/* Table */
-.table-card { background:#fff; border-radius:12px; padding:24px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s ease; }
+/* Table Card */
+.table-card { background:#fff; border-radius:12px; padding:24px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
 .table-card:hover { box-shadow:0 4px 16px rgba(249,115,22,0.08); }
 .custom-table :deep(.el-table) { --el-table-border-color:#f3f4f6; --el-table-header-bg-color:transparent; border-radius:8px; overflow:hidden; }
 .custom-table :deep(.el-table__header th) { background:linear-gradient(180deg,#fff7ed,#ffedd5)!important; color:#1f2937!important; font-weight:600; font-size:14px; border-bottom:2px solid #F97316!important; padding:14px 0; }
 .custom-table :deep(.el-table__header th .cell) { color:#1f2937; }
+.custom-table :deep(.el-table__body tr) { transition:background 0.2s ease; }
 .custom-table :deep(.el-table__body tr:hover>td) { background:linear-gradient(90deg,rgba(249,115,22,0.03),rgba(251,146,60,0.07))!important; }
-.custom-table :deep(.el-table__body td) { border-bottom:1px solid #f3f4f6; padding:12px 0; }
+.custom-table :deep(.el-table__body td) { border-bottom:1px solid #f3f4f6; padding:12px 0; transition:background 0.2s ease; }
 .custom-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) { background:rgba(255,247,237,0.3); }
 .dim-text { font-size:13px; color:#9ca3af; }
 .tag-list { display:flex; flex-wrap:wrap; gap:4px; }
@@ -467,8 +603,11 @@ onMounted(() => { fetchData() })
 .status-pill { display:inline-flex; align-items:center; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid transparent; }
 .status-on { background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(251,146,60,0.12)); color:#C2410C; border-color:rgba(249,115,22,0.2); }
 .status-off { background:#f3f4f6; color:#6b7280; border-color:#e5e7eb; }
+
+/* Action Buttons - Micro-animations */
 .action-group { display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; }
-.act-btn { display:inline-flex; align-items:center; padding:3px 10px; border:none; border-radius:12px; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s ease; white-space:nowrap; }
+.act-btn { display:inline-flex; align-items:center; padding:3px 10px; border:none; border-radius:12px; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); white-space:nowrap; }
+.act-btn:active { transform:scale(0.95); }
 .act-detail { background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; }
 .act-detail:hover { box-shadow:0 2px 8px rgba(249,115,22,0.3); transform:translateY(-1px); }
 .act-edit { background:linear-gradient(135deg,#2563eb,#60a5fa); color:#fff; }
@@ -479,10 +618,12 @@ onMounted(() => { fetchData() })
 .act-disable:hover { box-shadow:0 2px 8px rgba(245,158,11,0.3); transform:translateY(-1px); }
 .act-del { background:linear-gradient(135deg,#b91c1c,#dc2626); color:#fff; }
 .act-del:hover { box-shadow:0 2px 8px rgba(185,28,28,0.3); transform:translateY(-1px); }
+
+/* Pagination */
 .custom-pagination { display:flex; justify-content:flex-end; margin-top:20px; padding-top:16px; border-top:1px solid #f3f4f6; }
 .custom-pagination :deep(.el-pagination) { --el-pagination-hover-color:#F97316; }
-.custom-pagination :deep(.el-pager li) { border-radius:8px; transition:all 0.2s ease; font-weight:500; }
-.custom-pagination :deep(.el-pager li:hover) { color:#F97316; }
+.custom-pagination :deep(.el-pager li) { border-radius:8px; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); font-weight:500; }
+.custom-pagination :deep(.el-pager li:hover) { color:#F97316; transform:translateY(-1px); }
 .custom-pagination :deep(.el-pager li.is-active) { background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; }
 .custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper) { border-radius:8px; }
 .custom-pagination :deep(.el-pagination__sizes .el-select .el-select__wrapper:hover) { box-shadow:0 0 0 1px rgba(249,115,22,0.3) inset; }
@@ -500,13 +641,40 @@ onMounted(() => { fetchData() })
 .uni-dialog :deep(.el-descriptions__label) { font-weight:600; color:#374151; background:rgba(249,115,22,0.06)!important; }
 .uni-dialog :deep(.el-descriptions__cell) { border-color:rgba(249,115,22,0.1); }
 .uni-form :deep(.el-form-item__label) { font-weight:500; color:#374151; }
-.uni-form :deep(.el-input__wrapper),.uni-form :deep(.el-textarea__inner),.uni-form :deep(.el-select__wrapper) { border-radius:8px; transition:all 0.25s ease; }
+.uni-form :deep(.el-input__wrapper),.uni-form :deep(.el-textarea__inner),.uni-form :deep(.el-select__wrapper) { border-radius:8px; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .uni-form :deep(.el-input__wrapper:hover),.uni-form :deep(.el-textarea__inner:hover),.uni-form :deep(.el-select__wrapper:hover) { box-shadow:0 0 0 1px rgba(249,115,22,0.3) inset; }
 .uni-form :deep(.el-input__wrapper.is-focus),.uni-form :deep(.el-textarea__inner:focus),.uni-form :deep(.el-select__wrapper.is-focused) { box-shadow:0 0 0 1px #F97316 inset; }
 .uni-form :deep(.el-switch.is-checked .el-switch__core) { background:#F97316; border-color:#F97316; }
-.cancel-btn { display:inline-flex; align-items:center; padding:8px 24px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s ease; }
+.cancel-btn { display:inline-flex; align-items:center; padding:8px 24px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .cancel-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
-.submit-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s ease; box-shadow:0 2px 8px rgba(249,115,22,0.3); }
+.cancel-btn:active { transform:scale(0.98); }
+.submit-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .submit-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.submit-btn:active { transform:translateY(0); }
+.submit-btn:active { transform:translateY(0) scale(0.98); }
+.uni-form :deep(.el-divider) { margin:20px 0 12px; }
+.uni-form :deep(.el-divider__text) { background:#fff; padding-right:12px; }
+.uni-form :deep(.el-collapse) { border:1px solid rgba(249,115,22,0.15); border-radius:8px; }
+.uni-form :deep(.el-collapse-item__header) { background:linear-gradient(180deg,#fff7ed,#ffedd5); padding:0 16px; font-weight:600; color:#1f2937; border-bottom:1px solid rgba(249,115,22,0.1); transition:background 0.2s ease; }
+.uni-form :deep(.el-collapse-item__header:hover) { background:linear-gradient(180deg,#fff7ed,#ffedd5); }
+.uni-form :deep(.el-collapse-item__wrap) { border-bottom:1px solid rgba(249,115,22,0.1); }
+.uni-form :deep(.el-collapse-item:last-child .el-collapse-item__wrap) { border-bottom:none; }
+.uni-form :deep(.el-collapse-item__content) { padding:12px 16px; }
+
+/* JSONB Tag List */
+.jsonb-tag-list { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.jsonb-tag { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(251,146,60,0.12)); color:#C2410C; border:1px solid rgba(249,115,22,0.2); border-radius:20px; font-size:12px; font-weight:500; transition:all 0.2s ease; }
+.jsonb-tag:hover { background:linear-gradient(135deg,rgba(249,115,22,0.12),rgba(251,146,60,0.18)); }
+.jsonb-tag-remove { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border:none; background:rgba(249,115,22,0.15); color:#C2410C; border-radius:50%; font-size:12px; cursor:pointer; line-height:1; padding:0; transition:all 0.2s ease; }
+.jsonb-tag-remove:hover { background:rgba(239,68,68,0.2); color:#dc2626; transform:scale(1.1); }
+.jsonb-add-btn { display:inline-flex; align-items:center; padding:4px 12px; background:#fff; color:#F97316; border:1px dashed rgba(249,115,22,0.4); border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); }
+.jsonb-add-btn:hover { border-color:#F97316; background:rgba(249,115,22,0.04); transform:translateY(-1px); }
+.jsonb-add-btn:active { transform:scale(0.98); }
+
+/* JSONB Detail View */
+.jsonb-detail-row { margin-bottom:12px; }
+.jsonb-detail-row:last-child { margin-bottom:0; }
+.jsonb-detail-label { font-size:13px; font-weight:600; color:#374151; margin-bottom:6px; }
+.jsonb-detail-items { display:flex; flex-wrap:wrap; gap:6px; }
+.jsonb-detail-item { display:inline-flex; align-items:center; padding:4px 12px; background:rgba(249,115,22,0.05); color:#1f2937; border:1px solid rgba(249,115,22,0.12); border-radius:8px; font-size:13px; line-height:1.5; transition:all 0.2s ease; }
+.jsonb-detail-item:hover { background:rgba(249,115,22,0.08); border-color:rgba(249,115,22,0.2); }
 </style>

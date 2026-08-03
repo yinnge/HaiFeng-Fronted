@@ -121,11 +121,11 @@ onMounted(fetchList)
               <h3 class="text-lg font-bold text-gray-800">{{ item.cityName }}</h3>
               <p class="text-sm text-gray-500 mt-1">{{ item.province }} · {{ item.region }}</p>
               <div class="flex gap-4 mt-3 text-sm">
-                <span class="text-gray-500">高校数 <strong class="text-gray-700">{{ item.collegeCount }}</strong></span>
-                <span class="text-gray-500">重点院校 <strong class="text-orange-500">{{ item.keyCollegeCount }}</strong></span>
+                <span class="text-gray-500">高校数 <strong class="text-gray-700">{{ item.collegeCount ?? 0 }}</strong></span>
+                <span class="text-gray-500">重点院校 <strong class="text-orange-500">{{ item.keyCollegeCount ?? 0 }}</strong></span>
               </div>
-              <p class="text-sm text-gray-700 font-medium mt-2">{{ (item.gdp).toFixed(2) }} 亿元</p>
-              <p class="text-sm text-gray-500 line-clamp-2 mt-2">{{ item.cityIntro }}</p>
+              <p class="text-sm text-gray-700 font-medium mt-2">{{ item.gdp != null ? item.gdp.toFixed(2) : '-' }} 亿元</p>
+              <p class="text-sm text-gray-500 line-clamp-2 mt-2">{{ item.cityIntro || '暂无城市介绍' }}</p>
             </div>
           </div>
         </div>

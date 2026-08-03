@@ -10,6 +10,8 @@ const route = useRoute()
 
 const loading = ref(false)
 const report = ref<DepartmentReportVO | null>(null)
+const deptName = ref((route.query.name as string) || '院系详情')
+const deptType = ref((route.query.type as string) || '')
 
 async function fetchReport() {
   const deptId = route.params.deptId as string
@@ -33,11 +35,29 @@ onMounted(fetchReport)
 function formatMoney(value: number) {
   return value.toFixed(1)
 }
+
+function goBack() {
+  router.back()
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
     <main class="container mx-auto px-6 py-8" v-loading="loading">
+      <!-- 顶部导航 -->
+      <div class="mb-6">
+        <button @click="goBack" class="inline-flex items-center gap-2 text-gray-500 hover:text-orange-500 transition-colors mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          返回
+        </button>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-800">{{ deptName }}</h1>
+          <span v-if="deptType" class="inline-block rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-600">{{ deptType }}</span>
+        </div>
+      </div>
+
       <template v-if="report">
         <p v-if="report.subtitle" class="text-center text-gray-500 mb-6">{{ report.subtitle }}</p>
 

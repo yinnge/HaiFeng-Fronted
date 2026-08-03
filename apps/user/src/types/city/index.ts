@@ -11,11 +11,11 @@ export interface CityListVO {
   cityName: string
   province: string
   region: string
-  cityIntro: string
-  collegeCount: number
-  keyCollegeCount: number
-  residentPopulation: number
-  gdp: number
+  cityIntro: string | null
+  collegeCount: number | null
+  keyCollegeCount: number | null
+  residentPopulation: number | null
+  gdp: number | null
 }
 
 export interface CityDetailVO {

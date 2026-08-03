@@ -55,6 +55,13 @@ export interface MajorAddDTO {
   majorType: string
   disciplineName?: string
   majorCategory?: string
+  parentCategory?: string
+  majorTags?: string
+  degreeAwarded?: string
+  employmentRate?: number
+  salaryMin?: number
+  salaryMax?: number
+  description?: string
 }
 
 export interface MajorUpdateDTO {

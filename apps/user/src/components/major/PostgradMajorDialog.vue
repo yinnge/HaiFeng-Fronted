@@ -83,6 +83,16 @@ const undergradTotal = ref(0)
 const undergradPage = ref(1)
 const undergradPageSize = ref(10)
 
+const groupedUndergrad = computed(() => {
+  const map = new Map<string, UndergraduateMajorDirectionBriefVO[]>()
+  for (const m of undergraduateMajors.value) {
+    const key = m.category && m.category.trim() ? m.category : '其他'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(m)
+  }
+  return Array.from(map.entries()).map(([category, items]) => ({ category, items }))
+})
+
 async function fetchUndergraduateMajors() {
   if (!props.majorId || !isPro.value) return
   undergradLoading.value = true
@@ -200,16 +210,24 @@ watch(() => props.visible, (val) => {
           <h4 class="font-semibold text-gray-800 mb-3">关联本科专业</h4>
           <template v-if="isPro">
             <div v-loading="undergradLoading" class="min-h-[100px]">
-              <div v-if="undergraduateMajors.length" class="space-y-2">
-                <div
-                  v-for="m in undergraduateMajors" :key="m.id"
-                  class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 hover:bg-orange-50/50 cursor-pointer transition-colors"
-                  @click="goMajor(m.id)"
-                >
-                  <span class="text-sm font-medium text-gray-800">{{ m.majorName }}</span>
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
+              <div v-if="undergraduateMajors.length" class="space-y-4">
+                <div v-for="group in groupedUndergrad" :key="group.category">
+                  <div class="mb-2 flex items-center gap-2">
+                    <span class="rounded-full bg-orange-100 px-3 py-0.5 text-xs font-medium text-orange-600">{{ group.category }}</span>
+                    <span class="text-xs text-gray-400">{{ group.items.length }} 个</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div
+                      v-for="m in group.items" :key="m.id"
+                      class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 hover:bg-orange-50/50 cursor-pointer transition-colors"
+                      @click="goMajor(m.id)"
+                    >
+                      <span class="text-sm font-medium text-gray-800">{{ m.majorName }}</span>
+                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div v-else-if="!undergradLoading" class="py-8 text-center text-gray-400 text-sm">暂无关联本科专业数据</div>

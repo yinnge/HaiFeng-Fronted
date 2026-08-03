@@ -19,6 +19,7 @@ import type {
   CityQueryDTO,
   CityAddDTO,
 } from '@/types/city'
+import JsonbArrayEditor from '@/components/JsonbArrayEditor.vue'
 
 const loading = ref(false)
 const tableData = ref<CityListVO[]>([])
@@ -66,21 +67,21 @@ const detailForm = reactive<Record<string, any>>({
   gdpGrowthRate: null,
   fortune500Count: null,
   industryDescription: '',
-  mainIndustries: '',
-  emergingIndustries: '',
-  industryStructure: '',
-  futurePlan: '',
-  highEducation: '',
-  basicEducation: '',
-  enterpriseStats: '',
-  housingPriceLevel: '',
-  rentalCost: '',
-  housingPolicy: '',
-  consumption: '',
-  employment: '',
-  transportation: '',
-  medical: '',
-  culture: '',
+  mainIndustries: [] as string[],
+  emergingIndustries: [] as string[],
+  industryStructure: { primaryRatio: null, secondaryRatio: null, tertiaryRatio: null },
+  futurePlan: { targetYear: null, developmentGoal: '', keyAreas: [] as string[] },
+  highEducation: { totalColleges: null, doubleFirstClassCount: null, undergraduateCount: null, graduateCount: null },
+  basicEducation: { totalSchools: null, modelSchoolCount: null, keySchoolCount: null, educationNote: '' },
+  enterpriseStats: { enterpriseCategories: null, keyEnterpriseCount: null, fortune500Count: null },
+  housingPriceLevel: { avgPrice: null, coreAreaPrice: null, suburbanPriceRange: '', priceGrowthRate: null, priceIncomeRatio: null },
+  rentalCost: { downtownRentRange: '', suburbanRentRange: '', rentIncomeRatio: null, rentGrowthRate: null },
+  housingPolicy: { purchaseRestriction: '', sharedPropertyHousing: null, publicRentalHousing: null, firstHomeRate: null, secondHomeRate: null },
+  consumption: { perCapitaConsumption: null, consumptionGrowthRate: null, engelCoefficient: null, educationExpenseRatio: null, consumptionIndex: null, consumptionRank: null },
+  employment: { unemploymentRate: null, nationalUnemploymentRate: null, tertiaryEmploymentRatio: null, newEmployment: null, avgSalary: null, salaryRank: null, skilledTalentRatio: null, skilledTalentGrowth: null },
+  transportation: { metroLines: null, metroMileage: null, highwayMileage: null, trafficWorldRank: null },
+  medical: { topHospitalCount: null, tertiaryHospitalCount: null, doctorDensity: null, medicalRank: null },
+  culture: { worldHeritageCount: null, annualTourists: null, aScenicCount: null, coreAttractions: [] as string[] },
 })
 
 const importDialogVisible = ref(false)
@@ -193,9 +194,33 @@ const resetForm = () => {
   formData.keyCollegeCount = null
   formData.residentPopulation = null
   formData.gdp = null
-  Object.keys(detailForm).forEach((k) => {
-    detailForm[k] = k.includes('Count') || k.includes('Gdp') || k.includes('Rate') || k.includes('Ratio') || k === 'area' || k === 'perCapitaGdp' || k === 'urbanizationRate' || k === 'ruralPopRatio' || k === 'agingRate' || k === 'migrantPopRatio' || k === 'gdpGrowthRate' || k === 'fortune500Count' ? null : ''
-  })
+  detailForm.area = null
+  detailForm.subtitle = ''
+  detailForm.cityLevel = ''
+  detailForm.adminCode = ''
+  detailForm.perCapitaGdp = null
+  detailForm.urbanizationRate = null
+  detailForm.ruralPopRatio = null
+  detailForm.agingRate = null
+  detailForm.migrantPopRatio = null
+  detailForm.gdpGrowthRate = null
+  detailForm.fortune500Count = null
+  detailForm.industryDescription = ''
+  detailForm.mainIndustries = []
+  detailForm.emergingIndustries = []
+  detailForm.industryStructure = { primaryRatio: null, secondaryRatio: null, tertiaryRatio: null }
+  detailForm.futurePlan = { targetYear: null, developmentGoal: '', keyAreas: [] }
+  detailForm.highEducation = { totalColleges: null, doubleFirstClassCount: null, undergraduateCount: null, graduateCount: null }
+  detailForm.basicEducation = { totalSchools: null, modelSchoolCount: null, keySchoolCount: null, educationNote: '' }
+  detailForm.enterpriseStats = { enterpriseCategories: null, keyEnterpriseCount: null, fortune500Count: null }
+  detailForm.housingPriceLevel = { avgPrice: null, coreAreaPrice: null, suburbanPriceRange: '', priceGrowthRate: null, priceIncomeRatio: null }
+  detailForm.rentalCost = { downtownRentRange: '', suburbanRentRange: '', rentIncomeRatio: null, rentGrowthRate: null }
+  detailForm.housingPolicy = { purchaseRestriction: '', sharedPropertyHousing: null, publicRentalHousing: null, firstHomeRate: null, secondHomeRate: null }
+  detailForm.consumption = { perCapitaConsumption: null, consumptionGrowthRate: null, engelCoefficient: null, educationExpenseRatio: null, consumptionIndex: null, consumptionRank: null }
+  detailForm.employment = { unemploymentRate: null, nationalUnemploymentRate: null, tertiaryEmploymentRatio: null, newEmployment: null, avgSalary: null, salaryRank: null, skilledTalentRatio: null, skilledTalentGrowth: null }
+  detailForm.transportation = { metroLines: null, metroMileage: null, highwayMileage: null, trafficWorldRank: null }
+  detailForm.medical = { topHospitalCount: null, tertiaryHospitalCount: null, doctorDensity: null, medicalRank: null }
+  detailForm.culture = { worldHeritageCount: null, annualTourists: null, aScenicCount: null, coreAttractions: [] }
 }
 
 const fillForm = (d: CityDetailVO) => {
@@ -222,21 +247,47 @@ const fillDetailForm = (d: CityDetailVO) => {
   detailForm.gdpGrowthRate = d.gdpGrowthRate
   detailForm.fortune500Count = d.fortune500Count
   detailForm.industryDescription = d.industryDescription || ''
-  detailForm.mainIndustries = d.mainIndustries?.join(', ') || ''
-  detailForm.emergingIndustries = d.emergingIndustries?.join(', ') || ''
-  detailForm.industryStructure = d.industryStructure ? JSON.stringify(d.industryStructure, null, 2) : ''
-  detailForm.futurePlan = d.futurePlan ? JSON.stringify(d.futurePlan, null, 2) : ''
-  detailForm.highEducation = d.highEducation ? JSON.stringify(d.highEducation, null, 2) : ''
-  detailForm.basicEducation = d.basicEducation ? JSON.stringify(d.basicEducation, null, 2) : ''
-  detailForm.enterpriseStats = d.enterpriseStats ? JSON.stringify(d.enterpriseStats, null, 2) : ''
-  detailForm.housingPriceLevel = d.housingPriceLevel ? JSON.stringify(d.housingPriceLevel, null, 2) : ''
-  detailForm.rentalCost = d.rentalCost ? JSON.stringify(d.rentalCost, null, 2) : ''
-  detailForm.housingPolicy = d.housingPolicy ? JSON.stringify(d.housingPolicy, null, 2) : ''
-  detailForm.consumption = d.consumption ? JSON.stringify(d.consumption, null, 2) : ''
-  detailForm.employment = d.employment ? JSON.stringify(d.employment, null, 2) : ''
-  detailForm.transportation = d.transportation ? JSON.stringify(d.transportation, null, 2) : ''
-  detailForm.medical = d.medical ? JSON.stringify(d.medical, null, 2) : ''
-  detailForm.culture = d.culture ? JSON.stringify(d.culture, null, 2) : ''
+  detailForm.mainIndustries = d.mainIndustries ? [...d.mainIndustries] : []
+  detailForm.emergingIndustries = d.emergingIndustries ? [...d.emergingIndustries] : []
+
+  const is = d.industryStructure || {}
+  detailForm.industryStructure = { primaryRatio: is.primaryRatio ?? null, secondaryRatio: is.secondaryRatio ?? null, tertiaryRatio: is.tertiaryRatio ?? null }
+
+  const fp = d.futurePlan || {}
+  detailForm.futurePlan = { targetYear: fp.targetYear ?? null, developmentGoal: fp.developmentGoal || '', keyAreas: fp.keyAreas ? [...fp.keyAreas] : [] }
+
+  const he = d.highEducation || {}
+  detailForm.highEducation = { totalColleges: he.totalColleges ?? null, doubleFirstClassCount: he.doubleFirstClassCount ?? null, undergraduateCount: he.undergraduateCount ?? null, graduateCount: he.graduateCount ?? null }
+
+  const be = d.basicEducation || {}
+  detailForm.basicEducation = { totalSchools: be.totalSchools ?? null, modelSchoolCount: be.modelSchoolCount ?? null, keySchoolCount: be.keySchoolCount ?? null, educationNote: be.educationNote || '' }
+
+  const es = d.enterpriseStats || {}
+  detailForm.enterpriseStats = { enterpriseCategories: es.enterpriseCategories ?? null, keyEnterpriseCount: es.keyEnterpriseCount ?? null, fortune500Count: es.fortune500Count ?? null }
+
+  const hp = d.housingPriceLevel || {}
+  detailForm.housingPriceLevel = { avgPrice: hp.avgPrice ?? null, coreAreaPrice: hp.coreAreaPrice ?? null, suburbanPriceRange: hp.suburbanPriceRange || '', priceGrowthRate: hp.priceGrowthRate ?? null, priceIncomeRatio: hp.priceIncomeRatio ?? null }
+
+  const rc = d.rentalCost || {}
+  detailForm.rentalCost = { downtownRentRange: rc.downtownRentRange || '', suburbanRentRange: rc.suburbanRentRange || '', rentIncomeRatio: rc.rentIncomeRatio ?? null, rentGrowthRate: rc.rentGrowthRate ?? null }
+
+  const hpol = d.housingPolicy || {}
+  detailForm.housingPolicy = { purchaseRestriction: hpol.purchaseRestriction || '', sharedPropertyHousing: hpol.sharedPropertyHousing ?? null, publicRentalHousing: hpol.publicRentalHousing ?? null, firstHomeRate: hpol.firstHomeRate ?? null, secondHomeRate: hpol.secondHomeRate ?? null }
+
+  const con = d.consumption || {}
+  detailForm.consumption = { perCapitaConsumption: con.perCapitaConsumption ?? null, consumptionGrowthRate: con.consumptionGrowthRate ?? null, engelCoefficient: con.engelCoefficient ?? null, educationExpenseRatio: con.educationExpenseRatio ?? null, consumptionIndex: con.consumptionIndex ?? null, consumptionRank: con.consumptionRank ?? null }
+
+  const emp = d.employment || {}
+  detailForm.employment = { unemploymentRate: emp.unemploymentRate ?? null, nationalUnemploymentRate: emp.nationalUnemploymentRate ?? null, tertiaryEmploymentRatio: emp.tertiaryEmploymentRatio ?? null, newEmployment: emp.newEmployment ?? null, avgSalary: emp.avgSalary ?? null, salaryRank: emp.salaryRank ?? null, skilledTalentRatio: emp.skilledTalentRatio ?? null, skilledTalentGrowth: emp.skilledTalentGrowth ?? null }
+
+  const tra = d.transportation || {}
+  detailForm.transportation = { metroLines: tra.metroLines ?? null, metroMileage: tra.metroMileage ?? null, highwayMileage: tra.highwayMileage ?? null, trafficWorldRank: tra.trafficWorldRank ?? null }
+
+  const med = d.medical || {}
+  detailForm.medical = { topHospitalCount: med.topHospitalCount ?? null, tertiaryHospitalCount: med.tertiaryHospitalCount ?? null, doctorDensity: med.doctorDensity ?? null, medicalRank: med.medicalRank ?? null }
+
+  const cul = d.culture || {}
+  detailForm.culture = { worldHeritageCount: cul.worldHeritageCount ?? null, annualTourists: cul.annualTourists ?? null, aScenicCount: cul.aScenicCount ?? null, coreAttractions: cul.coreAttractions ? [...cul.coreAttractions] : [] }
 }
 
 const handleSubmitBasic = async () => {
@@ -297,19 +348,34 @@ const handleSubmitDetail = async () => {
     if (detailForm.gdpGrowthRate !== null) data.gdpGrowthRate = detailForm.gdpGrowthRate
     if (detailForm.fortune500Count !== null) data.fortune500Count = detailForm.fortune500Count
     if (detailForm.industryDescription) data.industryDescription = detailForm.industryDescription
-    if (detailForm.mainIndustries) data.mainIndustries = detailForm.mainIndustries.split(/[,，]/).map((s: string) => s.trim()).filter(Boolean)
-    if (detailForm.emergingIndustries) data.emergingIndustries = detailForm.emergingIndustries.split(/[,，]/).map((s: string) => s.trim()).filter(Boolean)
+    data.mainIndustries = detailForm.mainIndustries.filter(Boolean)
+    data.emergingIndustries = detailForm.emergingIndustries.filter(Boolean)
 
-    const jsonbFields = ['industryStructure', 'futurePlan', 'highEducation', 'basicEducation', 'enterpriseStats', 'housingPriceLevel', 'rentalCost', 'housingPolicy', 'consumption', 'employment', 'transportation', 'medical', 'culture']
-    jsonbFields.forEach((field) => {
-      if (detailForm[field]) {
-        try {
-          data[field] = JSON.parse(detailForm[field])
-        } catch {
-          ElMessage.warning(`${field} JSON 格式错误，已跳过`)
+    const buildJsonb = (obj: Record<string, any>): Record<string, any> | undefined => {
+      const result: Record<string, any> = {}
+      let hasValue = false
+      for (const [k, v] of Object.entries(obj)) {
+        if (v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)) {
+          result[k] = v
+          hasValue = true
         }
       }
-    })
+      return hasValue ? result : undefined
+    }
+
+    data.industryStructure = buildJsonb(detailForm.industryStructure)
+    data.futurePlan = buildJsonb(detailForm.futurePlan)
+    data.highEducation = buildJsonb(detailForm.highEducation)
+    data.basicEducation = buildJsonb(detailForm.basicEducation)
+    data.enterpriseStats = buildJsonb(detailForm.enterpriseStats)
+    data.housingPriceLevel = buildJsonb(detailForm.housingPriceLevel)
+    data.rentalCost = buildJsonb(detailForm.rentalCost)
+    data.housingPolicy = buildJsonb(detailForm.housingPolicy)
+    data.consumption = buildJsonb(detailForm.consumption)
+    data.employment = buildJsonb(detailForm.employment)
+    data.transportation = buildJsonb(detailForm.transportation)
+    data.medical = buildJsonb(detailForm.medical)
+    data.culture = buildJsonb(detailForm.culture)
 
     const res = await updateCityDetail(currentId.value, data)
     if (res.data.code === 200) {
@@ -452,6 +518,30 @@ const handleImportSubmit = async () => {
 const statusTag = (val: boolean) => (val ? 'info' : 'success')
 const statusLabel = (val: boolean) => (val ? '禁用' : '启用')
 
+const jsonbLabelMaps: Record<string, Record<string, string>> = {
+  industryStructure: { primaryRatio: '第一产业(%)', secondaryRatio: '第二产业(%)', tertiaryRatio: '第三产业(%)' },
+  futurePlan: { targetYear: '目标年份', developmentGoal: '发展目标', keyAreas: '重点领域' },
+  highEducation: { totalColleges: '高校总数', doubleFirstClassCount: '双一流高校', undergraduateCount: '在校生(万)', graduateCount: '研究生(万)' },
+  basicEducation: { totalSchools: '学校总数', modelSchoolCount: '示范学校', keySchoolCount: '重点学校', educationNote: '教育备注' },
+  enterpriseStats: { enterpriseCategories: '企业类别数', keyEnterpriseCount: '重点企业', fortune500Count: '世界500强' },
+  housingPriceLevel: { avgPrice: '平均房价(万/㎡)', coreAreaPrice: '核心区房价(万/㎡)', suburbanPriceRange: '郊区房价范围', priceGrowthRate: '房价涨幅(%)', priceIncomeRatio: '房价收入比' },
+  rentalCost: { downtownRentRange: '市中心租金(元/月)', suburbanRentRange: '郊区租金(元/月)', rentIncomeRatio: '租金收入比(%)', rentGrowthRate: '租金涨幅(%)' },
+  housingPolicy: { purchaseRestriction: '限购政策', sharedPropertyHousing: '共有产权房(万套)', publicRentalHousing: '公租房(万套)', firstHomeRate: '首套房利率(%)', secondHomeRate: '二套房利率(%)' },
+  consumption: { perCapitaConsumption: '人均消费(万/年)', consumptionGrowthRate: '消费涨幅(%)', engelCoefficient: '恩格尔系数(%)', educationExpenseRatio: '教育支出占比(%)', consumptionIndex: '消费指数', consumptionRank: '消费排名' },
+  employment: { unemploymentRate: '城市失业率(%)', nationalUnemploymentRate: '全国失业率(%)', tertiaryEmploymentRatio: '第三产业就业占比(%)', newEmployment: '新增就业(万人)', avgSalary: '平均工资(万/年)', salaryRank: '工资排名', skilledTalentRatio: '技能人才占比(%)', skilledTalentGrowth: '技能人才增长(%)' },
+  transportation: { metroLines: '地铁线路(条)', metroMileage: '地铁里程(公里)', highwayMileage: '高速公路(公里)', trafficWorldRank: '交通世界排名' },
+  medical: { topHospitalCount: '三甲医院(所)', tertiaryHospitalCount: '三级医院(所)', doctorDensity: '医生密度(人/千人)', medicalRank: '医疗排名' },
+  culture: { worldHeritageCount: '世界遗产(项)', annualTourists: '年游客量(万人次)', aScenicCount: 'A级景区(家)', coreAttractions: '核心景点' },
+}
+
+const formatJsonb = (obj: Record<string, any> | null | undefined, labelMap: Record<string, string>): string => {
+  if (!obj || typeof obj !== 'object') return '-'
+  const entries = Object.entries(obj)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))
+    .map(([k, v]) => `${labelMap[k] || k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+  return entries.length ? entries.join('；') : '-'
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -560,7 +650,7 @@ onMounted(() => {
     </div>
 
     <!-- Add/Edit Dialog -->
-    <el-dialog class="uni-dialog" v-model="dialogVisible" :title="dialogTitle" width="850px" :close-on-click-modal="false" :destroy-on-close="true">
+    <el-dialog class="uni-dialog" v-model="dialogVisible" :title="dialogTitle" width="1000px" :close-on-click-modal="false" :destroy-on-close="true">
       <div v-loading="formLoading">
         <template v-if="dialogMode === 'detail' && detailData">
           <el-descriptions :column="2" border :label-class-name="'desc-label'">
@@ -568,10 +658,10 @@ onMounted(() => {
             <el-descriptions-item label="城市名称">{{ detailData.cityName }}</el-descriptions-item>
             <el-descriptions-item label="省份">{{ detailData.province }}</el-descriptions-item>
             <el-descriptions-item label="所属地区">{{ detailData.region || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="高校数量">{{ detailData.collegeCount }}</el-descriptions-item>
-            <el-descriptions-item label="重点高校数量">{{ detailData.keyCollegeCount }}</el-descriptions-item>
-            <el-descriptions-item label="常住人口(万)">{{ detailData.residentPopulation }}</el-descriptions-item>
-            <el-descriptions-item label="GDP(亿元)">{{ detailData.gdp }}</el-descriptions-item>
+            <el-descriptions-item label="高校数量">{{ detailData.collegeCount ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="重点高校数量">{{ detailData.keyCollegeCount ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="常住人口(万)">{{ detailData.residentPopulation ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="GDP(亿元)">{{ detailData.gdp ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="状态" :span="2">
               <span class="status-pill" :class="detailData.isDeleted ? 'status-disabled' : 'status-active'">
                 {{ statusLabel(detailData.isDeleted) }}
@@ -586,10 +676,27 @@ onMounted(() => {
             <el-descriptions-item label="行政区划代码">{{ detailData.adminCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="人均GDP(万元)">{{ detailData.perCapitaGdp ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="城镇化率(%)">{{ detailData.urbanizationRate ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="农村人口比例(%)">{{ detailData.ruralPopRatio ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="老龄化率(%)">{{ detailData.agingRate ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="外来人口比例(%)">{{ detailData.migrantPopRatio ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="GDP增长率(%)">{{ detailData.gdpGrowthRate ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="500强企业数">{{ detailData.fortune500Count ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="产业描述" :span="2">{{ detailData.industryDescription || '-' }}</el-descriptions-item>
             <el-descriptions-item label="主要产业" :span="2">{{ detailData.mainIndustries?.join(', ') || '-' }}</el-descriptions-item>
             <el-descriptions-item label="新兴产业" :span="2">{{ detailData.emergingIndustries?.join(', ') || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="产业结构" :span="2">{{ formatJsonb(detailData.industryStructure, jsonbLabelMaps.industryStructure) }}</el-descriptions-item>
+            <el-descriptions-item label="未来规划" :span="2">{{ formatJsonb(detailData.futurePlan, jsonbLabelMaps.futurePlan) }}</el-descriptions-item>
+            <el-descriptions-item label="高等教育" :span="2">{{ formatJsonb(detailData.highEducation, jsonbLabelMaps.highEducation) }}</el-descriptions-item>
+            <el-descriptions-item label="基础教育" :span="2">{{ formatJsonb(detailData.basicEducation, jsonbLabelMaps.basicEducation) }}</el-descriptions-item>
+            <el-descriptions-item label="企业统计" :span="2">{{ formatJsonb(detailData.enterpriseStats, jsonbLabelMaps.enterpriseStats) }}</el-descriptions-item>
+            <el-descriptions-item label="房价水平" :span="2">{{ formatJsonb(detailData.housingPriceLevel, jsonbLabelMaps.housingPriceLevel) }}</el-descriptions-item>
+            <el-descriptions-item label="租房成本" :span="2">{{ formatJsonb(detailData.rentalCost, jsonbLabelMaps.rentalCost) }}</el-descriptions-item>
+            <el-descriptions-item label="住房政策" :span="2">{{ formatJsonb(detailData.housingPolicy, jsonbLabelMaps.housingPolicy) }}</el-descriptions-item>
+            <el-descriptions-item label="消费水平" :span="2">{{ formatJsonb(detailData.consumption, jsonbLabelMaps.consumption) }}</el-descriptions-item>
+            <el-descriptions-item label="就业情况" :span="2">{{ formatJsonb(detailData.employment, jsonbLabelMaps.employment) }}</el-descriptions-item>
+            <el-descriptions-item label="交通情况" :span="2">{{ formatJsonb(detailData.transportation, jsonbLabelMaps.transportation) }}</el-descriptions-item>
+            <el-descriptions-item label="医疗资源" :span="2">{{ formatJsonb(detailData.medical, jsonbLabelMaps.medical) }}</el-descriptions-item>
+            <el-descriptions-item label="文化旅游" :span="2">{{ formatJsonb(detailData.culture, jsonbLabelMaps.culture) }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
             <el-descriptions-item label="更新时间">{{ detailData.updatedAt }}</el-descriptions-item>
           </el-descriptions>
@@ -619,26 +726,26 @@ onMounted(() => {
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="高校数量">
-                      <el-input-number v-model="formData.collegeCount" :min="0" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="formData.collegeCount" :min="0" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="重点高校数量">
-                      <el-input-number v-model="formData.keyCollegeCount" :min="0" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="formData.keyCollegeCount" :min="0" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="常住人口(万)">
-                      <el-input-number v-model="formData.residentPopulation" :min="0" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="formData.residentPopulation" :min="0" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="GDP(亿元)">
-                      <el-input-number v-model="formData.gdp" :min="0" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="formData.gdp" :min="0" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -654,7 +761,7 @@ onMounted(() => {
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="面积(km²)">
-                      <el-input-number v-model="detailForm.area" :min="0" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.area" :min="0" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
@@ -680,43 +787,43 @@ onMounted(() => {
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="人均GDP(万元)">
-                      <el-input-number v-model="detailForm.perCapitaGdp" :min="0" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.perCapitaGdp" :min="0" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="城镇化率(%)">
-                      <el-input-number v-model="detailForm.urbanizationRate" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.urbanizationRate" :min="0" :max="100" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="GDP增长率(%)">
-                      <el-input-number v-model="detailForm.gdpGrowthRate" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.gdpGrowthRate" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="农村人口比例(%)">
-                      <el-input-number v-model="detailForm.ruralPopRatio" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.ruralPopRatio" :min="0" :max="100" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="老龄化率(%)">
-                      <el-input-number v-model="detailForm.agingRate" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.agingRate" :min="0" :max="100" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="外来人口比例(%)">
-                      <el-input-number v-model="detailForm.migrantPopRatio" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.migrantPopRatio" :min="0" :max="100" :precision="2" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="世界500强企业数">
-                      <el-input-number v-model="detailForm.fortune500Count" :min="0" style="width: 100%" />
+                      <el-input-number controls-position="right" v-model="detailForm.fortune500Count" :min="0" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -728,92 +835,393 @@ onMounted(() => {
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="主要产业">
-                      <el-input v-model="detailForm.mainIndustries" placeholder="逗号分隔" />
+                      <JsonbArrayEditor v-model="detailForm.mainIndustries" placeholder="如：信息技术" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="新兴产业">
-                      <el-input v-model="detailForm.emergingIndustries" placeholder="逗号分隔" />
+                      <JsonbArrayEditor v-model="detailForm.emergingIndustries" placeholder="如：人工智能" />
                     </el-form-item>
                   </el-col>
                 </el-row>
 
-                <div class="mb-2 mt-4 text-sm font-medium section-subtitle">JSONB 数据（请输入合法JSON）</div>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="产业结构">
-                      <el-input v-model="detailForm.industryStructure" type="textarea" :rows="3" placeholder='{"first":0.3,"second":16.2,"third":83.5}' />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="未来规划">
-                      <el-input v-model="detailForm.futurePlan" type="textarea" :rows="3" placeholder='{"focus":["数字经济"]}' />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="高等教育">
-                      <el-input v-model="detailForm.highEducation" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="基础教育">
-                      <el-input v-model="detailForm.basicEducation" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="企业统计">
-                      <el-input v-model="detailForm.enterpriseStats" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="房价水平">
-                      <el-input v-model="detailForm.housingPriceLevel" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="租房成本">
-                      <el-input v-model="detailForm.rentalCost" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="住房政策">
-                      <el-input v-model="detailForm.housingPolicy" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="消费数据">
-                      <el-input v-model="detailForm.consumption" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="就业数据">
-                      <el-input v-model="detailForm.employment" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="交通数据">
-                      <el-input v-model="detailForm.transportation" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="医疗数据">
-                      <el-input v-model="detailForm.medical" type="textarea" :rows="3" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-form-item label="文化旅游">
-                  <el-input v-model="detailForm.culture" type="textarea" :rows="3" />
-                </el-form-item>
+                <!-- 产业结构 -->
+                <div class="section-block">
+                  <div class="section-title">产业结构</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="第一产业(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.industryStructure.primaryRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="第二产业(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.industryStructure.secondaryRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="第三产业(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.industryStructure.tertiaryRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 未来规划 -->
+                <div class="section-block">
+                  <div class="section-title">未来规划</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="目标年份">
+                        <el-input-number controls-position="right" v-model="detailForm.futurePlan.targetYear" :min="2000" :max="2100" :precision="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="16">
+                      <el-form-item label="发展目标">
+                        <el-input v-model="detailForm.futurePlan.developmentGoal" placeholder="发展目标" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-form-item label="重点领域">
+                    <JsonbArrayEditor v-model="detailForm.futurePlan.keyAreas" placeholder="如：数字经济" />
+                  </el-form-item>
+                </div>
+
+                <!-- 高等教育 -->
+                <div class="section-block">
+                  <div class="section-title">高等教育</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="高校总数">
+                        <el-input-number controls-position="right" v-model="detailForm.highEducation.totalColleges" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="双一流高校">
+                        <el-input-number controls-position="right" v-model="detailForm.highEducation.doubleFirstClassCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="在校生(万)">
+                        <el-input-number controls-position="right" v-model="detailForm.highEducation.undergraduateCount" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="研究生(万)">
+                        <el-input-number controls-position="right" v-model="detailForm.highEducation.graduateCount" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 基础教育 -->
+                <div class="section-block">
+                  <div class="section-title">基础教育</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="学校总数">
+                        <el-input-number controls-position="right" v-model="detailForm.basicEducation.totalSchools" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="示范学校">
+                        <el-input-number controls-position="right" v-model="detailForm.basicEducation.modelSchoolCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="重点学校">
+                        <el-input-number controls-position="right" v-model="detailForm.basicEducation.keySchoolCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-form-item label="教育备注">
+                    <el-input v-model="detailForm.basicEducation.educationNote" type="textarea" :rows="2" />
+                  </el-form-item>
+                </div>
+
+                <!-- 企业统计 -->
+                <div class="section-block">
+                  <div class="section-title">企业统计</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="企业类别数">
+                        <el-input-number controls-position="right" v-model="detailForm.enterpriseStats.enterpriseCategories" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="重点企业">
+                        <el-input-number controls-position="right" v-model="detailForm.enterpriseStats.keyEnterpriseCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="世界500强">
+                        <el-input-number controls-position="right" v-model="detailForm.enterpriseStats.fortune500Count" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 房价水平 -->
+                <div class="section-block">
+                  <div class="section-title">房价水平</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="平均房价(万/㎡)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPriceLevel.avgPrice" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="核心区房价(万/㎡)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPriceLevel.coreAreaPrice" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="郊区房价范围">
+                        <el-input v-model="detailForm.housingPriceLevel.suburbanPriceRange" placeholder="如：1-3万" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="12">
+                      <el-form-item label="房价涨幅(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPriceLevel.priceGrowthRate" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="房价收入比">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPriceLevel.priceIncomeRatio" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 租房成本 -->
+                <div class="section-block">
+                  <div class="section-title">租房成本</div>
+                  <el-row :gutter="20">
+                    <el-col :span="12">
+                      <el-form-item label="市中心租金(元/月)">
+                        <el-input v-model="detailForm.rentalCost.downtownRentRange" placeholder="如：3000-6000" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="郊区租金(元/月)">
+                        <el-input v-model="detailForm.rentalCost.suburbanRentRange" placeholder="如：1500-3000" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="12">
+                      <el-form-item label="租金收入比(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.rentalCost.rentIncomeRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="租金涨幅(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.rentalCost.rentGrowthRate" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 住房政策 -->
+                <div class="section-block">
+                  <div class="section-title">住房政策</div>
+                  <el-form-item label="限购政策">
+                    <el-input v-model="detailForm.housingPolicy.purchaseRestriction" placeholder="如：限购2套" />
+                  </el-form-item>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="共有产权房(万套)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPolicy.sharedPropertyHousing" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="公租房(万套)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPolicy.publicRentalHousing" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="首套房利率(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPolicy.firstHomeRate" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="12">
+                      <el-form-item label="二套房利率(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.housingPolicy.secondHomeRate" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 消费水平 -->
+                <div class="section-block">
+                  <div class="section-title">消费水平</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="人均消费(万/年)">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.perCapitaConsumption" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="消费涨幅(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.consumptionGrowthRate" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="恩格尔系数(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.engelCoefficient" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="教育支出占比(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.educationExpenseRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="消费指数">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.consumptionIndex" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="消费排名(全国)">
+                        <el-input-number controls-position="right" v-model="detailForm.consumption.consumptionRank" :min="1" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 就业情况 -->
+                <div class="section-block">
+                  <div class="section-title">就业情况</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="城市失业率(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.unemploymentRate" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="全国失业率(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.nationalUnemploymentRate" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="第三产业就业(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.tertiaryEmploymentRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="新增就业(万人)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.newEmployment" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="平均工资(万/年)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.avgSalary" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="工资排名(全国)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.salaryRank" :min="1" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="技能人才占比(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.skilledTalentRatio" :min="0" :max="100" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="技能人才增长(%)">
+                        <el-input-number controls-position="right" v-model="detailForm.employment.skilledTalentGrowth" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 交通情况 -->
+                <div class="section-block">
+                  <div class="section-title">交通情况</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="地铁线路(条)">
+                        <el-input-number controls-position="right" v-model="detailForm.transportation.metroLines" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="地铁里程(公里)">
+                        <el-input-number controls-position="right" v-model="detailForm.transportation.metroMileage" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="高速公路(公里)">
+                        <el-input-number controls-position="right" v-model="detailForm.transportation.highwayMileage" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="交通世界排名">
+                        <el-input-number controls-position="right" v-model="detailForm.transportation.trafficWorldRank" :min="1" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 医疗资源 -->
+                <div class="section-block">
+                  <div class="section-title">医疗资源</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="三甲医院(所)">
+                        <el-input-number controls-position="right" v-model="detailForm.medical.topHospitalCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="三级医院(所)">
+                        <el-input-number controls-position="right" v-model="detailForm.medical.tertiaryHospitalCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="医生密度(人/千人)">
+                        <el-input-number controls-position="right" v-model="detailForm.medical.doctorDensity" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="医疗排名(全国)">
+                        <el-input-number controls-position="right" v-model="detailForm.medical.medicalRank" :min="1" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+
+                <!-- 文化旅游 -->
+                <div class="section-block">
+                  <div class="section-title">文化旅游</div>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="世界遗产(项)">
+                        <el-input-number controls-position="right" v-model="detailForm.culture.worldHeritageCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="年游客量(万人次)">
+                        <el-input-number controls-position="right" v-model="detailForm.culture.annualTourists" :min="0" :precision="2" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="A级景区(家)">
+                        <el-input-number controls-position="right" v-model="detailForm.culture.aScenicCount" :min="0" style="width:100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-form-item label="核心景点">
+                    <JsonbArrayEditor v-model="detailForm.culture.coreAttractions" placeholder="如：故宫博物院" />
+                  </el-form-item>
+                </div>
               </el-form>
             </el-tab-pane>
           </el-tabs>
@@ -1299,13 +1707,63 @@ onMounted(() => {
   box-shadow: 0 0 0 1px #FB923C inset;
 }
 
+.uni-dialog :deep(.el-form-item__label) {
+  word-break: break-all;
+  line-height: 1.35;
+  padding-right: 6px;
+}
+
+.uni-dialog :deep(.el-input-number) {
+  width: 100%;
+}
+
 .uni-dialog :deep(.el-input-number .el-input__wrapper) {
   box-shadow: 0 0 0 1px #fed7aa inset;
   border-radius: 8px;
 }
 
+.uni-dialog :deep(.el-input-number .el-input__inner) {
+  font-weight: 600;
+  color: #374151;
+}
+
 .uni-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) {
-  padding-right: 32px;
+  padding-right: 34px;
+}
+
+/* 右侧 controls 按钮：浅橙底 + 橙色图标，与品牌色统一 */
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__decrease),
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__increase) {
+  width: 30px;
+  background: #fff7ed;
+  border-left: 1px solid #fed7aa;
+  color: #F97316;
+  font-weight: 700;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__decrease:hover),
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__increase:hover) {
+  background: #ffe4c4;
+  color: #EA580C;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__decrease.is-disabled),
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__increase.is-disabled) {
+  color: #d1d5db;
+  background: #f9fafb;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__decrease) {
+  border-radius: 0 0 8px 0;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right .el-input-number__increase) {
+  border-radius: 0 8px 0 0;
+}
+
+.uni-dialog :deep(.el-input-number.is-controls-right:hover .el-input-number__decrease),
+.uni-dialog :deep(.el-input-number.is-controls-right:hover .el-input-number__increase) {
+  border-left-color: #fdba74;
 }
 
 .uni-dialog :deep(.el-button--primary) {
@@ -1322,5 +1780,22 @@ onMounted(() => {
 .section-subtitle {
   color: #F97316;
   font-weight: 600;
+}
+
+.section-block {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F97316;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #fdba74;
 }
 </style>

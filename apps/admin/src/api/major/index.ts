@@ -14,6 +14,7 @@ import type {
   PostgradMajorUpdateDTO,
   PostgradUnivListVO,
   PostgradUnivQueryDTO,
+  PostgradUnivAddDTO,
   MajorPostgradDirectionListVO,
   MajorPostgradDirectionDetailVO,
   MajorPostgradDirectionQueryDTO,
@@ -148,6 +149,10 @@ export const restorePostgradMajor = (id: string) => {
 
 export const getPostgradUnivPage = (params: PostgradUnivQueryDTO) => {
   return request.get<R<PageResult<PostgradUnivListVO>>>('/api/v1/admin/postgrad-major-university/list', { params })
+}
+
+export const addPostgradUniv = (data: PostgradUnivAddDTO) => {
+  return request.post<R<number>>('/api/v1/admin/postgrad-major-university', data)
 }
 
 export const deletePostgradUniv = (id: string) => {

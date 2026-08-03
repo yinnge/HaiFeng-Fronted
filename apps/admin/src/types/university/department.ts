@@ -77,4 +77,15 @@ export interface DepartmentAddDTO {
 
 export interface DepartmentUpdateDTO extends DepartmentAddDTO {
   status?: number
+  subtitle?: string
+  overview?: { title?: string; descriptions?: string[] }
+  subjectsDetail?: SubjectDetailItem[]
+  postgraduate?: { title?: string; directions?: string[] }
+  citySalary?: CitySalaryItem[]
+  salary?: SalaryItem[]
+  career?: CareerPath[]
+  trends?: { highGrowthTracks?: string[]; policyOrientations?: string[]; environmentAnalysis?: string[] }
+  prospects?: { employmentRate?: string; masterSalary?: string; furtherStudyRate?: string; fortune500Rate?: string; salaryGrowthRate?: string; overseasRate?: string }
+  disclaimer?: { text?: string; updateTime?: string; version?: string; compileUnit?: string }
+  majorCompose?: MajorComposeItem[]
 }
