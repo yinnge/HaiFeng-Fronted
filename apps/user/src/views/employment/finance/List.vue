@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { ProvinceOptions } from '@haifeng/shared'
-import { getFinanceList } from '@/api/employment/finance'
+import { getFinanceList, getFinanceFilters } from '@/api/employment/finance'
 import type { FinancePositionListVO, FinanceQueryDTO } from '@/types/employment/finance'
 import { buildRegionOptions } from '@/utils/regionCascader'
 import type { CascaderOption } from '@/utils/regionCascader'
@@ -28,10 +28,10 @@ const educationRequirement = ref('')
 const degreeRequirement = ref('')
 const majorRequirement = ref('')
 
-const institutionTypeOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技', '资产管理', '融资租赁', '消费金融', '小额贷款', '其他']
+const institutionTypeOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技']
 const institutionCategoryOptions = ['银行', '证券', '保险', '基金', '信托', '期货', '监管机构', '金融科技']
 const recruitmentTypeOptions = ['秋招', '春招', '社招', '实习', '定向']
-const positionCategoryOptions = ['前台业务', '中台风控', '后台运营', '技术研发', '职能管理', '管理培训生', '实习生', '其他']
+const positionCategoryOptions = ref<string[]>([])
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 const educationRequirementOptions = ['不限', '大专', '本科', '硕士', '博士']
 const degreeRequirementOptions = ['不限', '学士', '硕士', '博士']
@@ -116,13 +116,22 @@ const isFilterActive = computed(() => {
   return !!(keyword.value || institutionType.value || institutionCategory.value || branchName.value || recruitmentType.value || positionCategory.value || regionValue.value.length > 0 || ageLimit.value || salaryMin.value || positionStatus.value || educationRequirement.value || degreeRequirement.value || majorRequirement.value)
 })
 
-onMounted(fetchList)
+async function fetchFilters() {
+  try {
+    const res = await getFinanceFilters()
+    positionCategoryOptions.value = res.data.data.positionCategory || []
+  } catch {
+    positionCategoryOptions.value = []
+  }
+}
+
+onMounted(() => { fetchFilters(); fetchList() })
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-6 flex gap-6">
+      <div class="container mx-auto px-6 py-6 max-w-7xl flex gap-6 justify-center">
         <div class="flex-1 min-w-0">
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -135,7 +144,7 @@ onMounted(fetchList)
 
         <EmploymentTabs module="industry" />
 
-        <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
+        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] mb-8">
           <div class="flex gap-3 mb-4">
             <input v-model="keyword" type="text" placeholder="输入机构名称或岗位名称" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">搜索</button>
@@ -175,11 +184,10 @@ onMounted(fetchList)
 
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个金融银行岗位` }}</h3>
-          <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
-          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
+          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-gradient-to-b from-orange-50/40 to-white p-6 shadow-lg border border-orange-100 hover:shadow-[0_8px_24px_rgba(249,115,22,0.15)] transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">金融银行</span>

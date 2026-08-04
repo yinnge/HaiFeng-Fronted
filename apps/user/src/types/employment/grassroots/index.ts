@@ -15,8 +15,6 @@ export interface GrassrootsQueryDTO {
   gradYearRequirement?: string
   politicalStatus?: string
   positionStatus?: string
-  targetGroup?: string
-  maxServiceYears?: number
   ageLimitMin?: number
   ageLimitMax?: number
 }

@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import { getInstitutionList } from '@/api/employment/institution'
+import { getInstitutionList, getInstitutionFilters } from '@/api/employment/institution'
 import type { InstitutionPositionListVO, InstitutionPositionSearchDTO } from '@/types/employment/institution'
 import { InstitutionStatusTag } from '@/types/employment/institution'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
@@ -22,9 +22,9 @@ const specialPosition = ref('')
 const ageLimit = ref<number | undefined>(undefined)
 
 const provinceOptions = ['北京市', '天津市', '河北省', '山西省', '内蒙古自治区', '辽宁省', '吉林省', '黑龙江省', '上海市', '江苏省', '浙江省', '安徽省', '福建省', '江西省', '山东省', '河南省', '湖北省', '湖南省', '广东省', '广西壮族自治区', '海南省', '重庆市', '四川省', '贵州省', '云南省', '西藏自治区', '陕西省', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区']
-const examCategoryOptions = ['A类（综合管理类）', 'B类（社会科学专技类）', 'C类（自然科学专技类）', 'D类（中小学教师类）', 'E类（医疗卫生类）']
-const positionTypeOptions = ['管理岗位', '专业技术岗位', '工勤技能岗位']
-const specialPositionOptions = ['无', '退役士兵定向', '基层项目定向', '应届生专项', '残疾人专项', '其他']
+const examCategoryOptions = ref<string[]>([])
+const positionTypeOptions = ref<string[]>([])
+const specialPositionOptions = ref<string[]>([])
 const educationOptions = ['无要求', '大专', '本科', '硕士', '博士']
 const degreeOptions = ['无要求', '学士', '硕士', '博士']
 const statusOptions = ['招聘中', '已结束']
@@ -93,13 +93,27 @@ const isFilterActive = computed(() => {
   return !!(keyword.value || province.value || examCategory.value || positionType.value || educationRequirement.value || degreeRequirement.value || positionStatus.value || specialPosition.value || ageLimit.value)
 })
 
-onMounted(fetchList)
+async function fetchFilters() {
+  try {
+    const res = await getInstitutionFilters()
+    const data = res.data.data
+    examCategoryOptions.value = data.examCategory || []
+    positionTypeOptions.value = data.positionType || []
+    specialPositionOptions.value = data.specialPosition || []
+  } catch {
+    examCategoryOptions.value = []
+    positionTypeOptions.value = []
+    specialPositionOptions.value = []
+  }
+}
+
+onMounted(() => { fetchFilters(); fetchList() })
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-6 flex gap-6">
+      <div class="container mx-auto px-6 py-6 max-w-7xl flex gap-6 justify-center">
         <div class="flex-1 min-w-0">
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -112,7 +126,7 @@ onMounted(fetchList)
 
         <EmploymentTabs module="civilService" />
 
-        <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
+        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] mb-8">
           <div class="flex gap-3 mb-4">
             <input v-model="keyword" type="text" placeholder="搜索职位名称、主管部门或工作地点" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">搜索</button>
@@ -148,11 +162,10 @@ onMounted(fetchList)
 
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个事业编职位` }}</h3>
-          <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
-          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
+          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-gradient-to-b from-orange-50/40 to-white p-6 shadow-lg border border-orange-100 hover:shadow-[0_8px_24px_rgba(249,115,22,0.15)] transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-600">{{ job.positionType || '事业编' }}</span>

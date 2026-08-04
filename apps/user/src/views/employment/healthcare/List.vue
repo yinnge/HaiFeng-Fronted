@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { ProvinceOptions } from '@haifeng/shared'
-import { getHealthcareList } from '@/api/employment/healthcare'
+import { getHealthcareList, getHealthcareFilters } from '@/api/employment/healthcare'
 import type { HealthcarePositionListVO, HealthcareQueryDTO } from '@/types/employment/healthcare'
 import { buildRegionOptions } from '@/utils/regionCascader'
 import type { CascaderOption } from '@/utils/regionCascader'
@@ -34,6 +34,7 @@ const positionCategoryOptions = ['临床医师', '护理', '药学', '医技', '
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 const educationRequirementOptions = ['不限', '大专', '本科', '硕士', '博士']
 const degreeRequirementOptions = ['不限', '学士', '硕士', '博士']
+const departmentOptions = ref<string[]>([])
 
 const loading = ref(false)
 const jobs = ref<HealthcarePositionListVO[]>([])
@@ -107,13 +108,22 @@ const isFilterActive = computed(() => {
   return !!(keyword.value || institutionType.value || institutionLevel.value || institutionNature.value || positionCategory.value || department.value || regionValue.value.length > 0 || ageLimit.value || positionStatus.value || educationRequirement.value || degreeRequirement.value || majorRequirement.value)
 })
 
-onMounted(fetchList)
+async function fetchFilters() {
+  try {
+    const res = await getHealthcareFilters()
+    departmentOptions.value = res.data.data.department || []
+  } catch {
+    departmentOptions.value = []
+  }
+}
+
+onMounted(() => { fetchFilters(); fetchList() })
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-6 flex gap-6">
+      <div class="container mx-auto px-6 py-6 max-w-7xl flex gap-6 justify-center">
         <div class="flex-1 min-w-0">
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -126,7 +136,7 @@ onMounted(fetchList)
 
         <EmploymentTabs module="industry" />
 
-        <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
+        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] mb-8">
           <div class="flex gap-3 mb-4">
             <input v-model="keyword" type="text" placeholder="输入机构名称或岗位名称" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">搜索</button>
@@ -146,7 +156,7 @@ onMounted(fetchList)
               <el-option v-for="opt in positionCategoryOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
             <el-select v-model="department" placeholder="科室" clearable class="!w-[130px]" @change="onSearch">
-              <el-option label="不限" value="" />
+              <el-option v-for="opt in departmentOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
             <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市/区县" clearable class="!w-[200px]" @change="onSearch" />
             <el-input-number v-model="ageLimit" :min="18" :max="100" placeholder="年龄上限" class="!w-[130px]" controls-position="right" @change="onSearch" />
@@ -167,11 +177,10 @@ onMounted(fetchList)
 
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个医疗卫生岗位` }}</h3>
-          <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
-          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
+          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-gradient-to-b from-orange-50/40 to-white p-6 shadow-lg border border-orange-100 hover:shadow-[0_8px_24px_rgba(249,115,22,0.15)] transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">医疗卫生</span>

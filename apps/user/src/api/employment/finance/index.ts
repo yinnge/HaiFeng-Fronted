@@ -9,3 +9,7 @@ export const getFinanceList = (params: FinanceQueryDTO) => {
 export const getFinanceDetail = (id: string) => {
   return request.get<R<FinancePositionDetailVO>>(`/api/v1/app/employment/finance/${id}/detail`)
 }
+
+export const getFinanceFilters = () => {
+  return request.get<R<Record<string, string[]>>>('/api/v1/app/employment/finance/filters')
+}

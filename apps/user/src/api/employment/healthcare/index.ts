@@ -9,3 +9,7 @@ export const getHealthcareList = (params: HealthcareQueryDTO) => {
 export const getHealthcareDetail = (id: string) => {
   return request.get<R<HealthcarePositionDetailVO>>(`/api/v1/app/employment/healthcare/${id}/detail`)
 }
+
+export const getHealthcareFilters = () => {
+  return request.get<R<Record<string, string[]>>>('/api/v1/app/employment/healthcare/filters')
+}

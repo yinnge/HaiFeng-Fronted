@@ -34,8 +34,13 @@ const handleSubmit = async () => {
     return
   }
   if (props.mode !== 'add' && !formData.value.id) return
+  const keys = ['guideCategory', 'guideType', 'title', 'subtitle', 'coverImage', 'iconClass', 'summary', 'content', 'tags', 'difficultyLevel', 'targetAudience', 'authorName', 'authorTitle', 'isTop', 'isRecommended', 'sortOrder']
+  const payload: Record<string, any> = {}
+  for (const k of keys) {
+    if (formData.value[k] !== undefined) payload[k] = formData.value[k]
+  }
   try {
-    const res = props.mode === 'add' ? await addExamGuide({ ...formData.value } as any) : await updateExamGuide(formData.value.id, { ...formData.value } as any)
+    const res = props.mode === 'add' ? await addExamGuide(payload as any) : await updateExamGuide(formData.value.id, payload as any)
     if (res.data.code === 200) { ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功'); emit('update:visible', false); emit('submit') }
     else { ElMessage.error(res.data.msg || (props.mode === 'add' ? '新增失败' : '修改失败')) }
   } catch { ElMessage.error(props.mode === 'add' ? '新增失败' : '修改失败') }

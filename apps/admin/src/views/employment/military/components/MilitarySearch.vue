@@ -17,7 +17,7 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
-const positionTypeOptions = ['管理岗', '专业技术岗', '专业技能岗']
+const positionTypeOptions = ['管理岗', '专业技术岗']
 const positionStatusOptions = ['进行中', '已结束']
 </script>
 

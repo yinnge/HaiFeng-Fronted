@@ -10,6 +10,7 @@ export interface CivilPositionSearchDTO {
   degreeRequirement?: string
   politicalStatus?: string
   examCategory?: string
+  regStatus?: string
 }
 
 export interface CivilPositionListVO {

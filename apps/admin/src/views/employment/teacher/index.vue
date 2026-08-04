@@ -179,22 +179,25 @@ const handleStatusChange = async (row: TeacherListVO, newStatus: string) => {
 }
 
 const preValidateVisible = ref(false)
+const preValidateFile = ref<File | null>(null)
 const preValidateLoading = ref(false)
-const preValidateResult = ref<any>(null)
 
-const openPreValidate = async () => {
+const openPreValidate = () => { preValidateFile.value = null; preValidateVisible.value = true }
+const handlePreValidateFileChange = (uploadFile: any) => { preValidateFile.value = uploadFile.raw; return false }
+
+const handlePreValidateSubmit = async () => {
+  if (!preValidateFile.value) { ElMessage.warning('请选择文件'); return }
   preValidateLoading.value = true
-  preValidateVisible.value = true
-  preValidateResult.value = null
   try {
-    const res = await preValidateTeacher()
+    const res = await preValidateTeacher(preValidateFile.value)
     if (res.data.code === 200) {
-      preValidateResult.value = res.data.data
+      ElMessage.success('校验通过')
+      preValidateVisible.value = false
     } else {
-      ElMessage.error(res.data.msg || '预校验失败')
+      ElMessage.error(res.data.msg || '校验失败')
     }
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.msg || err.message || '预校验失败')
+    ElMessage.error(err.response?.data?.msg || err.message || '校验失败')
   } finally {
     preValidateLoading.value = false
   }
@@ -301,33 +304,30 @@ onMounted(() => { fetchData() })
       @submit="handleSubmitForm"
     />
 
-    <el-dialog v-model="preValidateVisible" title="Excel预览" width="700px" class="preview-dialog">
-      <div v-loading="preValidateLoading" class="preview-content">
-        <template v-if="preValidateResult">
-          <el-alert
-            v-if="preValidateResult.successCount !== undefined"
-            :title="`成功 ${preValidateResult.successCount} 条，失败 ${preValidateResult.failCount || 0} 条`"
-            :type="preValidateResult.failCount > 0 ? 'warning' : 'success'"
-            show-icon
-            :closable="false"
-            style="margin-bottom: 16px"
-          />
-          <el-table v-if="preValidateResult.details?.length" :data="preValidateResult.details" stripe border style="width: 100%">
-            <el-table-column prop="row" label="行号" width="80" />
-            <el-table-column prop="schoolName" label="学校名称" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="positionName" label="岗位名称" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="80">
-              <template #default="{ row }">
-                <el-tag :type="row.status === '成功' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="message" label="信息" min-width="200" show-overflow-tooltip />
-          </el-table>
-          <el-empty v-else description="暂无预览数据" />
-        </template>
+    <el-dialog v-model="preValidateVisible" title="Excel预览" width="500px" class="preview-dialog">
+      <div class="preview-content">
+        <el-upload
+          drag
+          :auto-upload="false"
+          :show-file-list="true"
+          accept=".xlsx,.xls"
+          :on-change="handlePreValidateFileChange"
+          :limit="1"
+        >
+          <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+          <template #tip>
+            <div class="el-upload__tip">仅支持.xlsx / .xls 格式</div>
+          </template>
+        </el-upload>
       </div>
       <template #footer>
-        <button type="button" class="close-preview-btn" @click="preValidateVisible = false">关闭</button>
+        <div class="dialog-footer">
+          <button type="button" class="cancel-btn" @click="preValidateVisible = false">取消</button>
+          <button type="button" class="import-submit-btn" :disabled="preValidateLoading" @click="handlePreValidateSubmit">
+            {{ preValidateLoading ? '校验中...' : '开始校验' }}
+          </button>
+        </div>
       </template>
     </el-dialog>
 

@@ -145,7 +145,7 @@ const handleDisable = async (row: NoticeListVO) => {
       confirmButtonText: '确定禁用',
       cancelButtonText: '取消',
     })
-    const res = await updateNoticeStatus(row.id, { status: 0 })
+    const res = await updateNoticeStatus(row.id, { status: 1 })
     if (res.data.code === 200) {
       ElMessage.success('禁用成功')
       fetchData()
@@ -161,7 +161,7 @@ const handleEnable = async (row: NoticeListVO) => {
       confirmButtonText: '确定启用',
       cancelButtonText: '取消',
     })
-    const res = await updateNoticeStatus(row.id, { status: 1 })
+    const res = await updateNoticeStatus(row.id, { status: 0 })
     if (res.data.code === 200) {
       ElMessage.success('启用成功')
       fetchData()

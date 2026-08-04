@@ -158,7 +158,7 @@ const handleBatchDelete = async () => {
 
 const handleStatusChange = async (row: CivilListVO, newStatus: string) => {
   try {
-    const statusVal = newStatus === '报名中' ? 0 : newStatus === '即将开始' ? 2 : 1
+    const statusVal = newStatus === '报名中' ? 0 : 1
     const res = await updateCivilStatus(row.id, { status: statusVal })
     if (res.data.code === 200) {
       ElMessage.success('状态更新成功')
