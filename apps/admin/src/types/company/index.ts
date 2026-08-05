@@ -170,3 +170,10 @@ export interface EnterpriseIndustryQueryDTO {
   enterpriseName?: string
   industryName?: string
 }
+
+export interface EnterpriseIndustryAddDTO {
+  enterpriseId: string
+  industryId: string
+  isPrimary?: boolean
+  sortOrder?: number
+}

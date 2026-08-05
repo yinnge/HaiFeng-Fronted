@@ -7,8 +7,12 @@ import {
   getByMajorId,
   addCompetitionMajor,
   deleteCompetitionMajor,
+  enableCompetitionMajor,
+  hardDeleteCompetitionMajor,
   batchDeleteCompetitionMajor,
 } from '@/api/certificate/competitionMajor'
+import { getCompetitionPage } from '@/api/certificate/competition'
+import { getMajorPage } from '@/api/major'
 import type {
   CompetitionMajorListVO,
   CompetitionMajorQueryDTO,
@@ -25,6 +29,7 @@ const queryParams = reactive<CompetitionMajorQueryDTO>({
   size: 10,
   competitionName: '',
   majorName: '',
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -34,9 +39,45 @@ const formLoading = ref(false)
 const detailData = ref<CompetitionMajorListVO | null>(null)
 
 const addForm = reactive<CompetitionMajorAddDTO>({
-  competitionName: '',
-  majorName: '',
+  competitionId: undefined as unknown as number,
+  majorId: undefined as unknown as number,
 })
+
+const competitionOptions = ref<{ value: number; label: string }[]>([])
+const majorOptions = ref<{ value: number; label: string }[]>([])
+const searchLoading = ref(false)
+
+const searchCompetitions = async (kw: string) => {
+  if (!kw) { competitionOptions.value = []; return }
+  searchLoading.value = true
+  try {
+    const res = await getCompetitionPage({ page: 1, size: 20, compName: kw } as any)
+    if (res.data.code === 200) {
+      competitionOptions.value = (res.data.data.records || []).map((r: any) => ({
+        value: r.id,
+        label: r.compName,
+      }))
+    }
+  } catch { /* ignore */ } finally {
+    searchLoading.value = false
+  }
+}
+
+const searchMajors = async (kw: string) => {
+  if (!kw) { majorOptions.value = []; return }
+  searchLoading.value = true
+  try {
+    const res = await getMajorPage({ page: 1, size: 20, majorName: kw } as any)
+    if (res.data.code === 200) {
+      majorOptions.value = (res.data.data.records || []).map((r: any) => ({
+        value: r.id,
+        label: r.majorName,
+      }))
+    }
+  } catch { /* ignore */ } finally {
+    searchLoading.value = false
+  }
+}
 
 // 按ID查询
 const idQueryVisible = ref(false)
@@ -49,6 +90,7 @@ const fetchData = async () => {
     const params: Record<string, any> = { page: queryParams.page, size: queryParams.size }
     if (queryParams.competitionName) params.competitionName = queryParams.competitionName
     if (queryParams.majorName) params.majorName = queryParams.majorName
+    if (queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getCompetitionMajorPage(params as CompetitionMajorQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -69,6 +111,7 @@ const handleReset = () => {
   queryParams.majorName = ''
   queryParams.competitionId = undefined
   queryParams.majorId = undefined
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -112,8 +155,10 @@ const handleIdQuery = async () => {
 const openAddDialog = () => {
   dialogMode.value = 'add'
   dialogTitle.value = '新增关联'
-  addForm.competitionName = ''
-  addForm.majorName = ''
+  addForm.competitionId = undefined as unknown as number
+  addForm.majorId = undefined as unknown as number
+  competitionOptions.value = []
+  majorOptions.value = []
   detailData.value = null
   dialogVisible.value = true
 }
@@ -126,18 +171,18 @@ const openDetailDialog = (row: CompetitionMajorListVO) => {
 }
 
 const handleAddSubmit = async () => {
-  if (!addForm.competitionName) {
-    ElMessage.warning('请填写竞赛名称')
+  if (!addForm.competitionId) {
+    ElMessage.warning('请选择竞赛')
     return
   }
-  if (!addForm.majorName) {
-    ElMessage.warning('请填写专业名称')
+  if (!addForm.majorId) {
+    ElMessage.warning('请选择专业')
     return
   }
   try {
     const res = await addCompetitionMajor({
-      competitionName: addForm.competitionName,
-      majorName: addForm.majorName,
+      competitionId: addForm.competitionId,
+      majorId: addForm.majorId,
     })
     if (res.data.code === 200) {
       ElMessage.success('新增关联成功')
@@ -151,20 +196,54 @@ const handleAddSubmit = async () => {
   }
 }
 
-const handleDelete = async (id: string, name: string) => {
+const handleToggleStatus = async (row: CompetitionMajorListVO) => {
+  const id = row.id
+  const name = row.competitionName
+  const isDisable = !row.isDeleted
   try {
     await ElMessageBox.confirm(
-      `确定要删除竞赛"${name}"的关联吗？删除后数据保留可恢复。`,
+      isDisable
+        ? `确定要禁用竞赛"${name}"的关联吗？禁用后用户端不可见，可再次启用。`
+        : `确定要启用竞赛"${name}"的关联吗？`,
       '提示'
     )
-    const res = await deleteCompetitionMajor(id)
+  } catch {
+    return
+  }
+  try {
+    const res = isDisable ? await deleteCompetitionMajor(id) : await enableCompetitionMajor(id)
+    if (res.data.code === 200) {
+      ElMessage.success(isDisable ? '禁用成功' : '启用成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '操作失败')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
+}
+
+const handleHardDelete = async (id: string, name: string) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除竞赛"${name}"的关联吗？数据将不可恢复！`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  try {
+    const res = await hardDeleteCompetitionMajor(id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
 const handleBatchDelete = async () => {
@@ -174,10 +253,14 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定要批量删除选中的${selectedIds.value.length} 条关联记录吗？数据保留可恢复。`,
+      `确定要批量删除选中的${selectedIds.value.length} 条关联记录吗？数据将不可恢复！`,
       '警告',
       { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
+  } catch {
+    return
+  }
+  try {
     const res = await batchDeleteCompetitionMajor(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量删除成功')
@@ -186,7 +269,9 @@ const handleBatchDelete = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
 onMounted(() => { fetchData() })
@@ -252,6 +337,12 @@ onMounted(() => { fetchData() })
           <el-form-item label="专业名称">
             <el-input v-model="queryParams.majorName" placeholder="专业名称模糊搜索" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="queryParams.isDeleted" placeholder="全部状态" clearable style="width: 130px">
+              <el-option label="启用" :value="false" />
+              <el-option label="禁用" :value="true" />
+            </el-select>
+          </el-form-item>
           <el-form-item>
             <button type="button" class="id-query-btn" @click.prevent="openIdQuery('competition')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -289,12 +380,20 @@ onMounted(() => { fetchData() })
           <el-table-column type="selection" width="50" />
           <el-table-column prop="competitionName" label="竞赛名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="majorName" label="专业名称" min-width="180" show-overflow-tooltip />
+          <el-table-column label="状态" min-width="90" align="center">
+            <template #default="{ row }">
+              <span v-if="row.isDeleted" class="status-pill status-disabled">禁用</span>
+              <span v-else class="status-pill status-enabled">启用</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="createdAt" label="创建时间" min-width="180" />
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="320" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button class="action-btn action-detail" @click="openDetailDialog(row)">详情</button>
-                <button class="action-btn action-soft-delete" @click="handleDelete(row.id, row.competitionName)">软删除</button>
+                <button v-if="!row.isDeleted" class="action-btn action-soft-delete" @click="handleToggleStatus(row)">禁用</button>
+                <button v-else class="action-btn action-enable" @click="handleToggleStatus(row)">启用</button>
+                <button class="action-btn action-hard-delete" @click="handleHardDelete(row.id, row.competitionName)">删除</button>
               </div>
             </template>
           </el-table-column>
@@ -317,11 +416,33 @@ onMounted(() => { fetchData() })
     <!-- 新增 Dialog -->
     <el-dialog v-if="dialogMode === 'add'" :model-value="dialogVisible" @update:model-value="dialogVisible = $event" title="新增关联" width="500px" :close-on-click-modal="false" class="detail-dialog">
       <el-form :model="addForm" label-width="100px">
-        <el-form-item label="竞赛名称" required>
-          <el-input v-model="addForm.competitionName" placeholder="输入竞赛名称，系统自动查找ID" />
+        <el-form-item label="竞赛" required>
+          <el-select
+            v-model="addForm.competitionId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="输入竞赛名称搜索"
+            :remote-method="searchCompetitions"
+            :loading="searchLoading"
+            style="width: 100%"
+          >
+            <el-option v-for="item in competitionOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="专业名称" required>
-          <el-input v-model="addForm.majorName" placeholder="输入专业名称，系统自动查找ID" />
+        <el-form-item label="专业" required>
+          <el-select
+            v-model="addForm.majorId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="输入专业名称搜索"
+            :remote-method="searchMajors"
+            :loading="searchLoading"
+            style="width: 100%"
+          >
+            <el-option v-for="item in majorOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -709,6 +830,42 @@ onMounted(() => { fetchData() })
 }
 .action-soft-delete:hover {
   background: #fde68a;
+}
+.action-enable {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-enable:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+.action-hard-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-hard-delete:hover {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ====== 状态标签 ====== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.status-enabled {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.status-disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
 }
 
 /* ====== 分页 ====== */

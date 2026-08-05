@@ -14,6 +14,7 @@ import type {
 import IndustrySearch from './components/IndustrySearch.vue'
 import IndustryTable from './components/IndustryTable.vue'
 import IndustryDetailModal from './components/IndustryDetailModal.vue'
+import IndustryAddModal from './components/IndustryAddModal.vue'
 
 const loading = ref(false)
 const tableData = ref<EnterpriseIndustryListVO[]>([])
@@ -29,6 +30,12 @@ const queryParams = reactive<EnterpriseIndustryQueryDTO>({
 
 const dialogVisible = ref(false)
 const currentId = ref<string | null>(null)
+
+const addDialogVisible = ref(false)
+
+const openAddDialog = () => {
+  addDialogVisible.value = true
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -180,6 +187,7 @@ onMounted(() => { fetchData() })
       @delete="handleDelete"
       @batch-delete="handleBatchDelete"
       @import="openImportDialog"
+      @add="openAddDialog"
       @refresh="fetchData"
       @selection-change="handleSelectionChange"
       @page-change="handlePageChange"
@@ -189,6 +197,11 @@ onMounted(() => { fetchData() })
     <IndustryDetailModal
       v-model:visible="dialogVisible"
       :current-id="currentId"
+    />
+
+    <IndustryAddModal
+      v-model:visible="addDialogVisible"
+      @success="fetchData"
     />
 
     <!-- Excel导入弹窗 -->

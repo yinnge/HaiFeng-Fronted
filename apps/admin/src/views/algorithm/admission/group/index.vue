@@ -34,8 +34,8 @@ const provinceOptions = [
   '海南','重庆','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆',
 ]
 
-const requirementTypeOptions = ['不限', '2年', '3年', '必备', '必备', '必备']
-const batchOptions = ['本科', '提前', '专科']
+const requirementTypeOptions = ['不限', '2选1', '3选1', '必选1', '必选2', '必选3']
+const batchOptions = ['本科批', '提前批', '专科批']
 
 const queryParams = reactive<AdmissionGroupQueryDTO>({
   page: 1,
@@ -47,7 +47,7 @@ const queryParams = reactive<AdmissionGroupQueryDTO>({
   enrollmentCode: '',
   groupCode: '',
   groupName: '',
-  isDeleted: false,
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -110,7 +110,7 @@ const handleReset = () => {
   queryParams.enrollmentCode = ''
   queryParams.groupCode = ''
   queryParams.groupName = ''
-  queryParams.isDeleted = false
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -268,10 +268,10 @@ const handleBatchDelete = async () => {
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的${selectedIds.value.length} 个专业组吗？`, '提示')
+    await ElMessageBox.confirm(`确定要禁用选中的${selectedIds.value.length} 个专业组吗？`, '提示')
     const res = await batchDeleteGroup(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
-      ElMessage.success('批量删除成功')
+      ElMessage.success('批量禁用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -437,7 +437,7 @@ onMounted(() => {
       </button>
       <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        <span>批量软删除</span>
+        <span>批量禁用</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
