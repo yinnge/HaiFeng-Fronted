@@ -79,14 +79,14 @@ onMounted(async () => {
           <p class="text-gray-600 whitespace-pre-line leading-relaxed">{{ detail.experienceJob }}</p>
         </div>
 
-        <div v-if="detail.achievements.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
+        <div v-if="detail.achievements?.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
           <h2 class="mb-3 text-lg font-bold text-gray-800">个人成就</h2>
           <ul class="list-disc pl-5 space-y-2 text-gray-600">
             <li v-for="(item, i) in detail.achievements" :key="i">{{ item }}</li>
           </ul>
         </div>
 
-        <div v-if="detail.expertiseAreas.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
+        <div v-if="detail.expertiseAreas?.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
           <h2 class="mb-3 text-lg font-bold text-gray-800">擅长领域</h2>
           <div class="flex flex-wrap gap-2">
             <span

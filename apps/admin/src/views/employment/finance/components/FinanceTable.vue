@@ -18,6 +18,7 @@ const emit = defineEmits<{
   (e: 'delete', id: string): void
   (e: 'status-change', row: FinanceListVO, val: string): void
   (e: 'batch-delete'): void
+  (e: 'preview'): void
   (e: 'import'): void
   (e: 'refresh'): void
   (e: 'selection-change', rows: FinanceListVO[]): void
@@ -52,6 +53,10 @@ const statusPill: Record<string, string> = {
       <button type="button" class="toolbar-btn toolbar-btn--add" @click="emit('add')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         新增岗位
+      </button>
+      <button type="button" class="toolbar-btn toolbar-btn--outline" @click="emit('preview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Excel预览
       </button>
       <button type="button" class="toolbar-btn toolbar-btn--success" @click="emit('import')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
@@ -191,6 +196,18 @@ const statusPill: Record<string, string> = {
 .toolbar-btn--success:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+}
+
+.toolbar-btn--outline {
+  background: #fff;
+  color: #F97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.toolbar-btn--outline:hover {
+  background: rgba(249, 115, 22, 0.05);
+  border-color: #F97316;
+  transform: translateY(-1px);
 }
 
 .toolbar-btn--danger {

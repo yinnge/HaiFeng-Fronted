@@ -122,6 +122,8 @@ export interface HealthcareUpdateDTO {
   educationRequirement?: string
   degreeRequirement?: string
   majorRequirement?: string
+  ageLimit?: number
+  recruitmentCount?: number
   workExperience?: string
   licenseRequirement?: string
   titleRequirement?: string

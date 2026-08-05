@@ -38,7 +38,7 @@ const currentPageSize = computed({
 
 const hasSelection = computed(() => props.selectedIds.length > 0)
 
-const regStatusOptions = ['报名中', '即将开始', '已结束']
+const regStatusOptions = ['报名中', '已结束']
 
 const regStatusPill: Record<string, string> = {
   '报名中': 'pill-success',

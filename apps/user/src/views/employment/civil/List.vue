@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import { getCivilList } from '@/api/employment/civil'
+import { getCivilList, getCivilFilters } from '@/api/employment/civil'
 import type { CivilPositionListVO, CivilPositionSearchDTO } from '@/types/employment/civil'
 import { CivilRegStatusTag } from '@/types/employment/civil'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
@@ -26,7 +26,7 @@ const educationOptions = ['不限', '大专', '本科', '硕士', '博士']
 const degreeOptions = ['不限', '学士', '硕士', '博士']
 const politicalOptions = ['不限', '中共党员', '共青团员', '群众']
 const regStatusOptions = ['报名中', '已结束', '即将开始']
-const examCategoryOptions = ['综合管理类', '行政执法类', '专业技术类', '中央机关及其直属机构', '省级及以下']
+const examCategoryOptions = ref<string[]>([])
 
 const loading = ref(false)
 const jobs = ref<CivilPositionListVO[]>([])
@@ -46,6 +46,7 @@ function buildParams(): CivilPositionSearchDTO {
     degreeRequirement: degreeRequirement.value || undefined,
     politicalStatus: politicalStatus.value || undefined,
     examCategory: examCategory.value || undefined,
+    regStatus: regStatus.value || undefined,
   }
 }
 
@@ -97,13 +98,22 @@ function formatDate(dateStr: string | null | undefined): string {
   return dateStr.slice(0, 10)
 }
 
-onMounted(fetchList)
+async function fetchFilters() {
+  try {
+    const res = await getCivilFilters()
+    examCategoryOptions.value = res.data.data.examCategory || []
+  } catch {
+    examCategoryOptions.value = []
+  }
+}
+
+onMounted(() => { fetchFilters(); fetchList() })
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-6 flex gap-6">
+      <div class="container mx-auto px-6 py-6 max-w-7xl flex gap-6 justify-center">
         <div class="flex-1 min-w-0">
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -116,7 +126,7 @@ onMounted(fetchList)
 
         <EmploymentTabs module="civilService" />
 
-        <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
+        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] mb-8">
           <div class="flex gap-3 mb-4">
             <input v-model="keyword" type="text" placeholder="搜索职位名称、招录部门或工作地点" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">搜索</button>
@@ -150,11 +160,10 @@ onMounted(fetchList)
 
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-bold text-gray-800">{{ loading ? '加载中...' : `共找到 ${total} 个公务员职位` }}</h3>
-          <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
-          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
+          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-gradient-to-b from-orange-50/40 to-white p-6 shadow-lg border border-orange-100 hover:shadow-[0_8px_24px_rgba(249,115,22,0.15)] transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">{{ job.examType }}</span>

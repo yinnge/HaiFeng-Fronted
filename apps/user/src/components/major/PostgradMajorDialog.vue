@@ -162,24 +162,24 @@ watch(() => props.visible, (val) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <!-- Introduction -->
-          <section class="rounded-xl bg-gray-50 p-4">
-            <h4 class="font-semibold text-gray-800 mb-2">专业介绍</h4>
+          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
+            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">专业介绍</h4>
             <p class="text-sm text-gray-600 leading-relaxed">{{ detail.introduction }}</p>
           </section>
 
           <!-- Exam Subjects -->
-          <section class="rounded-xl bg-gray-50 p-4">
-            <h4 class="font-semibold text-gray-800 mb-2">考试科目</h4>
+          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
+            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">考试科目</h4>
             <div class="flex flex-wrap gap-2">
               <span v-for="subj in detail.examSubjects" :key="subj"
-                class="rounded-lg bg-white px-3 py-1 text-sm text-gray-700 border border-gray-200"
+                class="rounded-lg bg-white px-3 py-1 text-sm text-gray-700 border border-orange-200"
               >{{ subj }}</span>
             </div>
           </section>
 
           <!-- Admission Requirements -->
-          <section class="rounded-xl bg-gray-50 p-4">
-            <h4 class="font-semibold text-gray-800 mb-2">报考条件</h4>
+          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
+            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">报考条件</h4>
             <ul class="text-sm text-gray-600 space-y-1">
               <li v-for="req in detail.admissionRequirements" :key="req" class="flex items-start gap-2">
                 <span class="text-orange-500 mt-0.5">•</span>{{ req }}
@@ -188,8 +188,8 @@ watch(() => props.visible, (val) => {
           </section>
 
           <!-- Cross-exam Info -->
-          <section class="rounded-xl bg-gray-50 p-4">
-            <h4 class="font-semibold text-gray-800 mb-2">跨考信息</h4>
+          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
+            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">跨考信息</h4>
             <div class="text-sm text-gray-600 space-y-2">
               <p><span class="font-medium text-gray-700">难度：</span>{{ detail.crossExamDifficulty }}</p>
               <p v-if="detail.crossExamDescription">{{ detail.crossExamDescription }}</p>
@@ -197,7 +197,7 @@ watch(() => props.visible, (val) => {
                 <span class="font-medium text-gray-700">影响因素：</span>
                 <div class="flex flex-wrap gap-2 mt-1">
                   <span v-for="f in detail.crossExamFactors" :key="f"
-                    class="rounded-lg bg-white px-2.5 py-1 text-xs text-gray-600 border border-gray-200"
+                    class="rounded-lg bg-white px-2.5 py-1 text-xs text-gray-600 border border-orange-200"
                   >{{ f }}</span>
                 </div>
               </div>
@@ -206,8 +206,8 @@ watch(() => props.visible, (val) => {
         </div>
 
         <!-- Undergraduate Majors -->
-        <section class="rounded-xl border border-gray-200 p-4 mb-4">
-          <h4 class="font-semibold text-gray-800 mb-3">关联本科专业</h4>
+        <section class="rounded-xl border border-orange-100 bg-gradient-to-b from-orange-50/70 to-white p-4 mb-4">
+          <h4 class="mb-3 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">关联本科专业</h4>
           <template v-if="isPro">
             <div v-loading="undergradLoading" class="min-h-[100px]">
               <div v-if="undergraduateMajors.length" class="space-y-4">
@@ -219,7 +219,7 @@ watch(() => props.visible, (val) => {
                   <div class="space-y-2">
                     <div
                       v-for="m in group.items" :key="m.id"
-                      class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 hover:bg-orange-50/50 cursor-pointer transition-colors"
+                      class="flex items-center justify-between rounded-lg bg-white px-4 py-3 hover:bg-orange-50/70 cursor-pointer transition-colors border border-orange-100"
                       @click="goMajor(m.id)"
                     >
                       <span class="text-sm font-medium text-gray-800">{{ m.majorName }}</span>
@@ -251,8 +251,8 @@ watch(() => props.visible, (val) => {
         </section>
 
         <!-- Universities Section -->
-        <section class="rounded-xl border border-gray-200 p-4">
-          <h4 class="font-semibold text-gray-800 mb-3">开设院校</h4>
+        <section class="rounded-xl border border-orange-100 bg-gradient-to-b from-orange-50/70 to-white p-4">
+          <h4 class="mb-3 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">开设院校</h4>
           <template v-if="isPro">
             <div class="mb-3">
               <el-select v-model="universityCategory" placeholder="院校类型" clearable filterable class="!w-40" @change="universityPage = 1; fetchUniversities()">
@@ -263,7 +263,7 @@ watch(() => props.visible, (val) => {
               <div v-if="universities.length" class="space-y-2">
                 <div
                   v-for="uni in universities" :key="uni.id"
-                  class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 hover:bg-orange-50/50 cursor-pointer transition-colors"
+                  class="flex items-center justify-between rounded-lg bg-white px-4 py-3 hover:bg-orange-50/70 cursor-pointer transition-colors border border-orange-100"
                   @click="goUniversity(uni.id)"
                 >
                   <span class="text-sm font-medium text-gray-800">{{ uni.name }}</span>
@@ -300,7 +300,26 @@ watch(() => props.visible, (val) => {
 </template>
 
 <style>
+.postgrad-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+}
+
+.postgrad-dialog .el-dialog__header {
+  border-bottom: 1px solid #ffedd5;
+  margin-right: 0;
+  padding-right: 20px;
+}
+
+.postgrad-dialog .el-dialog__title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
 .postgrad-dialog .el-dialog__body {
   padding-top: 12px;
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.45) 0%, #fff 100%);
 }
 </style>

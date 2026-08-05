@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { getExamGuidePage, getExamGuideDetail, updateExamGuide, deleteExamGuide, updateExamGuideStatus, batchDeleteExamGuide } from '@/api/employment/guide'
+import { getExamGuidePage, getExamGuideDetail, deleteExamGuide, updateExamGuideStatus, batchDeleteExamGuide } from '@/api/employment/guide'
 import type { ExamGuideListVO, ExamGuideDetailVO, ExamGuideQueryDTO } from '@/types/employment/guide'
 import GuideSearch from './components/GuideSearch.vue'
 import GuideTable from './components/GuideTable.vue'
@@ -57,14 +57,14 @@ const handleSubmit = () => { fetchData() }
 const handleDisable = async (row: ExamGuideListVO) => {
   try {
     await ElMessageBox.confirm('确定禁用该备考指南？禁用后将从列表隐藏', '提示', { confirmButtonText: '确定禁用', cancelButtonText: '取消' })
-    const res = await updateExamGuideStatus(row.id, { status: 0 })
+    const res = await updateExamGuideStatus(row.id, { status: 1 })
     if (res.data.code === 200) { ElMessage.success('禁用成功'); fetchData() } else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* cancel */ }
 }
 const handleEnable = async (row: ExamGuideListVO) => {
   try {
     await ElMessageBox.confirm('确定启用该备考指南？启用后将恢复显示', '提示', { confirmButtonText: '确定启用', cancelButtonText: '取消' })
-    const res = await updateExamGuideStatus(row.id, { status: 1 })
+    const res = await updateExamGuideStatus(row.id, { status: 0 })
     if (res.data.code === 200) { ElMessage.success('启用成功'); fetchData() } else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* cancel */ }
 }

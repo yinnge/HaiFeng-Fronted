@@ -39,7 +39,7 @@ watch(() => props.visible, async (val) => {
   if (val && props.mode === 'add') {
     formData.value = {
       noticeCategory: '', noticeType: '', title: '', summary: '', content: '',
-      province: '', city: '', tags: [], year: '', source: '', sourceUrl: '',
+      province: '', city: '', tags: [], year: undefined, source: '', sourceUrl: '',
       publishDate: '', publishUnit: '', regStartDate: undefined, regEndDate: undefined,
       examTime: undefined, recruitmentCount: undefined,
       isTop: false, isImportant: false, sortOrder: 0,
@@ -65,7 +65,7 @@ watch(() => props.visible, async (val) => {
             province: d.province || '',
             city: d.city || '',
             tags: d.tags || [],
-            year: d.year || '',
+            year: d.year ? Number(d.year) : undefined,
             source: d.source || '',
             sourceUrl: d.sourceUrl || '',
             publishDate: d.publishDate,
@@ -211,7 +211,7 @@ const dialogTitle = () => props.mode === 'detail' ? '公告详情' : props.mode 
             </el-col>
             <el-col :span="8">
               <el-form-item label="年份">
-                <el-input v-model="formData.year" placeholder="年份" />
+                <el-input-number v-model="formData.year" :min="2000" :max="2100" :controls="false" placeholder="年份" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>

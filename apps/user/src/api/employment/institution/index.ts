@@ -9,3 +9,7 @@ export const getInstitutionList = (params: InstitutionPositionSearchDTO) => {
 export const getInstitutionDetail = (id: string) => {
   return request.get<R<InstitutionPositionDetailVO>>(`/api/v1/app/employment/civil-service/institution/${id}/detail`)
 }
+
+export const getInstitutionFilters = () => {
+  return request.get<R<Record<string, string[]>>>('/api/v1/app/employment/civil-service/institution/filters')
+}

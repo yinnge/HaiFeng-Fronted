@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAnnouncements, getPlanners, getInstitutions } from '@/api/home'
-import type { AnnouncementListVO, PlannerListVO, InstitutionListVO } from '@/types/home'
+import { ElMessage } from 'element-plus'
+import { getAnnouncements, getAnnouncementDetail, getPlanners, getInstitutions } from '@/api/home'
+import type { AnnouncementListVO, AnnouncementDetailVO, PlannerListVO, InstitutionListVO } from '@/types/home'
 import { ProvinceOptions } from '@haifeng/shared'
 import PlannerCard from './components/PlannerCard.vue'
+import AnnouncementWheel from './components/AnnouncementWheel.vue'
+import AnnouncementDetailPanel from './components/AnnouncementDetailPanel.vue'
 
 interface StatConfig {
   label: string
@@ -60,58 +63,87 @@ const router = useRouter()
 // ===== Announcement =====
 const announcements = ref<AnnouncementListVO[]>([])
 const announcementTotal = ref(0)
-const announcementPage = ref(1)
-const announcementPageSize = ref(10)
 const announcementTag = ref('')
-const currentAnnouncementIndex = ref(0)
-let announcementTimer: ReturnType<typeof setInterval> | null = null
+const announcementLoading = ref(false)
 
 const fetchAnnouncements = async () => {
-  const res = await getAnnouncements({
-    page: announcementPage.value,
-    size: announcementPageSize.value,
-    tag: announcementTag.value || undefined,
-  })
-  const data = res.data.data
-  announcements.value = data.records
-  announcementTotal.value = data.total
-  currentAnnouncementIndex.value = 0
-  resetAnnouncementTimer()
+  announcementLoading.value = true
+  try {
+    const res = await getAnnouncements({ page: 1, size: 100 })
+    const data = res.data.data
+    announcements.value = data.records
+    announcementTotal.value = data.total
+  } catch {
+    ElMessage.error('获取公告失败')
+  } finally {
+    announcementLoading.value = false
+  }
 }
 
-const resetAnnouncementTimer = () => {
-  if (announcementTimer) clearInterval(announcementTimer)
-  announcementTimer = setInterval(() => {
-    if (announcements.value.length > 0) {
-      currentAnnouncementIndex.value = (currentAnnouncementIndex.value + 1) % announcements.value.length
-    }
-  }, 5000)
-}
-
-const currentAnnouncement = computed(() => {
-  if (announcements.value.length === 0) return null
-  return announcements.value[currentAnnouncementIndex.value]
+const filteredAnnouncements = computed(() => {
+  const kw = announcementTag.value.trim().toLowerCase()
+  if (!kw) return announcements.value
+  return announcements.value.filter(a =>
+    a.title?.toLowerCase().includes(kw) || a.tag?.toLowerCase().includes(kw)
+  )
 })
 
-const goAnnouncementDetail = (id: string) => {
-  router.push(`/home/announcement/${id}`)
-}
+const displayAnnouncementTotal = computed(() =>
+  announcementTag.value.trim() ? filteredAnnouncements.value.length : announcementTotal.value
+)
 
 const searchAnnouncement = () => {
-  announcementPage.value = 1
-  fetchAnnouncements()
+  announcementTag.value = announcementTag.value.trim()
 }
 
-const onAnnouncementPageChange = (page: number) => {
-  announcementPage.value = page
-  fetchAnnouncements()
+// ===== Announcement Detail =====
+const announcementDetailLoading = ref(false)
+const announcementDetail = ref<AnnouncementDetailVO | null>(null)
+const announcementDetailCache = new Map<string, AnnouncementDetailVO>()
+
+const selectAnnouncement = async (id: string) => {
+  if (!id) return
+  const cached = announcementDetailCache.get(id)
+  if (cached) {
+    announcementDetail.value = cached
+    announcementDetailLoading.value = false
+    return
+  }
+  announcementDetailLoading.value = true
+  announcementDetail.value = null
+  try {
+    const res = await getAnnouncementDetail(id)
+    const data = res.data.data
+    announcementDetailCache.set(id, data)
+    announcementDetail.value = data
+  } catch {
+    ElMessage.error('获取公告详情失败')
+    announcementDetail.value = null
+  } finally {
+    announcementDetailLoading.value = false
+  }
 }
+
+watch(filteredAnnouncements, (list) => {
+  if (list.length) {
+    selectAnnouncement(list[0].id)
+  } else {
+    announcementDetail.value = null
+  }
+})
 
 // ===== Planner =====
 const planners = ref<PlannerListVO[]>([])
 const plannerRegion = ref('')
 const plannerPageIndex = ref(0)
-const plannersPerPage = 4
+const waveOffsets = [-10, 8, -14, 8, -10]
+const isSmallScreen = ref(false)
+
+const updateViewport = () => {
+  isSmallScreen.value = window.innerWidth < 768
+}
+
+const plannersPerPage = computed(() => (isSmallScreen.value ? 3 : 5))
 
 const fetchPlanners = async () => {
   const res = await getPlanners({
@@ -125,10 +157,16 @@ const fetchPlanners = async () => {
 
 const plannerPages = computed(() => {
   const pages: PlannerListVO[][] = []
-  for (let i = 0; i < planners.value.length; i += plannersPerPage) {
-    pages.push(planners.value.slice(i, i + plannersPerPage))
+  for (let i = 0; i < planners.value.length; i += plannersPerPage.value) {
+    pages.push(planners.value.slice(i, i + plannersPerPage.value))
   }
   return pages
+})
+
+watch(plannerPages, (pages) => {
+  if (plannerPageIndex.value >= pages.length) {
+    plannerPageIndex.value = Math.max(0, pages.length - 1)
+  }
 })
 
 const currentPlannerPage = computed(() => plannerPages.value[plannerPageIndex.value] || [])
@@ -145,32 +183,64 @@ const searchPlanner = () => {
   fetchPlanners()
 }
 
+let touchStartX = 0
+let touchStartY = 0
+
+const onPlannerTouchStart = (e: TouchEvent) => {
+  touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+}
+
+const onPlannerTouchEnd = (e: TouchEvent) => {
+  const dx = e.changedTouches[0].clientX - touchStartX
+  const dy = e.changedTouches[0].clientY - touchStartY
+  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
+  if (dx < 0) {
+    nextPlannerPage()
+  } else {
+    prevPlannerPage()
+  }
+}
+
 // ===== Institution =====
 const institutions = ref<InstitutionListVO[]>([])
 const institutionTotal = ref(0)
-const institutionPage = ref(1)
-const institutionPageSize = ref(10)
 const institutionName = ref('')
+const institutionType = ref('')
 
 const fetchInstitutions = async () => {
-  const res = await getInstitutions({
-    page: institutionPage.value,
-    size: institutionPageSize.value,
-    name: institutionName.value || undefined,
-  })
-  const data = res.data.data
-  institutions.value = data.records
-  institutionTotal.value = data.total
+  try {
+    const res = await getInstitutions({
+      page: 1,
+      size: 100,
+      name: institutionName.value || undefined,
+    })
+    institutions.value = res.data.data.records
+    institutionTotal.value = res.data.data.total
+  } catch {
+    ElMessage.error('获取机构列表失败')
+  }
 }
+
+const institutionTypes = computed(() => {
+  const types = new Set<string>()
+  institutions.value.forEach(inst => {
+    if (inst.type) types.add(inst.type)
+  })
+  return Array.from(types)
+})
+
+const filteredInstitutions = computed(() => {
+  if (!institutionType.value) return institutions.value
+  return institutions.value.filter(inst => inst.type === institutionType.value)
+})
 
 const searchInstitution = () => {
-  institutionPage.value = 1
   fetchInstitutions()
 }
 
-const onInstitutionPageChange = (page: number) => {
-  institutionPage.value = page
-  fetchInstitutions()
+const onMoreInstitutions = () => {
+  ElMessage.info('机构列表页开发中，敬请期待')
 }
 
 const goInstitutionDetail = (id: string) => {
@@ -181,6 +251,9 @@ onMounted(() => {
   fetchAnnouncements()
   fetchPlanners()
   fetchInstitutions()
+
+  updateViewport()
+  window.addEventListener('resize', updateViewport)
 
   observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -197,7 +270,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
   if (observer) observer.disconnect()
-  if (announcementTimer) clearInterval(announcementTimer)
+  window.removeEventListener('resize', updateViewport)
 })
 </script>
 
@@ -283,7 +356,7 @@ onUnmounted(() => {
             <input
               v-model="announcementTag"
               type="text"
-              placeholder="输入公告标签搜索（如：政策）"
+              placeholder="输入标签或标题关键词搜索"
               class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
               @keyup.enter="searchAnnouncement"
             />
@@ -295,70 +368,21 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div
-            v-if="currentAnnouncement"
-            class="mx-auto mb-8 max-w-3xl cursor-pointer rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-md hover:shadow-lg transition-shadow"
-            @click="goAnnouncementDetail(currentAnnouncement.id)"
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3 min-w-0">
-                <span class="inline-flex h-2 w-2 rounded-full bg-orange-500 animate-pulse shrink-0"></span>
-                <span class="truncate text-lg font-semibold text-gray-800">{{ currentAnnouncement.title }}</span>
-              </div>
-              <div class="flex items-center gap-3 shrink-0">
-                <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-600">{{ currentAnnouncement.tag }}</span>
-                <span class="text-xs text-gray-400">{{ currentAnnouncement.updatedAt?.slice(0, 10) }}</span>
-              </div>
-            </div>
+          <div v-if="announcementLoading" class="mx-auto flex max-w-5xl justify-center py-16">
+            <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
-
-          <div v-if="announcements.length" class="overflow-hidden rounded-xl border border-gray-100">
-            <table class="w-full">
-              <thead>
-                <tr class="bg-gray-50 text-left text-sm text-gray-500">
-                  <th class="px-6 py-3 font-medium">标题</th>
-                  <th class="px-6 py-3 font-medium w-24">标签</th>
-                  <th class="px-6 py-3 font-medium w-32">更新时间</th>
-                  <th class="px-6 py-3 font-medium w-20">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in announcements"
-                  :key="item.id"
-                  class="border-t border-gray-50 hover:bg-orange-50/50 transition-colors"
-                >
-                  <td class="px-6 py-4 text-sm text-gray-700 truncate max-w-md">{{ item.title }}</td>
-                  <td class="px-6 py-4">
-                    <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-600">{{ item.tag }}</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-400">{{ item.updatedAt?.slice(0, 10) }}</td>
-                  <td class="px-6 py-4">
-                    <button
-                      class="text-sm text-orange-500 hover:text-orange-600 transition-colors"
-                      @click="goAnnouncementDetail(item.id)"
-                    >
-                      查看
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="py-12 text-center text-gray-400">
-            暂无公告
-          </div>
-
-          <div v-if="announcementTotal > announcementPageSize" class="mt-6 flex justify-center">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :total="announcementTotal"
-              :page-size="announcementPageSize"
-              :current-page="announcementPage"
-              @current-change="onAnnouncementPageChange"
+          <div v-else class="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[280px_1fr]">
+            <AnnouncementWheel
+              :announcements="filteredAnnouncements"
+              @select="selectAnnouncement"
+            />
+            <AnnouncementDetailPanel
+              :detail="announcementDetail"
+              :loading="announcementDetailLoading"
             />
           </div>
+
+          <p class="mt-6 text-center text-sm text-gray-400">共 {{ displayAnnouncementTotal }} 条</p>
         </div>
       </section>
 
@@ -390,31 +414,37 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="plannerPages.length" class="relative flex items-center">
+          <div v-if="plannerPages.length" class="flex items-center justify-center">
             <button
-              class="absolute left-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              class="z-10 mr-1 md:mr-3 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               :disabled="plannerPageIndex === 0"
               @click="prevPlannerPage"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
-            <div class="flex-1 flex justify-center items-stretch gap-0 mx-14">
+            <div
+              class="flex items-center justify-center gap-0"
+              @touchstart="onPlannerTouchStart"
+              @touchend="onPlannerTouchEnd"
+            >
               <PlannerCard
-                v-for="planner in currentPlannerPage"
+                v-for="(planner, i) in currentPlannerPage"
                 :key="planner.id"
                 :planner="planner"
+                :offset="waveOffsets[i % waveOffsets.length]"
+                :align="i === currentPlannerPage.length - 1 ? 'left' : 'right'"
               />
             </div>
 
             <button
-              class="absolute right-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              class="z-10 ml-1 md:ml-3 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               :disabled="plannerPageIndex >= plannerPages.length - 1"
               @click="nextPlannerPage"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -440,7 +470,7 @@ onUnmounted(() => {
         <div class="container mx-auto px-6">
           <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">培训机构</h2>
 
-          <div class="mx-auto mb-8 flex max-w-xl items-center gap-3">
+          <div class="mx-auto mb-6 flex max-w-xl items-center gap-3">
             <input
               v-model="institutionName"
               type="text"
@@ -456,17 +486,36 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="institutions.length" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div v-if="institutionTypes.length" class="mb-8 flex flex-wrap justify-center gap-2">
+            <button
+              class="rounded-full px-4 py-1.5 text-sm transition-all"
+              :class="institutionType === '' ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'"
+              @click="institutionType = ''"
+            >
+              全部
+            </button>
+            <button
+              v-for="type in institutionTypes"
+              :key="type"
+              class="rounded-full px-4 py-1.5 text-sm transition-all"
+              :class="institutionType === type ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'"
+              @click="institutionType = type"
+            >
+              {{ type }}
+            </button>
+          </div>
+
+          <div v-if="filteredInstitutions.length" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div
-              v-for="inst in institutions"
+              v-for="inst in filteredInstitutions"
               :key="inst.id"
-              class="group rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl overflow-hidden transition-all"
+              class="group rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
             >
               <div class="aspect-[4/3] overflow-hidden bg-gray-50">
                 <img
                   :src="inst.images?.[0] || ''"
                   :alt="inst.name"
-                  class="h-full w-full rounded-t-2xl object-cover group-hover:scale-105 transition-transform duration-300"
+                  class="h-full w-full rounded-t-2xl object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
               <div class="p-5">
@@ -486,18 +535,20 @@ onUnmounted(() => {
             暂无培训机构
           </div>
 
-          <div v-if="institutionTotal > institutionPageSize" class="mt-8 flex justify-center">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :total="institutionTotal"
-              :page-size="institutionPageSize"
-              :current-page="institutionPage"
-              @current-change="onInstitutionPageChange"
-            />
+          <div class="mt-8 flex items-center justify-end">
+            <button
+              class="flex items-center gap-1 text-sm text-orange-500 hover:text-orange-600 transition-colors"
+              @click="onMoreInstitutions"
+            >
+              共 {{ institutionTotal }} 家 · 查看更多机构
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </div>
       </section>
+
     </main>
   </div>
 </template>

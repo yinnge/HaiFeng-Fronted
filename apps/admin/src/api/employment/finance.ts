@@ -39,6 +39,14 @@ export const batchDeleteFinance = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 
+export const preValidateFinance = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<string>>(`${PREFIX}/pre-validate`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
 export const importFinance = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)

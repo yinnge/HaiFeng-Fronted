@@ -39,6 +39,14 @@ export const batchDeleteHealthcare = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 
+export const preValidateHealthcare = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<string>>(`${PREFIX}/pre-validate`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
 export const importHealthcare = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)

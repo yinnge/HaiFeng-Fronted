@@ -158,80 +158,82 @@ watch(
     @update:model-value="onClose"
   >
     <template v-if="currentView === 'list'">
-      <div class="flex gap-3 mb-4">
-        <el-input
-          v-model="keyword"
-          placeholder="搜索标题、副标题..."
-          clearable
-          @keyup.enter="onSearch"
-        />
-        <el-button type="primary" @click="onSearch">搜索</el-button>
+      <div class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border-t-2 border-t-[#F97316] border-b-2 border-b-[#FB923C] mb-4">
+        <div class="flex gap-3 mb-4">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索标题、副标题..."
+            clearable
+            @keyup.enter="onSearch"
+          />
+          <el-button type="primary" @click="onSearch">搜索</el-button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <el-select
+            v-model="guideCategory"
+            placeholder="指南类别"
+            clearable
+            class="!w-[140px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in guideCategoryOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="guideType"
+            placeholder="指南类型"
+            clearable
+            class="!w-[140px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in guideTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="difficultyLevel"
+            placeholder="难度"
+            clearable
+            class="!w-[120px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in difficultyOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-input
+            v-model="authorTitle"
+            placeholder="作者头衔"
+            clearable
+            class="!w-[150px]"
+            @change="onSearch"
+          />
+
+          <el-input
+            v-model="authorName"
+            placeholder="作者名"
+            clearable
+            class="!w-[140px]"
+            @change="onSearch"
+          />
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 mb-4">
-        <el-select
-          v-model="guideCategory"
-          placeholder="指南类别"
-          clearable
-          class="!w-[140px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in guideCategoryOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="guideType"
-          placeholder="指南类型"
-          clearable
-          class="!w-[140px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in guideTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="difficultyLevel"
-          placeholder="难度"
-          clearable
-          class="!w-[120px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in difficultyOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-input
-          v-model="authorTitle"
-          placeholder="作者头衔"
-          clearable
-          class="!w-[150px]"
-          @change="onSearch"
-        />
-
-        <el-input
-          v-model="authorName"
-          placeholder="作者名"
-          clearable
-          class="!w-[140px]"
-          @change="onSearch"
-        />
-      </div>
-
-      <el-table v-loading="loading" :data="list" stripe border style="width: 100%">
+      <el-table v-loading="loading" :data="list" stripe border class="el-table-card" style="width: 100%">
         <el-table-column label="标题" min-width="240">
           <template #default="{ row }">
             <div class="font-medium text-gray-800">{{ row.title }}</div>
@@ -277,3 +279,12 @@ watch(
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.el-table-card :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5);
+  color: #1f2937;
+  font-weight: 600;
+  border-bottom: 2px solid #F97316;
+}
+</style>

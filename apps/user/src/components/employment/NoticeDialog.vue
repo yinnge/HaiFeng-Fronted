@@ -212,95 +212,97 @@ watch(
     @update:model-value="onClose"
   >
     <template v-if="currentView === 'list'">
-      <div class="flex gap-3 mb-4">
-        <el-input
-          v-model="keyword"
-          placeholder="搜索标题、摘要、来源..."
-          clearable
-          @keyup.enter="onSearch"
-        />
-        <el-button type="primary" @click="onSearch">搜索</el-button>
+      <div class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border-t-2 border-t-[#F97316] border-b-2 border-b-[#FB923C] mb-4">
+        <div class="flex gap-3 mb-4">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索标题、摘要、来源..."
+            clearable
+            @keyup.enter="onSearch"
+          />
+          <el-button type="primary" @click="onSearch">搜索</el-button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <el-select
+            v-model="noticeCategory"
+            placeholder="公告类别"
+            clearable
+            class="!w-[150px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in noticeCategoryOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="noticeType"
+            placeholder="公告类型"
+            clearable
+            class="!w-[140px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in noticeTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="province"
+            placeholder="省份"
+            clearable
+            class="!w-[130px]"
+            @change="onProvinceChange"
+          >
+            <el-option
+              v-for="opt in provinceOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="city"
+            placeholder="城市"
+            clearable
+            class="!w-[130px]"
+            :disabled="!province"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in cityOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+
+          <el-select
+            v-model="year"
+            placeholder="年份"
+            clearable
+            class="!w-[120px]"
+            @change="onSearch"
+          >
+            <el-option
+              v-for="opt in yearOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 mb-4">
-        <el-select
-          v-model="noticeCategory"
-          placeholder="公告类别"
-          clearable
-          class="!w-[150px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in noticeCategoryOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="noticeType"
-          placeholder="公告类型"
-          clearable
-          class="!w-[140px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in noticeTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="province"
-          placeholder="省份"
-          clearable
-          class="!w-[130px]"
-          @change="onProvinceChange"
-        >
-          <el-option
-            v-for="opt in provinceOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="city"
-          placeholder="城市"
-          clearable
-          class="!w-[130px]"
-          :disabled="!province"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in cityOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-
-        <el-select
-          v-model="year"
-          placeholder="年份"
-          clearable
-          class="!w-[120px]"
-          @change="onSearch"
-        >
-          <el-option
-            v-for="opt in yearOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-      </div>
-
-      <el-table v-loading="loading" :data="list" stripe border style="width: 100%">
+      <el-table v-loading="loading" :data="list" stripe border class="el-table-card" style="width: 100%">
         <el-table-column label="标题" min-width="200">
           <template #default="{ row }">
             <div class="font-medium text-gray-800">{{ row.title }}</div>
@@ -355,3 +357,12 @@ watch(
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.el-table-card :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #fff7ed, #ffedd5);
+  color: #1f2937;
+  font-weight: 600;
+  border-bottom: 2px solid #F97316;
+}
+</style>

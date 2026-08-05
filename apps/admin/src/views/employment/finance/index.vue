@@ -8,6 +8,7 @@ import {
   deleteFinance,
   updateFinanceStatus,
   batchDeleteFinance,
+  preValidateFinance,
   importFinance,
 } from '@/api/employment/finance'
 import type { FinanceListVO, FinanceQueryDTO, FinanceAddDTO } from '@/types/employment/finance'
@@ -196,6 +197,31 @@ const handleImportSubmit = async () => {
   }
 }
 
+const preValidateVisible = ref(false)
+const preValidateFile = ref<File | null>(null)
+const preValidateLoading = ref(false)
+
+const openPreValidate = () => { preValidateFile.value = null; preValidateVisible.value = true }
+const handlePreValidateFileChange = (uploadFile: any) => { preValidateFile.value = uploadFile.raw; return false }
+
+const handlePreValidateSubmit = async () => {
+  if (!preValidateFile.value) { ElMessage.warning('请选择文件'); return }
+  preValidateLoading.value = true
+  try {
+    const res = await preValidateFinance(preValidateFile.value)
+    if (res.data.code === 200) {
+      ElMessage.success('校验通过')
+      preValidateVisible.value = false
+    } else {
+      ElMessage.error(res.data.msg || '校验失败')
+    }
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.msg || err.message || '校验失败')
+  } finally {
+    preValidateLoading.value = false
+  }
+}
+
 onMounted(() => { fetchData() })
 </script>
 
@@ -247,6 +273,7 @@ onMounted(() => { fetchData() })
       @delete="handleDelete"
       @status-change="handleStatusChange"
       @batch-delete="handleBatchDelete"
+      @preview="openPreValidate"
       @import="openImportDialog"
       @refresh="fetchData"
       @selection-change="handleSelectionChange"
@@ -265,6 +292,31 @@ onMounted(() => { fetchData() })
       :mode="formMode"
       @submit="handleSubmitForm"
     />
+
+    <el-dialog v-model="preValidateVisible" title="Excel预览" width="500px" class="import-dialog">
+      <el-upload
+        drag
+        :auto-upload="false"
+        :show-file-list="true"
+        accept=".xlsx,.xls"
+        :on-change="handlePreValidateFileChange"
+        :limit="1"
+      >
+        <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip">仅支持.xlsx / .xls 格式</div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <div class="dialog-footer">
+          <button type="button" class="cancel-btn" @click="preValidateVisible = false">取消</button>
+          <button type="button" class="submit-btn" :disabled="preValidateLoading" @click="handlePreValidateSubmit">
+            {{ preValidateLoading ? '校验中...' : '开始校验' }}
+          </button>
+        </div>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="importDialogVisible" title="Excel导入" width="500px" class="import-dialog">
       <el-upload

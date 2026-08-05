@@ -21,7 +21,7 @@ const householdRequirement = ref('')
 const positionStatus = ref('')
 
 const positionCategoryOptions = ['公共管理类', '公共服务类', '公共环境类', '公共安全类', '设施维护类', '其他']
-const educationOptions = ['不限', '初中及以上', '高中及以上', '大专及以上', '本科及以上']
+const educationOptions = ['不限', '初中', '高中', '大专', '本科']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
 const loading = ref(false)
@@ -122,7 +122,7 @@ onMounted(fetchList)
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-6 flex gap-6">
+      <div class="container mx-auto px-6 py-6 max-w-7xl flex gap-6 justify-center">
         <div class="flex-1 min-w-0">
         <div class="text-center mb-8">
           <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
@@ -135,7 +135,7 @@ onMounted(fetchList)
 
         <EmploymentTabs module="grassroots" />
 
-        <div class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-8">
+        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] mb-8">
           <div class="flex gap-3 mb-4">
             <input v-model="keyword" type="text" placeholder="输入岗位名称、开发单位或用工单位" class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all" @click="onSearch">
@@ -166,11 +166,10 @@ onMounted(fetchList)
           <h3 class="text-lg font-bold text-gray-800">
             {{ loading ? '加载中...' : `共找到 ${total} 个公益性岗位` }}
           </h3>
-          <el-pagination v-if="!loading && total > 0" small background layout="sizes, prev, pager, next" :total="total" :page-size="pageSize" :current-page="page" :page-sizes="[10, 20, 30, 50, 100]" @current-change="onPageChange" @size-change="onPageSizeChange" />
         </div>
 
         <div v-loading="loading" class="space-y-4 min-h-[300px]">
-          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer" @click="goDetail(job.id)">
+          <div v-for="job in jobs" :key="job.id" class="group rounded-2xl bg-gradient-to-b from-orange-50/40 to-white p-6 shadow-lg border border-orange-100 hover:shadow-[0_8px_24px_rgba(249,115,22,0.15)] transition-all cursor-pointer" @click="goDetail(job.id)">
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600">公益招聘</span>

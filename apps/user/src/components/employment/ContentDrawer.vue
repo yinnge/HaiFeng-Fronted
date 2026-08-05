@@ -12,13 +12,13 @@ const noticeVisible = ref(false)
   <div
     :class="[
       'shrink-0 transition-all duration-300 relative',
-      drawerExpanded ? 'w-56' : 'w-3 cursor-pointer'
+      drawerExpanded ? 'w-80' : 'w-3 cursor-pointer'
     ]"
     @click="!drawerExpanded && (drawerExpanded = true)"
   >
     <div v-if="drawerExpanded" class="sticky top-24 space-y-3">
       <button
-        class="w-full rounded-2xl bg-white p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all text-left group"
+        class="w-full rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-5 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] hover:shadow-xl hover:-translate-y-0.5 transition-all text-left group"
         @click="examGuideVisible = true"
       >
         <div class="text-2xl mb-1">📚</div>
@@ -27,7 +27,7 @@ const noticeVisible = ref(false)
       </button>
 
       <button
-        class="w-full rounded-2xl bg-white p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all text-left group"
+        class="w-full rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-5 shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] hover:shadow-xl hover:-translate-y-0.5 transition-all text-left group"
         @click="noticeVisible = true"
       >
         <div class="text-2xl mb-1">📢</div>
