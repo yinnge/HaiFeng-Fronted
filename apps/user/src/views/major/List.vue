@@ -164,10 +164,21 @@ onMounted(() => {
     <main class="container mx-auto px-6 py-8">
       <!-- Intro Banner -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-6 border border-orange-100">
-          <p class="text-gray-700 leading-relaxed">
-            收录教育部公布的本科、专科和研究生专业目录，包含专业介绍、课程设置、就业方向、薪资水平等数据，为您的学业规划提供全面参考。
+        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">专业信息大全 · 科学规划学业的起点</h1>
+          </div>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            收录教育部公布的本科、专科与研究生专业目录，涵盖专业介绍、课程设置、就业方向、薪资水平等数据，为您的学业规划提供全面参考。
           </p>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="kw in ['专业介绍', '课程设置', '就业方向', '薪资水平']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
+              {{ kw }}
+            </span>
+          </div>
         </div>
       </Motion>
 
@@ -186,45 +197,55 @@ onMounted(() => {
       </div>
 
       <!-- Search bar -->
-      <div class="mb-6 flex flex-wrap items-center gap-3">
-        <input
-          v-model="query.name"
-          type="text"
-          placeholder="输入专业名称搜索"
-          class="flex-1 min-w-[200px] rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-          @keyup.enter="handleSearch"
-        />
-        <input
-          v-model="query.code"
-          type="text"
-          placeholder="专业代码"
-          class="w-36 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-          @keyup.enter="handleSearch"
-        />
-        <el-select v-model="query.majorCategory" placeholder="专业类别" clearable filterable class="!w-44">
-          <el-option
-            v-for="item in stats" :key="item.majorCategory"
-            :label="item.majorCategory" :value="item.majorCategory"
+      <div class="mb-6 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] shadow-lg p-6">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          专业检索
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <input
+            v-model="query.name"
+            type="text"
+            placeholder="输入专业名称搜索"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            @keyup.enter="handleSearch"
           />
-        </el-select>
-        <button
-          class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-          @click="handleSearch"
-        >
-          搜索
-        </button>
-        <button
-          class="rounded-lg border border-gray-200 px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
-          @click="handleReset"
-        >
-          重置
-        </button>
+          <input
+            v-model="query.code"
+            type="text"
+            placeholder="专业代码"
+            class="w-36 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            @keyup.enter="handleSearch"
+          />
+          <el-select v-model="query.majorCategory" placeholder="专业类别" clearable filterable class="!w-44" @change="selectCategory">
+            <el-option
+              v-for="item in stats" :key="item.majorCategory"
+              :label="item.majorCategory" :value="item.majorCategory"
+            />
+          </el-select>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+            @click="handleSearch"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            搜索
+          </button>
+          <button
+            class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
+            @click="handleReset"
+          >
+            重置
+          </button>
+        </div>
       </div>
 
       <!-- Category Stats -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.1 }" class="mb-8">
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-          <h2 class="mb-4 text-lg font-bold text-gray-800">专业分类统计</h2>
+        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            专业分类统计
+          </div>
           <div class="flex flex-wrap gap-3">
             <button
               v-for="item in stats" :key="item.majorCategory"
@@ -242,8 +263,11 @@ onMounted(() => {
       </Motion>
 
       <!-- Major List -->
-      <section class="mb-8 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-        <h2 class="mb-4 text-lg font-bold text-gray-800">{{ activeType === '本科' ? '本科' : '专科' }}专业列表</h2>
+      <section class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          {{ activeType === '本科' ? '本科' : '专科' }}专业列表
+        </div>
         <div v-loading="loading" class="min-h-[300px]">
           <div v-if="list.length" class="overflow-x-auto">
             <table class="w-full">
@@ -299,10 +323,13 @@ onMounted(() => {
       </section>
 
       <!-- Salary/Employment Ranking -->
-      <section class="mb-8 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-        <h2 class="mb-4 text-lg font-bold text-gray-800">薪资就业排行</h2>
+      <section class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          薪资就业排行
+        </div>
         <template v-if="isPro">
-          <div class="mb-4 flex flex-wrap items-center gap-4">
+          <div class="mb-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 p-4 flex flex-wrap items-center gap-4">
             <el-select v-model="rankingQuery.majorCategory" placeholder="专业大类" clearable filterable class="!w-44" @change="fetchRanking">
               <el-option
                 v-for="item in stats" :key="item.majorCategory"
@@ -312,10 +339,10 @@ onMounted(() => {
             <div class="flex gap-2">
               <button
                 v-for="opt in sortOptions" :key="opt.value"
-                class="rounded-lg px-4 py-2 text-sm font-medium transition-all"
+                class="rounded-full px-4 py-2 text-sm font-medium transition-all"
                 :class="sortType === opt.value
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 border border-gray-300 hover:border-orange-300 hover:text-orange-500'"
                 @click="sortType = opt.value as any; fetchRanking()"
               >
                 {{ opt.label }}

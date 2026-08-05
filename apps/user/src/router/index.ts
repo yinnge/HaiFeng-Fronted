@@ -82,12 +82,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '个人中心', requiresAuth: true },
   },
   {
-    path: '/home/announcement/:id',
-    name: 'AnnouncementDetail',
-    component: () => import('@/views/home/announcement/Detail.vue'),
-    meta: { title: '公告详情' },
-  },
-  {
     path: '/home/planner/:id',
     name: 'PlannerDetail',
     component: () => import('@/views/home/planner/Detail.vue'),
@@ -362,6 +356,12 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  },
 })
 
 // 路由守卫

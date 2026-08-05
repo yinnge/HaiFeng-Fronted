@@ -9,3 +9,7 @@ export const getCivilList = (params: CivilPositionSearchDTO) => {
 export const getCivilDetail = (id: string) => {
   return request.get<R<CivilPositionDetailVO>>(`/api/v1/app/employment/civil-service/position/${id}/detail`)
 }
+
+export const getCivilFilters = () => {
+  return request.get<R<Record<string, string[]>>>('/api/v1/app/employment/civil-service/position/filters')
+}

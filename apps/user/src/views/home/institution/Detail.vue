@@ -42,7 +42,7 @@ onMounted(async () => {
       <div v-else-if="detail" class="mx-auto max-w-4xl">
         <div class="grid gap-6 md:grid-cols-2">
           <img
-            v-for="(img, i) in detail.images"
+            v-for="(img, i) in detail.images || []"
             :key="i"
             :src="img"
             :alt="`${detail.name} 图片 ${i + 1}`"
@@ -85,7 +85,7 @@ onMounted(async () => {
             <p class="text-gray-600 leading-relaxed">{{ detail.description }}</p>
           </div>
 
-          <div v-if="detail.courses.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
+          <div v-if="detail.courses?.length" class="mt-6 rounded-2xl bg-white p-6 shadow-lg">
             <h2 class="mb-3 text-lg font-bold text-gray-800">课程列表</h2>
             <ul class="space-y-2">
               <li

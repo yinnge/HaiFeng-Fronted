@@ -122,10 +122,21 @@ onMounted(() => {
     <main class="container mx-auto px-6 py-8">
       <!-- Intro Banner -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-6 border border-orange-100">
-          <p class="text-gray-700 leading-relaxed">
-            涵盖学术学位与专业学位硕士研究生招生专业，提供专业介绍、考试科目、报考条件、跨考难度等全面信息，助您精准备考。
+        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">考研专业全景 · 助您精准备考</h1>
+          </div>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            涵盖学术学位与专业学位硕士研究生招生专业，提供专业介绍、考试科目、报考条件、跨考难度等全面信息，为您的考研之路保驾护航。
           </p>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="kw in ['专业介绍', '考试科目', '报考条件', '跨考难度']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
+              {{ kw }}
+            </span>
+          </div>
         </div>
       </Motion>
 
@@ -144,42 +155,49 @@ onMounted(() => {
       </div>
 
       <!-- Search bar -->
-      <div class="mb-6 flex flex-wrap items-center gap-3">
-        <input
-          v-model="query.name"
-          type="text"
-          placeholder="输入考研专业名称搜索"
-          class="flex-1 min-w-[180px] rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-          @keyup.enter="handleSearch"
-        />
-        <input
-          v-model="query.code"
-          type="text"
-          placeholder="专业代码"
-          class="w-32 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-          @keyup.enter="handleSearch"
-        />
-        <el-select v-model="query.disciplineCategory" placeholder="学科门类" clearable filterable class="!w-36">
-          <el-option v-for="d in disciplineOptions" :key="d" :label="d" :value="d" />
-        </el-select>
-        <el-select v-model="query.popularity" placeholder="热度" clearable class="!w-28">
-          <el-option v-for="p in popularityOptions" :key="p" :label="p" :value="p" />
-        </el-select>
-        <el-select v-model="query.difficulty" placeholder="难度" clearable class="!w-28">
-          <el-option v-for="d in difficultyOptions" :key="d" :label="d" :value="d" />
-        </el-select>
-        <button
-          class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-          @click="handleSearch"
-        >
-          搜索
-        </button>
-        <button
-          class="rounded-lg border border-gray-200 px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
-          @click="handleReset"
-        >
-          重置
-        </button>
+      <div class="mb-6 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] shadow-lg p-6">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          考研专业检索
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <input
+            v-model="query.name"
+            type="text"
+            placeholder="输入考研专业名称搜索"
+            class="flex-1 min-w-[180px] rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            @keyup.enter="handleSearch"
+          />
+          <input
+            v-model="query.code"
+            type="text"
+            placeholder="专业代码"
+            class="w-32 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            @keyup.enter="handleSearch"
+          />
+          <el-select v-model="query.disciplineCategory" placeholder="学科门类" clearable filterable class="!w-36">
+            <el-option v-for="d in disciplineOptions" :key="d" :label="d" :value="d" />
+          </el-select>
+          <el-select v-model="query.popularity" placeholder="热度" clearable class="!w-28">
+            <el-option v-for="p in popularityOptions" :key="p" :label="p" :value="p" />
+          </el-select>
+          <el-select v-model="query.difficulty" placeholder="难度" clearable class="!w-28">
+            <el-option v-for="d in difficultyOptions" :key="d" :label="d" :value="d" />
+          </el-select>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+            @click="handleSearch"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            搜索
+          </button>
+          <button
+            class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
+            @click="handleReset"
+          >
+            重置
+          </button>
+        </div>
       </div>
 
       <!-- Postgrad Major List -->
