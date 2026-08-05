@@ -16,8 +16,8 @@ const fetchData = async (refresh = false) => {
     } else {
       ElMessage.error(res.data.msg || '查询失败')
     }
-  } catch {
-    ElMessage.error('查询失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '查询失败')
   } finally {
     loading.value = false
   }

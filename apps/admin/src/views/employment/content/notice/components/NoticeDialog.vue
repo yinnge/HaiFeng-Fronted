@@ -83,8 +83,8 @@ watch(() => props.visible, async (val) => {
       } else {
         ElMessage.error(res.data.msg || '获取详情失败')
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -109,8 +109,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || (props.mode === 'add' ? '新增失败' : '修改失败'))
     }
-  } catch {
-    ElMessage.error(props.mode === 'add' ? '新增失败' : '修改失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || (props.mode === 'add' ? '新增失败' : '修改失败'))
   }
 }
 

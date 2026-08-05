@@ -60,8 +60,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -104,8 +104,8 @@ const openEdit = async (row: InstitutionListVO) => {
     } else {
       ElMessage.error(res.data.msg || '获取详情失败')
     }
-  } catch {
-    ElMessage.error('获取详情失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
   }
 }
 

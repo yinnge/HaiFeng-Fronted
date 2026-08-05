@@ -11,7 +11,7 @@ export interface CommissionListVO {
   commissionRate: number
   commissionAmount: number
   createdAt: string
-  deleted: boolean
+  status: string
 }
 
 export interface CommissionQueryDTO extends BasePageQuery {
@@ -20,5 +20,5 @@ export interface CommissionQueryDTO extends BasePageQuery {
   refereePhone?: string
   refereeName?: string
   orderNo?: string
-  deleted?: boolean | null
+  status?: string | null
 }

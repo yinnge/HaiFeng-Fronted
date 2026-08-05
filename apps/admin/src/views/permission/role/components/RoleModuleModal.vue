@@ -34,8 +34,8 @@ const fetchModuleTree = async () => {
     if (roleRes?.data.code === 200) {
       defaultCheckedKeys.value = roleRes.data.data.moduleIds || []
     }
-  } catch {
-    ElMessage.error('获取模块树失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取模块树失败')
   } finally {
     loading.value = false
   }
@@ -54,8 +54,8 @@ const handleSave = async () => {
     } else {
       ElMessage.error(res.data.msg || '分配失败')
     }
-  } catch {
-    ElMessage.error('分配权限失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '分配权限失败')
   } finally {
     loading.value = false
   }

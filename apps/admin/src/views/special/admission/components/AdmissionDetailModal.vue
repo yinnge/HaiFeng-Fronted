@@ -78,8 +78,8 @@ watch(
               sortOrder: d.sortOrder,
             }
           }
-        } catch {
-          ElMessage.error('获取详情失败')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
         } finally {
           formLoading.value = false
         }
@@ -89,8 +89,8 @@ watch(
           if (res.data.code === 200) {
             detailData.value = res.data.data
           }
-        } catch {
-          ElMessage.error('获取详情失败')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
         } finally {
           formLoading.value = false
         }
@@ -128,8 +128,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
   } finally {
     formLoading.value = false
   }

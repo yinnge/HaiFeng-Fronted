@@ -246,9 +246,9 @@ const fetchData = async () => {
 
     }
 
-  } catch {
+  } catch (e: any) {
 
-    ElMessage.error('获取列表失败')
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
 
   } finally {
 
@@ -453,9 +453,9 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
       }
 
-    } catch {
+    } catch (e: any) {
 
-      ElMessage.error('获取详情失败')
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
 
     } finally {
 
@@ -481,9 +481,9 @@ const openDialog = async (mode: 'detail' | 'edit', id?: string) => {
 
       }
 
-    } catch {
+    } catch (e: any) {
 
-      ElMessage.error('获取详情失败')
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
 
     } finally {
 

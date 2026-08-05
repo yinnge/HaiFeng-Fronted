@@ -19,7 +19,7 @@ const queryParams = reactive<CommissionQueryDTO>({
   refereePhone: '',
   refereeName: '',
   orderNo: '',
-  deleted: null,
+  status: null,
 })
 
 const dialogVisible = ref(false)
@@ -34,7 +34,7 @@ const fetchData = async () => {
     if (queryParams.refereePhone) params.refereePhone = queryParams.refereePhone
     if (queryParams.refereeName) params.refereeName = queryParams.refereeName
     if (queryParams.orderNo) params.orderNo = queryParams.orderNo
-    if (queryParams.deleted !== null && queryParams.deleted !== undefined) params.deleted = queryParams.deleted
+    if (queryParams.status) params.status = queryParams.status
     const res = await getCommissionPage(params as CommissionQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -42,8 +42,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -60,7 +60,7 @@ const handleReset = () => {
   queryParams.refereePhone = ''
   queryParams.refereeName = ''
   queryParams.orderNo = ''
-  queryParams.deleted = null
+  queryParams.status = null
   queryParams.page = 1
   fetchData()
 }

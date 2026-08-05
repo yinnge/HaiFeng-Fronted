@@ -59,8 +59,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -111,8 +111,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           detailData.value = d
         }
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -243,7 +243,7 @@ onMounted(() => {
           状态
         </span>
         <el-select v-model="queryParams.isDeleted" placeholder="全部" clearable style="width: 130px;" @change="handleFilter">
-          <el-option label="全部" :value="null" />
+          <el-option label="全部" :value="null as any" />
           <el-option label="启用" :value="false" />
           <el-option label="禁用" :value="true" />
         </el-select>

@@ -36,8 +36,13 @@ onBeforeUnmount(() => {
 function handleNavClick(item: NavItem) {
   if (item.route) {
     router.push(item.route)
-  } else if (!item.subItems) {
-    ElMessage.info('该功能正在开发中')
+  } else if (item.subItems) {
+    // 有子项但无顶层路由：点击展开/收起下拉，而非提示“开发中”
+    if (openDropdownId.value === item.id) {
+      openDropdownId.value = null
+    } else {
+      openDropdown(item.id)
+    }
   } else {
     ElMessage.info('该功能正在开发中')
   }

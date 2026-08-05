@@ -150,9 +150,9 @@ const fetchData = async () => {
 
     }
 
-  } catch {
+  } catch (e: any) {
 
-    ElMessage.error('获取列表失败')
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
 
   } finally {
 
@@ -298,9 +298,9 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
       }
 
-    } catch {
+    } catch (e: any) {
 
-      ElMessage.error('获取详情失败')
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
 
     } finally {
 
@@ -326,9 +326,9 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
       }
 
-    } catch {
+    } catch (e: any) {
 
-      ElMessage.error('获取详情失败')
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
 
     } finally {
 
@@ -470,9 +470,9 @@ const handleSubmit = async () => {
 
     }
 
-  } catch {
+  } catch (e: any) {
 
-    ElMessage.error('操作失败')
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
 
   }
 
@@ -712,6 +712,12 @@ onMounted(() => {
 
             clearable
 
+            filterable
+
+            allow-create
+
+            default-first-option
+
             style="width: 140px"
 
           >
@@ -737,6 +743,12 @@ onMounted(() => {
             placeholder="全部等级"
 
             clearable
+
+            filterable
+
+            allow-create
+
+            default-first-option
 
             style="width: 120px"
 
@@ -1043,7 +1055,7 @@ onMounted(() => {
 
             <el-form-item label="证书分类">
 
-              <el-select v-model="formData.category" placeholder="请选择分类" clearable style="width: 240px">
+              <el-select v-model="formData.category" placeholder="请选择或输入自定义分类" clearable filterable allow-create default-first-option style="width: 240px">
 
             <el-option label="IT" value="IT" />
 
@@ -1059,7 +1071,7 @@ onMounted(() => {
 
             <el-form-item label="证书等级">
 
-              <el-select v-model="formData.certLevel" placeholder="请选择等级" clearable style="width: 160px">
+              <el-select v-model="formData.certLevel" placeholder="请选择或输入自定义等级" clearable filterable allow-create default-first-option style="width: 160px">
 
                 <el-option label="初级" value="初级" />
 

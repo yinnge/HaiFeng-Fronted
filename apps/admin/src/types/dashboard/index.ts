@@ -54,10 +54,20 @@ export interface PendingOrderItem {
   createdAt: string
 }
 
+/** 待处理提现项 */
+export interface PendingWithdrawItem {
+  id: number
+  memberName: string
+  amount: number
+  createdAt: string
+}
+
 /** 待办事项 VO */
 export interface TodoListVO {
   pendingOrderCount: number
   pendingOrders: PendingOrderItem[]
+  pendingWithdrawCount: number
+  pendingWithdraws: PendingWithdrawItem[]
 }
 
 /** 仪表盘概览 VO */

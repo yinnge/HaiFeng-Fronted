@@ -1,15 +1,15 @@
 <script setup lang="ts">
 const props = defineProps<{
-  positionName: string
-  organizingDept: string
-  serviceUnit: string
-  projectType: string
-  year: string
-  serviceType: string
-  province: string
-  city: string
-  county: string
-  positionStatus: string
+  positionName: string | undefined
+  organizingDept: string | undefined
+  serviceUnit: string | undefined
+  projectType: string | undefined
+  year: string | undefined
+  serviceType: string | undefined
+  province: string | undefined
+  city: string | undefined
+  county: string | undefined
+  positionStatus: string | undefined
 }>()
 
 const emit = defineEmits<{

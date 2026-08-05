@@ -161,7 +161,7 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
             <el-row :gutter="16">
               <el-col :span="8">
                 <el-form-item label="院校类别" required>
-                  <el-select v-model="formData.category" style="width:100%">
+                  <el-select v-model="formData.category" filterable allow-create default-first-option placeholder="选择或输入自定义类别" style="width:100%">
                     <el-option v-for="c in ['综合','理工','师范','农林','医药','财经','政法','体育','艺术','民族','军事']" :key="c" :label="c" :value="c" />
                   </el-select>
                 </el-form-item>
@@ -173,7 +173,7 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
               </el-col>
               <el-col :span="8">
                 <el-form-item label="办学层次">
-                  <el-select v-model="formData.educationLevel" style="width:100%">
+                  <el-select v-model="formData.educationLevel" filterable allow-create default-first-option placeholder="选择或输入自定义层次" style="width:100%">
                     <el-option label="本科" value="本科" />
                     <el-option label="专科" value="专科" />
                     <el-option label="本专兼招" value="本专兼招" />
@@ -184,7 +184,7 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
             <el-row :gutter="16">
               <el-col :span="8">
                 <el-form-item label="院校性质">
-                  <el-select v-model="formData.nature" style="width:100%">
+                  <el-select v-model="formData.nature" filterable allow-create default-first-option placeholder="选择或输入自定义性质" style="width:100%">
                     <el-option label="公办" value="公办" />
                     <el-option label="民办" value="民办" />
                     <el-option label="中外合作" value="中外合作" />
@@ -215,7 +215,7 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
               </el-col>
               <el-col :span="8">
                 <el-form-item label="隶属部门">
-                  <el-select v-model="formData.department" style="width:100%">
+                  <el-select v-model="formData.department" filterable allow-create default-first-option placeholder="选择或输入自定义部门" style="width:100%">
                     <el-option label="教育部" value="教育部" />
                     <el-option label="省教育厅" value="省教育厅" />
                   </el-select>

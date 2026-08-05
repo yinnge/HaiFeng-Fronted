@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
@@ -18,6 +18,7 @@ import {
   type ConstraintItem,
 } from '@/api/gaokao'
 import ConstraintDisplay from '@/components/gaokao/ConstraintDisplay.vue'
+import LottiePlayer from '@/components/ui/LottiePlayer.vue'
 
 const router = useRouter()
 
@@ -28,8 +29,6 @@ const form = reactive<GaokaoArchiveForm>({
   score: 0,
   rank: 0,
   subjectType: '',
-  secondSubjectType: '',
-  thirdSubjectType: '',
   batch: '',
   batchDataYear: new Date().getFullYear(),
   batchLineScore: 0,
@@ -38,6 +37,77 @@ const form = reactive<GaokaoArchiveForm>({
 // 改革模式数据
 const reformModel = ref<ReformModelData | null>(null)
 const batchList = ref<BatchLine[]>([])
+
+// checkbox-group 绑定用的数组
+const secondSubjects = ref<string[]>([]) // 3+1+2 再选科目
+const firstSubjects = ref<string[]>([])  // 3+3 选考科目
+
+// 动态科目分数标签
+type ScoreField = 'scorePhysics' | 'scoreChemistry' | 'scoreBiology' | 'scorePolitics' | 'scoreHistory' | 'scoreGeography'
+
+const subjectScoreFieldMap: Record<string, ScoreField> = {
+  '物理': 'scorePhysics',
+  '化学': 'scoreChemistry',
+  '生物': 'scoreBiology',
+  '政治': 'scorePolitics',
+  '历史': 'scoreHistory',
+  '地理': 'scoreGeography',
+}
+
+const electiveSubjects = computed<{ name: string; field: ScoreField }[]>(() => {
+  if (!reformModel.value) return []
+
+  const model = reformModel.value.reformModel
+
+  // 传统文理：固定科目
+  if (model === '传统文理') {
+    if (form.subjectType === '文科') {
+      return [
+        { name: '政治', field: 'scorePolitics' },
+        { name: '历史', field: 'scoreHistory' },
+        { name: '地理', field: 'scoreGeography' },
+      ]
+    }
+    if (form.subjectType === '理科') {
+      return [
+        { name: '物理', field: 'scorePhysics' },
+        { name: '化学', field: 'scoreChemistry' },
+        { name: '生物', field: 'scoreBiology' },
+      ]
+    }
+    return []
+  }
+
+  // 3+1+2：首选科目 + 再选科目
+  if (model === '3+1+2') {
+    const subjects = [form.subjectType, ...secondSubjects.value]
+      .filter((n): n is string => !!n)
+    return subjects
+      .filter((n): n is string => !!subjectScoreFieldMap[n])
+      .map(n => ({ name: n, field: subjectScoreFieldMap[n] }))
+  }
+
+  // 3+3：选考科目
+  if (model === '3+3') {
+    return firstSubjects.value
+      .filter((n): n is string => !!n && !!subjectScoreFieldMap[n])
+      .map(n => ({ name: n, field: subjectScoreFieldMap[n] }))
+  }
+
+  return []
+})
+
+// 将科目名转换为后端 API 需要的科类名
+function getSubjectTypeForAPI(subject: string): string {
+  if (subject === '物理') return '物理类'
+  if (subject === '历史') return '历史类'
+  return subject // 文科/理科 已是正确值
+}
+
+// 是否展示位次输入：科目已选定 且 总分已填
+const showRank = computed(() => {
+  return !!form.subjectType && !!form.score && form.score > 0
+})
 
 // 折叠状态
 const showScores = ref(false)
@@ -101,8 +171,12 @@ watch(
       })
       reformModel.value = res.data.data
       form.subjectType = ''
-      form.secondSubjectType = ''
-      form.thirdSubjectType = ''
+      secondSubjects.value = []
+      firstSubjects.value = []
+      // 清空所有选考科目分数
+      Object.values(subjectScoreFieldMap).forEach(field => {
+        form[field] = undefined
+      })
     } catch (e: any) {
       ElMessage.error(e?.message || '获取改革模式失败')
     }
@@ -121,7 +195,7 @@ watch(
         const res = await getRank({
           province: province as string,
           year: year as number,
-          subjectType: subjectType as string,
+          subjectType: getSubjectTypeForAPI(subjectType as string),
           score: score as number,
         })
         if (res.data.data) {
@@ -143,7 +217,7 @@ watch(
       const res = await getBatchLines({
         province: province as string,
         year: year as number,
-        subjectType: subjectType as string,
+        subjectType: getSubjectTypeForAPI(subjectType as string),
       })
       batchList.value = res.data.data.batches
       form.batchDataYear = res.data.data.dataYear
@@ -164,6 +238,41 @@ watch(
   }
 )
 
+// 3+1+2：再选科目变化时，清除已取消科目的分数
+watch(secondSubjects, (vals, oldVals) => {
+  oldVals?.forEach(name => {
+    if (!vals.includes(name) && subjectScoreFieldMap[name]) {
+      form[subjectScoreFieldMap[name]] = undefined
+    }
+  })
+})
+
+// 3+3：选考科目变化时，同步 subjectType 并清除已取消科目的分数
+watch(firstSubjects, (vals, oldVals) => {
+  form.subjectType = vals[0] || ''
+  oldVals?.forEach(name => {
+    if (!vals.includes(name) && subjectScoreFieldMap[name]) {
+      form[subjectScoreFieldMap[name]] = undefined
+    }
+  })
+})
+
+// 首选科目 / 文理切换时清空对应分数
+watch(() => form.subjectType, (val, oldVal) => {
+  if (val === oldVal) return
+  if (reformModel.value?.reformModel === '3+1+2') {
+    // 清除旧首选科目分数
+    if (oldVal && subjectScoreFieldMap[oldVal]) {
+      form[subjectScoreFieldMap[oldVal]] = undefined
+    }
+  } else if (reformModel.value?.reformModel === '传统文理') {
+    // 文理切换，清除所有选考科目分数
+    Object.values(subjectScoreFieldMap).forEach(field => {
+      form[field] = undefined
+    })
+  }
+})
+
 // 加载已有档案
 async function loadArchive() {
   loading.value = true
@@ -179,8 +288,6 @@ async function loadArchive() {
         score: data.score,
         rank: data.rank,
         subjectType: data.subjectType,
-        secondSubjectType: data.secondSubjectType || '',
-        thirdSubjectType: data.thirdSubjectType || '',
         batch: data.batch,
         batchDataYear: data.batchDataYear,
         batchLineScore: data.batchLineScore,
@@ -188,9 +295,12 @@ async function loadArchive() {
         scoreMath: data.scoreMath,
         scoreEnglish: data.scoreEnglish,
         foreignLanguage: data.foreignLanguage || '',
-        scoreSubject1: data.scoreSubject1,
-        scoreSubject2: data.scoreSubject2,
-        scoreSubject3: data.scoreSubject3,
+        scorePhysics: data.scorePhysics,
+        scoreChemistry: data.scoreChemistry,
+        scoreBiology: data.scoreBiology,
+        scorePolitics: data.scorePolitics,
+        scoreHistory: data.scoreHistory,
+        scoreGeography: data.scoreGeography,
         isColorBlind: data.isColorBlind,
         isColorWeak: data.isColorWeak,
         visionLeft: data.visionLeft,
@@ -207,6 +317,26 @@ async function loadArchive() {
         householdType: data.householdType || '',
         isPovertyCounty: data.isPovertyCounty,
       })
+      // 从非空分数字段推导已选科目，回填 checkbox-group 数组
+      const allSubjects: { name: string; score?: number }[] = [
+        { name: '物理', score: data.scorePhysics },
+        { name: '化学', score: data.scoreChemistry },
+        { name: '生物', score: data.scoreBiology },
+        { name: '政治', score: data.scorePolitics },
+        { name: '历史', score: data.scoreHistory },
+        { name: '地理', score: data.scoreGeography },
+      ]
+      const selectedSubjects = allSubjects.filter(s => s.score != null).map(s => s.name)
+
+      if (form.subjectType === '文科' || form.subjectType === '理科') {
+        // 传统文理：科目固定，无需回填
+      } else if (form.subjectType === '物理' || form.subjectType === '历史') {
+        // 3+1+2：subjectType 是首选科目，其余为再选
+        secondSubjects.value = selectedSubjects.filter(s => s !== form.subjectType)
+      } else if (selectedSubjects.length > 0) {
+        // 3+3：所有已选科目
+        firstSubjects.value = selectedSubjects
+      }
       loadConstraints()
     }
   } catch (e: any) {
@@ -271,26 +401,34 @@ async function loadConstraints() {
   }
 }
 
-// 查询专业组
-function goGroups() {
+// 进入报志愿（专业组选择）
+function goWishPlan() {
   router.push('/gaokao/groups')
+}
+
+// 查看我的志愿表
+function goPlans() {
+  router.push('/gaokao/plans')
 }
 
 onMounted(loadArchive)
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <main class="flex-1 container mx-auto px-6 py-8 max-w-3xl">
+  <div class="min-h-screen flex flex-col bg-gradient-to-b from-orange-50/60 via-white to-white">
+    <main class="flex-1 container mx-auto px-6 py-8 max-w-5xl">
       <div v-if="loading" class="flex justify-center py-20">
         <el-icon class="is-loading text-4xl text-orange-500"><Loading /></el-icon>
       </div>
 
-      <div v-else class="space-y-6">
-        <!-- 区域1：基础信息 -->
-        <div class="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
-          <h2 class="text-lg font-bold text-gray-800 mb-4">基础信息</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-else class="flex flex-col lg:flex-row gap-8">
+        <!-- 左侧：表单区域 -->
+        <div class="flex-1 min-w-0 space-y-6">
+
+        <!-- 基础信息 -->
+        <div class="rounded-3xl bg-white p-6 shadow-sm border border-gray-100/60">
+          <h2 class="text-base font-semibold text-gray-800 mb-5">基础信息</h2>
+          <div class="space-y-5">
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1.5">高考年份 *</label>
               <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="w-full">
@@ -307,16 +445,12 @@ onMounted(loadArchive)
               <label class="block text-sm font-medium text-gray-600 mb-1.5">高考总分 *</label>
               <el-input-number v-model="form.score" :min="0" :max="750" class="w-full" />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1.5">位次 *</label>
-              <el-input-number v-model="form.rank" :min="0" class="w-full" />
-            </div>
           </div>
         </div>
 
         <!-- 科目选择 -->
-        <div class="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
-          <h2 class="text-lg font-bold text-gray-800 mb-4">科目选择</h2>
+        <div class="rounded-3xl bg-white p-6 shadow-sm border border-gray-100/60">
+          <h2 class="text-base font-semibold text-gray-800 mb-5">科目选择</h2>
           <div v-if="!reformModel" class="text-gray-400 text-center py-4">
             请先选择省份和年份
           </div>
@@ -341,7 +475,7 @@ onMounted(loadArchive)
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-600 mb-2">再选科目（选择2个）</label>
-                <el-checkbox-group v-model="form.secondSubjectType" :max="2">
+                <el-checkbox-group v-model="secondSubjects" :max="2">
                   <el-checkbox v-for="sub in reformModel.subjects.second" :key="sub" :value="sub" :label="sub" />
                 </el-checkbox-group>
               </div>
@@ -351,18 +485,25 @@ onMounted(loadArchive)
             <div v-else-if="reformModel.reformModel === '3+3'" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-600 mb-2">选考科目（选择3个）</label>
-                <el-checkbox-group v-model="form.subjectType" :max="3">
+                <el-checkbox-group v-model="firstSubjects" :max="3">
                   <el-checkbox v-for="sub in reformModel.subjects.first" :key="sub" :value="sub" :label="sub" />
                 </el-checkbox-group>
               </div>
             </div>
           </div>
+
+          <!-- 位次输入：科目选定 + 总分已填后展示 -->
+          <div v-if="showRank" class="mt-5 pt-5 border-t border-gray-100">
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">位次 *</label>
+            <el-input-number v-model="form.rank" :min="0" class="w-full" />
+            <p class="text-xs text-gray-400 mt-1">填写总分后系统将自动查询位次，也可手动修改</p>
+          </div>
         </div>
 
         <!-- 批次信息 -->
-        <div class="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
-          <h2 class="text-lg font-bold text-gray-800 mb-4">批次信息</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-3xl bg-white p-6 shadow-sm border border-gray-100/60">
+          <h2 class="text-base font-semibold text-gray-800 mb-5">批次信息</h2>
+          <div class="space-y-5">
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1.5">批次 *</label>
               <el-select v-model="form.batch" placeholder="选择批次" class="w-full">
@@ -377,176 +518,272 @@ onMounted(loadArchive)
         </div>
 
         <!-- 各科成绩（折叠） -->
-        <div class="rounded-2xl bg-white shadow-md border border-gray-100 overflow-hidden">
+        <div class="rounded-3xl bg-white shadow-sm border border-gray-100/60">
           <button
-            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-orange-50/30 transition-colors duration-200"
             @click="showScores = !showScores"
           >
-            <h2 class="text-lg font-bold text-gray-800">各科成绩（可选）</h2>
-            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-180': showScores }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 class="text-base font-semibold text-gray-800">各科成绩（可选）</h2>
+            <svg class="w-5 h-5 text-gray-400 transition-transform duration-300" :class="{ 'rotate-180': showScores }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div v-show="showScores" class="px-6 pb-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">语文</label>
-                <el-input-number v-model="form.scoreChinese" :min="0" :max="150" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">数学</label>
-                <el-input-number v-model="form.scoreMath" :min="0" :max="150" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">外语</label>
-                <el-input-number v-model="form.scoreEnglish" :min="0" :max="150" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">外语语种</label>
-                <el-select v-model="form.foreignLanguage" placeholder="选择语种" clearable class="w-full">
-                  <el-option v-for="opt in foreignLanguageOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-                </el-select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">第一科目分数</label>
-                <el-input-number v-model="form.scoreSubject1" :min="0" :max="100" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">第二科目分数</label>
-                <el-input-number v-model="form.scoreSubject2" :min="0" :max="100" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">第三科目分数</label>
-                <el-input-number v-model="form.scoreSubject3" :min="0" :max="100" class="w-full" />
+          <div
+            class="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            :style="{
+              maxHeight: showScores ? '500px' : '0px',
+              opacity: showScores ? 1 : 0,
+              transform: showScores ? 'translateY(0)' : 'translateY(-8px)'
+            }"
+          >
+            <div class="px-6 pb-6 pt-1">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-600 mb-1.5">语文</label>
+                  <el-input-number v-model="form.scoreChinese" :min="0" :max="150" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-600 mb-1.5">数学</label>
+                  <el-input-number v-model="form.scoreMath" :min="0" :max="150" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-600 mb-1.5">外语</label>
+                  <el-input-number v-model="form.scoreEnglish" :min="0" :max="150" class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-600 mb-1.5">外语语种</label>
+                  <el-select v-model="form.foreignLanguage" placeholder="选择语种" clearable class="w-full">
+                    <el-option v-for="opt in foreignLanguageOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  </el-select>
+                </div>
+                <div v-for="sub in electiveSubjects" :key="sub.field">
+                  <label class="block text-sm font-medium text-gray-600 mb-1.5">{{ sub.name }}</label>
+                  <el-input-number v-model="form[sub.field]" :min="0" :max="100" class="w-full" />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 身体条件（折叠） -->
-        <div class="rounded-2xl bg-white shadow-md border border-gray-100 overflow-hidden">
+        <!-- 身体条件（折叠·卡片式） -->
+        <div class="rounded-3xl bg-white shadow-sm border border-gray-100/60">
           <button
-            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-orange-50/30 transition-colors duration-200"
             @click="showBodyCondition = !showBodyCondition"
           >
-            <h2 class="text-lg font-bold text-gray-800">身体条件（可选）</h2>
-            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-180': showBodyCondition }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 class="text-base font-semibold text-gray-800">身体条件（可选）</h2>
+            <svg class="w-5 h-5 text-gray-400 transition-transform duration-300" :class="{ 'rotate-180': showBodyCondition }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div v-show="showBodyCondition" class="px-6 pb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否色盲</label>
-                <el-switch v-model="form.isColorBlind" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否色弱</label>
-                <el-switch v-model="form.isColorWeak" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">左眼视力</label>
-                <el-input-number v-model="form.visionLeft" :min="0" :max="5.5" :step="0.1" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">右眼视力</label>
-                <el-input-number v-model="form.visionRight" :min="0" :max="5.5" :step="0.1" class="w-full" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否嗅觉迟钝</label>
-                <el-switch v-model="form.hasSmellDisorder" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">身高（cm）</label>
-                <el-input-number v-model="form.heightCm" :min="100" :max="250" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">体重（kg）</label>
-                <el-input-number v-model="form.weightKg" :min="20" :max="200" :step="0.1" class="w-full" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否左利手</label>
-                <el-switch v-model="form.isLeftHanded" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否有纹身</label>
-                <el-switch v-model="form.hasTattoo" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否有面部疤痕</label>
-                <el-switch v-model="form.hasScar" />
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否口吃</label>
-                <el-switch v-model="form.hasStutter" />
+          <div
+            class="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            :style="{
+              maxHeight: showBodyCondition ? '800px' : '0px',
+              opacity: showBodyCondition ? 1 : 0,
+              transform: showBodyCondition ? 'translateY(0)' : 'translateY(-8px)'
+            }"
+          >
+            <div class="px-6 pb-6 pt-1">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- 开关类条件 -->
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否色盲</span>
+                  <el-switch v-model="form.isColorBlind" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否色弱</span>
+                  <el-switch v-model="form.isColorWeak" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否嗅觉迟钝</span>
+                  <el-switch v-model="form.hasSmellDisorder" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否左利手</span>
+                  <el-switch v-model="form.isLeftHanded" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否有纹身</span>
+                  <el-switch v-model="form.hasTattoo" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否有面部疤痕</span>
+                  <el-switch v-model="form.hasScar" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否口吃</span>
+                  <el-switch v-model="form.hasStutter" />
+                </div>
+                <!-- 数值类条件 -->
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">左眼视力</label>
+                  <el-input-number v-model="form.visionLeft" :min="0" :max="5.5" :step="0.1" size="small" class="w-full" />
+                </div>
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">右眼视力</label>
+                  <el-input-number v-model="form.visionRight" :min="0" :max="5.5" :step="0.1" size="small" class="w-full" />
+                </div>
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">身高（cm）</label>
+                  <el-input-number v-model="form.heightCm" :min="100" :max="250" size="small" class="w-full" />
+                </div>
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">体重（kg）</label>
+                  <el-input-number v-model="form.weightKg" :min="20" :max="200" :step="0.1" size="small" class="w-full" />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 身份条件（折叠） -->
-        <div class="rounded-2xl bg-white shadow-md border border-gray-100 overflow-hidden">
+        <!-- 身份条件（折叠·卡片式） -->
+        <div class="rounded-3xl bg-white shadow-sm border border-gray-100/60">
           <button
-            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+            class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-orange-50/30 transition-colors duration-200"
             @click="showIdentityCondition = !showIdentityCondition"
           >
-            <h2 class="text-lg font-bold text-gray-800">身份条件（可选）</h2>
-            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-180': showIdentityCondition }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 class="text-base font-semibold text-gray-800">身份条件（可选）</h2>
+            <svg class="w-5 h-5 text-gray-400 transition-transform duration-300" :class="{ 'rotate-180': showIdentityCondition }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div v-show="showIdentityCondition" class="px-6 pb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否应届生</label>
-                <el-switch v-model="form.isFreshGraduate" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">政治面貌</label>
-                <el-select v-model="form.politicalStatus" placeholder="选择政治面貌" clearable class="w-full">
-                  <el-option v-for="opt in politicalStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-                </el-select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1.5">户籍类型</label>
-                <el-select v-model="form.householdType" placeholder="选择户籍类型" clearable class="w-full">
-                  <el-option v-for="opt in householdTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-                </el-select>
-              </div>
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-600">是否贫困县户籍</label>
-                <el-switch v-model="form.isPovertyCounty" />
+          <div
+            class="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            :style="{
+              maxHeight: showIdentityCondition ? '400px' : '0px',
+              opacity: showIdentityCondition ? 1 : 0,
+              transform: showIdentityCondition ? 'translateY(0)' : 'translateY(-8px)'
+            }"
+          >
+            <div class="px-6 pb-6 pt-1">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否应届生</span>
+                  <el-switch v-model="form.isFreshGraduate" />
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <span class="text-sm text-gray-700">是否贫困县户籍</span>
+                  <el-switch v-model="form.isPovertyCounty" />
+                </div>
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">政治面貌</label>
+                  <el-select v-model="form.politicalStatus" placeholder="选择政治面貌" clearable size="small" class="w-full">
+                    <el-option v-for="opt in politicalStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  </el-select>
+                </div>
+                <div class="rounded-2xl bg-orange-50/40 px-4 py-3.5">
+                  <label class="block text-sm text-gray-700 mb-1.5">户籍类型</label>
+                  <el-select v-model="form.householdType" placeholder="选择户籍类型" clearable size="small" class="w-full">
+                    <el-option v-for="opt in householdTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  </el-select>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 操作按钮 -->
-        <div class="flex gap-4">
-          <button
-            v-if="saved"
-            class="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-3 text-white font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg"
-            @click="goGroups"
-          >
-            查询专业组
-          </button>
-          <button
-            class="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-3 text-white font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg disabled:opacity-50"
-            :disabled="saving"
-            @click="handleSave"
-          >
-            {{ saving ? '保存中...' : '保存档案信息' }}
-          </button>
+        <button
+          class="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-3.5 text-white font-semibold hover:from-orange-600 hover:to-amber-600 transition-all duration-200 shadow-lg shadow-orange-500/20 active:scale-[0.98] disabled:opacity-50"
+          :disabled="saving"
+          @click="handleSave"
+        >
+          {{ saving ? '保存中...' : '保存档案信息' }}
+        </button>
+
+        <!-- 档案保存成功后生成的报志愿入口 -->
+        <div
+          v-if="saved"
+          class="rounded-3xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-6"
+        >
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs text-white">✓</span>
+                <h3 class="text-base font-bold text-gray-800">档案已就绪</h3>
+              </div>
+              <p class="mt-1.5 text-sm text-gray-500">
+                系统已按你的档案匹配报考条件，现在可以开始挑选专业组、生成志愿表
+              </p>
+            </div>
+            <div class="flex shrink-0 gap-3">
+              <button
+                class="rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-medium text-orange-600 hover:border-orange-400 transition-all duration-200 active:scale-[0.98]"
+                @click="goPlans"
+              >
+                我的志愿表
+              </button>
+              <button
+                class="rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-3 text-sm font-semibold text-white hover:from-orange-600 hover:to-amber-600 transition-all duration-200 shadow-lg shadow-orange-500/20 active:scale-[0.98]"
+                @click="goWishPlan"
+              >
+                进入报志愿 →
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- 约束匹配结果 -->
-        <div v-if="saved" class="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
-          <h2 class="text-lg font-bold text-gray-800 mb-4">约束匹配结果</h2>
+        <div v-if="saved" class="rounded-3xl bg-white p-6 shadow-sm border border-gray-100/60">
+          <h2 class="text-base font-semibold text-gray-800 mb-4">约束匹配结果</h2>
           <div v-if="constraintLoading" class="flex justify-center py-8">
             <el-icon class="is-loading text-2xl text-orange-500"><Loading /></el-icon>
           </div>
           <ConstraintDisplay v-else :constraints="constraintList" />
         </div>
+        </div>
+
+      <!-- 右侧：Lottie 动画 + 填报流程（≥1024px 显示） -->
+      <div class="hidden lg:block lg:w-[420px] shrink-0">
+        <div class="sticky top-8 space-y-6">
+          <!-- Lottie 动画卡片：橙色渐变底 -->
+          <div class="rounded-3xl bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50 p-8 flex flex-col items-center">
+            <LottiePlayer
+              path="/lottiefiles/GaoKao-Achieve.json"
+              :loop="true"
+              :autoplay="true"
+              class="w-full max-w-[360px] aspect-square"
+            />
+            <p class="mt-4 text-sm text-orange-600/70 font-medium">高考志愿填报助手</p>
+          </div>
+
+          <!-- 四步流程卡片 -->
+          <div class="rounded-3xl bg-white p-6 shadow-sm border border-orange-100/60">
+            <h3 class="text-sm font-semibold text-gray-800 mb-4">填报流程</h3>
+            <div class="space-y-4">
+              <div class="flex items-start gap-3">
+                <div class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">1</div>
+                <div>
+                  <p class="text-sm font-medium text-gray-800">填写档案信息</p>
+                  <p class="text-xs text-gray-400 mt-0.5">录入高考成绩、科目、身体条件等基本信息</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">2</div>
+                <div>
+                  <p class="text-sm font-medium text-gray-800">匹配报考约束</p>
+                  <p class="text-xs text-gray-400 mt-0.5">系统自动识别身体、身份等限制条件</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">3</div>
+                <div>
+                  <p class="text-sm font-medium text-gray-800">选择专业组</p>
+                  <p class="text-xs text-gray-400 mt-0.5">浏览匹配的专业组，查看历年录取数据</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">4</div>
+                <div>
+                  <p class="text-sm font-medium text-gray-800">生成志愿表</p>
+                  <p class="text-xs text-gray-400 mt-0.5">智能排序并导出志愿填报方案</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
     </main>
   </div>

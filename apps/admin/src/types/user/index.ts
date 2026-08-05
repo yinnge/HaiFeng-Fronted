@@ -22,7 +22,7 @@ export interface MemberDetailVO extends MemberListVO {
   referrerUsername: string
   commissionBalance: number
   commissionTotalEarned: number
-  commissionTotalPaid: string
+  commissionTotalPaid: number
   updatedAt: string
 }
 

@@ -35,6 +35,6 @@ export const updateExamGuideStatus = (id: string, data: StatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteExamGuide = (ids: number[]) => {
+export const batchDeleteExamGuide = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }

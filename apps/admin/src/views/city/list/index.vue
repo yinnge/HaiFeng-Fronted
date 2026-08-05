@@ -106,8 +106,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -161,8 +161,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         fillForm(d)
         fillDetailForm(d)
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -175,8 +175,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
       if (res.data.code === 200) {
         detailData.value = res.data.data
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -290,7 +290,7 @@ const fillDetailForm = (d: CityDetailVO) => {
   detailForm.culture = { worldHeritageCount: cul.worldHeritageCount ?? null, annualTourists: cul.annualTourists ?? null, aScenicCount: cul.aScenicCount ?? null, coreAttractions: cul.coreAttractions ? [...cul.coreAttractions] : [] }
 }
 
-const handleSubmitBasic = async () => {
+const saveBasic = async (): Promise<boolean> => {
   if (!formData.cityName || !formData.province || !formData.region) {
     ElMessage.warning('请填写城市名称、省份和所属地区')
     return false
@@ -317,7 +317,6 @@ const handleSubmitBasic = async () => {
     }
 
     if (res.data.code === 200) {
-      ElMessage.success('基本信息保存成功')
       if (dialogMode.value === 'add' && res.data.data) {
         currentId.value = res.data.data
       }
@@ -326,13 +325,13 @@ const handleSubmitBasic = async () => {
       ElMessage.error(res.data.msg || '保存失败')
       return false
     }
-  } catch {
-    ElMessage.error('保存失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '保存失败')
     return false
   }
 }
 
-const handleSubmitDetail = async () => {
+const saveDetail = async (): Promise<boolean> => {
   if (!currentId.value) return false
   try {
     const data: Record<string, any> = {}
@@ -379,14 +378,13 @@ const handleSubmitDetail = async () => {
 
     const res = await updateCityDetail(currentId.value, data)
     if (res.data.code === 200) {
-      ElMessage.success('详细信息保存成功')
       return true
     } else {
       ElMessage.error(res.data.msg || '保存失败')
       return false
     }
-  } catch {
-    ElMessage.error('保存失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '保存失败')
     return false
   }
 }
@@ -394,15 +392,20 @@ const handleSubmitDetail = async () => {
 const handleSubmit = async () => {
   if (dialogMode.value === 'detail') return
 
-  if (activeTab.value === 'basic') {
-    const ok = await handleSubmitBasic()
-    if (ok) {
-      dialogVisible.value = false
-      fetchData()
-    }
+  if (dialogMode.value === 'add') {
+    // 新增：先建基本信息拿到 id，再保存详情；两项都提交，与当前停留在哪个 tab 无关
+    const okBasic = await saveBasic()
+    if (!okBasic) return
+    await saveDetail()
+    ElMessage.success('保存成功')
+    dialogVisible.value = false
+    fetchData()
   } else {
-    const ok = await handleSubmitDetail()
-    if (ok) {
+    // 修改：基本信息与详细信息一起提交，无论当前停留在哪个 tab，改过的都保存
+    const okBasic = await saveBasic()
+    const okDetail = await saveDetail()
+    if (okBasic || okDetail) {
+      ElMessage.success('保存成功')
       dialogVisible.value = false
       fetchData()
     }
@@ -425,8 +428,8 @@ const handleToggleStatus = async (row: CityListVO) => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败，请检查网络连接')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败，请检查网络连接')
   }
 }
 

@@ -10,6 +10,10 @@ import type {
   EnterpriseIndustryListVO,
   EnterpriseIndustryDetailVO,
   EnterpriseIndustryQueryDTO,
+  PositionVO,
+  EnterprisePositionAddDTO,
+  EnterprisePositionUpdateDTO,
+  EnterprisePositionQueryDTO,
 } from '@/types/company'
 
 const ENTERPRISE_PREFIX = '/api/v1/admin/company/enterprise'
@@ -77,4 +81,32 @@ export const importEnterpriseIndustry = (file: File) => {
   return request.post<R<void>>(`${INDUSTRY_PREFIX}/import`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+}
+
+// ---- 企业岗位（嵌套子资源：/enterprise/{enterpriseId}/position）----
+
+const positionPrefix = (enterpriseId: string) => `${ENTERPRISE_PREFIX}/${enterpriseId}/position`
+
+export const getEnterprisePositionPage = (enterpriseId: string, params: EnterprisePositionQueryDTO) => {
+  return request.get<R<PageResult<PositionVO>>>(`${positionPrefix(enterpriseId)}/list`, { params })
+}
+
+export const getEnterprisePositionDetail = (enterpriseId: string, id: string) => {
+  return request.get<R<PositionVO>>(`${positionPrefix(enterpriseId)}/${id}`)
+}
+
+export const addEnterprisePosition = (enterpriseId: string, data: EnterprisePositionAddDTO) => {
+  return request.post<R<string>>(positionPrefix(enterpriseId), data)
+}
+
+export const updateEnterprisePosition = (enterpriseId: string, id: string, data: EnterprisePositionUpdateDTO) => {
+  return request.put<R<void>>(`${positionPrefix(enterpriseId)}/${id}`, data)
+}
+
+export const deleteEnterprisePosition = (enterpriseId: string, id: string) => {
+  return request.delete<R<void>>(`${positionPrefix(enterpriseId)}/${id}`)
+}
+
+export const batchDeleteEnterprisePosition = (enterpriseId: string, ids: string[]) => {
+  return request.post<R<void>>(`${positionPrefix(enterpriseId)}/batch/delete`, { ids })
 }

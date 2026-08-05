@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getChannelList, getStrongBaseScoreList } from '@/api/special'
+import { getArchive } from '@/api/gaokao'
+import { useUserStore } from '@/store/modules/user'
 import { ProvinceOptions } from '@haifeng/shared'
 import type { SpecialChannelListVO, StrongBaseScoreListVO } from '@/types/special'
 import {
@@ -45,6 +47,36 @@ const strongBaseRecords = ref<StrongBaseScoreListVO[]>([])
 const loading = ref(false)
 
 const router = useRouter()
+const userStore = useUserStore()
+
+// ===== 统招志愿填报入口 =====
+// 是否已建立高考档案：决定入口展示「填写档案」还是「进入报志愿」
+const hasArchive = ref(false)
+
+// 查询用户是否已填写高考档案（本页为公开页，未登录直接按未建档处理，避免触发401）
+async function fetchArchive() {
+  if (!userStore.isLoggedIn()) {
+    hasArchive.value = false
+    return
+  }
+  try {
+    const res = await getArchive()
+    hasArchive.value = !!res.data.data
+  } catch {
+    // 未建档或查询失败，统一按「未填写档案」处理，不打断本页浏览
+    hasArchive.value = false
+  }
+}
+
+// 填写 / 修改高考档案
+function goArchive() {
+  router.push('/gaokao/archive')
+}
+
+// 进入报志愿（专业组选择）
+function goWishPlan() {
+  router.push('/gaokao/groups')
+}
 
 // 生成年份选项（近5年）
 const yearOptions = computed(() => {
@@ -115,12 +147,66 @@ function viewStrongBaseDetail(id: string) {
   router.push(`/special/strong-base/${id}`)
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  fetchArchive()
+})
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1">
+      <!-- ===== 统招志愿填报入口（置顶） ===== -->
+      <div class="container mx-auto px-6 pt-10">
+        <div class="rounded-2xl bg-white p-7 shadow-lg border-2 border-orange-200 md:p-8">
+          <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-start gap-5">
+              <div class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 text-3xl">
+                🎓
+              </div>
+              <div>
+                <div class="mb-1.5 flex flex-wrap items-center gap-2">
+                  <h3 class="text-xl font-bold text-gray-800">统招志愿填报</h3>
+                  <span
+                    v-if="hasArchive"
+                    class="rounded-full bg-green-50 px-3 py-0.5 text-xs font-medium text-green-600"
+                  >
+                    已建档
+                  </span>
+                </div>
+                <p class="text-gray-500">
+                  {{ hasArchive ? '档案已就绪，可直接进入报志愿选择专业组' : '普通高考统招志愿填报，填写高考档案后开始规划' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex shrink-0 flex-wrap gap-3">
+              <template v-if="hasArchive">
+                <button
+                  class="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:from-orange-600 hover:to-amber-600"
+                  @click="goWishPlan"
+                >
+                  进入报志愿 →
+                </button>
+                <button
+                  class="rounded-xl border border-gray-200 px-6 py-3 text-sm font-medium text-gray-600 transition-all hover:border-orange-300 hover:text-orange-600"
+                  @click="goArchive"
+                >
+                  修改档案
+                </button>
+              </template>
+              <button
+                v-else
+                class="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:from-orange-600 hover:to-amber-600"
+                @click="goArchive"
+              >
+                填写高考档案 →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 引导区 -->
       <div class="container mx-auto px-6 py-12 text-center">
         <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">

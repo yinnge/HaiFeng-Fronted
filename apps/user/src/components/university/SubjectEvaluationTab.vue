@@ -28,8 +28,8 @@ async function fetchStats() {
     if (firstNonZero) {
       activeGrade.value = firstNonZero.grade
     }
-  } catch {
-    ElMessage.error('获取等级统计失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取等级统计失败')
   }
 }
 

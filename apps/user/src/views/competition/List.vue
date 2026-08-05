@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Motion } from 'motion-v'
 import { getCompetitionList } from '@/api/certificate'
-import type { CompetitionListVO } from '@/types/certificate'
+import type { CompetitionListVO, CompetitionQueryDTO } from '@/types/certificate'
 
 const router = useRouter()
 
@@ -14,17 +14,41 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+const query = reactive<CompetitionQueryDTO>({
+  page: 1,
+  size: 10,
+  compName: '',
+  compLevel: '',
+})
+
+const levelOptions = ['国家级', '省级', '校级']
+
 async function fetchList() {
   loading.value = true
   try {
-    const res = await getCompetitionList({ page: currentPage.value, size: pageSize.value })
+    const params: CompetitionQueryDTO = { page: currentPage.value, size: pageSize.value }
+    if (query.compName) params.compName = query.compName
+    if (query.compLevel) params.compLevel = query.compLevel
+    const res = await getCompetitionList(params)
     list.value = res.data.data.records
     total.value = res.data.data.total
-  } catch {
-    ElMessage.error('获取竞赛列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取竞赛列表失败')
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  currentPage.value = 1
+  fetchList()
+}
+
+function handleReset() {
+  query.compName = ''
+  query.compLevel = ''
+  currentPage.value = 1
+  fetchList()
 }
 
 function goDetail(id: string) {
@@ -80,6 +104,32 @@ onMounted(fetchList)
           </div>
         </section>
       </Motion>
+
+      <!-- Search bar -->
+      <div class="mb-6 flex flex-wrap items-center gap-3">
+        <input
+          v-model="query.compName"
+          type="text"
+          placeholder="输入竞赛名称搜索"
+          class="flex-1 min-w-[180px] rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="query.compLevel" placeholder="竞赛级别" clearable class="!w-32">
+          <el-option v-for="opt in levelOptions" :key="opt" :label="opt" :value="opt" />
+        </el-select>
+        <button
+          class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+          @click="handleSearch"
+        >
+          搜索
+        </button>
+        <button
+          class="rounded-lg border border-gray-200 px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
+          @click="handleReset"
+        >
+          重置
+        </button>
+      </div>
 
       <!-- Competition List -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.2 }">

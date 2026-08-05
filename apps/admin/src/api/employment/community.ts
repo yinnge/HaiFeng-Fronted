@@ -35,7 +35,7 @@ export const updateCommunityStatus = (id: string, data: PositionStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteCommunity = (ids: number[]) => {
+export const batchDeleteCommunity = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

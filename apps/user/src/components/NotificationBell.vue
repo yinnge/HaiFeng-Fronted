@@ -78,8 +78,8 @@ async function handleMarkAllRead() {
     unreadCount.value = 0
     notifications.value.forEach((n) => (n.isRead = true))
     ElMessage.success('已全部标记为已读')
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
   } finally {
     markAllLoading.value = false
   }

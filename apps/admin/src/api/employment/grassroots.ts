@@ -35,7 +35,7 @@ export const updateGrassrootsStatus = (id: string, data: PositionStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteGrassroots = (ids: number[]) => {
+export const batchDeleteGrassroots = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

@@ -77,8 +77,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -153,8 +153,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           detailData.value = d
         }
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -194,8 +194,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
   }
 }
 
@@ -250,8 +250,8 @@ const handleImport = async () => {
       } else {
         ElMessage.error(res.data.msg || '导入失败')
       }
-    } catch {
-      ElMessage.error('导入失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '导入失败')
     }
   }
   input.click()

@@ -176,8 +176,8 @@ watch(
             }
             majorOptions.value = [{ label: d.majorName, value: d.majorName, majorCode: d.majorCode }]
           }
-        } catch {
-          ElMessage.error('获取详情失败，请稍后重试')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }
@@ -187,8 +187,8 @@ watch(
           if (res.data.code === 200) {
             detailData.value = res.data.data
           }
-        } catch {
-          ElMessage.error('获取详情失败，请稍后重试')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败，请稍后重试')
         } finally {
           formLoading.value = false
         }

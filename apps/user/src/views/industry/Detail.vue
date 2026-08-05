@@ -74,6 +74,104 @@ onMounted(() => {
   fetchDetail()
   fetchRelatedEnterprises()
 })
+
+const activeJsonbTab = ref('industryScale')
+
+function hasJsonbData(field: Record<string, any> | undefined | null): boolean {
+  return !!field && Object.keys(field).length > 0
+}
+
+function getActiveSection() {
+  return jsonbSections.find(s => s.key === activeJsonbTab.value)
+}
+
+const jsonbSections = [
+  {
+    key: 'industryScale',
+    title: '行业规模',
+    icon: '📊',
+    fields: [
+      { key: 'scaleValue', label: '规模数值' },
+      { key: 'scaleLabel', label: '规模标签' },
+      { key: 'scaleDescriptions', label: '规模描述', type: 'array' },
+    ],
+  },
+  {
+    key: 'industryTalentDemand',
+    title: '人才需求',
+    icon: '🧑‍💼',
+    fields: [
+      { key: 'demandValue', label: '需求量' },
+      { key: 'demandLabel', label: '需求标签' },
+      { key: 'demandDescriptions', label: '需求描述', type: 'array' },
+    ],
+  },
+  {
+    key: 'industrySalary',
+    title: '行业薪资',
+    icon: '💰',
+    fields: [
+      { key: 'salaryRange', label: '薪资范围' },
+      { key: 'salaryLabel', label: '薪资标签' },
+      { key: 'salaryDescriptions', label: '薪资描述', type: 'array' },
+    ],
+  },
+  {
+    key: 'policyInfo',
+    title: '政策信息',
+    icon: '🏛️',
+    fields: [
+      { key: 'policyOverview', label: '政策概览' },
+      { key: 'nationalPolicies', label: '国家政策', type: 'array' },
+      { key: 'policyHighlights', label: '政策亮点' },
+    ],
+  },
+  {
+    key: 'developmentSupportInfo',
+    title: '发展支持',
+    icon: '🏗️',
+    fields: [
+      { key: 'regionalOverview', label: '地域概述' },
+      { key: 'keyCities', label: '重点城市', type: 'array' },
+      { key: 'cityPolicies', label: '城市政策', type: 'array' },
+    ],
+  },
+  {
+    key: 'talentAnalysis',
+    title: '人才分析',
+    icon: '📈',
+    fields: [
+      { key: 'analysisTitle', label: '分析标题' },
+      { key: 'shortagePositions', label: '紧缺岗位', type: 'array' },
+      { key: 'educationRequirement', label: '学历要求' },
+      { key: 'majorRequirement', label: '专业要求' },
+      { key: 'talentTrendDescription', label: '人才趋势' },
+    ],
+  },
+  {
+    key: 'talentPolicy',
+    title: '人才政策',
+    icon: '🎓',
+    fields: [
+      { key: 'policyTitle', label: '政策标题' },
+      { key: 'nationalPolicies', label: '国家级政策', type: 'array' },
+      { key: 'localPolicies', label: '地方级政策', type: 'array' },
+      { key: 'enterpriseDescription', label: '企业层面' },
+    ],
+  },
+  {
+    key: 'salaryData',
+    title: '薪资数据',
+    icon: '💵',
+    fields: [
+      { key: 'salaryAnalysisTitle', label: '薪资分析标题' },
+      { key: 'salaryAnalysisDescription', label: '薪资分析描述' },
+      { key: 'regionalSalaryTitle', label: '地域差异标题' },
+      { key: 'regionalSalaryDescription', label: '地域差异描述' },
+      { key: 'salaryTrendAnalysis', label: '趋势分析' },
+    ],
+  },
+]
 </script>
 
 <template>
@@ -132,98 +230,42 @@ onMounted(() => {
           </div>
         </section>
 
-        <!-- 行业规模 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">📊 行业规模</h3>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-            <div><span class="text-gray-400">年增长率：</span><span class="text-gray-700">{{ detail.annualGrowthRate != null ? `${detail.annualGrowthRate}%` : '-' }}</span></div>
-            <div><span class="text-gray-400">市场规模：</span><span class="text-gray-700">{{ detail.marketScale || '-' }}</span></div>
-            <div><span class="text-gray-400">人才缺口：</span><span class="text-gray-700">{{ detail.talentGap || '-' }}</span></div>
-          </div>
-          <div v-if="detail.industryScale && Object.keys(detail.industryScale).length" class="mt-4 border-t border-gray-100 pt-4">
-            <h4 class="text-sm font-semibold text-gray-600 mb-3">规模明细</h4>
-            <div class="grid grid-cols-3 gap-4 text-sm">
-              <div class="text-center rounded-xl bg-orange-50 p-3">
-                <div class="text-lg font-bold text-orange-600">{{ detail.industryScale?.year ?? '-' }}</div>
-                <div class="text-xs text-gray-500 mt-1">年份</div>
-              </div>
-              <div class="text-center rounded-xl bg-blue-50 p-3">
-                <div class="text-lg font-bold text-blue-600">{{ detail.industryScale?.scale ?? '-' }}</div>
-                <div class="text-xs text-gray-500 mt-1">规模</div>
-              </div>
-              <div class="text-center rounded-xl bg-green-50 p-3">
-                <div class="text-lg font-bold text-green-600">{{ detail.industryScale?.growth ?? '-' }}</div>
-                <div class="text-xs text-gray-500 mt-1">增长</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 薪资水平 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">💰 薪资水平</h3>
-          <div v-if="detail.industrySalary && Object.keys(detail.industrySalary).length" class="mb-6">
-            <h4 class="text-sm font-semibold text-gray-600 mb-3">行业薪资范围</h4>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div><span class="text-gray-400">入门：</span><span class="text-gray-700">{{ detail.industrySalary?.entry ?? '-' }}</span></div>
-              <div><span class="text-gray-400">中级：</span><span class="text-gray-700">{{ detail.industrySalary?.mid ?? '-' }}</span></div>
-              <div><span class="text-gray-400">高级：</span><span class="text-gray-700">{{ detail.industrySalary?.senior ?? '-' }}</span></div>
-            </div>
-          </div>
-          <div v-if="detail.salaryData && Object.keys(detail.salaryData).length" class="border-t border-gray-100 pt-4">
-            <h4 class="text-sm font-semibold text-gray-600 mb-3">薪资对比</h4>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div><span class="text-gray-400">全国平均：</span><span class="text-gray-700">{{ detail.salaryData?.nationalAvg ?? '-' }}</span></div>
-              <div><span class="text-gray-400">一线城市：</span><span class="text-gray-700">{{ detail.salaryData?.tier1City ?? '-' }}</span></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 人才分析 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">🧑‍💼 人才分析</h3>
-          <div v-if="detail.talentAnalysis && Object.keys(detail.talentAnalysis).length" class="mb-4">
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div><span class="text-gray-400">供需比：</span><span class="text-gray-700">{{ detail.talentAnalysis?.supplyDemandRatio ?? '-' }}</span></div>
-              <div><span class="text-gray-400">学历要求：</span><span class="text-gray-700">{{ detail.talentAnalysis?.educationRequired ?? '-' }}</span></div>
-            </div>
-          </div>
-          <div v-if="detail.industryTalentDemand && Object.keys(detail.industryTalentDemand).length" class="border-t border-gray-100 pt-4">
-            <div class="mb-3">
-              <span class="text-sm text-gray-400">总需求：</span>
-              <span class="text-sm font-semibold text-gray-700">{{ detail.industryTalentDemand?.totalDemand ?? '-' }}</span>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-gray-600 mb-2">热门岗位</h4>
-              <div class="flex flex-wrap gap-2">
-                <span v-if="detail.industryTalentDemand?.hotRoles?.length" v-for="role in detail.industryTalentDemand.hotRoles" :key="role" class="rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-700">{{ role }}</span>
-                <span v-else class="text-gray-400 text-sm">暂无数据</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 政策与支持 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">🏛️ 政策与支持</h3>
-          <div v-if="detail.policyInfo && Object.keys(detail.policyInfo).length" class="mb-4">
-            <div class="grid grid-cols-1 gap-3 text-sm" v-for="(value, key) in detail.policyInfo" :key="key">
-              <div><span class="text-gray-400">{{ key }}：</span><span class="text-gray-700">{{ value }}</span></div>
-            </div>
-          </div>
-          <div v-if="detail.developmentSupportInfo && Object.keys(detail.developmentSupportInfo).length" class="border-t border-gray-100 pt-4">
-            <h4 class="text-sm font-semibold text-gray-600 mb-3">发展支持</h4>
-            <div class="grid grid-cols-1 gap-3 text-sm" v-for="(value, key) in detail.developmentSupportInfo" :key="key">
-              <div><span class="text-gray-400">{{ key }}：</span><span class="text-gray-700">{{ value }}</span></div>
-            </div>
-          </div>
-          <p v-if="!detail.policyInfo && !detail.developmentSupportInfo" class="text-sm text-gray-400">暂无数据</p>
-        </section>
-
         <!-- 详细描述 Section -->
         <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
           <h3 class="mb-4 text-lg font-bold text-gray-800">📋 详细描述</h3>
           <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.detailedDescription || '暂无详细介绍' }}</p>
+        </section>
+
+        <!-- JSONB Tabs Section -->
+        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
+          <div class="jsonb-tab-bar">
+            <button
+              v-for="section in jsonbSections"
+              :key="section.key"
+              :class="['jsonb-tab', { active: activeJsonbTab === section.key }]"
+              @click="activeJsonbTab = section.key"
+            >
+              <span>{{ section.icon }}</span>
+              <span>{{ section.title }}</span>
+            </button>
+          </div>
+
+          <div v-if="getActiveSection() && hasJsonbData((detail as any)?.[getActiveSection()!.key])" class="jsonb-tab-content">
+            <div v-for="field in getActiveSection()!.fields" :key="field.key" class="jsonb-field-row">
+              <template v-if="(detail as any)?.[getActiveSection()!.key]?.[field.key] != null && (detail as any)?.[getActiveSection()!.key]?.[field.key] !== ''">
+                <span class="jsonb-field-label">{{ field.label }}</span>
+                <template v-if="field.type === 'array' && Array.isArray((detail as any)?.[getActiveSection()!.key]?.[field.key]) && (detail as any)?.[getActiveSection()!.key]?.[field.key].length">
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="(item, idx) in (detail as any)?.[getActiveSection()!.key]?.[field.key]" :key="idx" class="jsonb-pill">{{ item }}</span>
+                  </div>
+                </template>
+                <template v-else-if="field.type !== 'array'">
+                  <span class="jsonb-field-value">{{ (detail as any)?.[getActiveSection()!.key]?.[field.key] }}</span>
+                </template>
+              </template>
+            </div>
+          </div>
+          <p v-else class="text-sm text-gray-400">暂无数据</p>
         </section>
 
         <!-- 关联企业 Section -->
@@ -256,3 +298,78 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+/* ========== JSONB Tab Bar ========== */
+.jsonb-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+}
+.jsonb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.jsonb-tab:hover {
+  color: #f97316;
+  border-color: #f97316;
+}
+.jsonb-tab.active {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+/* ========== JSONB Tab Content ========== */
+.jsonb-tab-content {
+  min-height: 80px;
+}
+.jsonb-field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f9fafb;
+}
+.jsonb-field-row:last-child {
+  border-bottom: none;
+}
+.jsonb-field-label {
+  flex-shrink: 0;
+  width: 100px;
+  color: #9ca3af;
+  font-size: 13px;
+  padding-top: 2px;
+}
+.jsonb-field-value {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ========== JSONB Pill Tags ========== */
+.jsonb-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: #c2410c;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+}
+</style>

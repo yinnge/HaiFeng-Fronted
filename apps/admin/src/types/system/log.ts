@@ -29,5 +29,5 @@ export interface AdminLogQueryDTO extends BasePageQuery {
 /** 操作日志批量删除 DTO */
 export interface AdminLogBatchDeleteDTO {
   type: 'ids' | 'lastMonth' | 'all'
-  ids?: number[]
+  ids?: string[]
 }
