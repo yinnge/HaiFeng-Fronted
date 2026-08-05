@@ -52,7 +52,14 @@ export const navItems: NavItem[] = [
   },
   { id: 'cet', label: '英语四六级' },
   { id: 'city', label: '城市查询', route: '/city' },
-  { id: 'industry', label: '行业查询', route: '/industry' },
+  {
+    id: 'enterprise-industry',
+    label: '企业行业',
+    subItems: [
+      { label: '企业查询', route: '/enterprise' },
+      { label: '行业查询', route: '/industry' },
+    ],
+  },
   { id: 'resource', label: '资料档案', route: '/resource' },
   { id: 'tools', label: '规划工具' },
   {

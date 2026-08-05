@@ -62,3 +62,8 @@ export interface CertificateQueryDTO extends BasePageQuery {
   category?: string
   certName?: string
 }
+
+export interface CompetitionQueryDTO extends BasePageQuery {
+  compName?: string
+  compLevel?: string
+}

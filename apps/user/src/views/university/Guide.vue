@@ -41,8 +41,8 @@ async function fetchOverview() {
   try {
     const res = await getGuideOverview(id)
     overview.value = res.data.data
-  } catch {
-    ElMessage.error('获取指南信息失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取指南信息失败')
   }
 }
 
@@ -112,8 +112,8 @@ async function fetchGallery() {
     const res = await getCampusGallery(id, params)
     galleryList.value = res.data.data.records
     galleryTotal.value = res.data.data.total
-  } catch {
-    ElMessage.error('获取图册失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取图册失败')
   } finally {
     galleryLoading.value = false
   }

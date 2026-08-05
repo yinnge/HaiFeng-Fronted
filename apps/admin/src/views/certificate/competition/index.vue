@@ -71,8 +71,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -192,8 +192,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           awardsDisplay: d.awardsDisplay || [],
         }
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -206,8 +206,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
       if (res.data.code === 200) {
         detailData.value = res.data.data
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -264,8 +264,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
   }
 }
 

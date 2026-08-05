@@ -36,8 +36,8 @@ const handleConfirm = async () => {
     } else {
       ElMessage.error(res.data.msg || '处理失败')
     }
-  } catch {
-    ElMessage.error('处理失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '处理失败')
   } finally {
     processing.value = false
   }

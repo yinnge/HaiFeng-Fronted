@@ -37,8 +37,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取配置失败')
     }
-  } catch {
-    ElMessage.error('获取配置失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取配置失败')
   } finally {
     loading.value = false
   }
@@ -82,8 +82,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
@@ -225,12 +225,15 @@ onMounted(() => {
 
           <el-divider />
           <h4 class="form-section-title">年份衰减权重</h4>
-          <div class="grid grid-cols-5 gap-3">
-            <div v-for="(_, index) in Math.min(formData.yearWeights.length, 5)" :key="index">
-              <el-form-item :label="`距今${index + 1}年`" label-width="70px">
-                <el-input-number v-model="formData.yearWeights[index]" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" style="width: 100%;" />
-              </el-form-item>
-            </div>
+          <div class="year-weights-grid">
+            <el-form-item
+              v-for="(_, index) in Math.min(formData.yearWeights.length, 5)"
+              :key="index"
+              :label="`距今${index + 1}年`"
+              label-position="top"
+            >
+              <el-input-number v-model="formData.yearWeights[index]" :min="0" :max="1" :step="0.01" :precision="2" controls-position="right" style="width: 100%;" />
+            </el-form-item>
           </div>
         </el-form>
       </div>
@@ -438,6 +441,22 @@ onMounted(() => {
   font-weight: 600;
   color: #f97316;
   margin: 0 0 12px 0;
+}
+
+/* ===== 年份衰减权重：每行最多 3 个，标签置顶，输入框占满列宽 ===== */
+.year-weights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 18px;
+}
+.year-weights-grid :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+.year-weights-grid :deep(.el-form-item__label) {
+  color: #6b7280;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 6px;
 }
 
 .dialog-footer {

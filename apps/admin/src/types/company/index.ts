@@ -94,6 +94,54 @@ export interface StatusDTO {
   isDeleted: boolean
 }
 
+// ---- 企业岗位 ----
+export interface EnterprisePositionAddDTO {
+  positionName: string
+  recruitmentType?: string
+  positionRequirement?: string
+  positionTags?: string[]
+  province?: string
+  city?: string
+  workLocation?: string
+  educationRequirement?: string
+  majorRequirement?: string
+  workExperience?: string
+  salaryMin?: number | null
+  salaryMax?: number | null
+  applyLink?: string
+  deadline?: string | null
+  positionStatus?: string
+}
+
+export interface EnterprisePositionUpdateDTO {
+  positionName: string
+  recruitmentType?: string
+  positionRequirement?: string
+  positionTags?: string[]
+  province?: string
+  city?: string
+  workLocation?: string
+  educationRequirement?: string
+  majorRequirement?: string
+  workExperience?: string
+  salaryMin?: number | null
+  salaryMax?: number | null
+  applyLink?: string
+  deadline?: string | null
+  positionStatus?: string
+}
+
+export interface EnterprisePositionQueryDTO {
+  page: number
+  size: number
+  positionName?: string
+  recruitmentType?: string
+  educationRequirement?: string
+  positionStatus?: string
+  province?: string
+  city?: string
+}
+
 export interface EnterpriseIndustryListVO {
   id: string
   enterpriseId: string

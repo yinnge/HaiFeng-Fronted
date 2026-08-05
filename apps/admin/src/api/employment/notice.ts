@@ -35,6 +35,6 @@ export const updateNoticeStatus = (id: string, data: StatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteNotice = (ids: number[]) => {
+export const batchDeleteNotice = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }

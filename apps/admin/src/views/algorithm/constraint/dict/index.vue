@@ -69,6 +69,47 @@ const checkOperatorOptions = [
   { label: '不在范围内', value: 'NOT_IN' },
 ]
 
+const checkFieldOptions = [
+  // 身体视觉
+  { label: '是否色盲', value: 'is_color_blind' },
+  { label: '是否色弱', value: 'is_color_weak' },
+  { label: '左眼视力', value: 'vision_left' },
+  { label: '右眼视力', value: 'vision_right' },
+  { label: '嗅觉迟钝', value: 'has_smell_disorder' },
+  // 身体指标
+  { label: '身高(cm)', value: 'height_cm' },
+  { label: '体重(kg)', value: 'weight_kg' },
+  { label: '左利手', value: 'is_left_handed' },
+  { label: '纹身', value: 'has_tattoo' },
+  { label: '面部疤痕', value: 'has_scar' },
+  { label: '口吃', value: 'has_stutter' },
+  // 身份条件
+  { label: '应届生', value: 'is_fresh_graduate' },
+  { label: '政治面貌', value: 'political_status' },
+  { label: '户籍类型', value: 'household_type' },
+  { label: '贫困县户籍', value: 'is_poverty_county' },
+  // 外语
+  { label: '外语语种', value: 'foreign_language' },
+  // 选科
+  { label: '首选科目', value: 'subject_type' },
+  // 各科成绩
+  { label: '语文成绩', value: 'score_chinese' },
+  { label: '数学成绩', value: 'score_math' },
+  { label: '外语成绩', value: 'score_english' },
+  // 选考科目分数
+  { label: '物理分数', value: 'score_physics' },
+  { label: '化学分数', value: 'score_chemistry' },
+  { label: '生物分数', value: 'score_biology' },
+  { label: '政治分数', value: 'score_politics' },
+  { label: '历史分数', value: 'score_history' },
+  { label: '地理分数', value: 'score_geography' },
+]
+
+const fieldLabel = (val: string | null | undefined) => {
+  const opt = checkFieldOptions.find((o) => o.value === val)
+  return opt ? opt.label : (val || '-')
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -79,8 +120,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -146,8 +187,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', code?: string) => {
         formData.sortOrder = d.sortOrder
         formData.isActive = d.isActive
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -160,8 +201,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', code?: string) => {
       if (res.data.code === 200) {
         detailData.value = res.data.data
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -345,7 +386,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column prop="checkField" label="检查字段" min-width="140">
           <template #default="{ row }">
-            {{ row.checkField || '-' }}
+            {{ fieldLabel(row.checkField) }}
           </template>
         </el-table-column>
         <el-table-column prop="isActive" label="状态" min-width="80" align="center">
@@ -407,10 +448,10 @@ onMounted(() => {
               </span>
             </el-descriptions-item>
             <el-descriptions-item label="排序值">{{ detailData.sortOrder }}</el-descriptions-item>
-            <el-descriptions-item label="检查字段">{{ detailData.checkField || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="检查字段">{{ fieldLabel(detailData.checkField) }}</el-descriptions-item>
             <el-descriptions-item label="检查运算符">{{ detailData.checkOperator || '-' }}</el-descriptions-item>
             <el-descriptions-item label="检查值">{{ detailData.checkValue || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="附加条件字段">{{ detailData.extraField || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="附加条件字段">{{ fieldLabel(detailData.extraField) }}</el-descriptions-item>
             <el-descriptions-item label="附加条件运算符">{{ detailData.extraOperator || '-' }}</el-descriptions-item>
             <el-descriptions-item label="附加条件值">{{ detailData.extraValue || '-' }}</el-descriptions-item>
             <el-descriptions-item label="详细说明" :span="2">
@@ -452,7 +493,9 @@ onMounted(() => {
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="检查字段">
-                  <el-input v-model="formData.checkField" placeholder="对应 t_member_gaokao 字段" maxlength="50" />
+                  <el-select v-model="formData.checkField" placeholder="选择检查字段" clearable filterable style="width: 100%">
+                    <el-option v-for="item in checkFieldOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -479,7 +522,9 @@ onMounted(() => {
             <el-row :gutter="20">
               <el-col :span="8">
                 <el-form-item label="附加字段">
-                  <el-input v-model="formData.extraField" placeholder="字段名" maxlength="50" />
+                  <el-select v-model="formData.extraField" placeholder="选择附加字段" clearable filterable style="width: 100%">
+                    <el-option v-for="item in checkFieldOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">

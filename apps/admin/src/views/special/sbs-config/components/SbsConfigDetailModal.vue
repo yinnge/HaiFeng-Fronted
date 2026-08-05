@@ -122,8 +122,8 @@ watch(
             }
             availableMajorsStr.value = (d.availableMajors || []).join(', ')
           }
-        } catch {
-          ElMessage.error('获取详情失败')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
         } finally {
           formLoading.value = false
         }
@@ -133,8 +133,8 @@ watch(
           if (res.data.code === 200) {
             detailData.value = res.data.data
           }
-        } catch {
-          ElMessage.error('获取详情失败')
+        } catch (e: any) {
+          ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
         } finally {
           formLoading.value = false
         }

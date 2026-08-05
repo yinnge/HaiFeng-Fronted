@@ -35,7 +35,7 @@ export const updateWelfareStatus = (id: string, data: PositionStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteWelfare = (ids: number[]) => {
+export const batchDeleteWelfare = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

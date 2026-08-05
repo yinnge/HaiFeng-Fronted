@@ -44,8 +44,8 @@ async function fetchList() {
     })
     list.value = res.data.data.records
     total.value = res.data.data.total
-  } catch {
-    ElMessage.error('获取证书列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取证书列表失败')
   } finally {
     loading.value = false
   }

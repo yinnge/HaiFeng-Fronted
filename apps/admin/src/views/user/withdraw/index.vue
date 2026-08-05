@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getWithdrawPage } from '@/api/user/withdraw'
 import type { WithdrawListVO, WithdrawQueryDTO } from '@/types/user/withdraw'
@@ -7,6 +8,8 @@ import WithdrawSearch from './components/WithdrawSearch.vue'
 import WithdrawTable from './components/WithdrawTable.vue'
 import WithdrawDetailModal from './components/WithdrawDetailModal.vue'
 import WithdrawProcessModal from './components/WithdrawProcessModal.vue'
+
+const route = useRoute()
 
 const loading = ref(false)
 const tableData = ref<WithdrawListVO[]>([])
@@ -41,8 +44,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -92,6 +95,10 @@ const handleSuccess = () => {
 }
 
 onMounted(() => {
+  const statusQuery = route.query.status as string | undefined
+  if (statusQuery && ['pending', 'paid', 'rejected'].includes(statusQuery)) {
+    queryParams.status = statusQuery as WithdrawQueryDTO['status']
+  }
   fetchData()
 })
 </script>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { getDashboardStats, getMemberTrend, getOrderTrend, getDashboardOverview } from '@/api/dashboard'
 import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO } from '@/types/dashboard'
 import { Line, Column } from '@antv/g2plot'
+
+const router = useRouter()
 
 const loading = ref(true)
 const errorMsg = ref('')
@@ -12,24 +15,20 @@ const stats = ref<DashboardStatsVO | null>(null)
 const overview = ref<DashboardOverviewVO | null>(null)
 const activeDays = ref(7)
 
-// 图表实例
 let memberTrendChart: Line | null = null
 let orderTrendChart: Line | null = null
 let entityCompareChart: Column | null = null
 
-// 图表容器 ref
 const memberTrendRef = ref<HTMLDivElement>()
 const orderTrendRef = ref<HTMLDivElement>()
 const entityCompareRef = ref<HTMLDivElement>()
 
-// 品牌色
 const BRAND_ORANGE = '#F97316'
 const BRAND_ORANGE_LIGHT = '#FB923C'
 const BRAND_BLUE = '#1e88e5'
 const BRAND_GREEN = '#10b981'
 const BRAND_GOLD = '#f5a54a'
 
-// 统计卡片配置
 const statCards = ref<{
   title: string
   value: number | string
@@ -38,7 +37,6 @@ const statCards = ref<{
   gradient: string
 }[]>([])
 
-// 实体对比数据
 const entityCards = ref<{ label: string; value: number; color: string }[]>([])
 
 async function fetchStats() {
@@ -126,7 +124,6 @@ function buildStatCards() {
     },
   ]
 
-  // 实体对比数据
   const { entityStats } = stats.value
   entityCards.value = [
     { label: '院校', value: entityStats.universityCount, color: BRAND_BLUE },
@@ -327,6 +324,14 @@ function handleDaysChange(days: number) {
   fetchTrends()
 }
 
+function goToWithdrawTodo() {
+  router.push({ path: '/user/withdraw', query: { status: 'pending' } })
+}
+
+function goToOrderTodo() {
+  router.push({ path: '/user/order', query: { status: 'pending' } })
+}
+
 function formatTime(timeStr: string): string {
   if (!timeStr) return ''
   const date = new Date(timeStr)
@@ -353,11 +358,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="dashboard-container">
-    <!-- 页面背景装饰 -->
     <div class="brand-watermark brand-watermark--top-right" />
     <div class="brand-watermark brand-watermark--bottom-left" />
 
-    <!-- 页面标题 -->
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h2 class="text-2xl font-bold text-gray-800">控制面板</h2>
@@ -376,10 +379,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 加载中 -->
     <div v-if="loading" v-loading="loading" class="min-h-[400px] rounded-xl bg-white p-6" />
 
-    <!-- 错误提示 -->
     <el-alert
       v-if="!loading && errorMsg"
       :title="errorMsg"
@@ -389,31 +390,67 @@ onBeforeUnmount(() => {
       class="mb-4"
     />
 
-    <!-- Bento Grid 内容 -->
     <div v-if="!loading && stats" class="bento-grid">
-      <!-- 左上：统计卡片区域 (2x2) -->
-      <div class="bento-cell bento-cell--stats">
-        <div class="stats-grid">
-          <div
-            v-for="card in statCards"
-            :key="card.title"
-            class="stat-card"
-          >
-            <div class="stat-card__icon" :style="{ background: card.gradient }">
-              <el-icon :size="20" color="#fff">
-                <component :is="card.icon" />
-              </el-icon>
-            </div>
-            <div class="stat-card__content">
-              <p class="stat-card__label">{{ card.title }}</p>
-              <p class="stat-card__value" :style="{ color: card.color }">{{ card.value }}</p>
-            </div>
+      <!-- Row 1: 4个统计卡片 -->
+      <div
+        v-for="card in statCards"
+        :key="card.title"
+        class="bento-cell bento-cell--stat"
+      >
+        <div class="stat-card">
+          <div class="stat-card__icon" :style="{ background: card.gradient }">
+            <el-icon :size="22" color="#fff">
+              <component :is="card.icon" />
+            </el-icon>
+          </div>
+          <div class="stat-card__content">
+            <p class="stat-card__label">{{ card.title }}</p>
+            <p class="stat-card__value" :style="{ color: card.color }">{{ card.value }}</p>
           </div>
         </div>
       </div>
 
-      <!-- 右上：用户增长趋势 -->
-      <div class="bento-cell bento-cell--trend">
+      <!-- Row 2 左: 订单增长趋势 (3列) -->
+      <div class="bento-cell bento-cell--order-trend">
+        <div class="chart-header">
+          <h3 class="chart-title">订单增长趋势</h3>
+          <span class="chart-badge chart-badge--blue">折线图</span>
+        </div>
+        <div ref="orderTrendRef" class="chart-container chart-container--tall" />
+        <div v-if="trendError" class="chart-empty">{{ trendError }}</div>
+      </div>
+
+      <!-- Row 2 右: 系统信息 (1列) -->
+      <div class="bento-cell bento-cell--system">
+        <div class="overview-section">
+          <div class="overview-header">
+            <span class="overview-icon">⚙️</span>
+            <h3 class="overview-title">系统信息</h3>
+          </div>
+          <div v-if="overview" class="overview-list">
+            <div class="overview-item">
+              <span class="overview-label">网站名称</span>
+              <span class="overview-value">{{ overview.systemInfo.siteName || '-' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">厂商 / 模型</span>
+              <span class="overview-value overview-value--tag">{{ overview.systemInfo.aiProvider || '-' }} / {{ overview.systemInfo.aiModel || '-' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">版本</span>
+              <span class="overview-value overview-value--tag">v{{ overview.systemInfo.appVersion }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">管理员数</span>
+              <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
+            </div>
+          </div>
+          <div v-else class="chart-empty">{{ overviewError || '暂无数据' }}</div>
+        </div>
+      </div>
+
+      <!-- Row 3 左: 用户增长趋势 (2列) -->
+      <div class="bento-cell bento-cell--half">
         <div class="chart-header">
           <h3 class="chart-title">用户增长趋势</h3>
           <span class="chart-badge">折线图</span>
@@ -422,18 +459,8 @@ onBeforeUnmount(() => {
         <div v-if="trendError" class="chart-empty">{{ trendError }}</div>
       </div>
 
-      <!-- 左下：订单趋势 -->
-      <div class="bento-cell bento-cell--chart">
-        <div class="chart-header">
-          <h3 class="chart-title">订单趋势</h3>
-          <span class="chart-badge chart-badge--blue">折线图</span>
-        </div>
-        <div ref="orderTrendRef" class="chart-container" />
-        <div v-if="trendError" class="chart-empty">{{ trendError }}</div>
-      </div>
-
-      <!-- 中下：实体数据对比 -->
-      <div class="bento-cell bento-cell--chart">
+      <!-- Row 3 右: 实体数据对比 (2列) -->
+      <div class="bento-cell bento-cell--half">
         <div class="chart-header">
           <h3 class="chart-title">实体数据对比</h3>
           <span class="chart-badge chart-badge--green">柱状图</span>
@@ -441,13 +468,13 @@ onBeforeUnmount(() => {
         <div ref="entityCompareRef" class="chart-container" />
       </div>
 
-      <!-- 底部：待办事项（独立模块，占原位置） -->
+      <!-- Row 4: 订单待办 + 提现待办 -->
       <template v-if="overview">
-        <div class="bento-cell bento-cell--overview">
+        <div class="bento-cell bento-cell--half bento-cell--clickable" @click="goToOrderTodo">
           <div class="overview-section">
             <div class="overview-header">
               <span class="overview-icon">📋</span>
-              <h3 class="overview-title">待办事项</h3>
+              <h3 class="overview-title">订单待办</h3>
               <span class="overview-badge">{{ overview.todoList.pendingOrderCount }} 笔待处理</span>
             </div>
             <div class="todo-list">
@@ -466,38 +493,42 @@ onBeforeUnmount(() => {
                 暂无待处理订单
               </div>
             </div>
+            <div v-if="overview.todoList.pendingOrderCount > 0" class="todo-link">
+              点击查看全部 →
+            </div>
           </div>
         </div>
 
-        <!-- 底部：系统信息（待办事项右侧） -->
-        <div class="bento-cell bento-cell--overview">
+        <div class="bento-cell bento-cell--half bento-cell--clickable" @click="goToWithdrawTodo">
           <div class="overview-section">
             <div class="overview-header">
-              <span class="overview-icon">⚙️</span>
-              <h3 class="overview-title">系统信息</h3>
+              <span class="overview-icon">💰</span>
+              <h3 class="overview-title">提现待办</h3>
+              <span class="overview-badge overview-badge--gold">{{ overview.todoList.pendingWithdrawCount }} 笔待处理</span>
             </div>
-            <div class="overview-list">
-              <div class="overview-item">
-                <span class="overview-label">站点名称</span>
-                <span class="overview-value">{{ overview.systemInfo.siteName || '-' }}</span>
+            <div class="todo-list">
+              <div
+                v-for="withdraw in overview.todoList.pendingWithdraws"
+                :key="withdraw.id"
+                class="todo-item"
+              >
+                <div class="todo-item__info">
+                  <span class="todo-item__name">{{ withdraw.memberName }}</span>
+                  <span class="todo-item__time">{{ formatTime(withdraw.createdAt) }}</span>
+                </div>
+                <span class="todo-item__amount">¥{{ withdraw.amount }}</span>
               </div>
-              <div class="overview-item">
-                <span class="overview-label">应用版本</span>
-                <span class="overview-value overview-value--tag">v{{ overview.systemInfo.appVersion }}</span>
+              <div v-if="overview.todoList.pendingWithdraws.length === 0" class="todo-empty">
+                暂无待处理提现
               </div>
-              <div class="overview-item">
-                <span class="overview-label">AI 模型</span>
-                <span class="overview-value">{{ overview.systemInfo.aiProvider }} / {{ overview.systemInfo.aiModel }}</span>
-              </div>
-              <div class="overview-item">
-                <span class="overview-label">管理员数</span>
-                <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
-              </div>
+            </div>
+            <div v-if="overview.todoList.pendingWithdrawCount > 0" class="todo-link">
+              点击查看全部 →
             </div>
           </div>
         </div>
       </template>
-      <div v-else class="bento-cell bento-cell--overview">
+      <div v-else class="bento-cell bento-cell--full">
         <div class="chart-empty">
           <template v-if="overviewError">{{ overviewError }}</template>
           <template v-else>暂无数据</template>
@@ -515,7 +546,6 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, rgba(255, 247, 237, 0.6) 0%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 247, 237, 0.3) 100%);
 }
 
-/* 品牌水印 */
 .brand-watermark {
   position: absolute;
   width: 200px;
@@ -538,7 +568,6 @@ onBeforeUnmount(() => {
   transform: rotate(180deg);
 }
 
-/* 时间筛选按钮 */
 .time-btn {
   padding: 6px 16px;
   font-size: 13px;
@@ -567,11 +596,11 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-/* Bento Grid 布局 */
+/* ==================== Bento Grid（4列） ==================== */
 .bento-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto auto auto;
   gap: 16px;
 }
 
@@ -590,55 +619,54 @@ onBeforeUnmount(() => {
   transform: translateY(-1px);
 }
 
-/* 左上：统计卡片区域 */
-.bento-cell--stats {
-  grid-column: 1;
+/* Row 1: 统计卡片 */
+.bento-cell--stat {
   grid-row: 1;
 }
 
-/* 右上：用户增长趋势 */
-.bento-cell--trend {
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 320px;
+.bento-cell--stat:nth-child(1) { grid-column: 1; }
+.bento-cell--stat:nth-child(2) { grid-column: 2; }
+.bento-cell--stat:nth-child(3) { grid-column: 3; }
+.bento-cell--stat:nth-child(4) { grid-column: 4; }
+
+/* Row 2: 订单趋势（3列）+ 系统信息（1列） */
+.bento-cell--order-trend {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  min-height: 400px;
 }
 
-/* 下方图表 */
-.bento-cell--chart {
-  min-height: 280px;
+.bento-cell--system {
+  grid-column: 4;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 统计卡片网格 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  height: 100%;
+/* Row 3 & 4: 各占2列 */
+.bento-cell--half {
+  grid-column: span 2;
 }
 
+.bento-cell--full {
+  grid-column: 1 / -1;
+}
+
+/* ==================== 统计卡片 ==================== */
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, rgba(255, 247, 237, 0.5) 0%, #fff 100%);
-  border-radius: 10px;
-  border: 1px solid rgba(249, 115, 22, 0.06);
-  transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.06);
+  gap: 14px;
+  padding: 4px 0;
 }
 
 .stat-card__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
@@ -654,13 +682,13 @@ onBeforeUnmount(() => {
 }
 
 .stat-card__value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
 
-/* 图表头部 */
+/* ==================== 图表 ==================== */
 .chart-header {
   display: flex;
   align-items: center;
@@ -695,25 +723,17 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.1));
 }
 
-.chart-badge--gold {
-  color: #f5a54a;
-  background: linear-gradient(135deg, rgba(245, 165, 74, 0.1), rgba(251, 191, 36, 0.1));
-}
-
-/* 图表容器 */
 .chart-container {
   width: 100%;
   height: calc(100% - 40px);
   min-height: 220px;
 }
 
-/* 底部：待办事项 / 系统信息 */
-.bento-cell--overview {
-  display: flex;
-  flex-direction: column;
-  min-height: 280px;
+.chart-container--tall {
+  min-height: 340px;
 }
 
+/* ==================== 系统信息 ==================== */
 .overview-section {
   flex: 1;
 }
@@ -743,6 +763,11 @@ onBeforeUnmount(() => {
   color: #F97316;
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 146, 60, 0.1));
   border-radius: 10px;
+}
+
+.overview-badge--gold {
+  color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
 }
 
 .overview-list {
@@ -786,6 +811,7 @@ onBeforeUnmount(() => {
   color: #F97316;
 }
 
+/* ==================== 待办事项 ==================== */
 .todo-list {
   display: flex;
   flex-direction: column;
@@ -839,6 +865,22 @@ onBeforeUnmount(() => {
   color: #9ca3af;
 }
 
+.bento-cell--clickable {
+  cursor: pointer;
+}
+
+.bento-cell--clickable:hover {
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.12);
+}
+
+.todo-link {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #F97316;
+  text-align: right;
+}
+
 .chart-empty {
   display: flex;
   align-items: center;
@@ -848,17 +890,27 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
-/* 响应式 */
-@media (max-width: 1024px) {
+/* ==================== 响应式 ==================== */
+@media (max-width: 1280px) {
   .bento-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .bento-cell--stats,
-  .bento-cell--trend,
-  .bento-cell--overview {
-    grid-column: 1;
-    grid-row: auto;
+  .bento-cell--stat:nth-child(1) { grid-column: 1; }
+  .bento-cell--stat:nth-child(2) { grid-column: 2; }
+  .bento-cell--stat:nth-child(3) { grid-column: 1; }
+  .bento-cell--stat:nth-child(4) { grid-column: 2; }
+
+  .bento-cell--order-trend {
+    grid-column: 1 / -1;
+  }
+
+  .bento-cell--system {
+    grid-column: 1 / -1;
+  }
+
+  .bento-cell--half {
+    grid-column: span 1;
   }
 }
 
@@ -867,8 +919,19 @@ onBeforeUnmount(() => {
     padding: 16px;
   }
 
-  .stats-grid {
+  .bento-grid {
     grid-template-columns: 1fr;
+  }
+
+  .bento-cell--stat:nth-child(1),
+  .bento-cell--stat:nth-child(2),
+  .bento-cell--stat:nth-child(3),
+  .bento-cell--stat:nth-child(4) {
+    grid-column: 1;
+  }
+
+  .bento-cell--half {
+    grid-column: 1;
   }
 
   .stat-card__value {

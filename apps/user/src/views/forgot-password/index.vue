@@ -36,8 +36,8 @@ async function fetchCaptcha() {
     const data = res.data.data
     form.captchaUuid = data.uuid
     form.captchaImage = data.image
-  } catch {
-    ElMessage.warning('获取验证码失败，请重试')
+  } catch (e: any) {
+    ElMessage.warning(e?.response?.data?.msg || e?.message || '获取验证码失败，请重试')
   }
 }
 

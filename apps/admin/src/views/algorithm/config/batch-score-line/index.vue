@@ -79,8 +79,8 @@ const fetchData = async () => {
     } else {
       ElMessage.error(res.data.msg || '获取列表失败')
     }
-  } catch {
-    ElMessage.error('获取列表失败')
+  } catch (err: any) {
+    ElMessage.error(err.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -155,8 +155,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           detailData.value = d
         }
       }
-    } catch {
-      ElMessage.error('获取详情失败')
+    } catch (err: any) {
+      ElMessage.error(err.message || '获取详情失败')
     } finally {
       formLoading.value = false
     }
@@ -196,8 +196,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    ElMessage.error('操作失败')
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
@@ -206,6 +206,10 @@ const handleToggleStatus = async (row: BatchScoreLineListVO) => {
   const actionText = newStatus ? '禁用' : '启用'
   try {
     await ElMessageBox.confirm(`确定要${actionText}该记录吗？`, '提示')
+  } catch {
+    return
+  }
+  try {
     const data: BatchScoreLineStatusDTO = { isDeleted: newStatus }
     const res = await updateBatchScoreLineStatus(row.id, data)
     if (res.data.code === 200) {
@@ -214,8 +218,8 @@ const handleToggleStatus = async (row: BatchScoreLineListVO) => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    // cancel
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
@@ -226,6 +230,10 @@ const handleHardDelete = async (id: string) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
+  } catch {
+    return
+  }
+  try {
     const res = await hardDeleteBatchScoreLine(id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
@@ -233,8 +241,8 @@ const handleHardDelete = async (id: string) => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    // cancel
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
@@ -245,6 +253,10 @@ const handleBatchDisable = async () => {
   }
   try {
     await ElMessageBox.confirm(`确定要禁用选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
+  } catch {
+    return
+  }
+  try {
     const res = await batchDeleteBatchScoreLine(selectedIds.value)
     if (res.data.code === 200) {
       ElMessage.success('批量禁用成功')
@@ -252,8 +264,8 @@ const handleBatchDisable = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    // cancel
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
@@ -263,11 +275,15 @@ const handleBatchDelete = async () => {
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要永���删除选中的 ${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '警告', {
+    await ElMessageBox.confirm(`确定要永久删除选中的 ${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '警告', {
       confirmButtonText: '确认删除',
       cancelButtonText: '取消',
       type: 'warning',
     })
+  } catch {
+    return
+  }
+  try {
     const res = await batchHardDeleteBatchScoreLine(selectedIds.value)
     if (res.data.code === 200) {
       ElMessage.success('批量删除成功')
@@ -275,8 +291,8 @@ const handleBatchDelete = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch {
-    // cancel
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
   }
 }
 
@@ -295,8 +311,8 @@ const handleImport = async () => {
       } else {
         ElMessage.error(res.data.msg || '导入失败')
       }
-    } catch {
-      ElMessage.error('导入失败')
+    } catch (err: any) {
+      ElMessage.error(err.message || '导入失败')
     }
   }
   input.click()

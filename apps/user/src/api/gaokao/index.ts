@@ -116,8 +116,6 @@ export interface GaokaoArchiveForm {
   score: number
   rank: number
   subjectType: string
-  secondSubjectType?: string
-  thirdSubjectType?: string
   batch: string
   batchDataYear: number
   batchLineScore: number
@@ -125,9 +123,13 @@ export interface GaokaoArchiveForm {
   scoreMath?: number
   scoreEnglish?: number
   foreignLanguage?: string
-  scoreSubject1?: number
-  scoreSubject2?: number
-  scoreSubject3?: number
+  // 选考科目分数（命名字段，直接对应 DB 列）
+  scorePhysics?: number
+  scoreChemistry?: number
+  scoreBiology?: number
+  scorePolitics?: number
+  scoreHistory?: number
+  scoreGeography?: number
   isColorBlind?: boolean
   isColorWeak?: boolean
   visionLeft?: number

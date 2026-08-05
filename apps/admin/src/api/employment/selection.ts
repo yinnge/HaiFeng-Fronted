@@ -35,7 +35,7 @@ export const updateSelectionStatus = (id: string, data: SelectionStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteSelection = (ids: number[]) => {
+export const batchDeleteSelection = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

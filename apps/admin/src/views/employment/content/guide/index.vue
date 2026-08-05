@@ -79,7 +79,7 @@ const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) { ElMessage.warning('请先选择要删除的条目'); return }
   try {
     await ElMessageBox.confirm(`确定要永久删除选中的${selectedIds.value.length}条记录？此操作不可恢复！`, '警告', { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' })
-    const res = await batchDeleteExamGuide(selectedIds.value as unknown as number[])
+    const res = await batchDeleteExamGuide(selectedIds.value)
     if (res.data.code === 200) { ElMessage.success('批量删除成功'); selectedIds.value = []; fetchData() } else { ElMessage.error(res.data.msg || '批量删除失败') }
   } catch { /* cancel */ }
 }

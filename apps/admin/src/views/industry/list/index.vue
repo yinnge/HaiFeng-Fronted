@@ -268,9 +268,9 @@ const fetchData = async () => {
 
     }
 
-  } catch {
+  } catch (e: any) {
 
-    ElMessage.error('获取列表失败')
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取列表失败')
 
   } finally {
 

@@ -7,6 +7,7 @@ import type {
   CompetitionDetailVO,
   CompetitionMajorBriefVO,
   CertificateQueryDTO,
+  CompetitionQueryDTO,
 } from '@/types/certificate'
 
 const CERT_PREFIX = '/api/v1/app/certificate'
@@ -21,7 +22,7 @@ export const getCertificateList = (params: CertificateQueryDTO) =>
 export const getCertificateDetail = (certId: string) =>
   request.get<R<CertificateDetailVO>>(`${CERT_PREFIX}/${certId}/detail`)
 
-export const getCompetitionList = (params: { page: number; size: number }) =>
+export const getCompetitionList = (params: CompetitionQueryDTO) =>
   request.get<R<PageResult<CompetitionListVO>>>(`${COMP_PREFIX}/list`, { params })
 
 export const getCompetitionDetail = (compId: string) =>

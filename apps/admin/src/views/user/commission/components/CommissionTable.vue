@@ -72,10 +72,10 @@ const pageSize = computed({
           <span class="money-highlight primary">¥{{ row.commissionAmount?.toFixed(2) }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="deleted" label="状态" width="90" align="center">
+      <el-table-column prop="status" label="状态" width="90" align="center">
         <template #default="{ row }">
-          <el-tag :type="row.deleted ? 'danger' : 'success'" size="small" effect="light">
-            {{ row.deleted ? '已撤回' : '有效' }}
+          <el-tag :type="row.status === 'revoked' ? 'danger' : 'success'" size="small" effect="light">
+            {{ row.status === 'revoked' ? '已撤回' : '有效' }}
           </el-tag>
         </template>
       </el-table-column>

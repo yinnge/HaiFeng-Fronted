@@ -246,7 +246,7 @@ async function handleSave() {
         <el-form-item v-if="showGradeField" label="年级">
           <el-select
             v-model="form.grade"
-            placeholder="请选择年级"
+            placeholder="请先选择身份"
             class="w-full"
           >
             <el-option

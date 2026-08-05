@@ -35,7 +35,7 @@ export const updateTeacherStatus = (id: string, data: PositionStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteTeacher = (ids: number[]) => {
+export const batchDeleteTeacher = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

@@ -35,7 +35,7 @@ export const updateCivilStatus = (id: string, data: CivilStatusDTO) => {
   return request.patch<R<void>>(`${PREFIX}/${id}/status`, data)
 }
 
-export const batchDeleteCivil = (ids: number[]) => {
+export const batchDeleteCivil = (ids: string[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
 

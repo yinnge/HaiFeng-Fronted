@@ -2,20 +2,21 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getPositions, getEnterpriseIndustries } from '@/api/enterprise'
+import { getPositions, getEnterpriseIndustries, getEnterpriseDetail } from '@/api/enterprise'
 import type { EnterprisePositionVO, EnterpriseIndustryGroupVO } from '@/types/enterprise'
 
 const router = useRouter()
 const route = useRoute()
 
 const enterpriseId = route.params.id as string
-const enterpriseName = (route.query.name as string) || ''
-const enterpriseNature = (route.query.nature as string) || ''
-const enterpriseCity = (route.query.city as string) || ''
-const enterpriseLogoUrl = (route.query.logoUrl as string) || ''
-const enterpriseRegion = (route.query.region as string) || ''
-const enterpriseScale = (route.query.scale as string) || ''
-const enterpriseMainBusiness = (route.query.mainBusiness as string) || ''
+// 列表页跳转时带入的 query 参数用于即时渲染；再按 id 调接口拉取权威数据，刷新/深链也不丢
+const enterpriseName = ref((route.query.name as string) || '')
+const enterpriseNature = ref((route.query.nature as string) || '')
+const enterpriseCity = ref((route.query.city as string) || '')
+const enterpriseLogoUrl = ref((route.query.logoUrl as string) || '')
+const enterpriseRegion = ref((route.query.region as string) || '')
+const enterpriseScale = ref((route.query.scale as string) || '')
+const enterpriseMainBusiness = ref((route.query.mainBusiness as string) || '')
 
 const loading = ref(false)
 const positions = ref<EnterprisePositionVO[]>([])
@@ -58,6 +59,26 @@ function goIndustry(id: string) {
   router.push(`/industry/${id}`)
 }
 
+async function fetchDetail() {
+  if (!enterpriseId) return
+  try {
+    const res = await getEnterpriseDetail(enterpriseId)
+    const d = res.data.data
+    if (d) {
+      enterpriseName.value = d.enterpriseName
+      enterpriseNature.value = d.enterpriseNature
+      enterpriseCity.value = d.cityName
+      enterpriseLogoUrl.value = d.logoUrl || ''
+      enterpriseRegion.value = d.region || ''
+      enterpriseScale.value = d.enterpriseScale || ''
+      enterpriseMainBusiness.value = d.mainBusiness || ''
+    }
+  } catch (e: any) {
+    // 接口失败时沿用列表页带入的 query 参数兜底，不阻断页面
+    console.warn('获取企业详情失败，沿用列表传入信息', e?.response?.data?.msg)
+  }
+}
+
 function formatSalary(min: number | null, max: number | null): string {
   if (min == null && max == null) return '薪资面议'
   if (min != null && max != null) return `${min}-${max}k/月`
@@ -75,6 +96,7 @@ function openApplyLink(link: string | null) {
 }
 
 onMounted(() => {
+  fetchDetail()
   fetchPositions()
   fetchIndustries()
 })

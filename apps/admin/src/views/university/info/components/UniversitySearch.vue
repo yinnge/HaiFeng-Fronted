@@ -47,7 +47,7 @@ const handleReset = () => {
           <el-input v-model="searchForm.provinceName" placeholder="精确匹配" clearable style="width: 140px" @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="院校类别">
-          <el-select v-model="searchForm.category" placeholder="全部" clearable style="width: 140px">
+          <el-select v-model="searchForm.category" placeholder="全部" clearable filterable allow-create default-first-option style="width: 140px">
             <el-option v-for="c in ['综合','理工','师范','农林','医药','财经','政法','体育','艺术','民族','军事']" :key="c" :label="c" :value="c" />
           </el-select>
         </el-form-item>

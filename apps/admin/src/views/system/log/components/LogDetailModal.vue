@@ -5,7 +5,7 @@ import type { AdminLogDetailVO } from '@/types/system/log'
 
 const props = defineProps<{
   visible: boolean
-  logId?: number
+  logId?: string
 }>()
 
 const emit = defineEmits<{

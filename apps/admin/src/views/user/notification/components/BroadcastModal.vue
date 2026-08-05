@@ -41,8 +41,8 @@ const handleSubmit = async () => {
     } else {
       ElMessage.error(res.data.msg || '群发失败')
     }
-  } catch {
-    ElMessage.error('群发失败')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '群发失败')
   } finally {
     broadcasting.value = false
   }
