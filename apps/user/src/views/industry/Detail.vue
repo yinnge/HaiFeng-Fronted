@@ -6,6 +6,7 @@ import { getIndustryDetail } from '@/api/industry'
 import { getIndustryEnterprises } from '@/api/enterprise'
 import type { IndustryDetailVO } from '@/types/industry'
 import type { IndustryEnterpriseGroupVO } from '@/types/enterprise'
+import { Motion } from 'motion-v'
 
 const router = useRouter()
 const route = useRoute()
@@ -178,122 +179,151 @@ const jsonbSections = [
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
     <main class="container mx-auto px-6 py-8" v-loading="loading">
       <template v-if="detail">
-        <!-- Hero Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <div class="flex items-start justify-between">
-            <div>
-              <h2 class="text-3xl font-bold text-gray-800">{{ detail.industryName }}</h2>
-              <p class="text-gray-500 mt-2">{{ detail.shortDescription }}</p>
-              <span v-if="detail.category" class="inline-block mt-3 rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-600 font-medium">{{ detail.category }}</span>
-            </div>
-          </div>
-
-          <!-- Investment Heat -->
-          <div v-if="detail.investmentHeat != null" class="mt-6">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-gray-500">投资热度</span>
-              <span class="text-sm font-semibold text-gray-700">{{ detail.investmentHeat }}%</span>
-            </div>
-            <el-progress :percentage="detail.investmentHeat" :stroke-width="10" :show-text="false" color="#f97316" />
-          </div>
-
-          <!-- Trend Indicators -->
-          <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-gray-100 pt-6">
-            <div class="text-center">
-              <div class="text-sm text-gray-400 mb-1">增长趋势</div>
-              <div class="flex items-center justify-center gap-1">
-                <span :class="getTrendColor(detail.growthTrend)" class="font-semibold">{{ detail.growthTrend || '-' }}</span>
-                <span>{{ getTrendIcon(detail.growthTrend) }}</span>
+        <!-- Hero Header -->
+        <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4 }" class="mb-8">
+          <section class="rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-8 shadow-lg shadow-orange-200/60">
+            <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <h2 class="text-2xl md:text-3xl font-bold text-white">{{ detail.industryName }}</h2>
+                  <span v-if="detail.category" class="rounded-full bg-white/20 px-3 py-1 text-sm text-white border border-white/30">{{ detail.category }}</span>
+                </div>
+                <p class="text-orange-50 mt-2">{{ detail.shortDescription }}</p>
               </div>
             </div>
-            <div class="text-center">
-              <div class="text-sm text-gray-400 mb-1">市场趋势</div>
-              <div class="flex items-center justify-center gap-1">
-                <span :class="getTrendColor(detail.marketTrend)" class="font-semibold">{{ detail.marketTrend || '-' }}</span>
-                <span>{{ getTrendIcon(detail.marketTrend) }}</span>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div class="rounded-xl bg-white p-4 text-center shadow-md">
+                <div class="text-2xl font-bold text-orange-500">{{ detail.investmentHeat != null ? `${detail.investmentHeat}%` : '-' }}</div>
+                <div class="text-gray-500 mt-1 text-xs">投资热度</div>
+              </div>
+              <div class="rounded-xl bg-white p-4 text-center shadow-md">
+                <div class="text-2xl font-bold text-blue-600">{{ detail.annualGrowthRate != null ? `${detail.annualGrowthRate}%` : '-' }}</div>
+                <div class="text-gray-500 mt-1 text-xs">年增长率</div>
+              </div>
+              <div class="rounded-xl bg-white p-4 text-center shadow-md">
+                <div class="text-2xl font-bold text-purple-600">{{ detail.marketScale || '-' }}</div>
+                <div class="text-gray-500 mt-1 text-xs">市场规模</div>
+              </div>
+              <div class="rounded-xl bg-white p-4 text-center shadow-md">
+                <div class="text-2xl font-bold text-green-600">{{ detail.talentGap || '-' }}</div>
+                <div class="text-gray-500 mt-1 text-xs">人才缺口</div>
               </div>
             </div>
-            <div class="text-center">
-              <div class="text-sm text-gray-400 mb-1">人才趋势</div>
-              <div class="flex items-center justify-center gap-1">
-                <span :class="getTrendColor(detail.talentTrend)" class="font-semibold">{{ detail.talentTrend || '-' }}</span>
-                <span>{{ getTrendIcon(detail.talentTrend) }}</span>
-              </div>
-            </div>
-            <div class="text-center">
-              <div class="text-sm text-gray-400 mb-1">投资趋势</div>
-              <div class="flex items-center justify-center gap-1">
-                <span :class="getTrendColor(detail.investmentTrend)" class="font-semibold">{{ detail.investmentTrend || '-' }}</span>
-                <span>{{ getTrendIcon(detail.investmentTrend) }}</span>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </Motion>
 
-        <!-- 详细描述 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">📋 详细描述</h3>
-          <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.detailedDescription || '暂无详细介绍' }}</p>
-        </section>
+        <!-- Two-column content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <!-- Left column -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- 详细描述 -->
+            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.1 }">
+              <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+                <h3 class="mb-4 text-lg font-bold text-gray-800">📋 详细描述</h3>
+                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.detailedDescription || '暂无详细介绍' }}</p>
+              </section>
+            </Motion>
 
-        <!-- JSONB Tabs Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <div class="jsonb-tab-bar">
-            <button
-              v-for="section in jsonbSections"
-              :key="section.key"
-              :class="['jsonb-tab', { active: activeJsonbTab === section.key }]"
-              @click="activeJsonbTab = section.key"
-            >
-              <span>{{ section.icon }}</span>
-              <span>{{ section.title }}</span>
-            </button>
-          </div>
+            <!-- JSONB Tabs -->
+            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.2 }">
+              <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+                <h3 class="mb-4 text-lg font-bold text-gray-800">🗂️ 深度数据</h3>
+                <div class="jsonb-tab-bar">
+                  <button
+                    v-for="section in jsonbSections"
+                    :key="section.key"
+                    :class="['jsonb-tab', { active: activeJsonbTab === section.key }]"
+                    @click="activeJsonbTab = section.key"
+                  >
+                    <span>{{ section.icon }}</span>
+                    <span>{{ section.title }}</span>
+                  </button>
+                </div>
 
-          <div v-if="getActiveSection() && hasJsonbData((detail as any)?.[getActiveSection()!.key])" class="jsonb-tab-content">
-            <div v-for="field in getActiveSection()!.fields" :key="field.key" class="jsonb-field-row">
-              <template v-if="(detail as any)?.[getActiveSection()!.key]?.[field.key] != null && (detail as any)?.[getActiveSection()!.key]?.[field.key] !== ''">
-                <span class="jsonb-field-label">{{ field.label }}</span>
-                <template v-if="field.type === 'array' && Array.isArray((detail as any)?.[getActiveSection()!.key]?.[field.key]) && (detail as any)?.[getActiveSection()!.key]?.[field.key].length">
-                  <div class="flex flex-wrap gap-2">
-                    <span v-for="(item, idx) in (detail as any)?.[getActiveSection()!.key]?.[field.key]" :key="idx" class="jsonb-pill">{{ item }}</span>
+                <div v-if="getActiveSection() && hasJsonbData((detail as any)?.[getActiveSection()!.key])" class="jsonb-tab-content">
+                  <div v-for="field in getActiveSection()!.fields" :key="field.key" class="jsonb-field-row">
+                    <template v-if="(detail as any)?.[getActiveSection()!.key]?.[field.key] != null && (detail as any)?.[getActiveSection()!.key]?.[field.key] !== ''">
+                      <span class="jsonb-field-label">{{ field.label }}</span>
+                      <template v-if="field.type === 'array' && Array.isArray((detail as any)?.[getActiveSection()!.key]?.[field.key]) && (detail as any)?.[getActiveSection()!.key]?.[field.key].length">
+                        <div class="flex flex-wrap gap-2">
+                          <span v-for="(item, idx) in (detail as any)?.[getActiveSection()!.key]?.[field.key]" :key="idx" class="jsonb-pill">{{ item }}</span>
+                        </div>
+                      </template>
+                      <template v-else-if="field.type !== 'array'">
+                        <span class="jsonb-field-value">{{ (detail as any)?.[getActiveSection()!.key]?.[field.key] }}</span>
+                      </template>
+                    </template>
                   </div>
-                </template>
-                <template v-else-if="field.type !== 'array'">
-                  <span class="jsonb-field-value">{{ (detail as any)?.[getActiveSection()!.key]?.[field.key] }}</span>
-                </template>
-              </template>
-            </div>
+                </div>
+                <p v-else class="text-sm text-gray-400">暂无数据</p>
+              </section>
+            </Motion>
           </div>
-          <p v-else class="text-sm text-gray-400">暂无数据</p>
-        </section>
 
-        <!-- 关联企业 Section -->
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 mb-6">
-          <h3 class="mb-4 text-lg font-bold text-gray-800">🏢 关联企业</h3>
-          <div v-if="relatedLoading" class="text-sm text-gray-400">加载中...</div>
-          <template v-else-if="isProRelated">
-            <div v-if="relatedEnterprises.length && relatedEnterprises[0].enterprises.length" class="space-y-3">
-              <div
-                v-for="ent in relatedEnterprises[0].enterprises"
-                :key="ent.enterpriseId"
-                class="flex items-center justify-between rounded-xl bg-gray-50 p-4 hover:bg-orange-50 transition-colors cursor-pointer"
-                @click="goEnterprisePositions(ent.enterpriseId, ent.enterpriseName)"
-              >
-                <span class="font-medium text-gray-800">{{ ent.enterpriseName }}</span>
-                <span class="text-sm text-orange-500 font-medium">查看岗位 →</span>
-              </div>
-            </div>
-            <p v-else class="text-sm text-gray-400">暂无关联企业</p>
-          </template>
-          <div v-else class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
-            <p class="text-sm text-gray-600">
-              🔒 升级
-              <router-link to="/profile" class="text-orange-500 font-semibold hover:underline">专业版</router-link>
-              可查看关联企业信息
-            </p>
+          <!-- Right column (sticky) -->
+          <div class="space-y-6 lg:sticky lg:top-24">
+            <!-- 趋势一览 -->
+            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.15 }">
+              <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+                <h3 class="mb-4 text-lg font-bold text-gray-800">📈 趋势一览</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
+                    <span class="text-gray-400">增长趋势</span>
+                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.growthTrend)" class="font-semibold">{{ detail.growthTrend || '-' }}</span><span>{{ getTrendIcon(detail.growthTrend) }}</span></span>
+                  </div>
+                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
+                    <span class="text-gray-400">市场趋势</span>
+                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.marketTrend)" class="font-semibold">{{ detail.marketTrend || '-' }}</span><span>{{ getTrendIcon(detail.marketTrend) }}</span></span>
+                  </div>
+                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
+                    <span class="text-gray-400">人才趋势</span>
+                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.talentTrend)" class="font-semibold">{{ detail.talentTrend || '-' }}</span><span>{{ getTrendIcon(detail.talentTrend) }}</span></span>
+                  </div>
+                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
+                    <span class="text-gray-400">投资趋势</span>
+                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.investmentTrend)" class="font-semibold">{{ detail.investmentTrend || '-' }}</span><span>{{ getTrendIcon(detail.investmentTrend) }}</span></span>
+                  </div>
+                </div>
+                <div v-if="detail.investmentHeat != null" class="mt-4">
+                  <div class="flex items-center justify-between mb-2 text-xs">
+                    <span class="text-gray-400">投资热度</span>
+                    <span class="font-semibold text-gray-700">{{ detail.investmentHeat }}%</span>
+                  </div>
+                  <el-progress :percentage="detail.investmentHeat" :stroke-width="10" :show-text="false" color="#f97316" />
+                </div>
+              </section>
+            </Motion>
+
+            <!-- 关联企业 -->
+            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.25 }">
+              <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+                <h3 class="mb-4 text-lg font-bold text-gray-800">🏢 关联企业</h3>
+                <div v-if="relatedLoading" class="text-sm text-gray-400">加载中...</div>
+                <template v-else-if="isProRelated">
+                  <div v-if="relatedEnterprises.length && relatedEnterprises[0].enterprises.length" class="space-y-3">
+                    <div
+                      v-for="ent in relatedEnterprises[0].enterprises"
+                      :key="ent.enterpriseId"
+                      class="flex items-center justify-between rounded-xl bg-white p-4 hover:bg-orange-50 transition-colors cursor-pointer border border-gray-100"
+                      @click="goEnterprisePositions(ent.enterpriseId, ent.enterpriseName)"
+                    >
+                      <span class="font-medium text-gray-800">{{ ent.enterpriseName }}</span>
+                      <span class="text-sm text-orange-500 font-medium">查看岗位 →</span>
+                    </div>
+                  </div>
+                  <p v-else class="text-sm text-gray-400">暂无关联企业</p>
+                </template>
+                <div v-else class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
+                  <p class="text-sm text-gray-600">
+                    🔒 升级
+                    <router-link to="/profile" class="text-orange-500 font-semibold hover:underline">专业版</router-link>
+                    可查看关联企业信息
+                  </p>
+                </div>
+              </section>
+            </Motion>
           </div>
-        </section>
+        </div>
       </template>
     </main>
   </div>

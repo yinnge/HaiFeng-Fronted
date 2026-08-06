@@ -184,7 +184,7 @@ const handleSubmit = async (form: UniversityFormData, detail: UniversityDetailFo
     if (formMode.value === 'add') {
       res = await addUniversity({ ...form })
     } else if (formMode.value === 'edit' && currentId.value) {
-      res = await updateUniversity(currentId.value, { ...form, status: 1 })
+      res = await updateUniversity(currentId.value, { ...form })
       const detailPayload: UniversityDetailUpdateDTO = {
         address: detail.address || undefined,
         admissionPhone: detail.admissionPhone || undefined,

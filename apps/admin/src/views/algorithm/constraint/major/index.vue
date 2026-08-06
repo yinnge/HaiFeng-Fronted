@@ -26,9 +26,8 @@ const total = ref(0)
 const selectedIds = ref<string[]>([])
 
 const queryMajorSuggestions = async (queryString: string, cb: any) => {
-  if (!queryString) { cb([]); return }
   try {
-    const res = await getMajorListPage({ majorName: queryString, page: 1, size: 10 } as any)
+    const res = await getMajorListPage({ majorName: queryString, status: 1, page: 1, size: 10 } as any)
     if (res.data.code === 200) {
       cb((res.data.data.records || []).map((item: any) => ({ value: item.majorName })))
     } else { cb([]) }
@@ -36,7 +35,6 @@ const queryMajorSuggestions = async (queryString: string, cb: any) => {
 }
 
 const queryConstraintSuggestions = async (queryString: string, cb: any) => {
-  if (!queryString) { cb([]); return }
   try {
     const res = await getDictPage({ name: queryString, page: 1, size: 10 })
     if (res.data.code === 200) {
@@ -183,7 +181,7 @@ const handleSubmit = async () => {
 const handleDelete = async (id: string) => {
   try {
     await ElMessageBox.confirm(
-      '确定删除该关联吗？删除后可恢复。',
+      '确定删除该关联吗？删除后不可恢复。',
       '确认删除',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
@@ -206,7 +204,7 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定批量删除选中的 ${selectedIds.value.length} 条关联吗？删除后可恢复。`,
+      `确定批量删除选中的 ${selectedIds.value.length} 条关联吗？删除后不可恢复。`,
       '确认批量删除',
       { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
@@ -392,8 +390,8 @@ onMounted(() => {
               <el-autocomplete
                 v-model="formData.majorName"
                 :fetch-suggestions="queryMajorSuggestions"
-                placeholder="输入专业名称模糊搜索，从下拉选择"
-                :trigger-on-focus="false"
+                placeholder="点击或输入专业名称，从下拉选择"
+                :trigger-on-focus="true"
                 clearable
                 style="width: 100%"
               />
@@ -402,8 +400,8 @@ onMounted(() => {
               <el-autocomplete
                 v-model="formData.constraintName"
                 :fetch-suggestions="queryConstraintSuggestions"
-                placeholder="输入约束名称模糊搜索，从下拉选择"
-                :trigger-on-focus="false"
+                placeholder="点击或输入约束名称，从下拉选择"
+                :trigger-on-focus="true"
                 clearable
                 style="width: 100%"
               />

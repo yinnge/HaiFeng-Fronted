@@ -19,6 +19,6 @@ export interface CompetitionMajorQueryDTO {
 }
 
 export interface CompetitionMajorAddDTO {
-  competitionName: string
-  majorName: string
+  competitionId: number
+  majorId: number
 }

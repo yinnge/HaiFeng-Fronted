@@ -10,6 +10,7 @@ import type {
   EnterpriseIndustryListVO,
   EnterpriseIndustryDetailVO,
   EnterpriseIndustryQueryDTO,
+  EnterpriseIndustryAddDTO,
   PositionVO,
   EnterprisePositionAddDTO,
   EnterprisePositionUpdateDTO,
@@ -65,6 +66,10 @@ export const getEnterpriseIndustryPage = (params: EnterpriseIndustryQueryDTO) =>
 
 export const getEnterpriseIndustryDetail = (id: string) => {
   return request.get<R<EnterpriseIndustryDetailVO>>(`${INDUSTRY_PREFIX}/${id}`)
+}
+
+export const addEnterpriseIndustry = (data: EnterpriseIndustryAddDTO) => {
+  return request.post<R<string>>(INDUSTRY_PREFIX, data)
 }
 
 export const deleteEnterpriseIndustry = (id: string) => {

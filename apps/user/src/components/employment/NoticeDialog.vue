@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/store/modules/user'
-import { useRouter } from 'vue-router'
-import { getNoticeList } from '@/api/employment/content/notice'
-import type { NoticeListVO, NoticeQueryDTO } from '@/types/employment/content/notice'
-import NoticeDetail from './NoticeDetail.vue'
+import { ElMessage } from 'element-plus'
+import { getNoticeList, recordNoticeView } from '@/api/employment/content/notice'
+import type { NoticeDetailVO, NoticeQueryDTO } from '@/types/employment/content/notice'
 
 const props = defineProps<{
   visible: boolean
@@ -14,8 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
 }>()
-
-const router = useRouter()
 
 const noticeCategoryOptions = [
   { value: 'civil', label: '公务员' },
@@ -96,7 +91,7 @@ const cityOptions = computed(() => {
 })
 
 const loading = ref(false)
-const list = ref<NoticeListVO[]>([])
+const list = ref<NoticeDetailVO[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
@@ -107,8 +102,22 @@ const province = ref('')
 const city = ref('')
 const year = ref('')
 
-const currentView = ref<'list' | 'detail'>('list')
-const currentId = ref<string | null>(null)
+const selectedId = ref<string | null>(null)
+
+function noticeCategoryLabel(code: string): string {
+  return noticeCategoryOptions.find(o => o.value === code)?.label || code
+}
+
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-'
+  return dateStr.slice(0, 10)
+}
+
+const selectedDetail = computed(() => list.value.find(r => r.id === selectedId.value) ?? null)
+
+function isSelected(id: string): boolean {
+  return selectedId.value === id
+}
 
 function buildParams(): NoticeQueryDTO {
   return {
@@ -128,14 +137,21 @@ function buildParams(): NoticeQueryDTO {
 async function fetchList() {
   loading.value = true
   try {
-    const params = buildParams()
-    const res = await getNoticeList(params)
+    const res = await getNoticeList(buildParams())
     list.value = res.data.data.records
     total.value = res.data.data.total
+    if (list.value.length > 0) {
+      if (!list.value.some(r => r.id === selectedId.value)) {
+        selectedId.value = list.value[0].id
+      }
+    } else {
+      selectedId.value = null
+    }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.msg || '获取公告列表失败')
     list.value = []
     total.value = 0
+    selectedId.value = null
   } finally {
     loading.value = false
   }
@@ -162,29 +178,10 @@ function onProvinceChange() {
   onSearch()
 }
 
-async function goDetail(id: string) {
-  const userStore = useUserStore()
-  if (!userStore.isLoggedIn()) {
-    try {
-      await ElMessageBox.confirm('请先登录查看详情', '提示', {
-        confirmButtonText: '前往登录',
-        cancelButtonText: '取消',
-        type: 'warning',
-      })
-      userStore.setRedirectPath(router.currentRoute.value.fullPath)
-      router.push({ name: 'Login' })
-    } catch {
-      // cancelled
-    }
-    return
-  }
-  currentId.value = id
-  currentView.value = 'detail'
-}
-
-function goBack() {
-  currentView.value = 'list'
-  currentId.value = null
+function selectItem(row: NoticeDetailVO) {
+  selectedId.value = row.id
+  recordNoticeView(row.id).catch(() => {})
+  row.viewCount = (row.viewCount ?? 0) + 1
 }
 
 function onClose() {
@@ -195,8 +192,7 @@ watch(
   () => props.visible,
   (val) => {
     if (val) {
-      currentView.value = 'list'
-      currentId.value = null
+      selectedId.value = null
       fetchList()
     }
   }
@@ -211,158 +207,246 @@ watch(
     :close-on-click-modal="false"
     @update:model-value="onClose"
   >
-    <template v-if="currentView === 'list'">
-      <div class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border-t-2 border-t-[#F97316] border-b-2 border-b-[#FB923C] mb-4">
-        <div class="flex gap-3 mb-4">
-          <el-input
-            v-model="keyword"
-            placeholder="搜索标题、摘要、来源..."
-            clearable
-            @keyup.enter="onSearch"
-          />
-          <el-button type="primary" @click="onSearch">搜索</el-button>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-          <el-select
-            v-model="noticeCategory"
-            placeholder="公告类别"
-            clearable
-            class="!w-[150px]"
-            @change="onSearch"
-          >
-            <el-option
-              v-for="opt in noticeCategoryOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-
-          <el-select
-            v-model="noticeType"
-            placeholder="公告类型"
-            clearable
-            class="!w-[140px]"
-            @change="onSearch"
-          >
-            <el-option
-              v-for="opt in noticeTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-
-          <el-select
-            v-model="province"
-            placeholder="省份"
-            clearable
-            class="!w-[130px]"
-            @change="onProvinceChange"
-          >
-            <el-option
-              v-for="opt in provinceOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-
-          <el-select
-            v-model="city"
-            placeholder="城市"
-            clearable
-            class="!w-[130px]"
-            :disabled="!province"
-            @change="onSearch"
-          >
-            <el-option
-              v-for="opt in cityOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-
-          <el-select
-            v-model="year"
-            placeholder="年份"
-            clearable
-            class="!w-[120px]"
-            @change="onSearch"
-          >
-            <el-option
-              v-for="opt in yearOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </div>
-      </div>
-
-      <el-table v-loading="loading" :data="list" stripe border class="el-table-card" style="width: 100%">
-        <el-table-column label="标题" min-width="200">
-          <template #default="{ row }">
-            <div class="font-medium text-gray-800">{{ row.title }}</div>
-            <div v-if="row.summary" class="text-xs text-gray-400 mt-0.5 truncate max-w-[400px]">{{ row.summary }}</div>
-          </template>
-        </el-table-column>
-        <el-table-column label="类别" width="100">
-          <template #default="{ row }">
-            {{ noticeCategoryOptions.find(o => o.value === row.noticeCategory)?.label || row.noticeCategory }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="province" label="省份" width="80" />
-        <el-table-column label="发布日期" width="110">
-          <template #default="{ row }">
-            {{ row.publishDate ? row.publishDate.slice(0, 10) : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="阅读" width="70">
-          <template #default="{ row }">
-            {{ row.viewCount > 999 ? (row.viewCount / 1000).toFixed(1) + 'k' : row.viewCount }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="goDetail(row.id)">查看详情</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="mt-4 flex justify-end">
-        <el-pagination
-          v-if="total > 0"
-          background
-          layout="sizes, prev, pager, next, total"
-          :total="total"
-          :page-size="pageSize"
-          :current-page="page"
-          :page-sizes="[10, 20, 30, 50, 100]"
-          @current-change="onPageChange"
-          @size-change="onPageSizeChange"
+    <div class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border-t-2 border-t-[#F97316] border-b-2 border-b-[#FB923C] mb-4">
+      <div class="flex gap-3 mb-4">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索标题、摘要、来源..."
+          clearable
+          @keyup.enter="onSearch"
         />
+        <el-button class="dg-btn-search" @click="onSearch">搜索</el-button>
       </div>
-    </template>
 
-    <template v-else>
-      <div class="mb-4">
-        <el-button text @click="goBack">
-          ◀ 返回公告列表
-        </el-button>
+      <div class="flex flex-wrap items-center gap-3">
+        <el-select
+          v-model="noticeCategory"
+          placeholder="公告类别"
+          clearable
+          class="!w-[150px]"
+          @change="onSearch"
+        >
+          <el-option
+            v-for="opt in noticeCategoryOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+
+        <el-select
+          v-model="noticeType"
+          placeholder="公告类型"
+          clearable
+          class="!w-[140px]"
+          @change="onSearch"
+        >
+          <el-option
+            v-for="opt in noticeTypeOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+
+        <el-select
+          v-model="province"
+          placeholder="省份"
+          clearable
+          class="!w-[130px]"
+          @change="onProvinceChange"
+        >
+          <el-option
+            v-for="opt in provinceOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+
+        <el-select
+          v-model="city"
+          placeholder="城市"
+          clearable
+          class="!w-[130px]"
+          :disabled="!province"
+          @change="onSearch"
+        >
+          <el-option
+            v-for="opt in cityOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+
+        <el-select
+          v-model="year"
+          placeholder="年份"
+          clearable
+          class="!w-[120px]"
+          @change="onSearch"
+        >
+          <el-option
+            v-for="opt in yearOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
       </div>
-      <NoticeDetail v-if="currentId" :id="currentId" />
-    </template>
+    </div>
+
+    <div class="grid gap-4" style="grid-template-columns: 300px 1fr; height: 60vh; min-height: 480px">
+      <div class="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="shrink-0 border-b border-gray-100 px-4 py-3 text-sm font-bold text-gray-700">公告列表</div>
+        <div v-loading="loading" class="min-h-0 flex-1 overflow-y-auto py-1">
+          <button
+            v-for="row in list"
+            :key="row.id"
+            class="flex w-full flex-col items-start gap-1 border-l-4 px-4 py-3 text-left transition-colors"
+            :class="isSelected(row.id) ? 'border-orange-500 bg-orange-50' : 'border-transparent hover:bg-orange-50/60'"
+            @click="selectItem(row)"
+          >
+            <span class="rounded-full bg-gradient-to-r from-orange-50 to-amber-50 px-2 py-0.5 text-xs font-medium text-orange-600 ring-1 ring-inset ring-orange-200">
+              {{ noticeCategoryLabel(row.noticeCategory) }}
+            </span>
+            <span class="line-clamp-2 text-sm font-semibold text-gray-800">{{ row.title }}</span>
+            <span class="text-xs text-gray-400">{{ formatDate(row.publishDate) }}</span>
+          </button>
+          <div v-if="!loading && list.length === 0" class="py-16 text-center text-sm text-gray-400">暂无数据</div>
+        </div>
+      </div>
+
+      <div class="flex min-h-0 flex-col overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50/70 to-white shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C]">
+        <div v-loading="loading" class="min-h-0 flex-1 overflow-y-auto p-6">
+          <div v-if="selectedDetail" class="pr-1">
+            <div class="mb-3 flex flex-wrap items-center gap-2">
+              <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-600">{{ noticeCategoryLabel(selectedDetail.noticeCategory) }}</span>
+              <span v-if="selectedDetail.noticeType" class="rounded-full bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-1 text-xs font-medium text-orange-600 ring-1 ring-inset ring-orange-200">{{ selectedDetail.noticeType }}</span>
+              <span v-if="selectedDetail.isTop" class="rounded-full bg-amber-500 px-3 py-1 text-xs text-white">置顶</span>
+              <span v-if="selectedDetail.isImportant" class="rounded-full bg-red-500 px-3 py-1 text-xs text-white">重要</span>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800">{{ selectedDetail.title }}</h3>
+
+            <div class="mb-4 mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+              <span v-if="selectedDetail.publishUnit">{{ selectedDetail.publishUnit }}</span>
+              <span v-if="selectedDetail.publishDate">· {{ formatDate(selectedDetail.publishDate) }}</span>
+              <span v-if="selectedDetail.source">· 来源：{{ selectedDetail.source }}</span>
+              <span v-if="selectedDetail.viewCount != null">· 阅读 {{ selectedDetail.viewCount }}</span>
+            </div>
+
+            <div class="mb-5 h-px shrink-0 bg-gradient-to-r from-orange-500 to-amber-400"></div>
+
+            <div v-if="selectedDetail.summary" class="mb-5 rounded-lg border-l-4 border-orange-400 bg-orange-50 p-4 text-sm leading-relaxed text-gray-600">
+              {{ selectedDetail.summary }}
+            </div>
+
+            <div class="notice-content text-gray-600 leading-relaxed" v-html="selectedDetail.content" />
+
+            <div v-if="selectedDetail.sourceUrl" class="mt-6 border-t border-gray-200 pt-4">
+              <a :href="selectedDetail.sourceUrl" target="_blank" rel="noopener noreferrer" class="text-sm text-orange-500 hover:text-orange-600">
+                查看原文 ↗
+              </a>
+            </div>
+          </div>
+
+          <div v-else class="flex h-full min-h-[320px] items-center justify-center text-gray-400">暂无公告</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex justify-end">
+      <el-pagination
+        v-if="total > 0"
+        background
+        layout="sizes, prev, pager, next, total"
+        :total="total"
+        :page-size="pageSize"
+        :current-page="page"
+        :page-sizes="[10, 20, 30, 50, 100]"
+        @current-change="onPageChange"
+        @size-change="onPageSizeChange"
+      />
+    </div>
   </el-dialog>
 </template>
 
 <style scoped>
-.el-table-card :deep(.el-table th.el-table__cell) {
-  background: linear-gradient(180deg, #fff7ed, #ffedd5);
+.dg-btn-search {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  border-color: transparent;
+  color: #fff;
+  border-radius: 20px;
+}
+.dg-btn-search:hover,
+.dg-btn-search:focus {
+  background: linear-gradient(135deg, #EA580C, #FB923C);
+  border-color: transparent;
+  color: #fff;
+}
+</style>
+
+<style>
+.notice-content p {
+  margin-bottom: 12px;
+}
+
+.notice-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.notice-content h1,
+.notice-content h2,
+.notice-content h3,
+.notice-content h4 {
+  font-weight: 700;
   color: #1f2937;
-  font-weight: 600;
-  border-bottom: 2px solid #F97316;
+  margin: 20px 0 10px;
+  line-height: 1.4;
+}
+
+.notice-content ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 8px 0 12px;
+}
+
+.notice-content ol {
+  list-style: decimal;
+  padding-left: 20px;
+  margin: 8px 0 12px;
+}
+
+.notice-content li {
+  margin-bottom: 4px;
+}
+
+.notice-content a {
+  color: #f97316;
+  text-decoration: underline;
+}
+
+.notice-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.notice-content td,
+.notice-content th {
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+}
+
+.notice-content blockquote {
+  border-left: 3px solid #f97316;
+  padding-left: 12px;
+  color: #6b7280;
+  margin: 8px 0 12px;
 }
 </style>

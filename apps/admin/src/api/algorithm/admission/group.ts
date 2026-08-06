@@ -26,6 +26,9 @@ export const deleteGroup = (id: string): Promise<AxiosResponse<R<void>>> =>
 export const batchDeleteGroup = (ids: number[]): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch`, ids)
 
+export const batchHardDeleteGroup = (ids: number[]): Promise<AxiosResponse<R<void>>> =>
+  request.post(`${PREFIX}/batch/hard-delete`, ids)
+
 export const importGroupExcel = (file: File): Promise<AxiosResponse<R<void>>> => {
   const formData = new FormData()
   formData.append('file', file)

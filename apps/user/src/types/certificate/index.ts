@@ -37,6 +37,8 @@ export interface CompetitionListVO {
 export interface CompetitionDetailVO {
   id: string
   competitionId: string
+  compName?: string
+  compLevel?: string
   basicInfo: Record<string, any> | null
   awards: string[] | null
   background: string | null

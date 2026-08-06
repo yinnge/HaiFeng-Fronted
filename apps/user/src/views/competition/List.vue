@@ -74,17 +74,31 @@ onMounted(fetchList)
     <main class="container mx-auto px-6 py-8">
       <!-- Intro Banner -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-6 border border-orange-100">
-          <p class="text-gray-700 leading-relaxed">
+        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
+            </span>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">竞赛信息大全 · 点亮学术履历</h1>
+          </div>
+          <p class="text-gray-600 leading-relaxed mb-4">
             参与科研竞赛是提升综合素质、展示个人能力的重要途径。我们汇集了各类学科竞赛信息，助您找到最适合的竞赛项目。
           </p>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="kw in ['学科竞赛', '创新创业', '素质加分', '保研考研']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
+              {{ kw }}
+            </span>
+          </div>
         </div>
       </Motion>
 
       <!-- Value of competitions (hardcoded) -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.1 }" class="mb-8">
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-          <h2 class="mb-4 text-lg font-bold text-gray-800">学术竞赛的价值</h2>
+        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
+            学术竞赛的价值
+          </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center p-4">
               <div class="text-3xl mb-2">🏆</div>
@@ -106,44 +120,54 @@ onMounted(fetchList)
       </Motion>
 
       <!-- Search bar -->
-      <div class="mb-6 flex flex-wrap items-center gap-3">
-        <input
-          v-model="query.compName"
-          type="text"
-          placeholder="输入竞赛名称搜索"
-          class="flex-1 min-w-[180px] rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-          @keyup.enter="handleSearch"
-        />
-        <el-select v-model="query.compLevel" placeholder="竞赛级别" clearable class="!w-32">
-          <el-option v-for="opt in levelOptions" :key="opt" :label="opt" :value="opt" />
-        </el-select>
-        <button
-          class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-          @click="handleSearch"
-        >
-          搜索
-        </button>
-        <button
-          class="rounded-lg border border-gray-200 px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
-          @click="handleReset"
-        >
-          重置
-        </button>
+      <div class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] shadow-lg p-6">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          竞赛检索
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <input
+            v-model="query.compName"
+            type="text"
+            placeholder="输入竞赛名称搜索"
+            class="flex-1 min-w-[180px] rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            @keyup.enter="handleSearch"
+          />
+          <el-select v-model="query.compLevel" placeholder="竞赛级别" clearable class="!w-32">
+            <el-option v-for="opt in levelOptions" :key="opt" :label="opt" :value="opt" />
+          </el-select>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+            @click="handleSearch"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            搜索
+          </button>
+          <button
+            class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
+            @click="handleReset"
+          >
+            重置
+          </button>
+        </div>
       </div>
 
       <!-- Competition List -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.2 }">
-        <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-          <h2 class="mb-4 text-lg font-bold text-gray-800">竞赛列表</h2>
+        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
+            竞赛列表
+          </div>
           <div v-loading="loading" class="min-h-[300px]">
             <div v-if="list.length" class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-gray-100 text-left text-sm text-gray-500">
-                    <th class="pb-3 pr-4 font-medium">竞赛名称</th>
-                    <th class="pb-3 pr-4 font-medium w-28">级别</th>
-                    <th class="pb-3 pr-4 font-medium w-40">报名时间</th>
-                    <th class="pb-3 font-medium w-20">操作</th>
+                  <tr class="bg-gradient-to-b from-[#fff7ed] to-[#ffedd5] text-left text-sm text-gray-800">
+                    <th class="py-3 pr-4 font-semibold border-b-2 border-[#F97316]">竞赛名称</th>
+                    <th class="py-3 pr-4 font-semibold w-28 border-b-2 border-[#F97316]">级别</th>
+                    <th class="py-3 pr-4 font-semibold w-40 border-b-2 border-[#F97316]">报名时间</th>
+                    <th class="py-3 font-semibold w-20 border-b-2 border-[#F97316]">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -161,7 +185,7 @@ onMounted(fetchList)
                     <td class="py-3 pr-4 text-sm text-gray-600">{{ item.registrationTime || '-' }}</td>
                     <td class="py-3 text-sm">
                       <button
-                        class="text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                        class="rounded-full bg-orange-50 px-4 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-100 transition-colors"
                         @click="goDetail(item.id)"
                       >
                         查看详情

@@ -16,6 +16,7 @@ const emit = defineEmits<{
   (e: 'delete', id: string): void
   (e: 'batch-delete'): void
   (e: 'import'): void
+  (e: 'add'): void
   (e: 'refresh'): void
   (e: 'selection-change', rows: EnterpriseIndustryListVO[]): void
   (e: 'page-change', page: number): void
@@ -39,6 +40,12 @@ const hasSelection = computed(() => props.selectedIds.length > 0)
   <div class="table-wrapper">
     <!-- 工具栏 -->
     <div class="toolbar">
+      <button type="button" class="action-btn orange" @click="emit('add')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        新增关联
+      </button>
       <button type="button" class="action-btn green" @click="emit('import')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
@@ -156,6 +163,17 @@ const hasSelection = computed(() => props.selectedIds.length > 0)
 .action-btn.green:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.action-btn.orange {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.action-btn.orange:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
 .action-btn.danger {

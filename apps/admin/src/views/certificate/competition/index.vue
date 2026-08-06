@@ -6,6 +6,7 @@ import {
   getCompetitionDetail,
   addCompetition,
   updateCompetition,
+  enableCompetition,
   softDeleteCompetition,
   hardDeleteCompetition,
   batchDeleteCompetition,
@@ -28,6 +29,7 @@ const queryParams = reactive<CompetitionQueryDTO>({
   size: 10,
   compName: '',
   compLevel: undefined,
+  isDeleted: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -64,6 +66,7 @@ const fetchData = async () => {
     const params: Record<string, any> = { page: queryParams.page, size: queryParams.size }
     if (queryParams.compName) params.compName = queryParams.compName
     if (queryParams.compLevel) params.compLevel = queryParams.compLevel
+    if (queryParams.isDeleted !== undefined) params.isDeleted = queryParams.isDeleted
     const res = await getCompetitionPage(params as CompetitionQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -82,6 +85,7 @@ const handleSearch = () => { queryParams.page = 1; fetchData() }
 const handleReset = () => {
   queryParams.compName = ''
   queryParams.compLevel = undefined
+  queryParams.isDeleted = undefined
   queryParams.page = 1
   fetchData()
 }
@@ -143,6 +147,18 @@ const removeBasicInfo = (key: string) => {
   if (formData.detail?.basicInfo) {
     delete formData.detail.basicInfo[key]
   }
+}
+
+// 提交前把输入框中"待添加"的值自动落入 formData.detail，防止漏点"添加"导致数据静默丢失
+const flushPendingDetailInputs = () => {
+  addAward()
+  addPurpose()
+  addCriteria()
+  addNotice()
+  addRule()
+  addGuide()
+  addAwardDisp()
+  addBasicInfo()
 }
 
 const resetFormData = () => {
@@ -222,6 +238,7 @@ const handleSubmit = async () => {
     return
   }
   try {
+    flushPendingDetailInputs()
     let res: any
     if (dialogMode.value === 'add') {
       const data: CompetitionAddDTO = { compName: formData.compName }
@@ -269,34 +286,54 @@ const handleSubmit = async () => {
   }
 }
 
-const handleSoftDelete = async (id: string, name: string) => {
+const handleToggleStatus = async (row: CompetitionListVO) => {
+  const id = row.id
+  const name = row.compName
+  const isDisable = !row.isDeleted
   try {
-    await ElMessageBox.confirm(`确定要软删除竞赛"${name}"吗？关联数据将保留可恢复。`, '提示')
-    const res = await softDeleteCompetition(id)
+    await ElMessageBox.confirm(
+      isDisable
+        ? `确定要禁用竞赛"${name}"吗？禁用后用户端不可见，可再次启用。`
+        : `确定要启用竞赛"${name}"吗？`,
+      '提示'
+    )
+  } catch {
+    return
+  }
+  try {
+    const res = isDisable ? await softDeleteCompetition(id) : await enableCompetition(id)
     if (res.data.code === 200) {
-      ElMessage.success('软删除成功')
+      ElMessage.success(isDisable ? '禁用成功' : '启用成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
 const handleHardDelete = async (id: string, name: string) => {
   try {
     await ElMessageBox.confirm(
-      `确定要硬删除竞赛"${name}"吗？关联数据将同步删除，不可恢复！`,
+      `确定要删除竞赛"${name}"吗？关联数据将同步删除，不可恢复！`,
       '警告',
-      { type: 'warning', confirmButtonText: '确定硬删除', cancelButtonText: '取消' }
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
+  } catch {
+    return
+  }
+  try {
     const res = await hardDeleteCompetition(id)
     if (res.data.code === 200) {
-      ElMessage.success('硬删除成功')
+      ElMessage.success('删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
 const handleBatchDelete = async () => {
@@ -306,10 +343,14 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确定要批量硬删除选中的${selectedIds.value.length} 条竞赛记录吗？关联数据将同步删除，不可恢复！`,
+      `确定要批量删除选中的${selectedIds.value.length} 条竞赛记录吗？关联数据将同步删除，不可恢复！`,
       '警告',
       { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
+  } catch {
+    return
+  }
+  try {
     const res = await batchDeleteCompetition(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量删除成功')
@@ -318,7 +359,9 @@ const handleBatchDelete = async () => {
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
 onMounted(() => { fetchData() })
@@ -356,6 +399,12 @@ onMounted(() => { fetchData() })
               <el-option label="校级" value="校级" />
             </el-select>
           </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="queryParams.isDeleted" placeholder="全部状态" clearable style="width: 130px">
+              <el-option label="启用" :value="false" />
+              <el-option label="禁用" :value="true" />
+            </el-select>
+          </el-form-item>
         </div>
         <div class="search-actions">
           <button type="button" class="search-btn" @click.prevent="handleSearch">
@@ -376,7 +425,7 @@ onMounted(() => { fetchData() })
         <span>新增竞赛</span>
       </button>
       <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-        <span>批量硬删除</span>
+        <span>批量删除</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.5 16.5A9 9 0 1 0 2 12"/><polyline points="23 4 23 10 17 10"/></svg>
@@ -396,14 +445,21 @@ onMounted(() => { fetchData() })
           </template>
         </el-table-column>
         <el-table-column prop="registrationTime" label="报名时间" min-width="160" />
+        <el-table-column label="状态" min-width="90" align="center">
+          <template #default="{ row }">
+            <span v-if="row.isDeleted" class="status-pill status-disabled">禁用</span>
+            <span v-else class="status-pill status-enabled">启用</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" min-width="180" />
-        <el-table-column label="操作" width="300" align="center" fixed="right">
+        <el-table-column label="操作" width="320" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
               <button type="button" class="action-btn action-edit" @click="openDialog('edit', row.id)">修改</button>
-              <button type="button" class="action-btn action-soft-delete" @click="handleSoftDelete(row.id, row.compName)">软删除</button>
-              <button type="button" class="action-btn action-hard-delete" @click="handleHardDelete(row.id, row.compName)">硬删除</button>
+              <button v-if="!row.isDeleted" type="button" class="action-btn action-soft-delete" @click="handleToggleStatus(row)">禁用</button>
+              <button v-else type="button" class="action-btn action-enable" @click="handleToggleStatus(row)">启用</button>
+              <button type="button" class="action-btn action-hard-delete" @click="handleHardDelete(row.id, row.compName)">删除</button>
             </div>
           </template>
         </el-table-column>
@@ -531,7 +587,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="基本信息">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="basicInfoKey" placeholder="字段" style="width: 150px" />
-                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" />
+                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" @keyup.enter="addBasicInfo" />
                     <el-button type="primary" @click="addBasicInfo">添加</el-button>
                   </div>
                   <div v-if="formData.detail?.basicInfo && Object.keys(formData.detail.basicInfo).length > 0" class="flex flex-wrap gap-1">
@@ -568,7 +624,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="竞赛规则">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newRuleTitle" placeholder="标题" style="width: 150px" />
-                    <el-input v-model="newRuleContent" placeholder="内容" style="width: 250px" />
+                    <el-input v-model="newRuleContent" placeholder="内容" style="width: 250px" @keyup.enter="addRule" />
                     <el-button type="primary" @click="addRule">添加</el-button>
                   </div>
                   <div v-for="(r, i) in formData.detail?.competitionRules || []" :key="i" class="mb-1">
@@ -601,7 +657,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="参赛流程">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newGuideTitle" placeholder="步骤标题" style="width: 150px" />
-                    <el-input v-model="newGuideContent" placeholder="步骤内容" style="width: 250px" />
+                    <el-input v-model="newGuideContent" placeholder="步骤内容" style="width: 250px" @keyup.enter="addGuide" />
                     <el-button type="primary" @click="addGuide">添加</el-button>
                   </div>
                   <div v-for="(g, i) in formData.detail?.processGuide || []" :key="i" class="mb-1">
@@ -614,7 +670,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="奖项展示">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newAwardDispTitle" placeholder="奖项标题" style="width: 150px" />
-                    <el-input v-model="newAwardDispContent" placeholder="奖项详情" style="width: 250px" />
+                    <el-input v-model="newAwardDispContent" placeholder="奖项详情" style="width: 250px" @keyup.enter="addAwardDisp" />
                     <el-button type="primary" @click="addAwardDisp">添加</el-button>
                   </div>
                   <div v-for="(ad, i) in formData.detail?.awardsDisplay || []" :key="i" class="mb-1">
@@ -953,6 +1009,15 @@ onMounted(() => { fetchData() })
   color: #6b7280;
   border: 1px solid #e5e7eb;
 }
+.status-enabled {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.status-disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
 
 /* 操作按钮组 */
 .action-group {
@@ -1001,6 +1066,15 @@ onMounted(() => { fetchData() })
 }
 .action-soft-delete:hover {
   background: #fde68a;
+}
+
+.action-enable {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+}
+.action-enable:hover {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
 }
 
 .action-hard-delete {
