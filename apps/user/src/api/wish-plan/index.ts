@@ -53,6 +53,7 @@ export interface WishPlanGroupVO {
   tags: string[]
   recommendationYear: number
   recommendationRate: number
+  allExported?: boolean
 }
 
 export interface WishPlanMajorVO {
@@ -68,6 +69,7 @@ export interface WishPlanMajorVO {
   admissionCount: number
   safetyLevel: number
   levelShort: string
+  isExported?: boolean
   historyScores: {
     year: number
     minScore: number

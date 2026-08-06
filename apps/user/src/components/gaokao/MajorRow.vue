@@ -13,88 +13,105 @@ defineEmits<{
 }>()
 
 const safetyColorMap: Record<string, string> = {
-  '搏': '#FF4D4F',
-  '冲': '#FFA940',
-  '稳': '#FADB14',
-  '保': '#52C41A',
-  '垫': '#1890FF',
-  '禁': '#999999',
+  '搏': '#ef4444',
+  '冲': '#f97316',
+  '稳': '#eab308',
+  '保': '#22c55e',
+  '垫': '#3b82f6',
+  '禁': '#94a3b8',
 }
 
-const safetyBallColor = computed(() => {
-  return safetyColorMap[props.major.levelShort] || '#999999'
-})
+const safetyGradientMap: Record<string, string> = {
+  '搏': 'from-red-500 to-red-600',
+  '冲': 'from-orange-500 to-orange-600',
+  '稳': 'from-yellow-500 to-yellow-600',
+  '保': 'from-green-500 to-green-600',
+  '垫': 'from-blue-500 to-blue-600',
+  '禁': 'from-gray-400 to-gray-500',
+}
 
+const safetyBallColor = computed(() => safetyColorMap[props.major.levelShort] || '#94a3b8')
+const safetyGradient = computed(() => safetyGradientMap[props.major.levelShort] || 'from-gray-400 to-gray-500')
 const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMasked)
 </script>
 
 <template>
-  <div class="flex items-stretch rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-    <!-- 左框：安全等级 -->
-    <div class="w-20 shrink-0 flex flex-col items-center justify-center p-2 border-r border-gray-100">
-      <span
-        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white mb-0.5"
-        :style="{ backgroundColor: safetyBallColor }"
-      >
-        {{ major.levelShort }}
-      </span>
-      <span class="text-[10px] text-gray-500">{{ (major.safetyLevel * 100).toFixed(0) }}%</span>
+  <div
+    class="flex items-stretch rounded-xl border transition-all duration-200"
+    :class="isSelected
+      ? 'border-green-200 bg-gradient-to-r from-green-50/80 to-white shadow-sm'
+      : 'border-gray-100/60 bg-white/80 hover:bg-gray-50/80 hover:border-gray-200/60'"
+  >
+    <div class="w-24 shrink-0 flex flex-col items-center justify-center p-3 border-r border-gray-100/60">
+      <div class="relative">
+        <span
+          class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white shadow-md transition-transform duration-200 hover:scale-105"
+          :class="`bg-gradient-to-br ${safetyGradient}`"
+        >
+          {{ major.levelShort }}
+        </span>
+      </div>
+      <span class="mt-1.5 text-[10px] font-medium text-gray-500 tabular-nums">{{ (major.safetyLevel * 100).toFixed(0) }}%</span>
     </div>
 
-    <!-- 中左框：专业信息 -->
-    <div class="flex-1 min-w-0 p-3">
+    <div class="flex-1 min-w-0 p-4">
       <div class="flex items-center gap-2 flex-wrap">
         <span class="text-sm font-semibold text-gray-800">{{ major.majorName }}</span>
-        <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{{ major.majorCode }}</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500">{{ major.majorCode }}</span>
       </div>
-      <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
-        <span>{{ major.educationLevel }}</span>
-        <span class="text-gray-300">|</span>
+      <div class="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
+        <span class="inline-flex items-center">
+          <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          {{ major.educationLevel }}
+        </span>
+        <span class="text-gray-300">·</span>
         <span>{{ major.duration }}</span>
-        <span class="text-gray-300">|</span>
-        <span>{{ major.tuition }}</span>
+        <span class="text-gray-300">·</span>
+        <span class="text-brand-orange font-medium">{{ major.tuition }}</span>
       </div>
-      <p class="mt-1 text-xs text-gray-500 line-clamp-1">{{ major.description }}</p>
-      <div v-if="major.constraints.length > 0" class="mt-1 flex flex-wrap gap-1">
+      <p class="mt-2 text-xs text-gray-500 line-clamp-1 leading-relaxed">{{ major.description }}</p>
+      <div v-if="major.constraints.length > 0" class="mt-2 flex flex-wrap gap-1">
         <span
           v-for="c in major.constraints"
           :key="c"
-          class="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded"
+          class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-red-50 text-red-600 border border-red-100"
         >
           {{ c }}
         </span>
       </div>
     </div>
 
-    <!-- 中右框：历史分数 -->
-    <div class="w-72 shrink-0 border-l border-gray-100 p-2">
-      <table class="w-full text-[11px]">
-        <thead>
-          <tr class="text-gray-400">
-            <th class="text-left font-normal">年份</th>
-            <th class="text-left font-normal">最低分/位次</th>
-            <th class="text-left font-normal">平均分/位次</th>
-            <th class="text-left font-normal">最高分/位次</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-600">
-          <tr v-for="s in major.historyScores" :key="s.year">
-            <td class="py-0.5">{{ s.year }}</td>
-            <td>{{ s.minScore }}/{{ s.minRank }}</td>
-            <td>{{ s.avgScore }}/{{ s.avgRank }}</td>
-            <td>{{ s.maxScore }}/{{ s.maxRank }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="w-[26rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
+      <div class="overflow-hidden rounded-lg border border-gray-200/60">
+        <table class="w-full text-[11px]">
+          <thead>
+            <tr class="bg-gray-100/40">
+              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">年份</th>
+              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最低分/位次</th>
+              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">平均分/位次</th>
+              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最高分/位次</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600 divide-y divide-gray-100/60">
+            <tr v-for="s in major.historyScores" :key="s.year" class="hover:bg-gray-50/60 transition-colors">
+              <td class="px-3 py-1.5 font-medium tabular-nums">{{ s.year }}</td>
+              <td class="px-3 py-1.5 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
+              <td class="px-3 py-1.5 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
+              <td class="px-3 py-1.5 tabular-nums">{{ s.maxScore }}/{{ s.maxRank }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- 右框：操作 -->
-    <div v-if="canSelect" class="w-12 shrink-0 flex items-center justify-center border-l border-gray-100">
+    <div v-if="canSelect" class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60">
       <button
-        class="w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+        class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200"
         :class="isSelected
-          ? 'bg-green-500 text-white'
-          : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'"
+          ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/30'
+          : 'text-gray-400 hover:text-brand-orange hover:bg-brand-orange/10 border border-transparent hover:border-brand-orange/20'"
         @click="$emit('toggleSelect')"
       >
         <svg v-if="isSelected" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

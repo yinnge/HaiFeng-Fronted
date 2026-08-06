@@ -328,6 +328,36 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '选调生岗位详情', requiresAuth: true },
   },
   {
+    path: '/postgraduate',
+    name: 'PostgraduateOverview',
+    component: () => import('@/views/postgraduate/index.vue'),
+    meta: { title: '研究生专栏' },
+  },
+  {
+    path: '/postgraduate/first-year',
+    name: 'PostgraduateFirstYear',
+    component: () => import('@/views/postgraduate/first-year.vue'),
+    meta: { title: '研一信息' },
+  },
+  {
+    path: '/postgraduate/second-year',
+    name: 'PostgraduateSecondYear',
+    component: () => import('@/views/postgraduate/second-year.vue'),
+    meta: { title: '研二信息' },
+  },
+  {
+    path: '/postgraduate/third-year',
+    name: 'PostgraduateThirdYear',
+    component: () => import('@/views/postgraduate/third-year.vue'),
+    meta: { title: '研三信息' },
+  },
+  {
+    path: '/postgraduate/phd',
+    name: 'PostgraduatePhd',
+    component: () => import('@/views/postgraduate/phd.vue'),
+    meta: { title: '申博信息' },
+  },
+  {
     path: '/special',
     name: 'SpecialChannel',
     component: () => import('@/views/special/index.vue'),

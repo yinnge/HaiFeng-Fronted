@@ -91,12 +91,19 @@ router.beforeEach(async (to, _from, next) => {
       next({ path: '/' })
       return
     }
+    // 先确保已拉取当前管理员信息（moduleCodes 驱动侧边栏过滤）。
+    // 之前只在 to.meta.moduleCode 存在时才拉取，导致刷新后落在无 moduleCode 页面（如 /dashboard）时
+    // profile 为 null，侧边栏过滤逻辑被跳过 → 无权限模块也全部展示。
+    const userStore = useUserStore()
+    if (!userStore.profile) {
+      try {
+        await userStore.fetchProfile()
+      } catch {
+        // 拉取失败不阻塞跳转，下方按空权限处理
+      }
+    }
     // moduleCode 鉴权
     if (to.meta?.moduleCode) {
-      const userStore = useUserStore()
-      if (!userStore.profile) {
-        await userStore.fetchProfile()
-      }
       const codes = userStore.profile?.moduleCodes ?? []
       if (!codes.includes(to.meta.moduleCode as string)) {
         next({ path: '/403' })

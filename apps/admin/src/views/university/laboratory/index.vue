@@ -709,7 +709,14 @@ onMounted(() => {
                   <el-input v-model="formData.name" placeholder="请输入实验室名称" maxlength="100" />
                 </el-form-item>
                 <el-form-item label="实验室类型" required>
-                  <el-select v-model="formData.labType" placeholder="请选择" style="width: 100%">
+                  <el-select
+                    v-model="formData.labType"
+                    placeholder="请选择或输入自定义类型"
+                    filterable
+                    allow-create
+                    default-first-option
+                    style="width: 100%"
+                  >
                     <el-option
                       v-for="item in labTypeOptions"
                       :key="item"

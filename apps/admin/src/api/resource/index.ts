@@ -37,11 +37,3 @@ export const deleteResource = (id: string) => {
 export const batchDeleteResource = (ids: number[]) => {
   return request.post<R<void>>(`${PREFIX}/batch-delete`, ids)
 }
-
-export const importResource = (file: File) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.post<R<void>>(`${PREFIX}/import`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-}

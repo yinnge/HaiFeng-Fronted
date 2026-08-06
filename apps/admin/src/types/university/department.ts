@@ -13,7 +13,18 @@ export interface DepartmentListVO {
 
 export interface DepartmentDetailVO extends DepartmentListVO {
   updatedAt: string
-  report: DepartmentReportVO
+  reportId?: string | number | null
+  subtitle?: string
+  overview?: { title?: string; descriptions?: string[] }
+  subjectsDetail?: SubjectDetailItem[]
+  postgraduate?: { title?: string; directions?: string[] }
+  citySalary?: CitySalaryItem[]
+  salary?: SalaryItem[]
+  career?: CareerPath[]
+  trends?: { highGrowthTracks?: string[]; policyOrientations?: string[]; environmentAnalysis?: string[] }
+  prospects?: { employmentRate?: string; masterSalary?: string; furtherStudyRate?: string; fortune500Rate?: string; salaryGrowthRate?: string; overseasRate?: string }
+  disclaimer?: { text?: string; updateTime?: string; version?: string; compileUnit?: string }
+  majorCompose?: MajorComposeItem[]
 }
 
 export interface DepartmentReportVO {
@@ -73,6 +84,17 @@ export interface DepartmentAddDTO {
   pageTitle?: string
   tags?: string[]
   sortOrder?: number
+  subtitle?: string
+  overview?: { title?: string; descriptions?: string[] }
+  subjectsDetail?: SubjectDetailItem[]
+  postgraduate?: { title?: string; directions?: string[] }
+  citySalary?: CitySalaryItem[]
+  salary?: SalaryItem[]
+  career?: CareerPath[]
+  trends?: { highGrowthTracks?: string[]; policyOrientations?: string[]; environmentAnalysis?: string[] }
+  prospects?: { employmentRate?: string; masterSalary?: string; furtherStudyRate?: string; fortune500Rate?: string; salaryGrowthRate?: string; overseasRate?: string }
+  disclaimer?: { text?: string; updateTime?: string; version?: string; compileUnit?: string }
+  majorCompose?: MajorComposeItem[]
 }
 
 export interface DepartmentUpdateDTO extends DepartmentAddDTO {

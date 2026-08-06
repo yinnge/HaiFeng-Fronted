@@ -28,7 +28,8 @@ export interface MajorDetailVO {
   updatedAt: string
   detailId: string | null
   courseCount: number | null
-  graduateScale: string | null
+  /** 后端 VO 声明为 Integer（写入 DTO 是 String），故这里两种都兼容 */
+  graduateScale: string | number | null
   maleRatio: number | null
   femaleRatio: number | null
   majorDescription: string | null
@@ -64,8 +65,8 @@ export interface MajorAddDTO {
   description?: string
 }
 
+/** 注意：后端 MajorUpdateDTO 没有 majorCode 字段（专业代码不可修改），前端不要下发 */
 export interface MajorUpdateDTO {
-  majorCode?: string
   majorName?: string
   majorType?: string
   disciplineName?: string

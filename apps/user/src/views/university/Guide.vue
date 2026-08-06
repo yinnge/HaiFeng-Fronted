@@ -26,6 +26,34 @@ const isPro = computed(() => {
   return userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP
 })
 
+// JSONB 字段中文映射（与 admin 院校适应指南管理中的 JSONB_FIELDS 保持一致）
+const JSONB_FIELDS: { key: string; label: string; subFields: string[] }[] = [
+  { key: 'campusFacilities', label: '校园设施', subFields: ['教学楼分布', '实验楼与图书馆', '宿舍区与食堂', '生活配套设施'] },
+  { key: 'dormitoryServices', label: '水电网与宿舍管理', subFields: ['水电费缴纳方式', '宿舍规章制度'] },
+  { key: 'campusTransportation', label: '校园通勤与校外交通', subFields: ['校内通勤方式', '校外交通情况'] },
+  { key: 'academicGuidance', label: '专业与课程核心信息', subFields: ['专业培养方案说明', '选课系统说明'] },
+  { key: 'majorTransferGuidelines', label: '转专业原则', subFields: ['基本申请条件', '申请时间与流程'] },
+  { key: 'majorTransferConstriction', label: '转专业限制', subFields: ['限制类型', '具体限制说明'] },
+  { key: 'academicSupportResources', label: '学习支持资源', subFields: ['师资力量', '学习场所', '学业帮扶'] },
+  { key: 'studentOrganizations', label: '学生组织与社团', subFields: ['官方组织', '社团类型'] },
+  { key: 'campusEvents', label: '校园活动与竞赛', subFields: ['院校品牌活动', '学科与技能竞赛'] },
+  { key: 'classDormSocial', label: '班级与宿舍社交', subFields: ['班级管理方式', '宿舍社交建议'] },
+  { key: 'financialAid', label: '奖助勤贷与权益保障', subFields: ['奖助学金政策', '勤工俭学岗位', '权益申诉渠道'] },
+  { key: 'campusSecurity', label: '校园安全与应急处理', subFields: ['安全设施', '安全规则'] },
+  { key: 'healthServices', label: '医保与心理健康', subFields: ['医保报销政策', '心理健康服务'] },
+  { key: 'lifeServices', label: '生活服务', subFields: ['校园生活服务', '医疗资源', '兼职实习资源'] },
+]
+
+const fieldLabelMap: Record<string, string> = Object.fromEntries(JSONB_FIELDS.map(f => [f.key, f.label]))
+const fieldSubMap: Record<string, Record<string, string>> = Object.fromEntries(
+  JSONB_FIELDS.map(f => [f.key, Object.fromEntries(f.subFields.map(sub => [sub, sub]))])
+)
+
+// 英文 JSONB 键 → 中文标签（找不到时回退原值，兼容历史数据）
+const getFieldLabel = (key: string | number): string => fieldLabelMap[String(key)] ?? String(key)
+const getSubLabel = (fieldKey: string | number, subKey: string | number): string =>
+  fieldSubMap[String(fieldKey)]?.[String(subKey)] ?? String(subKey)
+
 const categories = [
   { key: 'survival', label: '基础生存类', icon: '🛡️', requiresPro: false, desc: '校园设施、宿舍、交通' },
   { key: 'academic', label: '学业规划类', icon: '📚', requiresPro: true, desc: '学业指导、转专业、学习资源' },
@@ -195,13 +223,13 @@ onMounted(fetchOverview)
         <template v-if="categoryData && Object.keys(categoryData).length > 0">
           <div v-for="(value, key) in categoryData" :key="key" class="guide-section">
             <div class="guide-section-header">
-              <h2 class="guide-category-title">{{ key }}</h2>
+              <h2 class="guide-category-title">{{ getFieldLabel(key) }}</h2>
             </div>
             <div v-if="typeof value === 'object' && value !== null" class="guide-section-body">
               <div v-for="(v, k) in value" :key="k" class="guide-subsection">
                 <h4 class="guide-sub-title">
                   <span class="guide-sub-icon"></span>
-                  {{ k }}
+                  {{ getSubLabel(key, k) }}
                 </h4>
                 <div v-if="Array.isArray(v)" class="guide-data-list">
                   <div v-for="(item, idx) in v" :key="idx" class="guide-data-item" :style="{ animationDelay: `${idx * 60}ms` }">

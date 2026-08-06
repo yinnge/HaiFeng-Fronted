@@ -4,7 +4,7 @@ import SiteFooter from '@/components/SiteFooter.vue'
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="app-shell min-h-screen flex flex-col">
     <AppHeader />
     <main class="flex-1">
       <slot />

@@ -66,7 +66,7 @@ const formData = reactive<AdmissionMajorScoreAddDTO>({
 
 const fetchGroupOptions = async () => {
   try {
-    const res = await getGroupPage({ page: 1, size: 100 })
+    const res = await getGroupPage({ page: 1, size: 100, isDeleted: false })
     if (res.data.code === 200) {
       groupOptions.value = res.data.data.records.map((g) => ({
         id: g.id,

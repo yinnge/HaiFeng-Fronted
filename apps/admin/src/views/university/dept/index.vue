@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import JsonbArrayEditor from '@/components/JsonbArrayEditor.vue'
-import JsonbObjectEditor, { type ColumnDef } from '@/components/JsonbObjectEditor.vue'
+import ReportForm from '@/components/ReportForm.vue'
 import {
   getDepartmentPage,
   getDepartmentDetail,
@@ -76,20 +75,6 @@ const reportData = reactive({
   majorCompose: [] as { subjectName: string; percentage: number }[],
   disclaimer: { text: '', updateTime: '', version: '', compileUnit: '' },
 })
-const citySalaryColumns: ColumnDef[] = [
-  { key: 'cityName', label: '城市', width: '25%' },
-  { key: 'minSalary', label: '最低薪资', type: 'number', width: '25%' },
-  { key: 'maxSalary', label: '最高薪资', type: 'number', width: '25%' },
-]
-const salaryColumns: ColumnDef[] = [
-  { key: 'majorName', label: '专业', width: '25%' },
-  { key: 'minSalary', label: '最低薪资', type: 'number', width: '25%' },
-  { key: 'maxSalary', label: '最高薪资', type: 'number', width: '25%' },
-]
-const majorComposeColumns: ColumnDef[] = [
-  { key: 'subjectName', label: '学科名称', width: '50%' },
-  { key: 'percentage', label: '占比(%)', type: 'number', width: '50%' },
-]
 const fetchUniversityOptions = async (name?: string) => {
   try {
     const params: Record<string, any> = { page: 1, size: 100 }
@@ -203,30 +188,57 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         editFormData.tags = d.tags || []
         editFormData.sortOrder = d.sortOrder
         editFormData.status = d.status
-        if (d.report) {
-          reportData.subtitle = d.report.subtitle || ''
-          reportData.overview.title = d.report.overview?.title || ''
-          reportData.overview.descriptions = d.report.overview?.descriptions || []
-          reportData.prospects = { ...d.report.prospects }
-          reportData.trends.highGrowthTracks = d.report.trends?.highGrowthTracks || []
-          reportData.trends.policyOrientations = d.report.trends?.policyOrientations || []
-          reportData.trends.environmentAnalysis = d.report.trends?.environmentAnalysis || []
-          reportData.citySalary = (d.report.citySalary || []).map(i => ({ ...i }))
-          reportData.salary = (d.report.salary || []).map(i => ({ ...i }))
-          reportData.postgraduate.title = d.report.postgraduate?.title || ''
-          reportData.postgraduate.directions = d.report.postgraduate?.directions || []
-          reportData.career = (d.report.career || []).map(c => ({
-            pathTitle: c.pathTitle, pathDesc: c.pathDesc,
-            stages: (c.stages || []).map(s => ({ ...s }))
-          }))
-          reportData.subjectsDetail = (d.report.subjectsDetail || []).map(s => ({
-            majorName: s.majorName, coreSubject: s.coreSubject, supportSubject: s.supportSubject,
-            positioning: s.positioning, coreCourses: s.coreCourses || [], abilities: s.abilities || [],
-            certificates: s.certificates || [], tags: s.tags || []
-          }))
-          reportData.majorCompose = (d.report.majorCompose || []).map(i => ({ ...i }))
-          reportData.disclaimer = { ...d.report.disclaimer }
-        }
+        // 后端 DepartmentDetailVO 为扁平字段（无 report 嵌套），直接读 d.xxx 回填
+        reportData.subtitle = d.subtitle || ''
+        reportData.overview = d.overview
+          ? { title: d.overview.title || '', descriptions: d.overview.descriptions || [] }
+          : { title: '', descriptions: [] }
+        reportData.prospects = d.prospects
+          ? {
+              employmentRate: d.prospects.employmentRate ?? '',
+              masterSalary: d.prospects.masterSalary ?? '',
+              furtherStudyRate: d.prospects.furtherStudyRate ?? '',
+              fortune500Rate: d.prospects.fortune500Rate ?? '',
+              salaryGrowthRate: d.prospects.salaryGrowthRate ?? '',
+              overseasRate: d.prospects.overseasRate ?? '',
+            }
+          : { employmentRate: '', masterSalary: '', furtherStudyRate: '', fortune500Rate: '', salaryGrowthRate: '', overseasRate: '' }
+        reportData.trends = d.trends
+          ? {
+              highGrowthTracks: d.trends.highGrowthTracks || [],
+              policyOrientations: d.trends.policyOrientations || [],
+              environmentAnalysis: d.trends.environmentAnalysis || [],
+            }
+          : { highGrowthTracks: [], policyOrientations: [], environmentAnalysis: [] }
+        reportData.citySalary = (d.citySalary || []).map((i: any) => ({ ...i }))
+        reportData.salary = (d.salary || []).map((i: any) => ({ ...i }))
+        reportData.postgraduate = d.postgraduate
+          ? { title: d.postgraduate.title || '', directions: d.postgraduate.directions || [] }
+          : { title: '', directions: [] }
+        reportData.career = (d.career || []).map((c: any) => ({
+          pathTitle: c.pathTitle || '',
+          pathDesc: c.pathDesc || '',
+          stages: (c.stages || []).map((s: any) => ({ ...s })),
+        }))
+        reportData.subjectsDetail = (d.subjectsDetail || []).map((s: any) => ({
+          majorName: s.majorName || '',
+          coreSubject: s.coreSubject || '',
+          supportSubject: s.supportSubject || '',
+          positioning: s.positioning || '',
+          coreCourses: s.coreCourses || [],
+          abilities: s.abilities || [],
+          certificates: s.certificates || [],
+          tags: s.tags || [],
+        }))
+        reportData.majorCompose = (d.majorCompose || []).map((i: any) => ({ ...i }))
+        reportData.disclaimer = d.disclaimer
+          ? {
+              text: d.disclaimer.text ?? '',
+              updateTime: d.disclaimer.updateTime ?? '',
+              version: d.disclaimer.version ?? '',
+              compileUnit: d.disclaimer.compileUnit ?? '',
+            }
+          : { text: '', updateTime: '', version: '', compileUnit: '' }
         await fetchUniversityOptions()
       }
     } catch (e: any) {
@@ -265,6 +277,17 @@ const handleSubmit = async () => {
         pageTitle: formData.pageTitle,
         tags: formData.tags,
         sortOrder: formData.sortOrder,
+        subtitle: reportData.subtitle,
+        overview: reportData.overview,
+        prospects: reportData.prospects,
+        trends: reportData.trends,
+        citySalary: reportData.citySalary,
+        salary: reportData.salary,
+        postgraduate: reportData.postgraduate,
+        career: reportData.career,
+        subjectsDetail: reportData.subjectsDetail,
+        majorCompose: reportData.majorCompose,
+        disclaimer: reportData.disclaimer,
       })
       if (res.data.code === 200) {
         ElMessage.success('新增成功')
@@ -568,39 +591,39 @@ onMounted(() => {
             <el-descriptions-item label="创建时间">{{ detailData.createdAt }}</el-descriptions-item>
             <el-descriptions-item label="更新时间" :span="2">{{ detailData.updatedAt }}</el-descriptions-item>
           </el-descriptions>
-          <div v-if="detailData.report" class="mt-4">
+          <div v-if="detailData" class="mt-4">
             <el-collapse>
               <el-collapse-item title="概况 (overview)" name="overview">
-                <p class="mb-2 text-sm">{{ detailData.report.overview.title }}</p>
-                <p v-for="(desc, idx) in detailData.report.overview.descriptions" :key="idx" class="mb-1 text-sm">{{ desc }}</p>
+                <p class="mb-2 text-sm">{{ detailData.overview?.title }}</p>
+                <p v-for="(desc, idx) in detailData.overview?.descriptions" :key="idx" class="mb-1 text-sm">{{ desc }}</p>
               </el-collapse-item>
               <el-collapse-item title="前景数据 (prospects)" name="prospects">
                 <el-descriptions :column="2" border size="small">
-                  <el-descriptions-item label="就业率">{{ detailData.report.prospects.employmentRate }}</el-descriptions-item>
-                  <el-descriptions-item label="平均薪资">{{ detailData.report.prospects.masterSalary }}</el-descriptions-item>
-                  <el-descriptions-item label="深造率">{{ detailData.report.prospects.furtherStudyRate }}</el-descriptions-item>
-                  <el-descriptions-item label="500强就职率">{{ detailData.report.prospects.fortune500Rate }}</el-descriptions-item>
-                  <el-descriptions-item label="薪资增长率">{{ detailData.report.prospects.salaryGrowthRate }}</el-descriptions-item>
-                  <el-descriptions-item label="海外留学率">{{ detailData.report.prospects.overseasRate }}</el-descriptions-item>
+                  <el-descriptions-item label="就业率">{{ detailData.prospects?.employmentRate }}</el-descriptions-item>
+                  <el-descriptions-item label="平均薪资">{{ detailData.prospects?.masterSalary }}</el-descriptions-item>
+                  <el-descriptions-item label="深造率">{{ detailData.prospects?.furtherStudyRate }}</el-descriptions-item>
+                  <el-descriptions-item label="500强就职率">{{ detailData.prospects?.fortune500Rate }}</el-descriptions-item>
+                  <el-descriptions-item label="薪资增长率">{{ detailData.prospects?.salaryGrowthRate }}</el-descriptions-item>
+                  <el-descriptions-item label="海外留学率">{{ detailData.prospects?.overseasRate }}</el-descriptions-item>
                 </el-descriptions>
               </el-collapse-item>
               <el-collapse-item title="趋势分析 (trends)" name="trends">
                 <div class="space-y-2 text-sm">
-                  <div><strong>高增长领域：</strong>{{ detailData.report.trends.highGrowthTracks?.join('、') }}</div>
-                  <div><strong>政策导向：</strong>{{ detailData.report.trends.policyOrientations?.join('、') }}</div>
+                  <div><strong>高增长领域：</strong>{{ detailData.trends?.highGrowthTracks?.join('、') }}</div>
+                  <div><strong>政策导向：</strong>{{ detailData.trends?.policyOrientations?.join('、') }}</div>
                   <div><strong>环境分析：</strong></div>
-                  <p v-for="(e, idx) in detailData.report.trends.environmentAnalysis" :key="idx" class="ml-2">{{ e }}</p>
+                  <p v-for="(e, idx) in detailData.trends?.environmentAnalysis" :key="idx" class="ml-2">{{ e }}</p>
                 </div>
               </el-collapse-item>
               <el-collapse-item title="城市薪资 (citySalary)" name="citySalary">
-                <el-table :data="detailData.report.citySalary" size="small" stripe>
+                <el-table :data="detailData.citySalary" size="small" stripe>
                   <el-table-column prop="cityName" label="城市" />
                   <el-table-column prop="minSalary" label="最低薪资" />
                   <el-table-column prop="maxSalary" label="最高薪资" />
                 </el-table>
               </el-collapse-item>
               <el-collapse-item title="薪资数据 (salary)" name="salary">
-                <el-table :data="detailData.report.salary" size="small" stripe>
+                <el-table :data="detailData.salary" size="small" stripe>
                   <el-table-column prop="majorName" label="专业" />
                   <el-table-column prop="minSalary" label="最低薪资" />
                   <el-table-column prop="maxSalary" label="最高薪资" />
@@ -608,12 +631,12 @@ onMounted(() => {
               </el-collapse-item>
               <el-collapse-item title="考研方向 (postgraduate)" name="postgraduate">
                 <div class="text-sm">
-                  <p><strong>{{ detailData.report.postgraduate.title }}</strong></p>
-                  <p v-for="(d, idx) in detailData.report.postgraduate.directions" :key="idx">{{ d }}</p>
+                  <p><strong>{{ detailData.postgraduate?.title }}</strong></p>
+                  <p v-for="(d, idx) in detailData.postgraduate?.directions" :key="idx">{{ d }}</p>
                 </div>
               </el-collapse-item>
               <el-collapse-item title="职业路径 (career)" name="career">
-                <div v-for="(c, idx) in detailData.report.career" :key="idx" class="mb-4">
+                <div v-for="(c, idx) in detailData.career" :key="idx" class="mb-4">
                   <p class="font-medium">{{ c.pathTitle }}</p>
                   <p class="mb-2 text-sm text-gray-500">{{ c.pathDesc }}</p>
                   <el-table :data="c.stages" size="small" stripe>
@@ -626,7 +649,7 @@ onMounted(() => {
                 </div>
               </el-collapse-item>
               <el-collapse-item title="学科明细 (subjectsDetail)" name="subjectsDetail">
-                <div v-for="(s, idx) in detailData.report.subjectsDetail" :key="idx" class="mb-4 rounded border p-3">
+                <div v-for="(s, idx) in detailData.subjectsDetail" :key="idx" class="mb-4 rounded border p-3">
                   <p class="font-medium">{{ s.majorName }}</p>
                   <div class="mt-2 text-sm">
                     <p><strong>核心学科：</strong>{{ s.coreSubject }}</p>
@@ -642,73 +665,80 @@ onMounted(() => {
                 </div>
               </el-collapse-item>
               <el-collapse-item title="专业构成 (majorCompose)" name="majorCompose">
-                <el-table :data="detailData.report.majorCompose" size="small" stripe>
+                <el-table :data="detailData.majorCompose" size="small" stripe>
                   <el-table-column prop="subjectName" label="学科名称" />
                   <el-table-column prop="percentage" label="占比(%)" />
                 </el-table>
               </el-collapse-item>
               <el-collapse-item title="副标题及免责声明" name="misc">
                 <div class="text-sm">
-                  <p><strong>副标题：</strong>{{ detailData.report.subtitle }}</p>
-                  <p><strong>声明：</strong>{{ detailData.report.disclaimer?.text }}</p>
-                  <p><strong>更新时间：</strong>{{ detailData.report.disclaimer?.updateTime }}</p>
-                  <p><strong>版本：</strong>{{ detailData.report.disclaimer?.version }}</p>
-                  <p><strong>编制单位：</strong>{{ detailData.report.disclaimer?.compileUnit }}</p>
+                  <p><strong>副标题：</strong>{{ detailData.subtitle }}</p>
+                  <p><strong>声明：</strong>{{ detailData.disclaimer?.text }}</p>
+                  <p><strong>更新时间：</strong>{{ detailData.disclaimer?.updateTime }}</p>
+                  <p><strong>版本：</strong>{{ detailData.disclaimer?.version }}</p>
+                  <p><strong>编制单位：</strong>{{ detailData.disclaimer?.compileUnit }}</p>
                 </div>
               </el-collapse-item>
             </el-collapse>
           </div>
         </template>
         <template v-if="dialogMode === 'add'">
-          <el-form :model="formData" label-width="110px">
-            <el-form-item label="院校" required>
-              <el-select
-                v-model="formData.universityId"
-                placeholder="请输入院校名称搜索"
-                filterable
-                remote
-                :remote-method="handleUniversitySearch"
-                :loading="formLoading"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="item in universityOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="院系名称" required>
-              <el-input v-model="formData.departmentName" placeholder="请输入院系名称" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="院系类型" required>
-              <el-select v-model="formData.departmentType" placeholder="请选择院系类型" style="width: 100%">
-                <el-option
-                  v-for="item in departmentTypeOptions"
-                  :key="item"
-                  :label="item"
-                  :value="item"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="页面主标题">
-              <el-input v-model="formData.pageTitle" placeholder="如不填则使用院系名称" maxlength="100" />
-            </el-form-item>
-            <el-form-item label="院系标签">
-              <el-select
-                v-model="formData.tags"
-                multiple
-                allow-create
-                filterable
-                placeholder="输入标签后回车"
-                style="width: 100%"
-              />
-            </el-form-item>
-            <el-form-item label="排序">
-              <el-input-number v-model="formData.sortOrder" :min="0" style="width: 200px" />
-            </el-form-item>
-          </el-form>
+          <el-tabs v-model="activeTab" type="border-card">
+            <el-tab-pane label="基本信息" name="basic">
+              <el-form :model="formData" label-width="110px" style="margin-top: 12px">
+                <el-form-item label="院校" required>
+                  <el-select
+                    v-model="formData.universityId"
+                    placeholder="请输入院校名称搜索"
+                    filterable
+                    remote
+                    :remote-method="handleUniversitySearch"
+                    :loading="formLoading"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="item in universityOptions"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="院系名称" required>
+                  <el-input v-model="formData.departmentName" placeholder="请输入院系名称" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="院系类型" required>
+                  <el-select v-model="formData.departmentType" placeholder="请选择院系类型" style="width: 100%">
+                    <el-option
+                      v-for="item in departmentTypeOptions"
+                      :key="item"
+                      :label="item"
+                      :value="item"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="页面主标题">
+                  <el-input v-model="formData.pageTitle" placeholder="如不填则使用院系名称" maxlength="100" />
+                </el-form-item>
+                <el-form-item label="院系标签">
+                  <el-select
+                    v-model="formData.tags"
+                    multiple
+                    allow-create
+                    filterable
+                    placeholder="输入标签后回车"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+                <el-form-item label="排序">
+                  <el-input-number v-model="formData.sortOrder" :min="0" style="width: 200px" />
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="院系详情" name="report">
+              <ReportForm :report-data="reportData" />
+            </el-tab-pane>
+          </el-tabs>
         </template>
         <template v-if="dialogMode === 'edit'">
           <el-tabs v-model="activeTab" type="border-card">
@@ -767,126 +797,7 @@ onMounted(() => {
               </el-form>
             </el-tab-pane>
             <el-tab-pane label="院系详情" name="report">
-              <div class="report-form">
-                <el-form label-width="120px">
-                  <el-form-item label="副标题">
-                    <el-input v-model="reportData.subtitle" placeholder="如：2024 年度深度分析" />
-                  </el-form-item>
-                </el-form>
-
-                <div class="section-block">
-                  <div class="section-title">概况 (overview)</div>
-                  <el-form label-width="120px">
-                    <el-form-item label="标题">
-                      <el-input v-model="reportData.overview.title" placeholder="概况标题" />
-                    </el-form-item>
-                  </el-form>
-                  <JsonbArrayEditor
-                    v-model="reportData.overview.descriptions"
-                    label="描述列表"
-                    placeholder="输入描述内容"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <div class="section-title">前景数据 (prospects)</div>
-                  <el-form label-width="120px">
-                    <el-form-item label="就业率">
-                      <el-input v-model="reportData.prospects.employmentRate" placeholder="如：95%" />
-                    </el-form-item>
-                    <el-form-item label="平均薪资">
-                      <el-input v-model="reportData.prospects.masterSalary" placeholder="如：15000元/月" />
-                    </el-form-item>
-                    <el-form-item label="深造率">
-                      <el-input v-model="reportData.prospects.furtherStudyRate" placeholder="如：42%" />
-                    </el-form-item>
-                    <el-form-item label="500强就职率">
-                      <el-input v-model="reportData.prospects.fortune500Rate" placeholder="如：28%" />
-                    </el-form-item>
-                    <el-form-item label="薪资增长率">
-                      <el-input v-model="reportData.prospects.salaryGrowthRate" placeholder="如：12%" />
-                    </el-form-item>
-                    <el-form-item label="海外留学率">
-                      <el-input v-model="reportData.prospects.overseasRate" placeholder="如：18%" />
-                    </el-form-item>
-                  </el-form>
-                </div>
-
-                <div class="section-block">
-                  <div class="section-title">趋势分析 (trends)</div>
-                  <JsonbArrayEditor
-                    v-model="reportData.trends.highGrowthTracks"
-                    label="高增长领域"
-                    placeholder="如：人工智能"
-                  />
-                  <JsonbArrayEditor
-                    v-model="reportData.trends.policyOrientations"
-                    label="政策导向"
-                    placeholder="如：新工科建设"
-                  />
-                  <JsonbArrayEditor
-                    v-model="reportData.trends.environmentAnalysis"
-                    label="环境分析"
-                    placeholder="输入分析内容"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <JsonbObjectEditor
-                    v-model="reportData.citySalary"
-                    :columns="citySalaryColumns"
-                    label="城市薪资 (citySalary)"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <JsonbObjectEditor
-                    v-model="reportData.salary"
-                    :columns="salaryColumns"
-                    label="薪资数据 (salary)"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <div class="section-title">考研方向 (postgraduate)</div>
-                  <el-form label-width="120px">
-                    <el-form-item label="标题">
-                      <el-input v-model="reportData.postgraduate.title" placeholder="如：考研方向分析" />
-                    </el-form-item>
-                  </el-form>
-                  <JsonbArrayEditor
-                    v-model="reportData.postgraduate.directions"
-                    label="方向列表"
-                    placeholder="如：计算机科学与技术"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <JsonbObjectEditor
-                    v-model="reportData.majorCompose"
-                    :columns="majorComposeColumns"
-                    label="专业构成 (majorCompose)"
-                  />
-                </div>
-
-                <div class="section-block">
-                  <div class="section-title">免责声明 (disclaimer)</div>
-                  <el-form label-width="120px">
-                    <el-form-item label="声明内容">
-                      <el-input v-model="reportData.disclaimer.text" type="textarea" :rows="2" placeholder="免责声明文本" />
-                    </el-form-item>
-                    <el-form-item label="更新时间">
-                      <el-input v-model="reportData.disclaimer.updateTime" placeholder="如：2024-01-01" />
-                    </el-form-item>
-                    <el-form-item label="版本">
-                      <el-input v-model="reportData.disclaimer.version" placeholder="如：v1.0" />
-                    </el-form-item>
-                    <el-form-item label="编制单位">
-                      <el-input v-model="reportData.disclaimer.compileUnit" placeholder="如：海枫研究院" />
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </div>
+              <ReportForm :report-data="reportData" />
             </el-tab-pane>
           </el-tabs>
         </template>

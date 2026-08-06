@@ -337,9 +337,11 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
-            <button class="action-pill action-detail" @click="openDialog('detail', row.level)">详情</button>
-            <button class="action-pill action-edit" @click="openDialog('edit', row.level)">修改</button>
-            <button class="action-pill" :class="row.isDeleted ? 'action-enable' : 'action-delete'" @click="handleToggleStatus(row)">{{ row.isDeleted ? '启用' : '禁用' }}</button>
+            <div class="action-group">
+              <button class="action-btn action-detail" @click="openDialog('detail', row.level)">详情</button>
+              <button class="action-btn action-edit" @click="openDialog('edit', row.level)">修改</button>
+              <button class="action-btn action-status" @click="handleToggleStatus(row)">{{ row.isDeleted ? '启用' : '禁用' }}</button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -678,13 +680,14 @@ onMounted(() => {
   transition: all 0.2s ease;
   white-space: nowrap;
 }
-.action-enable {
-  background: linear-gradient(135deg, #22c55e, #4ade80);
-  color: #fff;
-}
-.action-enable:hover {
-  background: linear-gradient(135deg, #16a34a, #22c55e);
-}
+.action-detail { background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; }
+.action-detail:hover { box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); transform: translateY(-1px); }
+.action-edit { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; }
+.action-edit:hover { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }
+.action-status { background: #fff; color: #d97706; border: 1px solid #fbbf24; }
+.action-status:hover { background: #fffbeb; }
+.action-delete { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+.action-delete:hover { box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transform: translateY(-1px); }
 
 /* 分页 */
 .custom-pagination {
