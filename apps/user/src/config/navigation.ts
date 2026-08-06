@@ -67,8 +67,8 @@ export const navItems: NavItem[] = [
     label: '竞赛证书',
     route: '/competition',
     subItems: [
-      { label: '竞赛详情', route: '/competition' },
-      { label: '证书详情', route: '/certificate' },
+      { label: '竞赛', route: '/competition' },
+      { label: '证书', route: '/certificate' },
     ],
   },
 ]

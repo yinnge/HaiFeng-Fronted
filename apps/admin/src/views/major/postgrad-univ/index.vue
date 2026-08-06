@@ -65,9 +65,9 @@ const handleSelectionChange = (rows: PostgradUnivListVO[]) => { selectedIds.valu
 
 const handleDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要软删除该关联记录吗？软删除后可恢复。', '确认软删除')
+    await ElMessageBox.confirm('确定要禁用该关联记录吗？禁用后可恢复。', '确认禁用')
     const res = await deletePostgradUniv(id)
-    if (res.data.code === 200) { ElMessage.success('软删除成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('禁用成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -83,9 +83,9 @@ const handleHardDelete = async (id: string) => {
 
 const handleRestore = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要恢复该关联记录吗？', '提示')
+    await ElMessageBox.confirm('确定要启用该关联记录吗？', '提示')
     const res = await restorePostgradUniv(id)
-    if (res.data.code === 200) { ElMessage.success('恢复成功'); fetchData() }
+    if (res.data.code === 200) { ElMessage.success('启用成功'); fetchData() }
     else { ElMessage.error(res.data.msg || '操作失败') }
   } catch { /* 取消 */ }
 }
@@ -287,11 +287,10 @@ onMounted(() => { fetchData() })
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 1">
-              <span class="action-link" @click="handleDelete(row.id)">软删除</span>
+              <span class="action-link" @click="handleDelete(row.id)">禁用</span>
             </template>
             <template v-else>
-              <span class="action-link" @click="handleRestore(row.id)">恢复</span>
-              <span class="action-link" @click="handleDelete(row.id)">软删除</span>
+              <span class="action-link" @click="handleRestore(row.id)">启用</span>
             </template>
             <span class="action-link action-danger" @click="handleHardDelete(row.id)">删除</span>
           </template>

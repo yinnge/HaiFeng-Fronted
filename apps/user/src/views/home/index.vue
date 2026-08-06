@@ -371,7 +371,7 @@ onUnmounted(() => {
           <div v-if="announcementLoading" class="mx-auto flex max-w-5xl justify-center py-16">
             <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
-          <div v-else class="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[280px_1fr]">
+          <div v-else class="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[340px_1fr] lg:gap-12">
             <AnnouncementWheel
               :announcements="filteredAnnouncements"
               @select="selectAnnouncement"

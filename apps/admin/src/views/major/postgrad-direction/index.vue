@@ -49,9 +49,8 @@ const majorOptions = ref<{ value: number; label: string }[]>([])
 const postgradMajorOptions = ref<{ value: number; label: string }[]>([])
 
 const searchMajor = async (query: string) => {
-  if (!query) { majorOptions.value = []; return }
   try {
-    const res = await getMajorPage({ page: 1, size: 20, majorName: query } as any)
+    const res = await getMajorPage({ page: 1, size: 20, majorName: query || undefined } as any)
     if (res.data.code === 200) {
       majorOptions.value = (res.data.data.records || []).map((r: any) => ({
         value: r.id,
@@ -62,9 +61,8 @@ const searchMajor = async (query: string) => {
 }
 
 const searchPostgradMajor = async (query: string) => {
-  if (!query) { postgradMajorOptions.value = []; return }
   try {
-    const res = await getPostgradMajorPage({ page: 1, size: 20, majorName: query } as any)
+    const res = await getPostgradMajorPage({ page: 1, size: 20, majorName: query || undefined } as any)
     if (res.data.code === 200) {
       postgradMajorOptions.value = (res.data.data.records || []).map((r: any) => ({
         value: r.id,
@@ -116,6 +114,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     majorOptions.value = []
     postgradMajorOptions.value = []
     detailData.value = null
+    searchMajor('')
+    searchPostgradMajor('')
   } else if (mode === 'edit' && id) {
     dialogTitle.value = '修��关联'
     formLoading.value = true

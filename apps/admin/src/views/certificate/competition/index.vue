@@ -149,6 +149,18 @@ const removeBasicInfo = (key: string) => {
   }
 }
 
+// 提交前把输入框中"待添加"的值自动落入 formData.detail，防止漏点"添加"导致数据静默丢失
+const flushPendingDetailInputs = () => {
+  addAward()
+  addPurpose()
+  addCriteria()
+  addNotice()
+  addRule()
+  addGuide()
+  addAwardDisp()
+  addBasicInfo()
+}
+
 const resetFormData = () => {
   formData.compName = ''
   formData.compLevel = ''
@@ -226,6 +238,7 @@ const handleSubmit = async () => {
     return
   }
   try {
+    flushPendingDetailInputs()
     let res: any
     if (dialogMode.value === 'add') {
       const data: CompetitionAddDTO = { compName: formData.compName }
@@ -574,7 +587,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="基本信息">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="basicInfoKey" placeholder="字段" style="width: 150px" />
-                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" />
+                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" @keyup.enter="addBasicInfo" />
                     <el-button type="primary" @click="addBasicInfo">添加</el-button>
                   </div>
                   <div v-if="formData.detail?.basicInfo && Object.keys(formData.detail.basicInfo).length > 0" class="flex flex-wrap gap-1">
@@ -611,7 +624,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="竞赛规则">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newRuleTitle" placeholder="标题" style="width: 150px" />
-                    <el-input v-model="newRuleContent" placeholder="内容" style="width: 250px" />
+                    <el-input v-model="newRuleContent" placeholder="内容" style="width: 250px" @keyup.enter="addRule" />
                     <el-button type="primary" @click="addRule">添加</el-button>
                   </div>
                   <div v-for="(r, i) in formData.detail?.competitionRules || []" :key="i" class="mb-1">
@@ -644,7 +657,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="参赛流程">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newGuideTitle" placeholder="步骤标题" style="width: 150px" />
-                    <el-input v-model="newGuideContent" placeholder="步骤内容" style="width: 250px" />
+                    <el-input v-model="newGuideContent" placeholder="步骤内容" style="width: 250px" @keyup.enter="addGuide" />
                     <el-button type="primary" @click="addGuide">添加</el-button>
                   </div>
                   <div v-for="(g, i) in formData.detail?.processGuide || []" :key="i" class="mb-1">
@@ -657,7 +670,7 @@ onMounted(() => { fetchData() })
                 <el-form-item label="奖项展示">
                   <div class="flex gap-2 mb-2">
                     <el-input v-model="newAwardDispTitle" placeholder="奖项标题" style="width: 150px" />
-                    <el-input v-model="newAwardDispContent" placeholder="奖项详情" style="width: 250px" />
+                    <el-input v-model="newAwardDispContent" placeholder="奖项详情" style="width: 250px" @keyup.enter="addAwardDisp" />
                     <el-button type="primary" @click="addAwardDisp">添加</el-button>
                   </div>
                   <div v-for="(ad, i) in formData.detail?.awardsDisplay || []" :key="i" class="mb-1">

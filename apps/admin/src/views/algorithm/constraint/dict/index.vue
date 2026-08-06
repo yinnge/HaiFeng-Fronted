@@ -292,7 +292,7 @@ const handleToggleStatus = async (row: ConstraintDictListVO) => {
 const handleDelete = async (code: string) => {
   try {
     await ElMessageBox.confirm(
-      '确定删除该约束吗？删除后可恢复。',
+      '确定删除该约束吗？数据不可恢复！',
       '确认删除',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
     )
@@ -315,9 +315,9 @@ const handleBatchDelete = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `      确定批量移除选中的 ${selectedCodes.value.length} 条约束吗？删除后可恢复。`,
-      '确认批量移除',
-      { type: 'warning', confirmButtonText: '确定批量移除', cancelButtonText: '取消' }
+      `      确定批量删除选中的 ${selectedCodes.value.length} 条约束吗？数据不可恢复！`,
+      '确认批量删除',
+      { type: 'warning', confirmButtonText: '确定批量删除', cancelButtonText: '取消' }
     )
     const res = await batchDeleteDict(selectedCodes.value)
     if (res.data.code === 200) {
@@ -360,7 +360,7 @@ onMounted(() => {
         </button>
         <button class="btn btn-batch-delete" :disabled="selectedCodes.length === 0" @click="handleBatchDelete">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 2h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM4 3.5V4H2.75a.75.75 0 0 0 0 1.5h.37l.64 7.06A1.75 1.75 0 0 0 5.505 14H10.5a1.75 1.75 0 0 0 1.745-1.44l.64-7.06h.37a.75.75 0 0 0 0-1.5H12v-.5A2 2 0 0 0 10 2H6Z"/></svg>
-          <span>批量移除</span>
+          <span>批量删除</span>
         </button>
       </div>
       <div class="right-actions">

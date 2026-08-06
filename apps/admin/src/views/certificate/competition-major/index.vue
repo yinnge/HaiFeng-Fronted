@@ -48,10 +48,9 @@ const majorOptions = ref<{ value: number; label: string }[]>([])
 const searchLoading = ref(false)
 
 const searchCompetitions = async (kw: string) => {
-  if (!kw) { competitionOptions.value = []; return }
   searchLoading.value = true
   try {
-    const res = await getCompetitionPage({ page: 1, size: 20, compName: kw } as any)
+    const res = await getCompetitionPage({ page: 1, size: 20, compName: kw || undefined } as any)
     if (res.data.code === 200) {
       competitionOptions.value = (res.data.data.records || []).map((r: any) => ({
         value: r.id,
@@ -64,10 +63,9 @@ const searchCompetitions = async (kw: string) => {
 }
 
 const searchMajors = async (kw: string) => {
-  if (!kw) { majorOptions.value = []; return }
   searchLoading.value = true
   try {
-    const res = await getMajorPage({ page: 1, size: 20, majorName: kw } as any)
+    const res = await getMajorPage({ page: 1, size: 20, majorName: kw || undefined } as any)
     if (res.data.code === 200) {
       majorOptions.value = (res.data.data.records || []).map((r: any) => ({
         value: r.id,
@@ -161,6 +159,8 @@ const openAddDialog = () => {
   majorOptions.value = []
   detailData.value = null
   dialogVisible.value = true
+  searchCompetitions('')
+  searchMajors('')
 }
 
 const openDetailDialog = (row: CompetitionMajorListVO) => {

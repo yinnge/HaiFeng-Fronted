@@ -90,6 +90,7 @@ const importFile = ref<File | null>(null)
 const importLoading = ref(false)
 
 const cityLevelOptions = ['直辖市', '省会城市', '地级市', '县级市']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 
 const fetchData = async () => {
   loading.value = true
@@ -566,7 +567,9 @@ onMounted(() => {
           <el-input v-model="queryParams.cityName" placeholder="城市名称模糊搜索" clearable style="width: 180px" @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="省份">
-          <el-input v-model="queryParams.province" placeholder="省份模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
+          <el-select v-model="queryParams.province" placeholder="省份" clearable filterable allow-create style="width: 150px">
+            <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
+          </el-select>
         </el-form-item>
         <el-form-item label="所属地区">
           <el-input v-model="queryParams.region" placeholder="所属地区模糊搜索" clearable style="width: 150px" @keyup.enter="handleSearch" />
@@ -717,7 +720,9 @@ onMounted(() => {
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="省份" required>
-                      <el-input v-model="formData.province" placeholder="请输入省份" maxlength="30" show-word-limit />
+                      <el-select v-model="formData.province" placeholder="请选择省份" filterable allow-create style="width: 100%">
+                        <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
+                      </el-select>
                     </el-form-item>
                   </el-col>
                 </el-row>

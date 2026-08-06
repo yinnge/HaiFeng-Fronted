@@ -25,3 +25,6 @@ export const deleteMajorScore = (id: string): Promise<AxiosResponse<R<void>>> =>
 
 export const batchDeleteMajorScore = (ids: number[]): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch`, ids)
+
+export const batchHardDeleteMajorScore = (ids: number[]): Promise<AxiosResponse<R<void>>> =>
+  request.post(`${PREFIX}/batch/hard-delete`, ids)

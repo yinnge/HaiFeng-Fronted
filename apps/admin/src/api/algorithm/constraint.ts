@@ -38,7 +38,7 @@ export const deleteDict = (code: string): Promise<AxiosResponse<R<void>>> =>
   request.delete(`${DICT_PREFIX}/${code}`)
 
 export const batchDeleteDict = (codes: string[]): Promise<AxiosResponse<R<void>>> =>
-  request.post(`${DICT_PREFIX}/batch-delete`, codes)
+  request.post(`${DICT_PREFIX}/batch-delete`, { codes })
 
 // ========== 专业约束关联 ==========
 const MAJOR_PREFIX = '/api/v1/admin/algorithm/constraint/major'

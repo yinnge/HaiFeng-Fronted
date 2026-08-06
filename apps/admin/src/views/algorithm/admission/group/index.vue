@@ -10,6 +10,7 @@ import {
   updateGroupStatus,
   deleteGroup,
   batchDeleteGroup,
+  batchHardDeleteGroup,
   importGroupExcel,
   recalcAllGroups,
 } from '@/api/algorithm/admission/group'
@@ -249,7 +250,11 @@ const handleToggleStatus = async (row: AdmissionGroupListVO) => {
 
 const handleDelete = async (id: string) => {
   try {
-    await ElMessageBox.confirm('确定要软删除该专业组吗？（级联删除其下所有专业明细）', '提示')
+    await ElMessageBox.confirm('确定要删除该专业组吗？其下所有专业明细将一并物理删除，数据不可恢复！', '警告', {
+      type: 'warning',
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+    })
     const res = await deleteGroup(id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
@@ -264,7 +269,7 @@ const handleDelete = async (id: string) => {
 
 const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的专业')
+    ElMessage.warning('请先选择要禁用的专业组')
     return
   }
   try {
@@ -272,6 +277,30 @@ const handleBatchDelete = async () => {
     const res = await batchDeleteGroup(selectedIds.value as unknown as number[])
     if (res.data.code === 200) {
       ElMessage.success('批量禁用成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '操作失败')
+    }
+  } catch {
+    // cancel
+  }
+}
+
+const handleBatchHardDelete = async () => {
+  if (selectedIds.value.length === 0) {
+    ElMessage.warning('请先选择要删除的专业组')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要批量删除选中的${selectedIds.value.length} 个专业组吗？其下所有专业明细将一并物理删除，数据不可恢复！`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+    const res = await batchHardDeleteGroup(selectedIds.value as unknown as number[])
+    if (res.data.code === 200) {
+      ElMessage.success('批量删除成功')
+      selectedIds.value = []
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -435,9 +464,13 @@ onMounted(() => {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span>全量重算</span>
       </button>
-      <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <button class="custom-btn outline-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         <span>批量禁用</span>
+      </button>
+      <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchHardDelete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span>批量删除</span>
       </button>
       <button class="custom-btn outline-btn" @click="fetchData">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -482,7 +515,7 @@ onMounted(() => {
             <button :class="['action-pill', row.isDeleted ? 'action-enabled' : 'action-disabled']" @click="handleToggleStatus(row)">
               {{ row.isDeleted ? '启用' : '禁用' }}
             </button>
-            <button class="action-pill action-danger" @click="handleDelete(row.id)">软删除</button>
+            <button class="action-pill action-danger" @click="handleDelete(row.id)">删除</button>
           </template>
         </el-table-column>
       </el-table>

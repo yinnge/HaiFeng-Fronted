@@ -27,8 +27,8 @@ onUnmounted(() => {
 })
 
 const windowSize = computed(() => (isSmallScreen.value ? 3 : 5))
-const cardWidth = computed(() => (isSmallScreen.value ? 150 : 230))
-const cardHeight = computed(() => (isSmallScreen.value ? 72 : 88))
+const cardWidth = computed(() => (isSmallScreen.value ? 165 : 255))
+const cardHeight = computed(() => (isSmallScreen.value ? 78 : 98))
 const cardStep = computed(() => cardHeight.value + 10)
 const containerWidth = computed(() => Math.ceil(cardWidth.value * scaleFor(0)))
 
@@ -42,7 +42,7 @@ const half = computed(() => {
   return Math.min(defaultHalf.value, Math.floor((n - 1) / 2))
 })
 
-const scaleFor = (dist: number) => [1.1, 0.86, 0.7][dist] ?? 0.6
+const scaleFor = (dist: number) => [1.18, 0.92, 0.76][dist] ?? 0.65
 const blurFor = (dist: number) => [0, 1.5, 3.5][dist] ?? 5
 const opacityFor = (dist: number) => [1, 0.8, 0.5][dist] ?? 0.35
 
@@ -195,7 +195,7 @@ const onTouchEnd = (e: TouchEvent) => {
           </div>
           <h4
             class="mt-1.5 line-clamp-2 font-bold text-gray-800 leading-snug"
-            :class="isCenter(c.ann) ? 'text-base' : 'text-sm opacity-80'"
+            :class="isCenter(c.ann) ? 'text-lg' : 'text-sm opacity-80'"
           >
             {{ c.ann.title }}
           </h4>
