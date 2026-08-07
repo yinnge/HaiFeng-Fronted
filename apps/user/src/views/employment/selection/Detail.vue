@@ -19,7 +19,7 @@ async function fetchDetail() {
     const res = await getSelectionDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取岗位详情失败')
+    ElMessage.error(e?.message || '获取岗位详情失败')
     router.push('/employment/selection')
   } finally {
     loading.value = false

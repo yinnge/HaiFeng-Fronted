@@ -135,8 +135,11 @@ function handleAvatarClick() {
   padding: 1.5rem;
   background: white;
   border-radius: 0.75rem;
-  border: 1px solid #f3f4f6;
+  /* 去掉黑边，只保留上下橙色边框点缀 */
+  border-top: 3px solid #f5a54a;
   border-bottom: 3px solid #f5a54a;
+  border-left: none;
+  border-right: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   position: relative;
   overflow: hidden;

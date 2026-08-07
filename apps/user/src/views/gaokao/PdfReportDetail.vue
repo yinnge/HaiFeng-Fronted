@@ -14,10 +14,12 @@ import {
 } from '@/api/pdf-report'
 import { renderMarkdown } from '@/utils/markdown'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
+import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const route = useRoute()
 const recordId = route.params.recordId as string
+const userStore = useUserStore()
 
 const loading = ref(true)
 const record = ref<PdfRecordDetailVO | null>(null)
@@ -26,6 +28,8 @@ const pdfObjectUrl = ref('')
 
 // 重新生成弹窗
 const showGenerateDialog = ref(false)
+
+const isVip = computed(() => (userStore.userInfo?.memberType || 'normal') === 'vip')
 
 const safetyColorMap: Record<string, string> = {
   '搏': '#FF4D4F',
@@ -62,7 +66,10 @@ const planSnapshot = computed<PlanSnapshot>(() => {
   }
 })
 
-onMounted(loadDetail)
+onMounted(async () => {
+  await userStore.fetchUserInfo()
+  loadDetail()
+})
 
 async function loadDetail() {
   loading.value = true
@@ -105,6 +112,14 @@ async function handleDownload() {
 }
 
 async function handleRegenerate() {
+  if (!isVip.value) {
+    ElMessageBox.alert(
+      '重新生成报告需要VIP会员，请先升级',
+      '功能受限',
+      { confirmButtonText: '我知道了', type: 'warning' }
+    )
+    return
+  }
   const word = record.value?.status === 1
     ? '重新生成将消耗1次配额，确定？'
     : '确定重新生成？'

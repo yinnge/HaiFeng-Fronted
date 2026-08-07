@@ -48,7 +48,12 @@ const createRequest = (baseURL: string): AxiosInstance => {
   // 响应拦截器
   instance.interceptors.response.use(
     (response: AxiosResponse<R>) => {
-      const { data } = response
+      const { data, config } = response
+
+      // blob/arraybuffer 等二进制响应：跳过业务 code 检查，原样返回给调用方
+      if (config.responseType === 'blob' || config.responseType === 'arraybuffer') {
+        return response
+      }
 
       // 业务错误处理
       if (Number(data.code) !== ErrorCode.SUCCESS) {

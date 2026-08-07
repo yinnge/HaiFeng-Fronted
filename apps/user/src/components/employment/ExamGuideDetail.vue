@@ -30,7 +30,7 @@ onMounted(async () => {
     const res = await getExamGuideDetail(props.id)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取详情失败')
+    ElMessage.error(e?.message || '获取详情失败')
   } finally {
     loading.value = false
   }

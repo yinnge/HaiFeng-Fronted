@@ -52,7 +52,7 @@ async function fetchList() {
     jobs.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取军队文职岗位列表失败')
+    ElMessage.error(e?.message || '获取军队文职岗位列表失败')
     jobs.value = []
     total.value = 0
   } finally {

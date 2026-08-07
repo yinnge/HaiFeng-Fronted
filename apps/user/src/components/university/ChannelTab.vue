@@ -11,7 +11,7 @@ const loading = ref(false)
 const list = ref<ChannelListVO[]>([])
 const total = ref(0)
 const page = ref(1)
-const size = ref(9)
+const size = ref(12)
 
 const channelName = ref('')
 const regionTag = ref('')
@@ -37,7 +37,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取通道数据失败')
+    ElMessage.error(e?.message || '获取通道数据失败')
   } finally {
     loading.value = false
   }
@@ -143,7 +143,7 @@ onMounted(() => {
         background
         layout="total, sizes, prev, pager, next"
         :total="total"
-        :page-sizes="[9, 18, 30]"
+        :page-sizes="[12, 24, 36]"
         :page-size="size"
         :current-page="page"
         @current-change="onPageChange"

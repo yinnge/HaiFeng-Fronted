@@ -172,6 +172,7 @@ onMounted(() => {
 
 .profile-tabs-card {
   margin-top: 1.5rem;
+  /* 恢复：只保留上下橙色边框，去掉左右黑边 */
   border-radius: 0;
   border-top: 2px solid #f5a54a;
   border-bottom: 2px solid #f5a54a;
@@ -179,12 +180,27 @@ onMounted(() => {
   border-right: none;
 }
 
+/* el-card 默认 body 有 20px 内边距，会让白色 tab 条缩进、不贴左右边缘；
+   去掉内边距让 tab 条与卡片左右边缘对齐 */
+.profile-tabs-card :deep(.el-card__body) {
+  padding: 0;
+}
+
 .profile-tabs :deep(.el-tabs__header) {
   margin-bottom: 0;
   background: white;
-  border-radius: 0;
   padding: 0;
   border-bottom: 2px solid #f5a54a;
+}
+
+/* 白色切换条：左缩进 50px，让“账号安全”等标签整体右移 */
+.profile-tabs :deep(.el-tabs__nav-scroll) {
+  padding-left: 50px;
+}
+
+/* 内容区单独加内边距（因为上面去掉了 card body 的内边距） */
+.profile-tabs :deep(.el-tabs__content) {
+  padding: 1.5rem;
 }
 
 .profile-tabs :deep(.el-tabs__nav-wrap::after) {

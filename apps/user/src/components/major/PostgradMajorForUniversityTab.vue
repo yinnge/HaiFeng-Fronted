@@ -42,9 +42,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    if (e?.response?.status !== 403) {
-      ElMessage.error('获取考研专业失败')
-    }
+    ElMessage.error(e?.message || '获取考研专业失败')
   } finally {
     loading.value = false
   }

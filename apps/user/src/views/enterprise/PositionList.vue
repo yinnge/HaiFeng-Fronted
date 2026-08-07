@@ -35,7 +35,7 @@ async function fetchPositions() {
     const res = await getPositions(enterpriseId)
     positions.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取岗位列表失败')
+    ElMessage.error(e?.message || '获取岗位列表失败')
   } finally {
     loading.value = false
   }

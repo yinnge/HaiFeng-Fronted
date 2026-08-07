@@ -73,8 +73,8 @@ const fetchAnnouncements = async () => {
     const data = res.data.data
     announcements.value = data.records
     announcementTotal.value = data.total
-  } catch {
-    ElMessage.error('获取公告失败')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '获取公告失败')
   } finally {
     announcementLoading.value = false
   }
@@ -116,8 +116,8 @@ const selectAnnouncement = async (id: string) => {
     const data = res.data.data
     announcementDetailCache.set(id, data)
     announcementDetail.value = data
-  } catch {
-    ElMessage.error('获取公告详情失败')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '获取公告详情失败')
     announcementDetail.value = null
   } finally {
     announcementDetailLoading.value = false
@@ -217,8 +217,8 @@ const fetchInstitutions = async () => {
     })
     institutions.value = res.data.data.records
     institutionTotal.value = res.data.data.total
-  } catch {
-    ElMessage.error('获取机构列表失败')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '获取机构列表失败')
   }
 }
 

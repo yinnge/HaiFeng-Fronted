@@ -5,6 +5,7 @@ export interface MajorListVO {
   disciplineName: string | null
   majorType: string
   majorCategory: string | null
+  studyDuration: string | null
   status: number
   createdAt: string
 }
@@ -19,6 +20,7 @@ export interface MajorDetailVO {
   parentCategory: string | null
   majorTags: string | null
   degreeAwarded: string | null
+  studyDuration: string | null
   employmentRate: number | null
   salaryMin: number | null
   salaryMax: number | null
@@ -59,6 +61,7 @@ export interface MajorAddDTO {
   parentCategory?: string
   majorTags?: string
   degreeAwarded?: string
+  studyDuration?: string
   employmentRate?: number
   salaryMin?: number
   salaryMax?: number
@@ -74,6 +77,7 @@ export interface MajorUpdateDTO {
   parentCategory?: string
   majorTags?: string
   degreeAwarded?: string
+  studyDuration?: string
   employmentRate?: number
   salaryMin?: number
   salaryMax?: number

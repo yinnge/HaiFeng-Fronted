@@ -23,7 +23,7 @@ async function fetchDetail() {
     const res = await getCityDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取城市详情失败')
+    ElMessage.error(e?.message || '获取城市详情失败')
   } finally {
     loading.value = false
   }

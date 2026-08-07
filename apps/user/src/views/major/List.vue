@@ -61,7 +61,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取专业列表失败')
+    ElMessage.error(e?.message || '获取专业列表失败')
   } finally {
     loading.value = false
   }
@@ -89,9 +89,7 @@ async function fetchRanking() {
     rankingList.value = res.data.data.records
     rankingTotal.value = res.data.data.total
   } catch (e: any) {
-    if (e?.response?.status !== 403) {
-      ElMessage.error('获取排行失败')
-    }
+    ElMessage.error(e?.message || '获取排行失败')
     rankingList.value = []
   } finally {
     rankingLoading.value = false

@@ -70,7 +70,7 @@ async function fetchOverview() {
     const res = await getGuideOverview(id)
     overview.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取指南信息失败')
+    ElMessage.error(e?.message || '获取指南信息失败')
   }
 }
 
@@ -122,7 +122,7 @@ async function handleCategoryClick(cat: typeof categories[0]) {
       categoryData.value = {}
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取内容失败')
+    ElMessage.error(e?.message || '获取内容失败')
   } finally {
     loading.value = false
   }
@@ -141,7 +141,7 @@ async function fetchGallery() {
     galleryList.value = res.data.data.records
     galleryTotal.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取图册失败')
+    ElMessage.error(e?.message || '获取图册失败')
   } finally {
     galleryLoading.value = false
   }

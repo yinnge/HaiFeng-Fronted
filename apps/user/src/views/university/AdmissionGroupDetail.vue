@@ -35,7 +35,7 @@ async function fetchDetail() {
     if (e?.response?.status === 403) {
       detail.value = null
     } else {
-      ElMessage.error(e?.response?.data?.msg || '获取专业组详情失败')
+      ElMessage.error(e?.message || '获取专业组详情失败')
     }
   } finally {
     loading.value = false
@@ -50,7 +50,7 @@ async function fetchScores() {
     scores.value = res.data.data || []
   } catch (e: any) {
     if (e?.response?.status !== 403) {
-      ElMessage.error(e?.response?.data?.msg || '获取录取明细失败')
+      ElMessage.error(e?.message || '获取录取明细失败')
     }
   } finally {
     scoresLoading.value = false

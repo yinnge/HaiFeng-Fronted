@@ -14,10 +14,12 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const form = ref({
-  siteName: '',
-  siteUrl: '',
-  siteIcp: '',
-  siteDescription: '',
+  reachHighCount: 1,
+  reachCount: 2,
+  matchCount: 3,
+  safeCount: 2,
+  floorCount: 1,
+  apiNumber: 3,
 })
 
 watch(
@@ -25,10 +27,12 @@ watch(
   (val) => {
     if (val) {
       form.value = {
-        siteName: val.siteName || '',
-        siteUrl: val.siteUrl || '',
-        siteIcp: val.siteIcp || '',
-        siteDescription: val.siteDescription || '',
+        reachHighCount: val.reachHighCount ?? 1,
+        reachCount: val.reachCount ?? 2,
+        matchCount: val.matchCount ?? 3,
+        safeCount: val.safeCount ?? 2,
+        floorCount: val.floorCount ?? 1,
+        apiNumber: val.apiNumber ?? 3,
       }
     }
   },
@@ -46,7 +50,7 @@ const handleSave = async () => {
       ElMessage.error(res.data.msg || '保存失败')
     }
   } catch (error) {
-    console.error('保存基本信息失败:', error)
+    console.error('保存高考系数失败:', error)
     ElMessage.error('保存失败')
   } finally {
     loading.value = false
@@ -59,31 +63,49 @@ const handleSave = async () => {
     <div class="section-label">
       <span class="label-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
+          <path d="M3 3v18h18"/>
+          <path d="M7 14l4-4 3 3 5-5"/>
         </svg>
       </span>
-      基本信息
+      高考系数设置
     </div>
+
+    <p class="section-desc">下列数值为生成志愿表时各档位默认填充的院校/专业数量。</p>
+
     <el-form :model="form" label-width="120px" class="settings-form">
-      <el-form-item label="网站名称">
-        <el-input v-model="form.siteName" placeholder="请输入网站名称" maxlength="50" />
+      <el-form-item label="博">
+        <el-input-number v-model="form.reachHighCount" :min="0" :precision="0" />
+        <span class="field-suffix">个</span>
       </el-form-item>
-      <el-form-item label="Logo URL">
-        <el-input v-model="form.siteUrl" placeholder="请输入 Logo URL" maxlength="100" />
+      <el-form-item label="冲">
+        <el-input-number v-model="form.reachCount" :min="0" :precision="0" />
+        <span class="field-suffix">个</span>
       </el-form-item>
-      <el-form-item label="ICP 备案号">
-        <el-input v-model="form.siteIcp" placeholder="请输入 ICP 备案号" maxlength="100" />
+      <el-form-item label="稳">
+        <el-input-number v-model="form.matchCount" :min="0" :precision="0" />
+        <span class="field-suffix">个</span>
       </el-form-item>
-      <el-form-item label="网站描述">
-        <el-input
-          v-model="form.siteDescription"
-          type="textarea"
-          :rows="3"
-          placeholder="请输入网站描述"
-        />
+      <el-form-item label="保">
+        <el-input-number v-model="form.safeCount" :min="0" :precision="0" />
+        <span class="field-suffix">个</span>
       </el-form-item>
+      <el-form-item label="垫">
+        <el-input-number v-model="form.floorCount" :min="0" :precision="0" />
+        <span class="field-suffix">个</span>
+      </el-form-item>
+
+      <!-- 中间橙色分割线 -->
+      <div class="coef-divider">
+        <span class="coef-divider-line"></span>
+        <span class="coef-divider-label">每日 API 调用</span>
+        <span class="coef-divider-line"></span>
+      </div>
+
+      <el-form-item label="API 每日调用次数">
+        <el-input-number v-model="form.apiNumber" :min="1" :max="100" :precision="0" />
+        <span class="field-suffix">次/日</span>
+      </el-form-item>
+
       <el-form-item class="form-actions">
         <button type="button" class="save-btn" :disabled="loading" @click="handleSave">
           <svg v-if="!loading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -123,12 +145,24 @@ const handleSave = async () => {
   font-size: 13px;
   font-weight: 600;
   border-radius: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .label-icon {
   display: flex;
   align-items: center;
+}
+
+.section-desc {
+  margin: 0 0 20px 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.field-suffix {
+  margin-left: 10px;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .settings-form :deep(.el-form-item) {
@@ -140,20 +174,43 @@ const handleSave = async () => {
   color: #374151;
 }
 
-.settings-form :deep(.el-input__wrapper),
-.settings-form :deep(.el-textarea__inner) {
+.settings-form :deep(.el-input__wrapper) {
   border-radius: 8px;
   transition: all 0.25s ease;
 }
 
-.settings-form :deep(.el-input__wrapper:hover),
-.settings-form :deep(.el-textarea__inner:hover) {
+.settings-form :deep(.el-input__wrapper:hover) {
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
 }
 
-.settings-form :deep(.el-input__wrapper.is-focus),
-.settings-form :deep(.el-textarea__inner:focus) {
+.settings-form :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+/* 中间橙色分割线 */
+.coef-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 24px 0;
+}
+
+.coef-divider-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0), #F97316, rgba(249, 115, 22, 0));
+}
+
+.coef-divider-label {
+  flex-shrink: 0;
+  padding: 3px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #F97316;
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 16px;
+  white-space: nowrap;
 }
 
 .form-actions {

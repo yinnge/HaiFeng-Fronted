@@ -148,7 +148,7 @@ async function fetchList() {
       selectedId.value = null
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取公告列表失败')
+    ElMessage.error(e?.message || '获取公告列表失败')
     list.value = []
     total.value = 0
     selectedId.value = null

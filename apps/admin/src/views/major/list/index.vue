@@ -56,6 +56,7 @@ const formData = reactive<MajorAddDTO>({
   parentCategory: '',
   majorTags: '',
   degreeAwarded: '',
+  studyDuration: '',
   employmentRate: undefined,
   salaryMin: undefined,
   salaryMax: undefined,
@@ -137,6 +138,7 @@ const buildBasicUpdateDto = (): MajorUpdateDTO => {
   dto.parentCategory = formData.parentCategory ?? ''
   dto.majorTags = formData.majorTags ?? ''
   dto.degreeAwarded = formData.degreeAwarded ?? ''
+  dto.studyDuration = formData.studyDuration ?? ''
   dto.description = formData.description ?? ''
   if (formData.employmentRate != null) dto.employmentRate = formData.employmentRate
   if (formData.salaryMin != null) dto.salaryMin = formData.salaryMin
@@ -214,6 +216,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     formData.parentCategory = ''
     formData.majorTags = ''
     formData.degreeAwarded = ''
+    formData.studyDuration = ''
     formData.employmentRate = undefined
     formData.salaryMin = undefined
     formData.salaryMax = undefined
@@ -239,6 +242,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.parentCategory = d.parentCategory || ''
         formData.majorTags = d.majorTags || ''
         formData.degreeAwarded = d.degreeAwarded || ''
+        formData.studyDuration = d.studyDuration || ''
         formData.employmentRate = d.employmentRate ?? undefined
         formData.salaryMin = d.salaryMin ?? undefined
         formData.salaryMax = d.salaryMax ?? undefined
@@ -301,6 +305,7 @@ const handleSubmit = async () => {
       if (formData.parentCategory) data.parentCategory = formData.parentCategory
       if (formData.majorTags) data.majorTags = formData.majorTags
       if (formData.degreeAwarded) data.degreeAwarded = formData.degreeAwarded
+      if (formData.studyDuration) data.studyDuration = formData.studyDuration
       if (formData.employmentRate != null) data.employmentRate = formData.employmentRate
       if (formData.salaryMin != null) data.salaryMin = formData.salaryMin
       if (formData.salaryMax != null) data.salaryMax = formData.salaryMax
@@ -568,6 +573,7 @@ onMounted(() => { fetchData() })
         <el-table-column prop="majorName" label="专业名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="majorCategory" label="学科门类" min-width="100" />
         <el-table-column prop="majorType" label="专业类型" min-width="80" />
+        <el-table-column prop="studyDuration" label="学制" min-width="80" />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <span class="status-pill" :class="row.status === 1 ? 'status-on' : 'status-off'">
@@ -617,6 +623,7 @@ onMounted(() => { fetchData() })
             <el-descriptions-item label="专业类">{{ detailData.parentCategory || '-' }}</el-descriptions-item>
             <el-descriptions-item label="专业标签">{{ detailData.majorTags || '-' }}</el-descriptions-item>
             <el-descriptions-item label="授予学位">{{ detailData.degreeAwarded || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="学制">{{ detailData.studyDuration || '-' }}</el-descriptions-item>
             <el-descriptions-item label="就业率">{{ detailData.employmentRate != null ? detailData.employmentRate + '%' : '-' }}</el-descriptions-item>
             <el-descriptions-item label="薪资范围">
               {{ detailData.salaryMin != null && detailData.salaryMax != null ? `${detailData.salaryMin}-${detailData.salaryMax} 元/月` : '-' }}
@@ -687,6 +694,9 @@ onMounted(() => { fetchData() })
                 </el-form-item>
                 <el-form-item label="授予学位">
                   <el-input v-model="formData.degreeAwarded" placeholder="如：工学学士" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="学制">
+                  <el-input v-model="formData.studyDuration" placeholder="如：四年" maxlength="20" />
                 </el-form-item>
                 <el-form-item label="就业率(%)">
                   <el-input-number v-model="formData.employmentRate" :min="0" :max="100" :precision="2" controls-position="right" />

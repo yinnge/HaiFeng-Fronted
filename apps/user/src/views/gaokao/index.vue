@@ -91,7 +91,7 @@ async function fetchChannels() {
     const res = await getChannelList({ page: 1, size: 100 })
     channels.value = res.data.data.records
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取通道信息失败')
+    ElMessage.error(e?.message || '获取通道信息失败')
   } finally {
     loading.value = false
   }

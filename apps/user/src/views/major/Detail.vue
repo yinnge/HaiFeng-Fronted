@@ -44,7 +44,7 @@ async function fetchDetail() {
     const res = await getMajorDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    error.value = e?.response?.data?.msg || '获取专业详情失败'
+    error.value = e?.message || '获取专业详情失败'
   } finally {
     loading.value = false
   }
@@ -103,7 +103,7 @@ async function fetchPostgradDirections() {
     directionTotal.value = res.data.data.total
   } catch (e: any) {
     if (e?.response?.status !== 403) {
-      error.value = e?.response?.data?.msg || '获取考研方向失败'
+      error.value = e?.message || '获取考研方向失败'
     }
   } finally {
     directionLoading.value = false

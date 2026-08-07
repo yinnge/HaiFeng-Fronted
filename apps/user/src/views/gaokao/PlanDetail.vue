@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
@@ -55,8 +55,7 @@ const dragState = reactive({
   type: '' as 'group' | 'major' | '',
   startIndex: -1,
 })
-
-const isNormal = computed(() => (userStore.userInfo?.memberType || 'normal') === 'normal')
+const dragHandleActive = ref(false)
 
 onMounted(async () => {
   await userStore.fetchUserInfo()
@@ -125,17 +124,27 @@ function moveMajorDown(index: number) {
 
 // ========== 拖拽排序 ==========
 
+function onDragHandleMouseDown() {
+  dragHandleActive.value = true
+}
+
 function onDragStart(e: DragEvent, type: 'group' | 'major', index: number) {
+  if (!dragHandleActive.value) {
+    e.preventDefault()
+    return
+  }
   dragState.type = type
   dragState.startIndex = index
   e.dataTransfer!.effectAllowed = 'move'
-  ;(e.target as HTMLElement).classList.add('opacity-50')
+  e.dataTransfer!.setData('text/plain', '')
+  ;(e.currentTarget as HTMLElement).classList.add('opacity-50')
 }
 
 function onDragEnd(e: DragEvent) {
-  ;(e.target as HTMLElement).classList.remove('opacity-50')
+  ;(e.currentTarget as HTMLElement).classList.remove('opacity-50')
   dragState.type = ''
   dragState.startIndex = -1
+  dragHandleActive.value = false
 }
 
 function onDragOver(e: DragEvent) {
@@ -221,30 +230,27 @@ async function handleSave() {
 // ========== 导出 ==========
 
 async function handleExport() {
-  if (isNormal) {
-    ElMessageBox.alert(
-      '导出功能需要Pro或VIP会员，请先升级',
-      '导出受限',
-      { confirmButtonText: '我知道了', type: 'warning' }
-    )
-    return
-  }
-
   exporting.value = true
   try {
-    const res = await generateExport(planId)
-    const { downloadUrl, fileName } = res.data.data
-    const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `${import.meta.env.VITE_API_BASE_URL || ''}${downloadUrl}`
+    // 1. 生成导出文件（权限：Pro+，403=非 Pro 会员）
+    const genRes = await generateExport(planId)
+    const { fileName } = genRes.data.data
 
+    // 2. 使用 downloadUrl 下载（responseType: 'blob' + 覆盖 JSON 解析器）
     const fileRes = await downloadExport(planId, fileName)
-    const blob = new Blob([fileRes.data as BlobPart], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    })
+
+    // 3. fileRes.data 已经是 Blob（transformResponse 已被覆盖为直通）
+    const blob = fileRes.data instanceof Blob
+      ? fileRes.data
+      : new Blob([fileRes.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = fileName
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (e: any) {
@@ -257,7 +263,8 @@ async function handleExport() {
 // ========== AI 智能分析 ==========
 
 function handleAiAnalysis() {
-  if (isNormal) {
+  const mt = userStore.userInfo?.memberType || 'normal'
+  if (mt !== 'pro' && mt !== 'vip') {
     ElMessageBox.alert(
       'AI智能分析需要Pro或VIP会员，请先升级',
       '功能受限',
@@ -365,6 +372,7 @@ function goToPdfHistory() {
             :key="group.id"
             class="group relative rounded-2xl border border-gray-100/80 bg-white overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300"
             draggable="true"
+            @mousedown="dragHandleActive = false"
             @dragstart="onDragStart($event, 'group', gIndex)"
             @dragend="onDragEnd"
             @dragover="onDragOver"
@@ -374,7 +382,7 @@ function goToPdfHistory() {
             <div class="flex items-stretch">
               <!-- 左：拖拽手柄 + 排序号 -->
               <div class="w-16 shrink-0 flex flex-col items-center justify-center gap-1 border-r border-gray-100/60 bg-gray-50/30">
-                <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-brand-orange transition-colors drag-handle">
+                <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-brand-orange transition-colors drag-handle" @mousedown.stop="onDragHandleMouseDown">
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
                   </svg>
@@ -501,14 +509,15 @@ function goToPdfHistory() {
                     :key="major.id"
                     class="flex items-stretch hover:bg-gray-50/50 transition-colors"
                     draggable="true"
-                    @dragstart="onDragStart($event, 'major', mIndex)"
+                    @mousedown="dragHandleActive = false"
+                    @dragstart.stop="onDragStart($event, 'major', mIndex)"
                     @dragend="onDragEnd"
                     @dragover="onDragOver"
                     @drop="onDropMajor($event, mIndex)"
                   >
                     <!-- 排序号 -->
                     <div class="w-16 shrink-0 flex flex-col items-center justify-center py-3 border-r border-gray-100/60 bg-gray-50/20">
-                      <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-brand-orange transition-colors">
+                      <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-brand-orange transition-colors" @mousedown.stop="onDragHandleMouseDown">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
                         </svg>
