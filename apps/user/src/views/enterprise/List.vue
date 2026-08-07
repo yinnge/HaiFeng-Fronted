@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getEnterpriseList } from '@/api/enterprise'
+import { getEnterpriseList, getEnterpriseTypes } from '@/api/enterprise'
 import type { EnterpriseListVO, EnterpriseQueryDTO } from '@/types/enterprise'
 import { Motion } from 'motion-v'
 
@@ -26,6 +26,16 @@ const query = reactive<EnterpriseQueryDTO>({
 
 const natureOptions = ['央企', '国企', '民企', '外企', '合资']
 const statusOptions = ['招聘中', '已结束']
+const typeOptions = ref<string[]>([])
+
+async function fetchTypes() {
+  try {
+    const res = await getEnterpriseTypes()
+    typeOptions.value = res.data.data || []
+  } catch {
+    // 类型接口失败不影响页面主体功能
+  }
+}
 
 async function fetchList() {
   loading.value = true
@@ -80,7 +90,10 @@ function goPositions(item: EnterpriseListVO) {
 function onPageChange(page: number) { currentPage.value = page; fetchList() }
 function onSizeChange(size: number) { pageSize.value = size; currentPage.value = 1; fetchList() }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchList()
+  fetchTypes()
+})
 </script>
 
 <template>
@@ -140,12 +153,9 @@ onMounted(fetchList)
             <el-select v-model="query.enterpriseNature" placeholder="企业性质" clearable class="!w-36">
               <el-option v-for="opt in natureOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <input
-              v-model="query.enterpriseType"
-              type="text"
-              placeholder="企业类型"
-              class="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors"
-            />
+            <el-select v-model="query.enterpriseType" placeholder="企业类型" clearable class="!w-36">
+              <el-option v-for="opt in typeOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
             <input
               v-model="query.cityName"
               type="text"
