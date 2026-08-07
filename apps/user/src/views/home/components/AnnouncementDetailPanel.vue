@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex h-[320px] flex-col rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-orange-500 border-b-[3px] border-b-orange-400 lg:h-[440px]">
+  <div class="flex h-full min-h-[320px] flex-col rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-6 shadow-lg border-t-[3px] border-t-orange-500 border-b-[3px] border-b-orange-400">
     <div v-if="loading" class="flex flex-1 items-center justify-center">
       <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
     </div>
