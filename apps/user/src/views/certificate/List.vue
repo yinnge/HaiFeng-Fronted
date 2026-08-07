@@ -62,6 +62,13 @@ function handleSearch() {
   fetchList()
 }
 
+function handleReset() {
+  keyword.value = ''
+  activeCategory.value = categories.value.length > 0 ? categories.value[0] : ''
+  currentPage.value = 1
+  fetchList()
+}
+
 async function openDetail(certId: string) {
   detailLoading.value = true
   showDetail.value = true
@@ -136,6 +143,12 @@ onMounted(() => {
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             搜索
+          </button>
+          <button
+            class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
+            @click="handleReset"
+          >
+            重置
           </button>
         </div>
         <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.1 }">

@@ -14,6 +14,9 @@ const INDUSTRY_PREFIX = '/api/v1/app/industry'
 export const getEnterpriseList = (params: EnterpriseQueryDTO) =>
   request.get<R<PageResult<EnterpriseListVO>>>(`${ENTERPRISE_PREFIX}/list`, { params })
 
+export const getEnterpriseTypes = () =>
+  request.get<R<string[]>>(`${ENTERPRISE_PREFIX}/types`)
+
 export const getEnterpriseDetail = (enterpriseId: string) =>
   request.get<R<EnterpriseListVO>>(`${ENTERPRISE_PREFIX}/${enterpriseId}`)
 

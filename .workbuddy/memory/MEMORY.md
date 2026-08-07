@@ -4,6 +4,12 @@
 - 设计令牌见 `AGENTS.md`：主色 `#F97316` / 渐变端 `#FB923C`，暖色渐变页面背景，橙色渐变表头、药丸按钮、橙色顶底边框卡片。改动前逐条对照 Checklist。
 - 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
+- 环境：bash 里 `pnpm` 失效（路径 `D:\e\Nodejs\node_global\pnpm.cjs` 不存在），用 PowerShell 调 `E:\Nodejs\node_global\pnpm.cmd`；或直接 `apps/user/node_modules/.bin/vue-tsc --noEmit`。后端无 devtools，改 Java 必须重启服务生效。
+
+## 已知坑：后端新增「公开接口」必须同步 SecurityConfig 白名单
+- `haifeng-common/.../config/SecurityConfig.java` 的 `WHITE_LIST` 是**逐条精确路径匹配**（Ant 通配，不是 `/**` 全放行），不在白名单的路径走 `.anyRequest().authenticated()` → 未登录一律 401。
+- 2026-08-06 实证：新增 `GET /api/v1/app/enterprise/types`（公开）时，白名单只有 `/enterprise/list`，接口 401；把 `/api/v1/app/enterprise/types` 加进白名单后正常。**新增任何公开接口（app 端无 @RequireLogin 的接口）必须同步加白名单**，否则前端未登录用户被 401 拦，且表现像是"接口没生效"。
+- 排查套路：新接口 curl 返回 401 但同前缀老接口 200 → 先查 WHITE_LIST。
 
 ## 已知坑：Element Plus 弹窗锁滚动 + scrollbar-gutter 抖动
 - 现象：`el-dialog`（lock-scroll 默认开）打开时，`useLockscreen` 给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`），并**内联** `body.style.width = calc(100% - 滚动条宽)` 补偿位移。
