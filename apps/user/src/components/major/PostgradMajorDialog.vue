@@ -41,7 +41,7 @@ async function fetchDetail() {
     const res = await getPostgradMajorDetail(props.majorId)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取考研专业详情失败')
+    ElMessage.error(e?.message || '获取考研专业详情失败')
   } finally {
     loading.value = false
   }
@@ -59,9 +59,7 @@ async function fetchUniversities() {
     universities.value = res.data.data.records
     universityTotal.value = res.data.data.total
   } catch (e: any) {
-    if (e?.response?.status !== 403) {
-      ElMessage.error('获取开设院校失败')
-    }
+    ElMessage.error(e?.message || '获取开设院校失败')
   } finally {
     universityLoading.value = false
   }
@@ -104,9 +102,7 @@ async function fetchUndergraduateMajors() {
     undergraduateMajors.value = res.data.data.records
     undergradTotal.value = res.data.data.total
   } catch (e: any) {
-    if (e?.response?.status !== 403) {
-      ElMessage.error('获取关联本科专业失败')
-    }
+    ElMessage.error(e?.message || '获取关联本科专业失败')
   } finally {
     undergradLoading.value = false
   }

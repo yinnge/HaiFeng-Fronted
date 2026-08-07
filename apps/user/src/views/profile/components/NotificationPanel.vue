@@ -108,7 +108,7 @@ async function handleMarkSingleRead(row: NotificationListVO) {
     emit('refresh')
     window.dispatchEvent(new Event('notification-updated'))
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+    ElMessage.error(e?.message || '操作失败')
   }
 }
 
@@ -127,7 +127,7 @@ async function handleViewDetail(row: NotificationListVO) {
       }
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '加载详情失败')
+    ElMessage.error(e?.message || '加载详情失败')
   } finally {
     detailLoading.value = false
   }

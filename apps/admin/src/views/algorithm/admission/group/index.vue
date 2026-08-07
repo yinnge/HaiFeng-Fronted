@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getGroupPage,
@@ -23,7 +22,6 @@ import type {
 import type { AxiosResponse } from 'axios'
 import type { R } from '@haifeng/shared'
 
-const router = useRouter()
 const loading = ref(false)
 const tableData = ref<AdmissionGroupListVO[]>([])
 const total = ref(0)
@@ -349,10 +347,6 @@ const handleRecalcAll = async () => {
   }
 }
 
-const goToMajorScore = (groupId: number) => {
-  router.push({ path: '/algorithm/admission/major-score', query: { groupId: String(groupId) } })
-}
-
 const formatSubjects = (subjects: string[], requirementType: string) => {
   if (!subjects || subjects.length === 0) return requirementType || '不限'
   return `${requirementType}:${subjects.join('、')}`
@@ -511,7 +505,6 @@ onMounted(() => {
           <template #default="{ row }">
             <button class="action-pill action-info" @click="openDialog('detail', row.id)">详情</button>
             <button class="action-pill action-edit" @click="openDialog('edit', row.id)">修改</button>
-            <button class="action-pill action-detail" @click="goToMajorScore(row.id)">明细</button>
             <button :class="['action-pill', row.isDeleted ? 'action-enabled' : 'action-disabled']" @click="handleToggleStatus(row)">
               {{ row.isDeleted ? '启用' : '禁用' }}
             </button>
@@ -905,11 +898,6 @@ onMounted(() => {
   color: #3b82f6;
 }
 .action-edit:hover { background: rgba(59,130,246,0.2); }
-.action-detail {
-  background: rgba(16,185,129,0.1);
-  color: #059669;
-}
-.action-detail:hover { background: rgba(16,185,129,0.2); }
 .action-enabled {
   background: rgba(16,185,129,0.1);
   color: #059669;

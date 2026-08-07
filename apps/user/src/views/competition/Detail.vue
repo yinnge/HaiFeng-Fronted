@@ -37,7 +37,7 @@ async function fetchDetail() {
     const res = await getCompetitionDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    error.value = e?.response?.data?.msg || '获取竞赛详情失败'
+    error.value = e?.message || '获取竞赛详情失败'
   } finally {
     loading.value = false
   }

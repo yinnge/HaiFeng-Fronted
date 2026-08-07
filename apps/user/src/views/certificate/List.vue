@@ -45,7 +45,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取证书列表失败')
+    ElMessage.error(e?.message || '获取证书列表失败')
   } finally {
     loading.value = false
   }
@@ -76,7 +76,7 @@ async function openDetail(certId: string) {
     const res = await getCertificateDetail(certId)
     currentCert.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取证书详情失败')
+    ElMessage.error(e?.message || '获取证书详情失败')
     showDetail.value = false
   } finally {
     detailLoading.value = false

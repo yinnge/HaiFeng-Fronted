@@ -3,6 +3,7 @@
 ## 通用规范
 - 设计令牌见 `AGENTS.md`：主色 `#F97316` / 渐变端 `#FB923C`，暖色渐变页面背景，橙色渐变表头、药丸按钮、橙色顶底边框卡片。改动前逐条对照 Checklist。
 - 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
+- 类型检查：Vite dev 用 esbuild 不做类型检查；改 TS 后用 `cd apps/admin && ./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json`（pnpm 不在 PATH，勿用 `pnpm --filter`）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
 - 环境：bash 里 `pnpm` 失效（路径 `D:\e\Nodejs\node_global\pnpm.cjs` 不存在），用 PowerShell 调 `E:\Nodejs\node_global\pnpm.cmd`；或直接 `apps/user/node_modules/.bin/vue-tsc --noEmit`。后端无 devtools，改 Java 必须重启服务生效。
 
@@ -73,9 +74,23 @@
 
 
 
-
-
 ## 已知坑：git pull --rebase 静默丢弃未提交修改（2026-08-02 实踩）
 - 现象：某文件"修复过又变回旧版"——git log 全历史都查不到修复内容 = **修复从未 commit，被 `git pull --rebase` Fast-forward 覆盖丢弃**。
 - 找回：`git stash list`（WIP 条目保存了当时工作区）→ `git show "stash@{n}:完整路径" > 文件` 逐文件恢复（不弹栈、不破坏 stash）。恢复后 git status 呈 M/?? 状态，需重新 commit。
 - 预防：**每个任务收尾必 commit**（至少 `git add -A && git commit`），或暂不提交时 `git stash` 留底；`git pull --rebase` 前先确认 `git status` 干净。参考：城市模块 city/list + JsonbArrayEditor 曾整体丢失后从 stash@{2} 找回。
+
+## user 端导航栏响应式断点规范（多分辨率适配 / 设计提醒）
+改动导航/菜单布局时，必须按以下 4 档断点逐一验证，不能只在单一宽度截图确认。
+
+| 断点 | 导航行为 | 适用设备 / 新场景 | 状态 |
+|------|----------|-------------------|------|
+| `< 768px` | 汉堡抽屉 `MobileNavDrawer` | 手机竖屏/横屏、小平板 | ✅ 正常 |
+| `768 ~ 1700px` | 桌面 nav + 动态「更多」折叠 | 13~16" 笔记本、横屏平板（截图2 即此档） | ✅ 正常 |
+| `≥ 1700px` | 完整 12 菜单 + `space-between` 摊满 | 24 寸+ 台式显示器 | ✅ 正常 |
+| `≥ 2100px`（27" 4K/5K+） | 居中容器到达上限 `max-width:2100px`，两侧留白 | 27" 及以上大屏 | ⚠️ 有空白 |
+
+注意事项：
+- **第 4 档「两侧留白」是居中布局的天道，不是 bug**：容器 `max-width` 封顶后，超出部分天然左右留白。若要消除空白需抬高上限（不推荐，会破坏大屏可读性），属预期行为，勿当成缺陷修。
+- **尺寸即场景**：每档对应一类真实使用场景（手机 / 笔记本 / 24" 台式 / 27" 大屏），验收时要覆盖这 4 类，而非只看开发机宽度。
+- 动态「更多」折叠档（768~1700）在菜单项增减时要确认折叠阈值与 ellipsis 兜底正确，避免 12 项在窄笔记本下溢出或误折叠。
+- 汉堡抽屉档（<768）确认 `MobileNavDrawer` 抽屉宽度、滚动、遮罩点击关闭在真机/DevTools 设备模拟下无异常。

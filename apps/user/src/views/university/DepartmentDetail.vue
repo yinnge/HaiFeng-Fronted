@@ -24,7 +24,7 @@ async function fetchReport() {
     const res = await getDepartmentReport(deptId)
     report.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取院系分析报告失败')
+    ElMessage.error(e?.message || '获取院系分析报告失败')
   } finally {
     loading.value = false
   }

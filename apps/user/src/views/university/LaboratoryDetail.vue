@@ -22,7 +22,7 @@ async function fetchDetail() {
     const res = await getLaboratoryDetail(labId)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取实验室详情失败')
+    ElMessage.error(e?.message || '获取实验室详情失败')
   } finally {
     loading.value = false
   }

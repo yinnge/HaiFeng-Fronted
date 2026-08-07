@@ -41,8 +41,6 @@ const formData = ref<StrongBaseUnivAddDTO>({
   specialNotes: '',
 })
 
-const availableMajorsStr = ref('')
-
 const universityOptions = ref<{ label: string; value: string }[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -100,7 +98,6 @@ watch(
           availableMajors: [],
           specialNotes: '',
         }
-        availableMajorsStr.value = ''
         formLoading.value = false
       } else if (props.mode === 'edit' && props.currentId) {
         try {
@@ -120,7 +117,6 @@ watch(
               availableMajors: d.availableMajors || [],
               specialNotes: d.specialNotes || '',
             }
-            availableMajorsStr.value = (d.availableMajors || []).join(', ')
           }
         } catch (e: any) {
           ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
@@ -143,6 +139,32 @@ watch(
   }
 )
 
+const addMajor = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入专业名称', '添加可选专业', {
+      confirmButtonText: '添加',
+      cancelButtonText: '取消',
+      inputPattern: /\S+/,
+      inputErrorMessage: '专业名称不能为空',
+      inputPlaceholder: '如：数学与应用数学',
+    })
+    const name = value.trim()
+    if (!name) return
+    const list = (formData.value.availableMajors ??= [])
+    if (list.includes(name)) {
+      ElMessage.warning('该专业已存在')
+      return
+    }
+    list.push(name)
+  } catch {
+    /* 取消 */
+  }
+}
+
+const removeMajor = (index: number) => {
+  formData.value.availableMajors?.splice(index, 1)
+}
+
 const handleSubmit = async () => {
   if (!formData.value.universityName) {
     ElMessage.warning('请填写大学名称')
@@ -152,9 +174,7 @@ const handleSubmit = async () => {
   formLoading.value = true
   const submitData = {
     ...formData.value,
-    availableMajors: availableMajorsStr.value
-      ? availableMajorsStr.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean)
-      : [],
+    availableMajors: [...(formData.value.availableMajors ?? [])],
   }
 
   try {
@@ -292,12 +312,20 @@ const handleClose = () => {
             <el-input v-model="formData.defaultAdmissionFormula" placeholder="录取综合分公式" maxlength="500" />
           </el-form-item>
           <el-form-item label="可选专业">
-            <el-input
-              v-model="availableMajorsStr"
-              type="textarea"
-              :rows="3"
-              placeholder="多个专业用逗号分隔，如：数学与应用数学, 物理学, 化学"
-            />
+            <div class="major-editor">
+              <span
+                v-for="(m, i) in (formData.availableMajors || [])"
+                :key="i"
+                class="major-chip"
+              >
+                {{ m }}
+                <button type="button" class="chip-remove" @click="removeMajor(i)" aria-label="删除">×</button>
+              </span>
+              <button type="button" class="add-major-btn" @click="addMajor">
+                <span class="plus">+</span> 添加专业
+              </button>
+            </div>
+            <div class="major-hint">点击「添加专业」逐个录入，无需手动用逗号分隔</div>
           </el-form-item>
           <el-form-item label="特殊说明">
             <el-input
@@ -485,6 +513,92 @@ const handleClose = () => {
   font-weight: 500;
   margin-right: 6px;
   margin-bottom: 6px;
+}
+
+.major-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.major-editor:focus-within {
+  border-color: #F97316;
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.major-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 12px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.12));
+  color: #C2410C;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(194, 65, 12, 0.12);
+  color: #C2410C;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip-remove:hover {
+  background: #C2410C;
+  color: #fff;
+}
+
+.add-major-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 14px;
+  border: 1px dashed rgba(249, 115, 22, 0.5);
+  border-radius: 20px;
+  background: rgba(249, 115, 22, 0.04);
+  color: #F97316;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-major-btn:hover {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: #F97316;
+}
+
+.add-major-btn .plus {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.major-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 .dialog-footer {

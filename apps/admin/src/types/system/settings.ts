@@ -23,6 +23,16 @@ export interface SystemSettingsVO {
   siteIcp: string
   siteDescription: string
   apiNumber: number
+  /** 默认志愿表「博」档数量 */
+  reachHighCount: number
+  /** 默认志愿表「冲」档数量 */
+  reachCount: number
+  /** 默认志愿表「稳」档数量 */
+  matchCount: number
+  /** 默认志愿表「保」档数量 */
+  safeCount: number
+  /** 默认志愿表「垫」档数量 */
+  floorCount: number
   providerName: string
   modelName: string
   proPrice: number
@@ -44,6 +54,11 @@ export interface SystemSettingsUpdateDTO {
   siteIcp?: string
   siteDescription?: string
   apiNumber?: number
+  reachHighCount?: number
+  reachCount?: number
+  matchCount?: number
+  safeCount?: number
+  floorCount?: number
   proPrice?: number
   vipPrice?: number
   proCommissionRate?: number

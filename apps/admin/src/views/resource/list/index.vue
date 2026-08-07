@@ -8,7 +8,6 @@ import {
   updateResource,
   updateResourceStatus,
   batchDeleteResource,
-  importResource,
 } from '@/api/resource'
 import type {
   ResourceListVO,
@@ -47,10 +46,6 @@ const formData = reactive<Record<string, any>>({
   fileType: '',
   sortOrder: null,
 })
-
-const importDialogVisible = ref(false)
-const importFile = ref<File | null>(null)
-const importLoading = ref(false)
 
 const fetchData = async () => {
   loading.value = true
@@ -204,22 +199,6 @@ const handleBatchDelete = async () => {
   } catch { /* cancel */ }
 }
 
-const handleImportFileChange = (uploadFile: any) => {
-  importFile.value = uploadFile.raw
-  return false
-}
-
-const handleImportSubmit = async () => {
-  if (!importFile.value) { ElMessage.warning('请选择文件'); return }
-  importLoading.value = true
-  try {
-    const res = await importResource(importFile.value)
-    if (res.data.code === 200) { ElMessage.success('导入成功'); importDialogVisible.value = false; fetchData() }
-    else { ElMessage.error(res.data.msg || '导入失败') }
-  } catch (err: any) { ElMessage.error(err.response?.data?.msg || '导入失败') }
-  finally { importLoading.value = false }
-}
-
 const statusTag = (val: boolean) => (val ? 'info' : 'success')
 const statusLabel = (val: boolean) => (val ? '禁用' : '启用')
 
@@ -274,10 +253,7 @@ onMounted(() => { fetchData() })
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
           新增资源
         </button>
-        <button class="btn btn-outline" @click="importDialogVisible = true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><path d="M12 3v12"/></svg>
-          Excel导入
-        </button>
+
         <button class="btn btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           批量禁用
@@ -412,23 +388,7 @@ onMounted(() => { fetchData() })
       </template>
     </el-dialog>
 
-    <!-- Import Dialog -->
-    <el-dialog v-model="importDialogVisible" title="导入资源" width="500px" class="uni-dialog">
-      <el-upload drag :auto-upload="false" :show-file-list="true" accept=".xlsx,.xls" :on-change="handleImportFileChange" :limit="1">
-        <el-icon class="el-icon--upload" style="font-size: 48px;"><UploadFilled /></el-icon>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <template #tip>
-          <div class="el-upload__tip">仅支持 .xlsx / .xls 格式文件</div>
-        </template>
-      </el-upload>
-      <template #footer>
-        <button class="btn btn-outline" @click="importDialogVisible = false">取消</button>
-        <button class="btn btn-primary" :disabled="importLoading" @click="handleImportSubmit">
-          <span v-if="importLoading" class="loading-spinner"></span>
-          确定导入
-        </button>
-      </template>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -773,19 +733,6 @@ onMounted(() => { fetchData() })
   padding: 16px 24px 20px;
 }
 
-/* ===== Import Dialog ===== */
-.loading-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
 /* ===== El-tabs orange accent (if used anywhere) ===== */
 :deep(.el-tabs__active-bar) {

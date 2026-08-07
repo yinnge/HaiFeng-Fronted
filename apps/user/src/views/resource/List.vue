@@ -41,7 +41,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取资源列表失败')
+    ElMessage.error(e?.message || '获取资源列表失败')
   } finally {
     loading.value = false
   }
@@ -85,7 +85,20 @@ async function handleDownload(id: string) {
     currentResourceUrl.value = res.data.data
     downloadDialogVisible.value = true
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取下载链接失败')
+    const msg = e?.message || '获取下载链接失败'
+    // VIP 会员权限不足（业务码 1005）：引导开通旗舰版
+    if (msg.includes('旗舰版') || msg.includes('VIP')) {
+      try {
+        await ElMessageBox.confirm('查看资源下载链接需要旗舰版（VIP）会员，是否前往开通？', '提示', {
+          confirmButtonText: '去开通',
+          cancelButtonText: '取消',
+          type: 'warning',
+        })
+        router.push('/profile')
+      } catch { /* 用户取消 */ }
+      return
+    }
+    ElMessage.error(msg)
   } finally {
     downloadingId.value = null
   }

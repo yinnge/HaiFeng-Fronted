@@ -16,7 +16,7 @@ const loading = ref(false)
 const list = ref<AdmissionGroupListVO[]>([])
 const total = ref(0)
 const page = ref(1)
-const size = ref(6)
+const size = ref(12)
 
 const province = ref('')
 const batch = ref('')
@@ -43,7 +43,7 @@ async function fetchList() {
     if (e?.response?.status === 403) {
       list.value = []
     } else {
-      ElMessage.error(e?.response?.data?.msg || '获取录取数据失败')
+      ElMessage.error(e?.message || '获取录取数据失败')
     }
   } finally {
     loading.value = false
@@ -217,7 +217,7 @@ onMounted(() => {
           background
           layout="total, sizes, prev, pager, next"
           :total="total"
-          :page-sizes="[6, 9, 18, 30]"
+          :page-sizes="[12, 24, 36, 48]"
           :page-size="size"
           :current-page="page"
           @current-change="onPageChange"

@@ -70,6 +70,10 @@ const handlePositionSelectionChange = (rows: PositionVO[]) => {
   selectedPositionIds.value = rows.map((r) => r.id)
 }
 
+// 新增模式：岗位先本地暂存（企业暂无 id），保存企业后再批量落库
+const pendingPositions = ref<EnterprisePositionAddDTO[]>([])
+const editingPositionIndex = ref<number | null>(null)
+
 const positionFormVisible = ref(false)
 const positionFormLoading = ref(false)
 const positionFormMode = ref<'add' | 'edit'>('add')
@@ -117,10 +121,10 @@ const fetchPositions = async () => {
   }
 }
 
-const openPositionForm = (mode: 'add' | 'edit', row?: PositionVO) => {
+const openPositionForm = (mode: 'add' | 'edit', row?: any, index?: number) => {
   positionFormMode.value = mode
   if (mode === 'add') {
-    editingPositionId.value = null
+    editingPositionIndex.value = null
     positionForm.value = {
       positionName: '',
       recruitmentType: '',
@@ -139,7 +143,7 @@ const openPositionForm = (mode: 'add' | 'edit', row?: PositionVO) => {
       positionStatus: '招聘中',
     }
   } else if (row) {
-    editingPositionId.value = row.id
+    editingPositionIndex.value = index ?? null
     positionForm.value = {
       positionName: row.positionName,
       recruitmentType: row.recruitmentType || '',
@@ -161,32 +165,44 @@ const openPositionForm = (mode: 'add' | 'edit', row?: PositionVO) => {
   positionFormVisible.value = true
 }
 
+const buildPositionData = (): EnterprisePositionAddDTO => ({
+  positionName: positionForm.value.positionName,
+  recruitmentType: positionForm.value.recruitmentType || undefined,
+  positionRequirement: positionForm.value.positionRequirement || undefined,
+  positionTags: positionForm.value.positionTags?.length ? positionForm.value.positionTags : undefined,
+  province: positionForm.value.province || undefined,
+  city: positionForm.value.city || undefined,
+  workLocation: positionForm.value.workLocation || undefined,
+  educationRequirement: positionForm.value.educationRequirement || undefined,
+  majorRequirement: positionForm.value.majorRequirement || undefined,
+  workExperience: positionForm.value.workExperience || undefined,
+  salaryMin: positionForm.value.salaryMin ?? null,
+  salaryMax: positionForm.value.salaryMax ?? null,
+  applyLink: positionForm.value.applyLink || undefined,
+  deadline: positionForm.value.deadline || null,
+  positionStatus: positionForm.value.positionStatus || undefined,
+})
+
 const handlePositionSubmit = async () => {
-  if (!props.currentId) { ElMessage.warning('企业ID不存在'); return }
   if (!positionForm.value.positionName) { ElMessage.warning('请填写岗位名称'); return }
   positionFormLoading.value = true
-  // 手动 set 映射：逐字段拼接，不使用 BeanUtils.copyProperties，避免 null 覆盖
-  const data: EnterprisePositionAddDTO & EnterprisePositionUpdateDTO = {
-    positionName: positionForm.value.positionName,
-    recruitmentType: positionForm.value.recruitmentType || undefined,
-    positionRequirement: positionForm.value.positionRequirement || undefined,
-    positionTags: positionForm.value.positionTags?.length ? positionForm.value.positionTags : undefined,
-    province: positionForm.value.province || undefined,
-    city: positionForm.value.city || undefined,
-    workLocation: positionForm.value.workLocation || undefined,
-    educationRequirement: positionForm.value.educationRequirement || undefined,
-    majorRequirement: positionForm.value.majorRequirement || undefined,
-    workExperience: positionForm.value.workExperience || undefined,
-    salaryMin: positionForm.value.salaryMin ?? null,
-    salaryMax: positionForm.value.salaryMax ?? null,
-    applyLink: positionForm.value.applyLink || undefined,
-    deadline: positionForm.value.deadline || null,
-    positionStatus: positionForm.value.positionStatus || undefined,
-  }
+  const data = buildPositionData()
   try {
+    // 新增模式：先本地暂存，保存企业后再批量落库
+    if (props.mode === 'add') {
+      if (editingPositionIndex.value === null) {
+        pendingPositions.value.push(data)
+      } else {
+        pendingPositions.value[editingPositionIndex.value] = data
+      }
+      ElMessage.success(editingPositionIndex.value === null ? '岗位已加入待保存列表' : '岗位修改成功')
+      positionFormVisible.value = false
+      return
+    }
+    if (!props.currentId) { ElMessage.warning('企业ID不存在'); return }
     let res: any
     if (positionFormMode.value === 'add') {
-      res = await addEnterprisePosition(props.currentId, data as EnterprisePositionAddDTO)
+      res = await addEnterprisePosition(props.currentId, data)
     } else if (editingPositionId.value) {
       res = await updateEnterprisePosition(props.currentId, editingPositionId.value, data as EnterprisePositionUpdateDTO)
     } else {
@@ -206,7 +222,13 @@ const handlePositionSubmit = async () => {
   }
 }
 
-const handlePositionDelete = async (row: PositionVO) => {
+const handlePositionDelete = async (row: any, index?: number) => {
+  // 新增模式：仅从本地暂存列表移除
+  if (props.mode === 'add') {
+    if (index === undefined) return
+    pendingPositions.value.splice(index, 1)
+    return
+  }
   if (!props.currentId) return
   try {
     await ElMessageBox.confirm(`确定要永久删除岗位「${row.positionName}」吗？此操作不可恢复！`, '警告', {
@@ -265,6 +287,8 @@ watch(
           enterpriseIntro: '',
           recruitmentStatus: '招聘中',
         }
+        pendingPositions.value = []
+        editingPositionIndex.value = null
         formLoading.value = false
       } else if (props.mode === 'edit' && props.currentId) {
         try {
@@ -331,6 +355,30 @@ const handleSubmit = async () => {
     let res: any
     if (props.mode === 'add') {
       res = await addEnterprise(data as EnterpriseAddDTO)
+      if (res.data.code === 200) {
+        const newId = res.data.data as string | undefined
+        // 新建企业成功后，把本地暂存的岗位批量落库
+        if (newId && pendingPositions.value.length) {
+          let okCount = 0
+          for (const p of pendingPositions.value) {
+            try {
+              const r = await addEnterprisePosition(newId, p)
+              if (r.data.code === 200) okCount++
+            } catch {
+              // 单条岗位保存失败不阻断其余岗位
+            }
+          }
+          if (okCount < pendingPositions.value.length) {
+            ElMessage.warning(`企业已创建，但有 ${pendingPositions.value.length - okCount} 个岗位保存失败`)
+          }
+        }
+        ElMessage.success('新增成功')
+        emit('update:visible', false)
+        emit('success')
+      } else {
+        ElMessage.error(res.data.msg || '操作失败')
+      }
+      return
     } else if (props.mode === 'edit' && props.currentId) {
       res = await updateEnterprise(props.currentId, data as EnterpriseUpdateDTO)
     } else {
@@ -338,7 +386,7 @@ const handleSubmit = async () => {
     }
 
     if (res.data.code === 200) {
-      ElMessage.success(props.mode === 'add' ? '新增成功' : '修改成功')
+      ElMessage.success('修改成功')
       emit('update:visible', false)
       emit('success')
     } else {
@@ -511,11 +559,48 @@ const handleClose = () => {
             </el-form>
           </el-tab-pane>
 
-          <el-tab-pane label="企业岗位" name="positions" :disabled="mode === 'add'">
-            <!-- 新增企业模式下企业尚未创建，无岗位可维护 -->
-            <div v-if="mode === 'add'" class="positions-add-hint">
-              保存企业基本信息后可在此维护企业岗位
+          <el-tab-pane label="企业岗位" name="positions">
+            <!-- 新增模式：岗位本地暂存，保存企业后批量落库 -->
+            <div v-if="mode === 'add'">
+              <div class="positions-toolbar">
+                <div class="positions-toolbar-left">
+                  <button type="button" class="position-add-btn" @click="openPositionForm('add')">
+                    新增岗位
+                  </button>
+                </div>
+                <span class="positions-count">待保存 {{ pendingPositions.length }} 个岗位</span>
+              </div>
+              <div class="positions-edit-list">
+                <el-table
+                  :data="pendingPositions"
+                  stripe
+                  size="small"
+                  empty-text="暂无岗位，点击「新增岗位」添加"
+                >
+                  <el-table-column prop="positionName" label="岗位名称" min-width="140" show-overflow-tooltip />
+                  <el-table-column prop="recruitmentType" label="招聘类型" width="90" />
+                  <el-table-column prop="educationRequirement" label="学历要求" width="90" />
+                  <el-table-column prop="city" label="城市" width="90" />
+                  <el-table-column prop="workLocation" label="工作地点" width="120" show-overflow-tooltip />
+                  <el-table-column label="薪资(k/月)" width="120">
+                    <template #default="{ row }">
+                      {{ row.salaryMin ?? '-' }} - {{ row.salaryMax ?? '-' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="positionStatus" label="状态" width="90" />
+                  <el-table-column label="操作" width="140" align="center" fixed="right">
+                    <template #default="{ row, $index }">
+                      <div class="pos-actions">
+                        <button type="button" class="op-btn orange" @click="openPositionForm('edit', row, $index)">编辑</button>
+                        <button type="button" class="op-btn red" @click="handlePositionDelete(row, $index)">删除</button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
             </div>
+
+            <!-- 修改/详情模式：维护后端已存在的岗位 -->
             <template v-else>
               <div class="positions-toolbar">
                 <div class="positions-toolbar-left">

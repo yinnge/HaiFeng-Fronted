@@ -56,6 +56,7 @@ const formData = reactive<MajorAddDTO>({
   parentCategory: '',
   majorTags: '',
   degreeAwarded: '',
+  studyDuration: '',
   employmentRate: undefined,
   salaryMin: undefined,
   salaryMax: undefined,
@@ -76,6 +77,91 @@ const detailFormData = reactive<MajorDetailUpdateDTO>({
 // 数组型字段用独立 ref，保证 v-for + v-model 回填万无一失（规避嵌套 reactive 数组重赋值 + 模板内 ! 断言的响应式陷阱）
 const courseList = ref<string[]>([])
 const skillList = ref<string[]>([])
+
+/** 重置「专业详情」tab（新增时必须调用，否则会残留上一次修改留下的脏数据） */
+const resetDetailForm = () => {
+  detailFormData.courseCount = undefined
+  detailFormData.graduateScale = ''
+  detailFormData.maleRatio = undefined
+  detailFormData.femaleRatio = undefined
+  detailFormData.majorDescription = ''
+  detailFormData.trainingObjective = ''
+  detailFormData.trainingRequirement = ''
+  detailFormData.subjectRequirement = ''
+  detailFormData.careerProspect = ''
+  courseList.value = []
+  skillList.value = []
+}
+
+/** 「专业详情」tab 是否填了内容（新增时用于决定要不要额外调详情接口） */
+const hasDetailInput = () =>
+  detailFormData.courseCount != null ||
+  !!detailFormData.graduateScale ||
+  detailFormData.maleRatio != null ||
+  detailFormData.femaleRatio != null ||
+  !!detailFormData.majorDescription ||
+  !!detailFormData.trainingObjective ||
+  !!detailFormData.trainingRequirement ||
+  !!detailFormData.subjectRequirement ||
+  !!detailFormData.careerProspect ||
+  courseList.value.some(s => s.trim()) ||
+  skillList.value.some(s => s.trim())
+
+/**
+ * 组装专业详情 DTO。
+ * 文本字段一律下发（含空串）——后端是 `if (dto.getXxx() != null)` 增量更新，
+ * 若前端把空串过滤掉，用户「清空某字段再保存」会被静默忽略，看起来像没保存成功。
+ */
+const buildDetailDto = (): MajorDetailUpdateDTO => {
+  const dto: MajorDetailUpdateDTO = {}
+  if (detailFormData.courseCount != null) dto.courseCount = detailFormData.courseCount
+  if (detailFormData.maleRatio != null) dto.maleRatio = detailFormData.maleRatio
+  if (detailFormData.femaleRatio != null) dto.femaleRatio = detailFormData.femaleRatio
+  dto.graduateScale = detailFormData.graduateScale ?? ''
+  dto.majorDescription = detailFormData.majorDescription ?? ''
+  dto.trainingObjective = detailFormData.trainingObjective ?? ''
+  dto.trainingRequirement = detailFormData.trainingRequirement ?? ''
+  dto.subjectRequirement = detailFormData.subjectRequirement ?? ''
+  dto.careerProspect = detailFormData.careerProspect ?? ''
+  dto.mainCourses = courseList.value.map(s => s.trim()).filter(Boolean)
+  dto.knowledgeSkills = skillList.value.map(s => s.trim()).filter(Boolean)
+  return dto
+}
+
+/** 组装基本资料 DTO（同上：可空文本字段一律下发，保证能清空） */
+const buildBasicUpdateDto = (): MajorUpdateDTO => {
+  const dto: MajorUpdateDTO = {}
+  if (formData.majorName) dto.majorName = formData.majorName
+  if (formData.majorType) dto.majorType = formData.majorType
+  dto.disciplineName = formData.disciplineName ?? ''
+  dto.majorCategory = formData.majorCategory ?? ''
+  dto.parentCategory = formData.parentCategory ?? ''
+  dto.majorTags = formData.majorTags ?? ''
+  dto.degreeAwarded = formData.degreeAwarded ?? ''
+  dto.studyDuration = formData.studyDuration ?? ''
+  dto.description = formData.description ?? ''
+  if (formData.employmentRate != null) dto.employmentRate = formData.employmentRate
+  if (formData.salaryMin != null) dto.salaryMin = formData.salaryMin
+  if (formData.salaryMax != null) dto.salaryMax = formData.salaryMax
+  return dto
+}
+
+/**
+ * 按专业代码回查记录 ID。
+ * 后端 POST /major 返回的是原始 Long（雪花 ID 19 位，超出 JS 安全整数 2^53-1），
+ * 直接用 res.data.data 会丢精度导致后续接口 404，因此改为回查列表拿字符串 ID。
+ */
+const findMajorIdByCode = async (majorCode: string): Promise<string | null> => {
+  try {
+    const res = await getMajorPage({ page: 1, size: 10, majorCode } as MajorQueryDTO)
+    if (res.data.code === 200) {
+      return res.data.data.records.find(r => r.majorCode === majorCode)?.id ?? null
+    }
+  } catch {
+    // 回查失败按未找到处理
+  }
+  return null
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -130,12 +216,13 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     formData.parentCategory = ''
     formData.majorTags = ''
     formData.degreeAwarded = ''
+    formData.studyDuration = ''
     formData.employmentRate = undefined
     formData.salaryMin = undefined
     formData.salaryMax = undefined
     formData.description = ''
-    courseList.value = []
-    skillList.value = []
+    // 详情 tab 也要一并清空，否则会残留上一次「修改」时回填的数据
+    resetDetailForm()
     activeEditTab.value = 'basic'
     detailData.value = null
   } else if (mode === 'edit' && id) {
@@ -155,13 +242,15 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.parentCategory = d.parentCategory || ''
         formData.majorTags = d.majorTags || ''
         formData.degreeAwarded = d.degreeAwarded || ''
+        formData.studyDuration = d.studyDuration || ''
         formData.employmentRate = d.employmentRate ?? undefined
         formData.salaryMin = d.salaryMin ?? undefined
         formData.salaryMax = d.salaryMax ?? undefined
         formData.description = d.description || ''
         // 专业详情
         detailFormData.courseCount = d.courseCount ?? undefined
-        detailFormData.graduateScale = d.graduateScale || ''
+        // 后端 VO 里 graduateScale 是 Integer（写入 DTO 却是 String），这里统一转成字符串再回填
+        detailFormData.graduateScale = d.graduateScale != null ? String(d.graduateScale) : ''
         detailFormData.maleRatio = d.maleRatio ?? undefined
         detailFormData.femaleRatio = d.femaleRatio ?? undefined
         detailFormData.majorDescription = d.majorDescription || ''
@@ -204,8 +293,8 @@ const handleSubmit = async () => {
   }
 
   try {
-    let res: any
     if (dialogMode.value === 'add') {
+      // 1) 先建主表（后端 add 接口只接收基本资料，不含详情字段）
       const data: MajorAddDTO = {
         majorCode: formData.majorCode,
         majorName: formData.majorName,
@@ -216,59 +305,53 @@ const handleSubmit = async () => {
       if (formData.parentCategory) data.parentCategory = formData.parentCategory
       if (formData.majorTags) data.majorTags = formData.majorTags
       if (formData.degreeAwarded) data.degreeAwarded = formData.degreeAwarded
-      if (formData.employmentRate !== undefined) data.employmentRate = formData.employmentRate
-      if (formData.salaryMin !== undefined) data.salaryMin = formData.salaryMin
-      if (formData.salaryMax !== undefined) data.salaryMax = formData.salaryMax
+      if (formData.studyDuration) data.studyDuration = formData.studyDuration
+      if (formData.employmentRate != null) data.employmentRate = formData.employmentRate
+      if (formData.salaryMin != null) data.salaryMin = formData.salaryMin
+      if (formData.salaryMax != null) data.salaryMax = formData.salaryMax
       if (formData.description) data.description = formData.description
-      res = await addMajor(data)
+      const res = await addMajor(data)
+      if (res.data.code !== 200) {
+        ElMessage.error(res.data.msg || '新增失败')
+        return
+      }
+
+      // 2) 「专业详情」tab 有内容时，回查新记录 ID 再补写详情表
+      if (hasDetailInput()) {
+        const newId = await findMajorIdByCode(formData.majorCode)
+        if (!newId) {
+          ElMessage.warning('专业已创建，但未能定位新记录，专业详情未保存，请在列表中点「修改」补充')
+        } else {
+          const res2 = await updateMajorDetail(newId, buildDetailDto())
+          if (res2.data.code !== 200) {
+            ElMessage.warning(`专业已创建，但专业详情保存失败：${res2.data.msg || '未知错误'}`)
+            dialogVisible.value = false
+            fetchData()
+            return
+          }
+        }
+      }
+
+      ElMessage.success('新增成功')
+      dialogVisible.value = false
+      fetchData()
     } else if (dialogMode.value === 'edit' && currentId.value) {
       // 1) 保存基本资料
-      const basicData: MajorUpdateDTO = {}
-      if (formData.majorCode) basicData.majorCode = formData.majorCode
-      if (formData.majorName) basicData.majorName = formData.majorName
-      if (formData.majorType) basicData.majorType = formData.majorType
-      if (formData.disciplineName) basicData.disciplineName = formData.disciplineName
-      if (formData.majorCategory) basicData.majorCategory = formData.majorCategory
-      if (formData.parentCategory) basicData.parentCategory = formData.parentCategory
-      if (formData.majorTags) basicData.majorTags = formData.majorTags
-      if (formData.degreeAwarded) basicData.degreeAwarded = formData.degreeAwarded
-      if (formData.employmentRate !== undefined) basicData.employmentRate = formData.employmentRate
-      if (formData.salaryMin !== undefined) basicData.salaryMin = formData.salaryMin
-      if (formData.salaryMax !== undefined) basicData.salaryMax = formData.salaryMax
-      if (formData.description) basicData.description = formData.description
-      res = await updateMajor(currentId.value, basicData)
+      const res = await updateMajor(currentId.value, buildBasicUpdateDto())
       if (res.data.code !== 200) {
         ElMessage.error(res.data.msg || '保存基本资料失败')
         return
       }
-      // 2) 保存专业详情（含主要课程 / 知识技能）
-      const detailDataDto: MajorDetailUpdateDTO = {}
-      if (detailFormData.courseCount !== undefined) detailDataDto.courseCount = detailFormData.courseCount
-      if (detailFormData.graduateScale) detailDataDto.graduateScale = detailFormData.graduateScale
-      if (detailFormData.maleRatio !== undefined) detailDataDto.maleRatio = detailFormData.maleRatio
-      if (detailFormData.femaleRatio !== undefined) detailDataDto.femaleRatio = detailFormData.femaleRatio
-      if (detailFormData.majorDescription) detailDataDto.majorDescription = detailFormData.majorDescription
-      if (detailFormData.trainingObjective) detailDataDto.trainingObjective = detailFormData.trainingObjective
-      if (detailFormData.trainingRequirement) detailDataDto.trainingRequirement = detailFormData.trainingRequirement
-      if (detailFormData.subjectRequirement) detailDataDto.subjectRequirement = detailFormData.subjectRequirement
-      if (detailFormData.careerProspect) detailDataDto.careerProspect = detailFormData.careerProspect
-      detailDataDto.mainCourses = courseList.value.map(s => s.trim()).filter(Boolean)
-      detailDataDto.knowledgeSkills = skillList.value.map(s => s.trim()).filter(Boolean)
-      const res2 = await updateMajorDetail(currentId.value, detailDataDto)
+      // 2) 保存专业详情（含主要课程 / 知识技能）——与基本资料同一次提交，切换 tab 不会丢
+      const res2 = await updateMajorDetail(currentId.value, buildDetailDto())
       if (res2.data.code !== 200) {
         ElMessage.error(res2.data.msg || '保存专业详情失败')
         return
       }
-    } else {
-      return
-    }
 
-    if (res.data.code === 200) {
-      ElMessage.success(dialogMode.value === 'add' ? '新增成功' : '修改成功')
+      ElMessage.success('修改成功')
       dialogVisible.value = false
       fetchData()
-    } else {
-      ElMessage.error(res.data.msg || '操作失败')
     }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
@@ -490,6 +573,7 @@ onMounted(() => { fetchData() })
         <el-table-column prop="majorName" label="专业名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="majorCategory" label="学科门类" min-width="100" />
         <el-table-column prop="majorType" label="专业类型" min-width="80" />
+        <el-table-column prop="studyDuration" label="学制" min-width="80" />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <span class="status-pill" :class="row.status === 1 ? 'status-on' : 'status-off'">
@@ -539,6 +623,7 @@ onMounted(() => { fetchData() })
             <el-descriptions-item label="专业类">{{ detailData.parentCategory || '-' }}</el-descriptions-item>
             <el-descriptions-item label="专业标签">{{ detailData.majorTags || '-' }}</el-descriptions-item>
             <el-descriptions-item label="授予学位">{{ detailData.degreeAwarded || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="学制">{{ detailData.studyDuration || '-' }}</el-descriptions-item>
             <el-descriptions-item label="就业率">{{ detailData.employmentRate != null ? detailData.employmentRate + '%' : '-' }}</el-descriptions-item>
             <el-descriptions-item label="薪资范围">
               {{ detailData.salaryMin != null && detailData.salaryMax != null ? `${detailData.salaryMin}-${detailData.salaryMax} 元/月` : '-' }}
@@ -574,56 +659,17 @@ onMounted(() => { fetchData() })
           </el-descriptions>
         </template>
 
-        <template v-else-if="dialogMode === 'add'">
-          <el-form :model="formData" label-width="110px">
-            <el-form-item label="专业代码" required>
-              <el-input v-model="formData.majorCode" placeholder="请输入专业代码" maxlength="20" />
-            </el-form-item>
-            <el-form-item label="专业名称" required>
-              <el-input v-model="formData.majorName" placeholder="请输入专业名称" maxlength="100" />
-            </el-form-item>
-            <el-form-item label="专业类型" required>
-              <el-select v-model="formData.majorType" placeholder="请选择" style="width: 200px">
-                <el-option label="本科" value="本科" />
-                <el-option label="专科" value="专科" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="学科名称">
-              <el-input v-model="formData.disciplineName" placeholder="请输入学科名称" maxlength="100" />
-            </el-form-item>
-            <el-form-item label="学科门类">
-              <el-input v-model="formData.majorCategory" placeholder="如：工学、理学" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="专业类">
-              <el-input v-model="formData.parentCategory" placeholder="如：计算机类" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="专业标签">
-              <el-input v-model="formData.majorTags" placeholder="如：热门、紧缺" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="授予学位">
-              <el-input v-model="formData.degreeAwarded" placeholder="如：工学学士" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="就业率(%)">
-              <el-input-number v-model="formData.employmentRate" :min="0" :max="100" :precision="2" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="薪资下限(元/月)">
-              <el-input-number v-model="formData.salaryMin" :min="0" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="薪资上限(元/月)">
-              <el-input-number v-model="formData.salaryMax" :min="0" controls-position="right" />
-            </el-form-item>
-            <el-form-item label="专业描述">
-              <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入专业描述" />
-            </el-form-item>
-          </el-form>
-        </template>
-
-        <template v-else-if="dialogMode === 'edit'">
+        <template v-else-if="dialogMode === 'add' || dialogMode === 'edit'">
           <el-tabs v-model="activeEditTab" class="major-edit-tabs">
             <el-tab-pane label="基本资料" name="basic">
               <el-form :model="formData" label-width="110px">
                 <el-form-item label="专业代码" required>
-                  <el-input v-model="formData.majorCode" placeholder="请输入专业代码" maxlength="20" disabled />
+                  <el-input
+                    v-model="formData.majorCode"
+                    placeholder="请输入专业代码"
+                    maxlength="20"
+                    :disabled="dialogMode === 'edit'"
+                  />
                 </el-form-item>
                 <el-form-item label="专业名称" required>
                   <el-input v-model="formData.majorName" placeholder="请输入专业名称" maxlength="100" />
@@ -649,6 +695,9 @@ onMounted(() => { fetchData() })
                 <el-form-item label="授予学位">
                   <el-input v-model="formData.degreeAwarded" placeholder="如：工学学士" maxlength="50" />
                 </el-form-item>
+                <el-form-item label="学制">
+                  <el-input v-model="formData.studyDuration" placeholder="如：四年" maxlength="20" />
+                </el-form-item>
                 <el-form-item label="就业率(%)">
                   <el-input-number v-model="formData.employmentRate" :min="0" :max="100" :precision="2" controls-position="right" />
                 </el-form-item>
@@ -669,7 +718,8 @@ onMounted(() => { fetchData() })
                   <el-input-number v-model="detailFormData.courseCount" :min="0" controls-position="right" />
                 </el-form-item>
                 <el-form-item label="毕业生规模">
-                  <el-input v-model="detailFormData.graduateScale" placeholder="如：5000-10000人" maxlength="20" />
+                  <!-- 后端回显 VO 用 Integer.parseInt 解析该字段，填非纯数字会解析失败导致回显为空 -->
+                  <el-input v-model="detailFormData.graduateScale" placeholder="如：8000（请填纯数字）" maxlength="20" />
                 </el-form-item>
                 <el-form-item label="男生比例">
                   <el-input-number v-model="detailFormData.maleRatio" :min="0" :max="100" :precision="2" controls-position="right" />

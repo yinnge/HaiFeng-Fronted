@@ -19,7 +19,8 @@ export const navItems: NavItem[] = [
     subItems: [
       { label: '高考报志愿', route: '/gaokao' },
       { label: '特殊通道', route: '/special' },
-      { label: '直通院校', route: '/gaokao' },
+      // 带 # 锚点：跳转 /gaokao 并滚动到页面底部「直通考院」区（AppHeader/MobileNavDrawer 的 handleSubClick 经 pushNavItem 处理）
+      { label: '直通院校', route: '/gaokao#exams' },
     ],
   },
   { id: 'university', label: '院校查询', route: '/university' },
@@ -35,9 +36,11 @@ export const navItems: NavItem[] = [
   {
     id: 'postgrad',
     label: '研究生专栏',
+    route: '/postgraduate',
     subItems: [
-      { label: '研究生资料' },
-      { label: '申博指南' },
+      // 点击「研究生专栏」或「研究生资料」都导向研究生专栏主页
+      { label: '研究生资料', route: '/postgraduate' },
+      { label: '申博指南', route: '/postgraduate/phd' },
     ],
   },
   {

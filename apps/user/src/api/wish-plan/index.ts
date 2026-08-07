@@ -53,6 +53,7 @@ export interface WishPlanGroupVO {
   tags: string[]
   recommendationYear: number
   recommendationRate: number
+  allExported?: boolean
 }
 
 export interface WishPlanMajorVO {
@@ -68,6 +69,7 @@ export interface WishPlanMajorVO {
   admissionCount: number
   safetyLevel: number
   levelShort: string
+  isExported?: boolean
   historyScores: {
     year: number
     minScore: number
@@ -139,6 +141,9 @@ export const downloadExport = (planId: string, file: string) =>
   request.get(`${PREFIX}/${planId}/export/download`, {
     params: { file },
     responseType: 'blob',
+    // 重要：覆盖实例级的 jsonBigParser transformResponse，
+    // 否则二进制 xlsx 数据会经过 JSON 解析器导致损坏
+    transformResponse: [(data: any) => data],
   })
 
 export const saveExportStatus = (planId: string) =>

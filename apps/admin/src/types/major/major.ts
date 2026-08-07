@@ -5,6 +5,7 @@ export interface MajorListVO {
   disciplineName: string | null
   majorType: string
   majorCategory: string | null
+  studyDuration: string | null
   status: number
   createdAt: string
 }
@@ -19,6 +20,7 @@ export interface MajorDetailVO {
   parentCategory: string | null
   majorTags: string | null
   degreeAwarded: string | null
+  studyDuration: string | null
   employmentRate: number | null
   salaryMin: number | null
   salaryMax: number | null
@@ -28,7 +30,8 @@ export interface MajorDetailVO {
   updatedAt: string
   detailId: string | null
   courseCount: number | null
-  graduateScale: string | null
+  /** 后端 VO 声明为 Integer（写入 DTO 是 String），故这里两种都兼容 */
+  graduateScale: string | number | null
   maleRatio: number | null
   femaleRatio: number | null
   majorDescription: string | null
@@ -58,14 +61,15 @@ export interface MajorAddDTO {
   parentCategory?: string
   majorTags?: string
   degreeAwarded?: string
+  studyDuration?: string
   employmentRate?: number
   salaryMin?: number
   salaryMax?: number
   description?: string
 }
 
+/** 注意：后端 MajorUpdateDTO 没有 majorCode 字段（专业代码不可修改），前端不要下发 */
 export interface MajorUpdateDTO {
-  majorCode?: string
   majorName?: string
   majorType?: string
   disciplineName?: string
@@ -73,6 +77,7 @@ export interface MajorUpdateDTO {
   parentCategory?: string
   majorTags?: string
   degreeAwarded?: string
+  studyDuration?: string
   employmentRate?: number
   salaryMin?: number
   salaryMax?: number

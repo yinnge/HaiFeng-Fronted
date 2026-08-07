@@ -7,6 +7,7 @@ import UserAvatar from './UserAvatar.vue'
 import NotificationBell from './NotificationBell.vue'
 import MobileNavDrawer from './MobileNavDrawer.vue'
 import { navItems, type NavItem, type NavSubItem } from '@/config/navigation'
+import { pushNavItem } from '@/utils/navAnchor'
 
 const router = useRouter()
 const route = useRoute()
@@ -51,7 +52,8 @@ function handleNavClick(item: NavItem) {
 function handleSubClick(sub: NavSubItem) {
   openDropdownId.value = null
   if (sub.route) {
-    router.push(sub.route)
+    // 兼容 /path#anchor 锚点路由（如「直通院校」→ /gaokao#exams）
+    void pushNavItem(router, route.path, sub)
   } else {
     ElMessage.info('该功能正在开发中')
   }

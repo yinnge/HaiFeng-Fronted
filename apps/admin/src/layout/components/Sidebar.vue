@@ -49,9 +49,12 @@ const menuList = computed(() => {
         .map((child) => buildMenu(child as RouteRecordRaw))
         .filter(Boolean) as MenuItem[]
 
-      if (visibleChildren.length > 0) {
-        item.children = visibleChildren
+      // 关键修复：子项全部被权限过滤掉后，父级整体不展示。
+      // 否则父级会以「无子项的叶子菜单」渲染出来，点了跳转才报 403 —— 这正是"没权限还展示"的根因。
+      if (visibleChildren.length === 0) {
+        return null
       }
+      item.children = visibleChildren
     }
 
     return item

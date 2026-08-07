@@ -29,7 +29,7 @@ async function fetchStats() {
       activeGrade.value = firstNonZero.grade
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || e?.message || '获取等级统计失败')
+    ElMessage.error(e?.message || '获取等级统计失败')
   }
 }
 
@@ -40,7 +40,7 @@ async function fetchList() {
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取学科评估列表失败')
+    ElMessage.error(e?.message || '获取学科评估列表失败')
   } finally {
     loading.value = false
   }

@@ -1,12 +1,14 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getChannelList } from '@/api/special'
 import { getArchive } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
+import { scrollToHash } from '@/utils/navAnchor'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
@@ -35,6 +37,48 @@ const channelDesc: Record<string, string> = {
   JOINT_NATIONAL: '面向华侨、港澳台学生的联合招生',
 }
 
+// 直通考院：各省市教育考试院官网（写死动态数据，模板 v-for 渲染）
+interface ExamSite {
+  name: string
+  url: string
+}
+
+const examSites: ExamSite[] = [
+  { name: '北京教育考试院', url: 'http://www.bjeea.cn' },
+  { name: '上海教育考试院', url: 'http://www.shmeea.edu.cn' },
+  { name: '天津招考资讯网', url: 'http://www.zhaokao.net' },
+  { name: '重庆教育考试院', url: 'http://www.cqksy.cn' },
+  { name: '河北教育考试院', url: 'http://www.hebeea.edu.cn' },
+  { name: '山西招生考试网', url: 'http://www.sxkszx.cn' },
+  { name: '内蒙古教育招生考试中心', url: 'http://www.nm.zsks.cn' },
+  { name: '辽宁招生考试之窗', url: 'http://www.lnzsks.com' },
+  { name: '吉林省教育考试院', url: 'http://www.jleea.edu.cn' },
+  { name: '黑龙江省招生考试信息港', url: 'http://www.lzk.hl.cn' },
+  { name: '江苏省教育考试院', url: 'http://www.jseea.cn' },
+  { name: '浙江省教育考试院', url: 'http://www.zjzs.net' },
+  { name: '安徽教育招生考试院', url: 'http://www.ahzsks.cn' },
+  { name: '福建省教育考试院', url: 'http://www.fjzs.com.cn' },
+  { name: '江西省教育考试院', url: 'http://www.jxeea.cn' },
+  { name: '山东省教育招生考试院', url: 'http://www.sdzk.cn' },
+  { name: '河南省招生办公室', url: 'http://www.heao.gov.cn' },
+  { name: '湖北省教育考试院', url: 'http://www.hbea.edu.cn' },
+  { name: '湖南省教育考试院', url: 'http://www.hneeb.cn' },
+  { name: '广东省教育考试院', url: 'http://www.eeagd.edu.cn' },
+  { name: '广西招生考试院', url: 'http://www.gxeea.cn' },
+  { name: '海南省考试局', url: 'http://ea.hainan.gov.cn' },
+  { name: '四川省教育考试院', url: 'http://www.sceea.cn' },
+  { name: '贵州省招生考试院', url: 'http://www.gzszk.com' },
+  { name: '云南省招考频道', url: 'http://www.ynzs.cn' },
+  { name: '新疆招生网', url: 'http://www.xjzk.gov.cn' },
+  { name: '陕西省教育考试院', url: 'http://www.sneac.com' },
+  { name: '甘肃省教育考试院', url: 'http://www.ganseea.cn' },
+  { name: '宁夏教育考试院', url: 'http://www.nxjyks.cn' },
+  { name: '青海省教育考试网', url: 'http://www.qhjyks.com' },
+  { name: '西藏教育考试院', url: 'http://www.xzedu.gov.cn' },
+  { name: '香港考试及评核局', url: 'https://www.hkeaa.edu.hk' },
+  { name: '澳门教育及青年发展局', url: 'https://www.dsej.gov.mo' },
+]
+
 const displayChannels = computed(() =>
   channelCodes
     .map((code) => channels.value.find((c) => c.channelCode === code))
@@ -47,7 +91,7 @@ async function fetchChannels() {
     const res = await getChannelList({ page: 1, size: 100 })
     channels.value = res.data.data.records
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取通道信息失败')
+    ElMessage.error(e?.message || '获取通道信息失败')
   } finally {
     loading.value = false
   }
@@ -89,9 +133,25 @@ function goWishPlan() {
 }
 
 onMounted(() => {
-  fetchChannels()
-  fetchArchive()
+  void initPage()
 })
+
+// 初始化：拉数据 → 等 Vue 把展开的卡片刷进 DOM → 再处理锚点滚动。
+// 关键：fetchChannels 把 loading 置 false 后，DOM 不会立刻更新（异步刷新）。
+// 若不等 nextTick 就去量 #exams 的位置，此时卡片区还是 200px loading 占位，
+// 滚动目标算得太靠上，等卡片撑开后 #exams 被推到页底，滚动就到不了底部。
+async function initPage() {
+  await Promise.allSettled([fetchChannels(), fetchArchive()])
+  // 等 DOM 完成刷新（卡片展开、页面高度稳定）再滚动，避免位置偏移
+  await nextTick()
+  await nextTick()
+  // 从导航「直通院校」跳转（/gaokao#exams）：跨页进入时确保滚动到考院区。
+  // router scrollBehavior 固定 top:0 不处理 hash，故页面挂载 + 布局稳定后手动滚动兜底；
+  // 同页点击已由 AppHeader/MobileNavDrawer 的 pushNavItem 直接滚动。
+  if (route.hash && route.hash.includes('exams')) {
+    scrollToHash('exams')
+  }
+}
 </script>
 
 <template>
@@ -177,6 +237,167 @@ onMounted(() => {
           暂无其他报考通道数据
         </div>
       </div>
+
+      <!-- 直通考院：各省市教育考试院官网 -->
+      <section id="exams" class="exams-section">
+        <div class="section-bg"></div>
+        <div class="container fade-in-up">
+          <div class="section-header">
+            <h2 class="section-title">直通考院</h2>
+            <p class="section-subtitle">快速访问各省市教育考试院官方网站，获取最新招考信息</p>
+          </div>
+          <div class="exams-container">
+            <div class="exams-grid">
+              <a
+                v-for="site in examSites"
+                :key="site.name"
+                :href="site.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="exam-link"
+              >
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <path d="M6.5 3.5h-3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3" stroke-linecap="round" />
+                  <path d="M9.5 2.5h4v4M13.5 2.5 7 9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>{{ site.name }}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 </template>
+
+<style scoped>
+/* ===== 直通考院 ===== */
+.exams-section {
+  position: relative;
+  padding: 64px 24px 72px;
+  background: linear-gradient(180deg, #fff 0%, #fff7ed 60%, #fff 100%);
+  overflow: hidden;
+  /* 锚点滚动时避免被 sticky header 遮挡 */
+  scroll-margin-top: 88px;
+}
+
+.section-bg {
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.section-bg::after {
+  content: '';
+  position: absolute;
+  left: -240px;
+  bottom: -160px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.1) 0%, transparent 70%);
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.section-title {
+  display: inline-block;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: 0.02em;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.section-subtitle {
+  margin-top: 12px;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.exams-container {
+  display: flex;
+  justify-content: center;
+}
+
+.exams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.exam-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  border-radius: 12px;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.exam-link svg {
+  width: 14px;
+  height: 14px;
+  color: #fb923c;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.exam-link:hover {
+  border-color: #f97316;
+  color: #f97316;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.12);
+  transform: translateY(-2px);
+}
+
+.exam-link:hover svg {
+  transform: translate(1px, -1px);
+}
+
+/* 进场动画（页面加载时播放一次） */
+.fade-in-up {
+  animation: fadeInUp 0.6s ease both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

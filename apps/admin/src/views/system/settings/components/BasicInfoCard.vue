@@ -18,7 +18,6 @@ const form = ref({
   siteUrl: '',
   siteIcp: '',
   siteDescription: '',
-  apiNumber: 3,
 })
 
 watch(
@@ -30,7 +29,6 @@ watch(
         siteUrl: val.siteUrl || '',
         siteIcp: val.siteIcp || '',
         siteDescription: val.siteDescription || '',
-        apiNumber: val.apiNumber || 3,
       }
     }
   },
@@ -85,9 +83,6 @@ const handleSave = async () => {
           :rows="3"
           placeholder="请输入网站描述"
         />
-      </el-form-item>
-      <el-form-item label="API 调用次数">
-        <el-input-number v-model="form.apiNumber" :min="1" :max="100" />
       </el-form-item>
       <el-form-item class="form-actions">
         <button type="button" class="save-btn" :disabled="loading" @click="handleSave">

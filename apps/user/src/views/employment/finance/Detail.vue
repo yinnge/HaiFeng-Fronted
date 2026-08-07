@@ -18,7 +18,7 @@ async function fetchDetail() {
     const res = await getFinanceDetail(jobId)
     job.value = res.data.data
   } catch (e: any) {
-    const msg = e?.response?.data?.msg || '获取岗位详情失败'
+    const msg = e?.message || '获取岗位详情失败'
     ElMessage.error(msg)
     if (e?.response?.status === 404) {
       router.replace('/employment/finance')

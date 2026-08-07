@@ -19,7 +19,7 @@ async function fetchDetail() {
     const res = await getInstitutionDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取职位详情失败')
+    ElMessage.error(e?.message || '获取职位详情失败')
     router.push('/employment/institution')
   } finally {
     loading.value = false

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { navItems, type NavItem, type NavSubItem } from '@/config/navigation'
+import { pushNavItem } from '@/utils/navAnchor'
 
 const router = useRouter()
+const route = useRoute()
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
@@ -28,7 +30,8 @@ function handleNavClick(item: NavItem) {
 function handleSubClick(sub: NavSubItem) {
   if (sub.route) {
     emit('update:open', false)
-    router.push(sub.route)
+    // 兼容 /path#anchor 锚点路由（如「直通院校」→ /gaokao#exams）
+    void pushNavItem(router, route.path, sub)
   } else {
     ElMessage.info('该功能正在开发中')
   }

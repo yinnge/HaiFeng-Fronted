@@ -38,7 +38,7 @@ async function fetchDetail() {
     const res = await getChannelDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取通道详情失败')
+    ElMessage.error(e?.message || '获取通道详情失败')
   } finally {
     loading.value = false
   }
@@ -82,7 +82,7 @@ async function viewUnivDetail(universityId: string) {
     const res = await getChannelUniversityDetail(universityId)
     univDetail.value = res.data.data
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.msg || '获取关联大学详情失败')
+    ElMessage.error(e?.message || '获取关联大学详情失败')
     showUnivDialog.value = false
   } finally {
     univDetailLoading.value = false

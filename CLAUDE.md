@@ -380,7 +380,7 @@ const formatMoney = (value: number) => value.toFixed(2)
 
 ## UI 组件使用原则
 
-1. **优先使用 Element Plus 原生组件**，尽量少写自定义 CSS
+1. **使用 Element Plus 原生组件**，尽量少写自定义 CSS
 2. **复杂排版/间距/宽高**：优先使用 Tailwind CSS（如 `flex justify-between items-center mt-4`）
 3. **避免在 Vue `<style>` 中写大量基础样式**
 
@@ -388,8 +388,12 @@ const formatMoney = (value: number) => value.toFixed(2)
 
 
 ## 列表页分页规范
-
 分页参数选项：`10, 20, 30, 50, 100`
+
+## 修改后端规矩
+唯一要守住的规矩：应用 JVM 还在跑的时候，不要执行 mvn clean / mvnw clean / IDE 的 Rebuild / Build Project。本项目没引入 spring-boot-devtools，没有安全热更新机制，磁盘改写和运行时类加载一旦撞车，就会再次出现 $Builder 缺失这类 NoClassDefFoundError。
+
+
 
 ---
 

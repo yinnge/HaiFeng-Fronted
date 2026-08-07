@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,18 +15,170 @@ html,
 body {
   width: 100%;
   min-height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   scrollbar-gutter: stable;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 修复弹窗打开时右侧滚动条消失、页面左右抖动的问题
- * 思路：html 已用 scrollbar-gutter: stable 永久预留滚动条位置（"预留位置"）。
- * 但 Element Plus 的 useLockscreen 在弹窗打开时，会内联设置
- *   body.style.width = calc(100% - 滚动条宽)
- * 来补偿位移；这会和 scrollbar-gutter 预留的空间「重复计算」，
- * 导致 body 被多缩一段、内容整体左移抖动。
- * 这里强制 body 宽度为 100%（gutter 已替它留好右侧空间），消除抖动。 */
+/* ============ 全站暖色页面画布（统一风格，对齐「直通考院」区块观感） ============ */
+/* 根画布：白底透橙 + 径向光晕点缀，固定视口，所有页面默认透出其暖橙背景。
+   设计要点（突出「白→橘→白」分层，但不刺眼）：
+   1) 竖向渐变首尾透白、中段加深到 #ffedd5(orange-100)，使橘色带明显可读；
+   2) 顶部/中部/底部三层白雾带清晰硬边（白→半透→透明），制造通透层次；
+   3) 三处橙/琥珀光晕加重透明度，做明显点缀。 */
+html {
+  background-color: #fff7ed;
+  background-image:
+    /* 顶部白雾：页面上方明显泛白，硬边收口 */
+    radial-gradient(140% 50% at 50% -5%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.6) 34%, transparent 62%),
+    /* 中部柔白涂抹：白雾压在橘色上，制造「白底透橘」通透层次 */
+    radial-gradient(70% 40% at 50% 46%, rgba(255, 255, 255, 0.62) 0%, transparent 70%),
+    /* 底部白雾：明显回归白，硬边收口 */
+    radial-gradient(140% 50% at 50% 105%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.55) 34%, transparent 62%),
+    /* 橙色点缀光晕（左上，加重） */
+    radial-gradient(circle at 12% 18%, rgba(249, 115, 22, 0.2) 0%, transparent 40%),
+    /* 琥珀点缀光晕（右上，加重） */
+    radial-gradient(circle at 88% 28%, rgba(251, 146, 60, 0.17) 0%, transparent 40%),
+    /* 橙色点缀光晕（下中，加重） */
+    radial-gradient(circle at 68% 88%, rgba(249, 115, 22, 0.15) 0%, transparent 40%),
+    /* 基础竖向渐变：白→橘100→白，橘色带明显、首尾透白 */
+    linear-gradient(180deg, #ffffff 0%, #fff4e6 28%, #ffedd5 50%, #fff4e6 72%, #ffffff 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 让路由内容根容器透出暖色画布：仅作用于页面根节点，
+   不破坏内部白色卡片（卡片是根的嵌套子元素，非 main/#app 的直接子节点）。
+   .app-shell = DefaultLayout 根；#app > * 覆盖 blank 布局（登录/注册/404）。 */
+.app-shell main > *,
+#app > * {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 修复弹窗打开时右侧滚动条消失、页面左右抖动的问题 */
 body.el-popup-parent--hidden {
   width: 100% !important;
   overflow: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 选择文本样式 */
+::selection {
+  background: rgba(232, 114, 42, 0.2);
+  color: #1e293b;
+}
+
+/* 骨架屏动画 */
+@layer utilities {
+  .skeleton {
+    @apply relative overflow-hidden bg-gray-200 rounded;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    animation: skeleton-shine 1.5s infinite;
+  }
+
+  @keyframes skeleton-shine {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* 卡片悬停效果 */
+@layer components {
+  .card-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .card-hover:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+
+  .card-active:active {
+    @apply shadow-card-active translate-y-0;
+  }
+
+  /* 品牌按钮 */
+  .btn-brand {
+    @apply relative overflow-hidden bg-gradient-to-r from-brand-orange to-brand-orange-light 
+           text-white font-semibold px-6 py-2.5 rounded-full 
+           transition-all duration-200 ease-out
+           hover:-translate-y-0.5
+           active:translate-y-0
+           focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
+    box-shadow: 0 4px 14px 0 rgba(232, 114, 42, 0.25);
+  }
+
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px 0 rgba(232, 114, 42, 0.35);
+  }
+
+  .btn-brand::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-brand-orange-dark to-brand-orange 
+           opacity-0 transition-opacity duration-200;
+  }
+
+  .btn-brand:hover::before {
+    @apply opacity-100;
+  }
+
+  /* 次要按钮 */
+  .btn-secondary {
+    @apply relative overflow-hidden bg-white border border-gray-200 
+           text-gray-700 font-medium px-6 py-2.5 rounded-full 
+           transition-all duration-200 ease-out
+           hover:border-brand-orange hover:text-brand-orange
+           active:shadow-none
+           focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
+  }
+
+  .btn-secondary:hover {
+    box-shadow: 0 2px 8px rgba(232, 114, 42, 0.15);
+  }
+
+  /* 药丸标签 */
+  .pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .pill-orange {
+    @apply bg-gradient-to-r from-brand-orange/10 to-brand-orange-light/10 
+           text-brand-orange border border-brand-orange/20;
+  }
+
+  .pill-blue {
+    @apply bg-brand-blue/10 text-brand-blue border border-brand-blue/20;
+  }
+
+  .pill-gold {
+    @apply bg-brand-gold/10 text-brand-gold-dark border border-brand-gold/20;
+  }
 }
