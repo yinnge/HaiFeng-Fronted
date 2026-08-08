@@ -50,13 +50,13 @@ const goDetail = () => {
         <img
           :src="planner.avatar"
           :alt="planner.name"
-          class="w-20 h-[107px] sm:w-24 sm:h-32 md:w-28 md:h-[150px] lg:w-40 lg:h-[213px] object-cover"
+          class="w-20 h-[107px] sm:w-24 sm:h-32 md:w-28 md:h-[150px] lg:w-40 lg:h-[213px] xl:w-56 xl:h-[299px] 2xl:w-64 2xl:h-[341px] object-cover"
           style="transform: skewX(8deg) scale(1.15)"
         />
       </div>
       <div
         v-show="isActive"
-        class="absolute top-0 h-full z-30 w-40 sm:w-44 md:w-48 lg:w-52 bg-white rounded-lg shadow-xl border border-orange-100"
+        class="absolute top-0 h-full z-30 w-40 sm:w-44 md:w-48 lg:w-52 xl:w-72 2xl:w-80 bg-white rounded-lg shadow-xl border border-orange-100"
         :class="align === 'left' ? 'right-full' : 'left-full'"
         style="transform: skewX(-8deg)"
       >
