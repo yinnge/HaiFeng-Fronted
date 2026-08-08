@@ -96,6 +96,7 @@ export interface ReformModelData {
 export interface RankData {
   rank: number
   sameScoreCount: number
+  dataYear?: number
 }
 
 export interface BatchLine {
@@ -155,6 +156,9 @@ export interface GaokaoArchiveVO extends GaokaoArchiveForm {
 
 export const getReformModel = (params: { province: string; year: number }) =>
   request.get<R<ReformModelData>>(`${PREFIX}/reform-model`, { params })
+
+export const getGaokaoYears = () =>
+  request.get<R<number[]>>(`${PREFIX}/years`)
 
 export const getRank = (params: {
   province: string

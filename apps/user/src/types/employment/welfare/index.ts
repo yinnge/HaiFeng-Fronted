@@ -1,6 +1,7 @@
 export interface WelfareQueryDTO {
   page?: number
   size?: number
+  keyword?: string
   positionName?: string
   developingUnit?: string
   employingUnit?: string

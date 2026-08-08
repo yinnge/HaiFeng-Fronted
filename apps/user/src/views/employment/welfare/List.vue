@@ -3,8 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
 import EmploymentTabs from '@/components/employment/EmploymentTabs.vue'
 import { getWelfareList } from '@/api/employment/welfare'
@@ -14,13 +12,15 @@ const router = useRouter()
 
 const keyword = ref('')
 const positionCategory = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
+const province = ref('')
+const city = ref('')
+const district = ref('')
 const educationRequirement = ref('')
 const householdRequirement = ref('')
 const positionStatus = ref('')
 
 const positionCategoryOptions = ['公共管理类', '公共服务类', '公共环境类', '公共安全类', '设施维护类', '其他']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 const educationOptions = ['不限', '初中', '高中', '大专', '本科']
 const positionStatusOptions = ['招聘中', '已结束', '即将开始']
 
@@ -34,11 +34,11 @@ function buildParams(): WelfareQueryDTO {
   return {
     page: page.value,
     size: pageSize.value,
-    positionName: keyword.value || undefined,
+    keyword: keyword.value || undefined,
     positionCategory: positionCategory.value || undefined,
-    province: regionValue.value[0] || undefined,
-    city: regionValue.value[1] || undefined,
-    district: regionValue.value[2] || undefined,
+    province: province.value || undefined,
+    city: city.value || undefined,
+    district: district.value || undefined,
     educationRequirement: educationRequirement.value || undefined,
     householdRequirement: householdRequirement.value || undefined,
     positionStatus: positionStatus.value || undefined,
@@ -69,7 +69,9 @@ function onSearch() {
 function onReset() {
   keyword.value = ''
   positionCategory.value = ''
-  regionValue.value = []
+  province.value = ''
+  city.value = ''
+  district.value = ''
   educationRequirement.value = ''
   householdRequirement.value = ''
   positionStatus.value = ''
@@ -113,7 +115,7 @@ function formatDateRange(start: string, end: string): string {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || positionCategory.value || regionValue.value.length > 0 || educationRequirement.value || householdRequirement.value || positionStatus.value)
+  return !!(keyword.value || positionCategory.value || province.value || city.value || district.value || educationRequirement.value || householdRequirement.value || positionStatus.value)
 })
 
 onMounted(fetchList)
@@ -147,7 +149,11 @@ onMounted(fetchList)
             <el-select v-model="positionCategory" placeholder="岗位类别" clearable class="!w-[160px]" @change="onSearch">
               <el-option v-for="opt in positionCategoryOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市/区县" clearable class="!w-[200px]" @change="onSearch" />
+            <el-select v-model="province" placeholder="省份" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in provinceOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="city" type="text" placeholder="城市" class="!w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
+            <input v-model="district" type="text" placeholder="区县" class="!w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in educationOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>

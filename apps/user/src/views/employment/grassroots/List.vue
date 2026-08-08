@@ -3,11 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
 import EmploymentTabs from '@/components/employment/EmploymentTabs.vue'
-import { getGrassrootsList } from '@/api/employment/grassroots'
+import { getGrassrootsList, getGrassrootsYears, getGrassrootsGradYears } from '@/api/employment/grassroots'
 import type { GrassrootsPositionListVO, GrassrootsQueryDTO } from '@/types/employment/grassroots'
 
 const router = useRouter()
@@ -16,8 +14,9 @@ const keyword = ref('')
 const projectType = ref('')
 const year = ref('')
 const serviceType = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
+const province = ref('')
+const city = ref('')
+const county = ref('')
 const educationRequirement = ref('')
 const majorRequirement = ref('')
 const gradYearRequirement = ref('')
@@ -25,13 +24,34 @@ const politicalStatus = ref('')
 const positionStatus = ref('')
 
 const projectTypeOptions = ['三支一扶', '西部计划']
-const currentYear = new Date().getFullYear()
-const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear + i))
-const serviceTypeOptions = ['支教', '支农', '支医', '帮扶乡村振兴', '基层人社', '基层水利', '基层林业', '基层医疗', '基层文旅', '基层供销', '其他']
+const serviceTypeOptions = ['支教', '支农', '支医', '帮扶乡村振兴', '基础教育', '服务三农', '医疗卫生', '基层青年工作', '基层社会管理', '服务新疆', '服务西藏']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 const educationOptions = ['大专', '本科', '硕士', '大专及以上', '本科及以上']
 const politicalStatusOptions = ['中共党员', '共青团员', '群众', '不限']
 const positionStatusOptions = ['招募中', '已结束', '即将开始']
-const gradYearOptions = Array.from({ length: 6 }, (_, i) => String(currentYear - i))
+
+const yearOptions = ref<string[]>([])
+const gradYearOptions = ref<string[]>([])
+
+async function fetchYears() {
+  try {
+    const res = await getGrassrootsYears()
+    yearOptions.value = res.data.data || []
+  } catch {
+    const currentYear = new Date().getFullYear()
+    yearOptions.value = Array.from({ length: 5 }, (_, i) => String(currentYear + i))
+  }
+}
+
+async function fetchGradYears() {
+  try {
+    const res = await getGrassrootsGradYears()
+    gradYearOptions.value = res.data.data || []
+  } catch {
+    const currentYear = new Date().getFullYear()
+    gradYearOptions.value = Array.from({ length: 6 }, (_, i) => String(currentYear - i))
+  }
+}
 
 const loading = ref(false)
 const jobs = ref<GrassrootsPositionListVO[]>([])
@@ -43,13 +63,13 @@ function buildParams(): GrassrootsQueryDTO {
   return {
     page: page.value,
     size: pageSize.value,
-    positionName: keyword.value || undefined,
+    keyword: keyword.value || undefined,
     projectType: projectType.value || undefined,
     year: year.value || undefined,
     serviceType: serviceType.value || undefined,
-    province: regionValue.value[0] || undefined,
-    city: regionValue.value[1] || undefined,
-    county: regionValue.value[2] || undefined,
+    province: province.value || undefined,
+    city: city.value || undefined,
+    county: county.value || undefined,
     educationRequirement: educationRequirement.value || undefined,
     majorRequirement: majorRequirement.value || undefined,
     gradYearRequirement: gradYearRequirement.value || undefined,
@@ -84,7 +104,9 @@ function onReset() {
   projectType.value = ''
   year.value = ''
   serviceType.value = ''
-  regionValue.value = []
+  province.value = ''
+  city.value = ''
+  county.value = ''
   educationRequirement.value = ''
   majorRequirement.value = ''
   gradYearRequirement.value = ''
@@ -130,10 +152,10 @@ function formatDateRange(start: string, end: string): string {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || projectType.value || year.value || serviceType.value || regionValue.value.length > 0 || educationRequirement.value || majorRequirement.value || gradYearRequirement.value || politicalStatus.value || positionStatus.value)
+  return !!(keyword.value || projectType.value || year.value || serviceType.value || province.value || city.value || county.value || educationRequirement.value || majorRequirement.value || gradYearRequirement.value || politicalStatus.value || positionStatus.value)
 })
 
-onMounted(fetchList)
+onMounted(() => { fetchYears(); fetchGradYears(); fetchList() })
 </script>
 
 <template>
@@ -167,10 +189,14 @@ onMounted(fetchList)
             <el-select v-model="year" placeholder="招募年份" clearable class="!w-[130px]" @change="onSearch">
               <el-option v-for="opt in yearOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-select v-model="serviceType" placeholder="服务类型" clearable class="!w-[140px]" @change="onSearch">
+            <el-select v-model="serviceType" placeholder="服务类型" clearable class="!w-[160px]" @change="onSearch">
               <el-option v-for="opt in serviceTypeOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市/区县" clearable class="!w-[200px]" @change="onSearch" />
+            <el-select v-model="province" placeholder="省份" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in provinceOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="city" type="text" placeholder="城市" class="!w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
+            <input v-model="county" type="text" placeholder="区县" class="!w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in educationOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>

@@ -99,7 +99,7 @@ async function createPlanAndAddMajors(planName: string) {
   for (const group of groups) {
     const majorIds = group.majors.map(m => String(m.majorId))
     try {
-      const res = await addMajors({ planId, groupId: String(group.groupId), majorIds })
+      const res = await addMajors({ planId, groupId: String(group.groupId), majorIds, planName })
       if (!planId && res.data.data?.id) {
         planId = String(res.data.data.id)
       }

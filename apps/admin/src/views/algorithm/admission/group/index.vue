@@ -13,6 +13,7 @@ import {
   importGroupExcel,
   recalcAllGroups,
 } from '@/api/algorithm/admission/group'
+import { getUniversityPage } from '@/api/university/info'
 import type {
   AdmissionGroupListVO,
   AdmissionGroupDetailVO,
@@ -69,6 +70,55 @@ const formData = reactive<AdmissionGroupAddDTO>({
   description: '',
   constraints: [],
 })
+
+/* ===== 大学名称远程搜索（外键关联，后端按名称精确反查，仅启用中的院校） ===== */
+interface UniversityOption {
+  name: string
+  provinceName: string
+  cityName: string
+  category: string
+}
+const universityOptions = ref<UniversityOption[]>([])
+const universityLoading = ref(false)
+
+const fetchUniversityOptions = async (name?: string) => {
+  universityLoading.value = true
+  try {
+    // status=1 只取启用中的院校，避免选到禁用院校后端报「不存在或已禁用」
+    const params: Record<string, any> = { page: 1, size: 50, status: 1 }
+    if (name) params.name = name
+    const res = await getUniversityPage(params as any)
+    if (res.data.code === 200) {
+      universityOptions.value = res.data.data.records.map((r) => ({
+        name: r.name,
+        provinceName: r.provinceName,
+        cityName: r.cityName,
+        category: r.category,
+      }))
+    } else {
+      universityOptions.value = []
+    }
+  } catch {
+    universityOptions.value = []
+  } finally {
+    universityLoading.value = false
+  }
+}
+
+let universitySearchTimer: ReturnType<typeof setTimeout> | null = null
+const handleUniversitySearch = (query: string) => {
+  if (universitySearchTimer) clearTimeout(universitySearchTimer)
+  universitySearchTimer = setTimeout(() => {
+    fetchUniversityOptions(query || undefined)
+  }, 300)
+}
+
+/** 确保当前已选中的名称在下拉选项里，否则 el-select 会显示空白 */
+const ensureUniversityOption = (name: string) => {
+  if (!name) return
+  if (universityOptions.value.some((o) => o.name === name)) return
+  universityOptions.value.unshift({ name, provinceName: '', cityName: '', category: '' })
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -151,6 +201,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     dialogTitle.value = '新增专业组'
     resetFormData()
     detailData.value = null
+    universityOptions.value = []
+    fetchUniversityOptions()
   } else if ((mode === 'edit' || mode === 'detail') && id) {
     formLoading.value = true
     try {
@@ -170,6 +222,10 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           formData.requirementType = d.requirementType
           formData.description = d.description || ''
           formData.constraints = d.constraints || []
+          // 用当前院校名预搜索，并兜底把当前值塞进选项，避免下拉显示空白
+          universityOptions.value = []
+          await fetchUniversityOptions(d.universityName || undefined)
+          ensureUniversityOption(d.universityName)
         } else {
           dialogTitle.value = '专业组详情'
           detailData.value = d
@@ -590,7 +646,35 @@ onMounted(() => {
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="大学名称" required class="dialog-form-item">
-                  <el-input v-model="formData.universityName" placeholder="请输入" maxlength="50" />
+                  <el-select
+                    v-model="formData.universityName"
+                    placeholder="输入院校名称搜索"
+                    filterable
+                    remote
+                    reserve-keyword
+                    :remote-method="handleUniversitySearch"
+                    :loading="universityLoading"
+                    style="width: 100%;"
+                  >
+                    <template #empty>
+                      <div class="uni-select-empty">
+                        {{ universityLoading ? '搜索中...' : '未找到匹配的院校' }}
+                      </div>
+                    </template>
+                    <el-option
+                      v-for="u in universityOptions"
+                      :key="u.name"
+                      :label="u.name"
+                      :value="u.name"
+                    >
+                      <div class="uni-option">
+                        <span class="uni-option-name">{{ u.name }}</span>
+                        <span v-if="u.provinceName || u.cityName || u.category" class="uni-option-meta">
+                          {{ [u.provinceName, u.cityName, u.category].filter(Boolean).join(' · ') }}
+                        </span>
+                      </div>
+                    </el-option>
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -964,6 +1048,29 @@ onMounted(() => {
 }
 .dialog-form-item {
   margin-bottom: 18px !important;
+}
+
+/* ===== 大学名称远程搜索下拉：选项双行（名称 + 省市/类型） ===== */
+.uni-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.uni-option-name {
+  color: #1f2937;
+  font-weight: 500;
+}
+.uni-option-meta {
+  color: #9ca3af;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.uni-select-empty {
+  padding: 10px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .dialog-cancel-btn {
