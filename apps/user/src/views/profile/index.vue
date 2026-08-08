@@ -10,7 +10,7 @@ import AccountInfo from './components/AccountInfo.vue'
 import CommissionPanel from './components/CommissionPanel.vue'
 import NotificationPanel from './components/NotificationPanel.vue'
 import AvatarSelector from './components/AvatarSelector.vue'
-import UpgradeMemberDialog from './components/UpgradeMemberDialog.vue'
+import RechargeDialog from './components/RechargeDialog.vue'
 import type { MemberInfoVO } from '@/types/member/info'
 import type { MemberProfileVO } from '@/types/member/profile'
 import type { SiteInfoVO } from '@/types/home'
@@ -138,7 +138,7 @@ onMounted(() => {
       @updated="handleAvatarUpdated"
     />
 
-    <UpgradeMemberDialog
+    <RechargeDialog
       v-model:visible="showUpgradeDialog"
       :member-info="memberInfo"
       :site-info="siteInfo"

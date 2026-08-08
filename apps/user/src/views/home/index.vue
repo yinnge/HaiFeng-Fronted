@@ -69,14 +69,16 @@ interface EntryItem {
   title: string
   desc: string
   btn: string
-  to: string
+  to?: string
+  expert?: boolean
 }
 
 const entryItems: EntryItem[] = [
-  { tag: '择校导航', emoji: '🏫', title: '院校', desc: '了解院校、更好规划志愿填报', btn: '进入院校专区', to: '/university' },
-  { tag: '专业库', emoji: '📖', title: '专业', desc: '读懂专业、精准匹配发展方向', btn: '进入专业专区', to: '/major' },
-  { tag: '就业规划', emoji: '💼', title: '就业专栏', desc: '把握就业趋势、规划职业未来', btn: '进入就业专栏', to: '/employment/civil' },
-  { tag: 'AI智能', emoji: '✨', title: '高考报志愿', desc: '基于AI算法、一键生成志愿方案', btn: '开始志愿填报', to: '/gaokao' },
+  { tag: 'AI智能', emoji: '✨', title: '高考报志愿', desc: '基于AI算法与大数据分析，科学评估成绩与兴趣，一键生成个性化志愿方案，精准定位理想院校。', btn: '开始志愿填报', to: '/gaokao' },
+  { tag: '一对一', emoji: '👨‍🎓', title: '专家指导', desc: '资深规划师一对一深度咨询，量身定制升学与职业路径，全程陪伴、随时答疑。', btn: '立即咨询专家', expert: true },
+  { tag: '择校导航', emoji: '🏫', title: '院校', desc: '海量院校权威数据，招生计划、历年分数、专业设置一网打尽，科学选择心仪院校。', btn: '进入院校专区', to: '/university' },
+  { tag: '专业库', emoji: '📖', title: '专业', desc: '全面解读专业内涵与就业方向，结合个人兴趣特长，精准匹配最适合你的专业。', btn: '进入专业专区', to: '/major' },
+  { tag: '就业规划', emoji: '💼', title: '就业专栏', desc: '汇聚公务员、事业单位、名企等最新就业资讯，把握就业趋势，提前规划职业未来。', btn: '进入就业专栏', to: '/employment/civil' },
 ]
 
 // ===== 专家指导 =====
@@ -337,8 +339,8 @@ const institutionProfile = (i: number) => {
     tier,
     offset: Math.round((r(3) - 0.5) * 42),
     rotate: Math.round((r(4) - 0.5) * 60) / 10,
-    blur: front ? 0 : Math.round(r(5) * 25) / 10,
-    opacity: front ? 1 : Math.round((0.85 + r(6) * 0.08) * 100) / 100,
+    blur: front ? 0 : Math.round(r(5) * 8) / 10,
+    opacity: front ? 1 : Math.round((0.95 + r(6) * 0.05) * 100) / 100,
     z: front ? 30 : 5,
   }
 }
@@ -466,7 +468,7 @@ onUnmounted(() => {
           专业 · 科学 · 个性化
         </div>
         <h2 class="mb-6 text-4xl font-bold text-gray-800 md:text-5xl lg:text-6xl leading-tight">
-          海枫未来规划院
+          海枫<span class="bg-gradient-to-r from-brand-orange to-brand-orange-light bg-clip-text text-transparent">未来规划院</span>
         </h2>
         <p class="mx-auto max-w-2xl text-lg text-gray-500 leading-relaxed">
           依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
@@ -499,11 +501,13 @@ onUnmounted(() => {
         </div>
 
         <div class="entry-grid">
-          <router-link
+          <component
+            :is="item.expert ? 'div' : 'router-link'"
             v-for="item in entryItems"
-            :key="item.to"
-            :to="item.to"
+            :key="item.title"
+            :to="item.expert ? undefined : item.to"
             class="entry-card"
+            @click="item.expert && openExpertDialog()"
           >
             <span class="entry-tag">{{ item.tag }}</span>
             <div class="entry-emoji">{{ item.emoji }}</div>
@@ -515,23 +519,7 @@ onUnmounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </span>
-          </router-link>
-
-          <div
-            class="entry-card"
-            @click="openExpertDialog"
-          >
-            <span class="entry-tag">一对一</span>
-            <div class="entry-emoji">👨‍🎓</div>
-            <h3 class="entry-title">专家指导</h3>
-            <p class="entry-desc">资深规划师一对一咨询、助力最佳选择</p>
-            <span class="entry-btn">
-              立即咨询专家
-              <svg class="entry-btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </div>
+          </component>
         </div>
       </section>
 
@@ -946,12 +934,20 @@ onUnmounted(() => {
   background: #ffffff;
   border-radius: 1rem;
   border: 1px solid rgba(249, 115, 22, 0.15);
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
-  border-top-width: 3px;
+  overflow: hidden;
   box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
   transition: all 0.25s ease;
   cursor: pointer;
+}
+
+.entry-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #fb923c);
 }
 
 .entry-card:hover {
