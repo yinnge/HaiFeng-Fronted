@@ -113,6 +113,29 @@ function onUndergradPageChange(page: number) {
   fetchUndergraduateMajors()
 }
 
+/** 手写分页页码（不使用 el-pagination，统一 user 端橙色规范） */
+function buildPages(total: number, size: number, current: number): (number | string)[] {
+  const t = Math.ceil(total / size)
+  const pages: (number | string)[] = []
+  if (t <= 7) {
+    for (let i = 1; i <= t; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (current > 4) pages.push('...')
+    const start = Math.max(2, current - 1)
+    const end = Math.min(t - 1, current + 1)
+    for (let i = start; i <= end; i++) pages.push(i)
+    if (current < t - 3) pages.push('...')
+    pages.push(t)
+  }
+  return pages
+}
+
+const undergradTotalPages = computed(() => Math.ceil(undergradTotal.value / undergradPageSize.value))
+const universityTotalPages = computed(() => Math.ceil(universityTotal.value / universityPageSize.value))
+const undergradPages = computed(() => buildPages(undergradTotal.value, undergradPageSize.value, undergradPage.value))
+const universityPages = computed(() => buildPages(universityTotal.value, universityPageSize.value, universityPage.value))
+
 function goMajor(id: string) {
   emit('update:visible', false)
   router.push(`/major/${id}`)
@@ -148,53 +171,50 @@ watch(() => props.visible, (val) => {
     <div v-loading="loading" class="min-h-[300px]">
       <template v-if="detail">
         <!-- Header -->
-        <div class="flex items-center gap-3 mb-6 flex-wrap">
+        <div class="flex items-center gap-3 mb-3 flex-wrap">
           <h3 class="text-xl font-bold text-gray-800">{{ detail.majorName }}</h3>
-          <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-600">{{ detail.degreeType }}</span>
-          <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs text-blue-600">{{ detail.popularity }}</span>
-          <span class="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs text-purple-600">难度: {{ detail.difficulty }}</span>
+          <span class="pill-new">{{ detail.degreeType }}</span>
+          <span class="pill-new">{{ detail.popularity }}</span>
+          <span class="pill-new">难度：{{ detail.difficulty }}</span>
         </div>
-        <p class="text-gray-400 font-mono text-sm mb-4">代码：{{ detail.majorCode }} | 门类：{{ detail.disciplineCategory }}</p>
+        <p class="text-sm text-gray-400 mb-4">代码：{{ detail.majorCode }} | 门类：{{ detail.disciplineCategory }}</p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <!-- Introduction -->
-          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
-            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">专业介绍</h4>
+          <section class="dlg-card p-4">
+            <h4 class="sec-title">专业介绍</h4>
             <p class="text-sm text-gray-600 leading-relaxed">{{ detail.introduction }}</p>
           </section>
 
           <!-- Exam Subjects -->
-          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
-            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">考试科目</h4>
+          <section class="dlg-card p-4">
+            <h4 class="sec-title">考试科目</h4>
             <div class="flex flex-wrap gap-2">
-              <span v-for="subj in detail.examSubjects" :key="subj"
-                class="rounded-lg bg-white px-3 py-1 text-sm text-gray-700 border border-orange-200"
-              >{{ subj }}</span>
+              <span v-for="subj in detail.examSubjects" :key="subj" class="chip">{{ subj }}</span>
             </div>
           </section>
 
           <!-- Admission Requirements -->
-          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
-            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">报考条件</h4>
-            <ul class="text-sm text-gray-600 space-y-1">
+          <section class="dlg-card p-4">
+            <h4 class="sec-title">报考条件</h4>
+            <ul class="text-sm text-gray-600 space-y-1.5">
               <li v-for="req in detail.admissionRequirements" :key="req" class="flex items-start gap-2">
-                <span class="text-orange-500 mt-0.5">•</span>{{ req }}
+                <span class="dot mt-1.5 shrink-0" />
+                <span>{{ req }}</span>
               </li>
             </ul>
           </section>
 
           <!-- Cross-exam Info -->
-          <section class="rounded-xl bg-gradient-to-b from-orange-50/70 to-white p-4 border border-orange-100">
-            <h4 class="mb-2 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">跨考信息</h4>
+          <section class="dlg-card p-4">
+            <h4 class="sec-title">跨考信息</h4>
             <div class="text-sm text-gray-600 space-y-2">
               <p><span class="font-medium text-gray-700">难度：</span>{{ detail.crossExamDifficulty }}</p>
               <p v-if="detail.crossExamDescription">{{ detail.crossExamDescription }}</p>
               <div v-if="detail.crossExamFactors?.length">
                 <span class="font-medium text-gray-700">影响因素：</span>
                 <div class="flex flex-wrap gap-2 mt-1">
-                  <span v-for="f in detail.crossExamFactors" :key="f"
-                    class="rounded-lg bg-white px-2.5 py-1 text-xs text-gray-600 border border-orange-200"
-                  >{{ f }}</span>
+                  <span v-for="f in detail.crossExamFactors" :key="f" class="chip text-xs">{{ f }}</span>
                 </div>
               </div>
             </div>
@@ -202,24 +222,24 @@ watch(() => props.visible, (val) => {
         </div>
 
         <!-- Undergraduate Majors -->
-        <section class="rounded-xl border border-orange-100 bg-gradient-to-b from-orange-50/70 to-white p-4 mb-4">
-          <h4 class="mb-3 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">关联本科专业</h4>
+        <section class="dlg-card p-4 mb-4">
+          <h4 class="sec-title">关联本科专业</h4>
           <template v-if="isPro">
             <div v-loading="undergradLoading" class="min-h-[100px]">
               <div v-if="undergraduateMajors.length" class="space-y-4">
                 <div v-for="group in groupedUndergrad" :key="group.category">
                   <div class="mb-2 flex items-center gap-2">
-                    <span class="rounded-full bg-orange-100 px-3 py-0.5 text-xs font-medium text-orange-600">{{ group.category }}</span>
+                    <span class="pill-new">{{ group.category }}</span>
                     <span class="text-xs text-gray-400">{{ group.items.length }} 个</span>
                   </div>
                   <div class="space-y-2">
                     <div
                       v-for="m in group.items" :key="m.id"
-                      class="flex items-center justify-between rounded-lg bg-white px-4 py-3 hover:bg-orange-50/70 cursor-pointer transition-colors border border-orange-100"
+                      class="row-card flex items-center justify-between px-4 py-3 cursor-pointer"
                       @click="goMajor(m.id)"
                     >
                       <span class="text-sm font-medium text-gray-800">{{ m.majorName }}</span>
-                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-4 h-4 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
@@ -228,27 +248,40 @@ watch(() => props.visible, (val) => {
               </div>
               <div v-else-if="!undergradLoading" class="py-8 text-center text-gray-400 text-sm">暂无关联本科专业数据</div>
             </div>
-            <div v-if="undergradTotal > undergradPageSize" class="mt-4 flex justify-center">
-              <el-pagination
-                background small layout="prev, pager, next"
-                :total="undergradTotal" :page-size="undergradPageSize" :current-page="undergradPage"
-                @current-change="onUndergradPageChange"
-              />
+            <!-- 手写分页 -->
+            <div v-if="undergradTotalPages > 1" class="mt-4 flex items-center justify-center gap-1.5">
+              <button class="pager-btn" :disabled="undergradPage === 1" @click="onUndergradPageChange(undergradPage - 1)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <template v-for="(p, i) in undergradPages" :key="`ug-${p}-${i}`">
+                <span v-if="p === '...'" class="w-8 h-8 flex items-center justify-center text-gray-400 text-sm">...</span>
+                <button
+                  v-else
+                  class="pager-btn"
+                  :class="p === undergradPage ? 'pager-active' : ''"
+                  @click="onUndergradPageChange(p as number)"
+                >{{ p }}</button>
+              </template>
+              <button class="pager-btn" :disabled="undergradPage === undergradTotalPages" @click="onUndergradPageChange(undergradPage + 1)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </template>
           <template v-else>
-            <div class="rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 p-6 text-center border border-orange-100">
+            <div class="upgrade-block p-6 text-center">
               <p class="text-sm text-gray-600 mb-3">开通专业版，查看可报考该考研方向的本科专业</p>
-              <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
-                @click="router.push('/profile')"
-              >立即升级</button>
+              <button class="btn-pill" @click="router.push('/profile')">立即升级</button>
             </div>
           </template>
         </section>
 
         <!-- Universities Section -->
-        <section class="rounded-xl border border-orange-100 bg-gradient-to-b from-orange-50/70 to-white p-4">
-          <h4 class="mb-3 inline-flex items-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-0.5 text-xs font-semibold text-white">开设院校</h4>
+        <section class="dlg-card p-4">
+          <h4 class="sec-title">开设院校</h4>
           <template v-if="isPro">
             <div class="mb-3">
               <el-select v-model="universityCategory" placeholder="院校类型" clearable filterable class="!w-40" @change="universityPage = 1; fetchUniversities()">
@@ -259,13 +292,13 @@ watch(() => props.visible, (val) => {
               <div v-if="universities.length" class="space-y-2">
                 <div
                   v-for="uni in universities" :key="uni.id"
-                  class="flex items-center justify-between rounded-lg bg-white px-4 py-3 hover:bg-orange-50/70 cursor-pointer transition-colors border border-orange-100"
+                  class="row-card flex items-center justify-between px-4 py-3 cursor-pointer"
                   @click="goUniversity(uni.id)"
                 >
                   <span class="text-sm font-medium text-gray-800">{{ uni.name }}</span>
                   <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400">{{ uni.category }}</span>
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="text-xs text-gray-500">{{ uni.category }}</span>
+                    <svg class="w-4 h-4 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -273,20 +306,33 @@ watch(() => props.visible, (val) => {
               </div>
               <div v-else-if="!universityLoading" class="py-8 text-center text-gray-400 text-sm">暂无开设院校数据</div>
             </div>
-            <div v-if="universityTotal > universityPageSize" class="mt-4 flex justify-center">
-              <el-pagination
-                background small layout="prev, pager, next"
-                :total="universityTotal" :page-size="universityPageSize" :current-page="universityPage"
-                @current-change="onPageChange"
-              />
+            <!-- 手写分页 -->
+            <div v-if="universityTotalPages > 1" class="mt-4 flex items-center justify-center gap-1.5">
+              <button class="pager-btn" :disabled="universityPage === 1" @click="onPageChange(universityPage - 1)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <template v-for="(p, i) in universityPages" :key="`uni-${p}-${i}`">
+                <span v-if="p === '...'" class="w-8 h-8 flex items-center justify-center text-gray-400 text-sm">...</span>
+                <button
+                  v-else
+                  class="pager-btn"
+                  :class="p === universityPage ? 'pager-active' : ''"
+                  @click="onPageChange(p as number)"
+                >{{ p }}</button>
+              </template>
+              <button class="pager-btn" :disabled="universityPage === universityTotalPages" @click="onPageChange(universityPage + 1)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </template>
           <template v-else>
-            <div class="rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 p-6 text-center border border-orange-100">
+            <div class="upgrade-block p-6 text-center">
               <p class="text-sm text-gray-600 mb-3">开通专业版，查看开设该考研专业的院校列表</p>
-              <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
-                @click="router.push('/profile')"
-              >立即升级</button>
+              <button class="btn-pill" @click="router.push('/profile')">立即升级</button>
             </div>
           </template>
         </section>
@@ -317,5 +363,131 @@ watch(() => props.visible, (val) => {
 .postgrad-dialog .el-dialog__body {
   padding-top: 12px;
   background: linear-gradient(180deg, rgba(255, 247, 237, 0.45) 0%, #fff 100%);
+}
+
+/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
+.postgrad-dialog .dlg-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
+  border-top-width: 3px;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+}
+
+/* ===== 区域标题：橙渐变药丸 + 白字 ===== */
+.postgrad-dialog .sec-title {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.15rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+/* ===== 橙系药丸标签 ===== */
+.postgrad-dialog .pill-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8722a;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+/* ===== 内层小卡（考试科目 / 影响因素） ===== */
+.postgrad-dialog .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  background: linear-gradient(160deg, #fffdf9, #fff7ed);
+  border: 1px solid rgba(249, 115, 22, 0.18);
+}
+
+/* ===== 列表圆点 ===== */
+.postgrad-dialog .dot {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+}
+
+/* ===== 可点击行卡：浅橙渐变底 + hover 上浮 ===== */
+.postgrad-dialog .row-card {
+  border-radius: 0.75rem;
+  background: linear-gradient(160deg, #fffdf9, #fff7ed);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  transition: all 0.2s ease;
+}
+.postgrad-dialog .row-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 6px 18px rgba(249, 115, 22, 0.12);
+}
+
+/* ===== 会员引导块：虚线橙描边 ===== */
+.postgrad-dialog .upgrade-block {
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(251, 146, 60, 0.06));
+  border: 1px dashed rgba(249, 115, 22, 0.35);
+}
+
+/* ===== 橙渐变药丸按钮 ===== */
+.postgrad-dialog .btn-pill {
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.28);
+  transition: all 0.2s ease;
+}
+.postgrad-dialog .btn-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
+}
+
+/* ===== 手写分页 ===== */
+.postgrad-dialog .pager-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  transition: all 0.2s ease;
+}
+.postgrad-dialog .pager-btn:hover:not(:disabled) {
+  color: #e8722a;
+  border-color: rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.06);
+}
+.postgrad-dialog .pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.postgrad-dialog .pager-active {
+  background: linear-gradient(135deg, #f97316, #fb923c) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.28);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getUniversityDetail } from '@/api/university'
 import type { UniversityDetailVO } from '@/types/university'
@@ -26,6 +26,33 @@ const tabs = [
   { key: 'channel', label: '特殊通道', iconClass: 'channel' },
   { key: 'admission', label: '录取数据', iconClass: 'admission' },
 ]
+
+/** 排行榜英文 key → 中文名称 */
+const RANKING_LABELS: Record<string, string> = {
+  ruanke: '软科排名',
+  xiaoyouhui: '校友会排名',
+  wushulian: '武书连排名',
+  qs: 'QS排名',
+  usnews: 'U.S.NEWS排名',
+}
+/** 展示顺序（未在表中的 key 追加到末尾） */
+const RANKING_ORDER = ['ruanke', 'xiaoyouhui', 'wushulian', 'qs', 'usnews']
+
+const rankingList = computed(() => {
+  const raw = detail.value?.rankings
+  if (!raw) return []
+  return Object.entries(raw)
+    .map(([key, value]) => ({
+      key,
+      label: RANKING_LABELS[String(key).toLowerCase()] || key,
+      value,
+    }))
+    .sort((a, b) => {
+      const ai = RANKING_ORDER.indexOf(String(a.key).toLowerCase())
+      const bi = RANKING_ORDER.indexOf(String(b.key).toLowerCase())
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+    })
+})
 
 async function fetchDetail() {
   const id = route.params.id as string
@@ -56,7 +83,7 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
+  <div class="min-h-screen flex flex-col">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
       <!-- 骨架屏 -->
       <template v-if="loading && !detail">
@@ -73,7 +100,7 @@ onMounted(fetchDetail)
         <div class="mb-8 rounded-2xl skeleton aspect-[16/9]" />
 
         <!-- 基本信息骨架 -->
-        <div class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60 space-y-4" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <div class="univ-card mb-8 rounded-2xl p-6 space-y-4" >
           <div class="h-8 skeleton w-48 rounded" />
           <div class="h-4 skeleton w-24 rounded" />
           <div class="flex gap-2">
@@ -90,7 +117,7 @@ onMounted(fetchDetail)
         </div>
 
         <!-- 详细信息骨架 -->
-        <div class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60 space-y-4" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <div class="univ-card mb-8 rounded-2xl p-6 space-y-4" >
           <div class="h-5 skeleton w-24 rounded" />
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div v-for="i in 9" :key="i" class="space-y-1">
@@ -101,7 +128,7 @@ onMounted(fetchDetail)
         </div>
 
         <!-- 介绍骨架 -->
-        <div class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60 space-y-3" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <div class="univ-card mb-8 rounded-2xl p-6 space-y-3" >
           <div class="h-5 skeleton w-20 rounded" />
           <div class="h-4 skeleton w-full rounded" />
           <div class="h-4 skeleton w-3/4 rounded" />
@@ -135,7 +162,7 @@ onMounted(fetchDetail)
         </div>
 
         <!-- 轮播图 -->
-        <div v-if="detail.carouselImages?.length" class="mb-8 rounded-2xl shadow-card border border-gray-100/60 overflow-hidden" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <div v-if="detail.carouselImages?.length" class="univ-card mb-8 overflow-hidden" >
           <el-carousel height="420px" indicator-position="outside" arrow="always">
             <el-carousel-item v-for="(img, idx) in detail.carouselImages" :key="idx">
               <img :src="img" :alt="`${detail.name} ${idx + 1}`" class="h-full w-full object-cover" />
@@ -144,11 +171,11 @@ onMounted(fetchDetail)
         </div>
 
         <!-- 基本信息 -->
-        <section class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <section class="univ-card mb-8 rounded-2xl p-6" >
           <h2 class="mb-4 text-3xl font-bold text-gray-800">{{ detail.name }}</h2>
           <p v-if="detail.nameEn" class="mb-4 text-gray-400">{{ detail.nameEn }}</p>
           <div class="flex flex-wrap gap-2 mb-4">
-            <span v-for="tag in detail.tags" :key="tag" class="pill pill-orange text-xs">{{ tag }}</span>
+            <span v-for="tag in detail.tags" :key="tag" class="pill-new text-xs">{{ tag }}</span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-base">
             <div class="flex items-center gap-2">
@@ -216,7 +243,7 @@ onMounted(fetchDetail)
         </section>
 
         <!-- 详细信息 -->
-        <section class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <section class="univ-card mb-8 rounded-2xl p-6" >
           <h3 class="mb-4 text-xl font-bold text-gray-800">详细信息</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-base">
             <div class="flex items-center gap-2">
@@ -279,18 +306,18 @@ onMounted(fetchDetail)
               <div><span class="text-gray-400">男女比例：</span><span class="text-gray-700">{{ detail.genderRatio || '-' }}</span></div>
             </div>
           </div>
-          <div v-if="detail.rankings && Object.keys(detail.rankings).length" class="mt-4">
+          <div v-if="rankingList.length" class="mt-4">
             <span class="text-gray-400">排行榜：</span>
             <div class="mt-2 flex flex-wrap gap-3">
-              <span v-for="(val, key) in detail.rankings" :key="key" class="pill pill-gold text-xs">
-                {{ key }}: 第 {{ val }} 名
+              <span v-for="item in rankingList" :key="item.key" class="pill-new text-xs">
+                {{ item.label }}：第 {{ item.value }} 名
               </span>
             </div>
           </div>
         </section>
 
         <!-- 院校介绍 -->
-        <section class="mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <section class="univ-card mb-8 rounded-2xl p-6" >
           <div class="flex items-center gap-3 mb-4">
             <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
             <h3 class="text-xl font-bold text-gray-800">院校介绍</h3>
@@ -300,13 +327,13 @@ onMounted(fetchDetail)
 
         <!-- Tab 导航 -->
         <section class="mb-8 flex justify-center">
-          <div class="inline-flex items-center gap-2 rounded-2xl shadow-card border border-gray-100/60 p-1.5" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+          <div class="univ-card inline-flex items-center gap-2 p-1.5" >
             <button
               v-for="tab in tabs"
               :key="tab.key"
               class="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2"
               :class="activeTab === tab.key
-                ? 'bg-gradient-to-r from-brand-orange to-brand-orange-light text-white shadow-brand'
+                ? 'tab-active'
                 : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
               @click="activeTab = tab.key"
             >
@@ -340,7 +367,7 @@ onMounted(fetchDetail)
         </section>
 
         <!-- Tab 内容区 -->
-        <section class="min-h-[200px] mb-8 rounded-2xl p-6 shadow-card border border-gray-100/60" :style="{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 30%, #e5e7eb 50%, #f3f4f6 70%, #ffffff 100%) !important' }">
+        <section class="univ-card min-h-[200px] mb-8 rounded-2xl p-6" >
           <Transition name="fade" mode="out-in">
             <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="route.params.id as string" />
             <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="route.params.id as string" />
@@ -378,6 +405,46 @@ onMounted(fetchDetail)
 </template>
 
 <style scoped>
+/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
+.univ-card {
+  /* !important 覆盖 .app-shell main > * 的透底规则（卡片是 main 直接子） */
+  background: #ffffff !important;
+  background-image: none !important;
+  border-radius: 1rem;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
+  border-top-width: 3px;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+  transition: all 0.25s ease;
+}
+
+/* ===== 橙系药丸标签 ===== */
+.pill-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8722a;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+/* ===== Tab 激活态：新 token 橙渐变 ===== */
+.tab-active {
+  background: linear-gradient(90deg, #f97316, #fb923c) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.28);
+}
+
+/* ===== 按钮 token 覆盖（本页生效，不动全局） ===== */
+.btn-brand {
+  background: linear-gradient(90deg, #f97316, #fb923c) !important;
+  border-color: transparent !important;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;

@@ -42,7 +42,8 @@ async function fetchList() {
 }
 
 function goDetail(labId: string) {
-  router.push(`/university/laboratory/${labId}`)
+  // 带上来源院校 ID，详情页「返回院校」可精确回跳
+  router.push({ path: `/university/laboratory/${labId}`, query: { from: props.universityId } })
 }
 
 function onPageChange(p: number) {

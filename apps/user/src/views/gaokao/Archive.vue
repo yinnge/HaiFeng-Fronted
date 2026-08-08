@@ -7,6 +7,7 @@ import {
   getReformModel,
   getRank,
   getBatchLines,
+  getGaokaoYears,
   saveArchive,
   getArchive,
   matchConstraints,
@@ -109,6 +110,9 @@ const showRank = computed(() => {
   return !!form.subjectType && !!form.score && form.score > 0
 })
 
+// 位次数据实际来源年份（当年无数据回溯时非空且与所选年份不同）
+const rankDataYear = ref<number | null>(null)
+
 // 折叠状态
 const showScores = ref(false)
 const showBodyCondition = ref(false)
@@ -124,11 +128,34 @@ const archiveId = ref<string | null>(null)
 const constraintList = ref<ConstraintItem[]>([])
 const constraintLoading = ref(false)
 
-// 年份选项
-const yearOptions = Array.from({ length: 11 }, (_, i) => {
-  const year = new Date().getFullYear() - 5 + i
-  return { value: year, label: `${year}年` }
-})
+// 年份选项（优先走后端 /years 动态获取，失败回退本地生成最近5年）
+const yearOptions = ref<{ value: number; label: string }[]>([])
+
+function buildLocalYearOptions(): { value: number; label: string }[] {
+  const currentYear = new Date().getFullYear()
+  return Array.from({ length: 5 }, (_, i) => {
+    const year = currentYear - 4 + i
+    return { value: year, label: `${year}年` }
+  })
+}
+
+async function loadYears() {
+  try {
+    const res = await getGaokaoYears()
+    const years = res.data.data
+    const currentYear = new Date().getFullYear()
+    yearOptions.value = (Array.isArray(years) ? years : [])
+      .filter(y => Number.isFinite(y))
+      .sort((a, b) => a - b)
+      .filter(y => y >= currentYear - 5 && y <= currentYear + 1)
+      .map(y => ({ value: y, label: `${y}年` }))
+    if (yearOptions.value.length === 0) {
+      yearOptions.value = buildLocalYearOptions()
+    }
+  } catch {
+    yearOptions.value = buildLocalYearOptions()
+  }
+}
 
 // 外语语种选项
 const foreignLanguageOptions = [
@@ -196,6 +223,7 @@ watch(
   () => [form.gaokaoProvince, form.gaokaoYear, form.subjectType, form.score],
   ([province, year, subjectType, score]) => {
     if (rankTimer) clearTimeout(rankTimer)
+    rankDataYear.value = null
     if (!province || !year || !subjectType || !score) return
     rankTimer = setTimeout(async () => {
       try {
@@ -207,6 +235,7 @@ watch(
         })
         if (res.data.data) {
           form.rank = res.data.data.rank
+          rankDataYear.value = res.data.data.dataYear ?? null
         }
       } catch (e) {
         // 位次查询失败静默处理
@@ -440,7 +469,15 @@ function goPlans() {
   router.push('/gaokao/plans')
 }
 
-onMounted(loadArchive)
+onMounted(async () => {
+  await loadYears()
+  if (yearOptions.value.length > 0 && !yearOptions.value.some(o => o.value === form.gaokaoYear)) {
+    const latest = yearOptions.value[yearOptions.value.length - 1].value
+    form.gaokaoYear = latest
+    form.batchDataYear = latest
+  }
+  await loadArchive()
+})
 </script>
 
 <template>
@@ -478,26 +515,24 @@ onMounted(loadArchive)
           <div class="h-1 bg-gradient-to-r from-brand-orange to-brand-orange-light" />
           <div class="p-6">
             <h2 class="text-base font-semibold text-gray-800 mb-5">基础信息</h2>
-          <div class="space-y-5">
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考年份 *</label>
-              <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="w-full">
-                <el-option v-for="opt in yearOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
+            <div class="space-y-5">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考年份 *</label>
+                <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="w-full">
+                  <el-option v-for="opt in yearOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+                </el-select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考省份 *</label>
+                <el-select v-model="form.gaokaoProvince" placeholder="选择省份" filterable class="w-full">
+                  <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+                </el-select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考总分 *</label>
+                <el-input-number v-model="form.score" :min="0" :max="750" class="w-full" />
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考省份 *</label>
-              <el-select v-model="form.gaokaoProvince" placeholder="选择省份" filterable class="w-full">
-                <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考总分 *</label>
-              <el-input-number v-model="form.score" :min="0" :max="750" class="w-full" />
-            </div>
-          </div>
-        </div>
-
           </div>
         </div>
 
@@ -552,7 +587,9 @@ onMounted(loadArchive)
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">位次 *</label>
             <el-input-number v-model="form.rank" :min="0" class="w-full" />
             <p class="text-xs text-gray-400 mt-1">填写总分后系统将自动查询位次，也可手动修改</p>
+            <p v-if="rankDataYear && rankDataYear !== form.gaokaoYear" class="text-xs text-brand-orange mt-1">位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份）</p>
           </div>
+        </div>
         </div>
 
         <!-- 批次信息 -->
@@ -782,8 +819,7 @@ onMounted(loadArchive)
               >
                 进入报志愿 →
               </button>
-            </div>
-          </div>
+</div>
         </div>
 
         <!-- 约束匹配结果 -->
@@ -795,6 +831,7 @@ onMounted(loadArchive)
             <div class="w-2 h-2 rounded-full bg-brand-orange animate-bounce" style="animation-delay: 300ms" />
           </div>
           <ConstraintDisplay v-else :constraints="constraintList" />
+        </div>
         </div>
         </div>
 

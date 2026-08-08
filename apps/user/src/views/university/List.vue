@@ -120,7 +120,7 @@ onMounted(fetchList)
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
+  <div class="min-h-screen flex flex-col">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
       <!-- 顶部操作栏 -->
       <div class="flex justify-between items-center mb-6">
@@ -142,7 +142,7 @@ onMounted(fetchList)
       </div>
 
       <!-- 搜索栏 -->
-      <div class="rounded-2xl bg-white p-6 shadow-card border border-gray-100/60 mb-6">
+      <div class="univ-card mb-6 p-6">
         <div class="flex items-end gap-4 flex-wrap">
           <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">院校名称</label>
@@ -226,7 +226,7 @@ onMounted(fetchList)
 
       <!-- 骨架屏 -->
       <div v-if="loading && list.length === 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="i in 6" :key="i" class="rounded-2xl border border-gray-100/60 bg-white shadow-card overflow-hidden">
+        <div v-for="i in 6" :key="i" class="univ-card overflow-hidden">
           <div class="aspect-[16/9] skeleton" />
           <div class="p-5 space-y-3">
             <div class="flex items-center justify-between">
@@ -258,7 +258,7 @@ onMounted(fetchList)
             <div
               v-for="(item, index) in list"
               :key="item.id"
-              class="group rounded-2xl bg-white border border-gray-100/60 shadow-card overflow-hidden transition-all duration-300 ease-out hover:shadow-card-hover hover:-translate-y-0.5"
+              class="group univ-card univ-card-hover overflow-hidden"
               :style="{ animationDelay: `${index * 80}ms` }"
             >
               <div class="aspect-[16/9] overflow-hidden bg-gray-50">
@@ -272,10 +272,10 @@ onMounted(fetchList)
               <div class="p-5">
                 <div class="flex items-start justify-between mb-2">
                   <h3 class="text-lg font-bold text-gray-800 truncate">{{ item.name }}</h3>
-                  <span class="shrink-0 pill pill-orange text-xs ml-2">{{ item.nature }}</span>
+                  <span class="shrink-0 pill-new text-xs ml-2">{{ item.nature }}</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5 mb-3">
-                  <span v-for="tag in item.tags" :key="tag" class="pill pill-blue text-xs">
+                  <span v-for="tag in item.tags" :key="tag" class="pill-new text-xs">
                     {{ tag }}
                   </span>
                 </div>
@@ -337,7 +337,7 @@ onMounted(fetchList)
 
       <!-- 自定义分页 -->
       <div v-if="total > pageSize" class="mt-8 flex justify-center">
-        <div class="inline-flex items-center gap-1 bg-white rounded-2xl shadow-card border border-gray-100/60 p-1.5">
+        <div class="inline-flex items-center gap-1 univ-card p-1.5">
           <button
             class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200"
             :class="currentPage <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
@@ -355,7 +355,7 @@ onMounted(fetchList)
               v-else
               class="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-200"
               :class="p === currentPage
-                ? 'bg-gradient-to-br from-brand-orange to-brand-orange-light text-white shadow-brand'
+                ? 'pager-active'
                 : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
               @click="handlePageChange(p as number)"
             >
@@ -396,6 +396,53 @@ onMounted(fetchList)
 </template>
 
 <style scoped>
+/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
+.univ-card {
+  /* !important 覆盖 .app-shell main > * 的透底规则（卡片是 main 直接子） */
+  background: #ffffff !important;
+  background-image: none !important;
+  border-radius: 1rem;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
+  border-top-width: 3px;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+  transition: all 0.25s ease;
+}
+
+/* 可点击卡片 hover：上浮 + 橙阴影增强（列表卡专用） */
+.univ-card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 34px rgba(249, 115, 22, 0.14);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+/* ===== 橙系药丸标签：浅橙渐变底 + 深橙字 + 橙描边 ===== */
+.pill-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8722a;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+/* ===== 分页当前页：新 token 橙渐变 ===== */
+.pager-active {
+  background: linear-gradient(135deg, #f97316, #fb923c) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.28);
+}
+
+/* ===== 按钮 token 覆盖（本页生效，不动全局） ===== */
+.btn-brand {
+  background: linear-gradient(90deg, #f97316, #fb923c) !important;
+  border-color: transparent !important;
+}
+
 .list-enter-active,
 .list-leave-active {
   transition: all 0.3s ease;
