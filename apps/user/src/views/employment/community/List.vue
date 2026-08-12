@@ -3,8 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
 import EmploymentTabs from '@/components/employment/EmploymentTabs.vue'
 import { getCommunityList } from '@/api/employment/community'
@@ -15,8 +13,8 @@ const router = useRouter()
 const keyword = ref('')
 const positionType = ref('')
 const employmentType = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
+const province = ref('')
+const city = ref('')
 const educationRequirement = ref('')
 const majorRequirement = ref('')
 const politicalStatus = ref('')
@@ -24,6 +22,7 @@ const workExperience = ref('')
 const positionStatus = ref('')
 
 const positionTypeOptions = ['社区党务工作者', '社区服务工作者', '社区网格员', '社区调解员', '社区安全员', '社区文化专干', '社会工作师', '综合岗', '其他']
+const provinceOptions = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
 const employmentTypeOptions = ['事业编制', '合同制', '政府购买服务', '公益性岗位']
 const educationOptions = ['不限', '高中', '大专', '本科', '硕士']
 const politicalStatusOptions = ['中共党员', '共青团员', '群众', '不限']
@@ -40,11 +39,11 @@ function buildParams(): CommunityQueryDTO {
   return {
     page: page.value,
     size: pageSize.value,
-    positionName: keyword.value || undefined,
+    keyword: keyword.value || undefined,
     positionType: positionType.value || undefined,
     employmentType: employmentType.value || undefined,
-    province: regionValue.value[0] || undefined,
-    city: regionValue.value[1] || undefined,
+    province: province.value || undefined,
+    city: city.value || undefined,
     educationRequirement: educationRequirement.value || undefined,
     majorRequirement: majorRequirement.value || undefined,
     politicalStatus: politicalStatus.value || undefined,
@@ -78,7 +77,8 @@ function onReset() {
   keyword.value = ''
   positionType.value = ''
   employmentType.value = ''
-  regionValue.value = []
+  province.value = ''
+  city.value = ''
   educationRequirement.value = ''
   majorRequirement.value = ''
   politicalStatus.value = ''
@@ -124,7 +124,7 @@ function formatDateRange(start: string, end: string): string {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || positionType.value || employmentType.value || regionValue.value.length > 0 || educationRequirement.value || majorRequirement.value || politicalStatus.value || workExperience.value || positionStatus.value)
+  return !!(keyword.value || positionType.value || employmentType.value || province.value || city.value || educationRequirement.value || majorRequirement.value || politicalStatus.value || workExperience.value || positionStatus.value)
 })
 
 onMounted(fetchList)
@@ -161,7 +161,10 @@ onMounted(fetchList)
             <el-select v-model="employmentType" placeholder="用工形式" clearable class="!w-[150px]" @change="onSearch">
               <el-option v-for="opt in employmentTypeOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市" clearable class="!w-[200px]" @change="onSearch" />
+            <el-select v-model="province" placeholder="省份" clearable class="!w-[130px]" @change="onSearch">
+              <el-option v-for="opt in provinceOptions" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <input v-model="city" type="text" placeholder="城市" class="!w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in educationOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>

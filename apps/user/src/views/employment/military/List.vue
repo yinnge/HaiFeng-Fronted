@@ -6,8 +6,6 @@ import { useUserStore } from '@/store/modules/user'
 import { getMilitaryList } from '@/api/employment/military'
 import type { MilitaryPositionListVO, MilitaryPositionSearchDTO } from '@/types/employment/military'
 import { MilitaryStatusTag } from '@/types/employment/military'
-import { buildRegionOptions } from '@/utils/regionCascader'
-import type { CascaderOption } from '@/utils/regionCascader'
 import ContentDrawer from '@/components/employment/ContentDrawer.vue'
 import EmploymentTabs from '@/components/employment/EmploymentTabs.vue'
 
@@ -15,8 +13,6 @@ const router = useRouter()
 
 const keyword = ref('')
 const positionType = ref('')
-const regionValue = ref<string[]>([])
-const regionOptions: CascaderOption[] = buildRegionOptions()
 const majorRequirement = ref('')
 const educationRequirement = ref('')
 const positionStatus = ref('')
@@ -37,7 +33,6 @@ function buildParams(): MilitaryPositionSearchDTO {
     size: pageSize.value,
     keyword: keyword.value || undefined,
     positionType: positionType.value || undefined,
-    workLocation: regionValue.value.join(' ') || undefined,
     majorRequirement: majorRequirement.value || undefined,
     educationRequirement: educationRequirement.value || undefined,
     positionStatus: positionStatus.value || undefined,
@@ -62,7 +57,7 @@ async function fetchList() {
 
 function onSearch() { page.value = 1; fetchList() }
 function onReset() {
-  keyword.value = ''; positionType.value = ''; regionValue.value = []
+  keyword.value = ''; positionType.value = ''
   majorRequirement.value = ''; educationRequirement.value = ''; positionStatus.value = ''
   page.value = 1; fetchList()
 }
@@ -82,7 +77,7 @@ async function goDetail(id: string) {
 }
 
 const isFilterActive = computed(() => {
-  return !!(keyword.value || positionType.value || regionValue.value.length > 0 || majorRequirement.value || educationRequirement.value || positionStatus.value)
+  return !!(keyword.value || positionType.value || majorRequirement.value || educationRequirement.value || positionStatus.value)
 })
 
 onMounted(fetchList)
@@ -114,7 +109,6 @@ onMounted(fetchList)
             <el-select v-model="positionType" placeholder="岗位类型" clearable class="!w-[140px]" @change="onSearch">
               <el-option v-for="opt in positionTypeOptions" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <el-cascader v-model="regionValue" :options="regionOptions" placeholder="省份/城市" clearable class="!w-[200px]" @change="onSearch" />
             <input v-model="majorRequirement" type="text" placeholder="专业要求" class="!w-[130px] rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors" @keyup.enter="onSearch" />
             <el-select v-model="educationRequirement" placeholder="学历要求" clearable class="!w-[150px]" @change="onSearch">
               <el-option v-for="opt in educationOptions" :key="opt" :label="opt" :value="opt" />

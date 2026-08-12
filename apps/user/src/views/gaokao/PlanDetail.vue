@@ -419,12 +419,12 @@ function goToPdfHistory() {
                 <div class="relative">
                   <span
                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white shadow-md transition-transform duration-200 group-hover:scale-105"
-                    :class="`bg-gradient-to-br ${safetyGradientMap[group.levelShort] || 'from-gray-400 to-gray-500'}`"
+                    :class="`bg-gradient-to-br ${safetyGradientMap[group.levelShort ?? ''] || 'from-gray-400 to-gray-500'}`"
                   >
                     {{ group.levelShort }}
                   </span>
                 </div>
-                <span class="mt-1 text-[10px] font-medium text-gray-500 tabular-nums">{{ (group.safetyLevel * 100).toFixed(0) }}%</span>
+                <span class="mt-1 text-[10px] font-medium text-gray-500 tabular-nums">{{ ((group.safetyLevel ?? 0) * 100).toFixed(0) }}%</span>
               </div>
 
               <!-- 中：院校信息 -->

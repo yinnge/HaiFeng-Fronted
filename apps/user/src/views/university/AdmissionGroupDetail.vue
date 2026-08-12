@@ -76,16 +76,21 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <main class="container mx-auto px-6 py-8" v-loading="loading">
+  <div class="min-h-screen flex flex-col">
+    <main class="flex-1 container mx-auto px-6 py-8" v-loading="loading">
       <!-- VIP 引导卡片 -->
-      <div v-if="!isVip && !detail && !loading" class="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 p-8 text-center border border-orange-100 shadow-lg max-w-lg mx-auto">
-        <div class="mb-4 text-5xl">🔒</div>
+      <div v-if="!isVip && !detail && !loading" class="univ-card rounded-2xl p-8 text-center max-w-lg mx-auto">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-orange-500">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+        </div>
         <h3 class="mb-2 text-xl font-bold text-gray-800">开通 VIP 查看录取数据</h3>
         <p class="mb-6 text-gray-500">查看专业录取明细、分数线、位次等详细数据</p>
         <div class="flex justify-center gap-4">
           <button
-            class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-3 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+            class="btn-brand rounded-full px-8 py-3 text-white font-medium transition-all shadow-lg shadow-orange-200"
             @click="userStore.isLoggedIn() ? goVip() : goLogin()"
           >
             {{ userStore.isLoggedIn() ? '立即开通 VIP' : '前往登录' }}
@@ -95,10 +100,10 @@ onMounted(fetchDetail)
 
       <template v-if="detail">
         <!-- 专业组基本信息 -->
-        <section class="mb-6 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+        <section class="univ-card mb-6 p-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-2xl font-bold text-gray-800">{{ detail.groupName }}</h2>
-            <span class="rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-600">{{ detail.year }}年</span>
+            <span class="pill-new text-sm">{{ detail.year }}年</span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
             <div><span class="text-gray-400">院校：</span><span class="text-gray-700">{{ detail.universityName }}</span></div>
@@ -111,8 +116,8 @@ onMounted(fetchDetail)
           <div v-if="detail.subjects?.length" class="mb-3">
             <span class="text-sm text-gray-400">选科要求：</span>
             <div class="mt-1 flex flex-wrap gap-2">
-              <span v-for="sub in detail.subjects" :key="sub" class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs text-blue-600">{{ sub }}</span>
-              <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-500">{{ detail.requirementType }}</span>
+              <span v-for="sub in detail.subjects" :key="sub" class="pill-new text-xs">{{ sub }}</span>
+              <span class="pill-new text-xs">{{ detail.requirementType }}</span>
             </div>
           </div>
           <div v-if="detail.constraints?.length" class="mb-3">
@@ -123,34 +128,34 @@ onMounted(fetchDetail)
         </section>
 
         <!-- 分数概览 -->
-        <section class="mb-6 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+        <section class="univ-card mb-6 p-6">
           <h3 class="text-lg font-bold text-gray-800 mb-4">录取分数概览</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="rounded-xl bg-orange-50 p-4 text-center">
+            <div class="stat-card rounded-xl p-4 text-center">
               <div class="text-xs text-gray-400 mb-1">最低分</div>
               <div class="text-2xl font-bold text-orange-600">{{ detail.minScore }}</div>
               <div class="text-xs text-gray-400">位次 {{ detail.minRank }}</div>
             </div>
-            <div class="rounded-xl bg-amber-50 p-4 text-center">
+            <div class="stat-card rounded-xl p-4 text-center">
               <div class="text-xs text-gray-400 mb-1">最高分</div>
-              <div class="text-2xl font-bold text-amber-600">{{ detail.maxScore }}</div>
+              <div class="text-2xl font-bold text-orange-600">{{ detail.maxScore }}</div>
               <div class="text-xs text-gray-400">位次 {{ detail.maxRank }}</div>
             </div>
-            <div class="rounded-xl bg-blue-50 p-4 text-center">
+            <div class="stat-card rounded-xl p-4 text-center">
               <div class="text-xs text-gray-400 mb-1">平均分</div>
-              <div class="text-2xl font-bold text-blue-600">{{ detail.avgScore }}</div>
+              <div class="text-2xl font-bold text-orange-600">{{ detail.avgScore }}</div>
               <div class="text-xs text-gray-400">位次 {{ detail.avgRank }}</div>
             </div>
-            <div class="rounded-xl bg-green-50 p-4 text-center">
+            <div class="stat-card rounded-xl p-4 text-center">
               <div class="text-xs text-gray-400 mb-1">录取人数</div>
-              <div class="text-2xl font-bold text-green-600">{{ detail.admissionCount }}</div>
+              <div class="text-2xl font-bold text-orange-600">{{ detail.admissionCount }}</div>
               <div class="text-xs text-gray-400">{{ detail.majorCount }} 个专业</div>
             </div>
           </div>
         </section>
 
         <!-- 专业录取明细表格 -->
-        <section class="mb-6 rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
+        <section class="univ-card mb-6 p-6">
           <h3 class="text-lg font-bold text-gray-800 mb-4">专业录取明细</h3>
           <div v-loading="scoresLoading">
             <el-table v-if="scores.length" :data="scores" stripe style="width: 100%" size="small">
@@ -180,7 +185,7 @@ onMounted(fetchDetail)
               </el-table-column>
               <el-table-column prop="constraints" label="约束" min-width="100">
                 <template #default="{ row }">
-                  <span v-if="row.constraints?.length" v-for="c in row.constraints" :key="c" class="mr-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{{ c }}</span>
+                  <span v-if="row.constraints?.length" v-for="c in row.constraints" :key="c" class="pill-new text-xs mr-1">{{ c }}</span>
                   <span v-else class="text-gray-400">-</span>
                 </template>
               </el-table-column>
@@ -190,7 +195,7 @@ onMounted(fetchDetail)
         </section>
 
         <!-- 时间信息 -->
-        <section class="mb-6 rounded-2xl bg-white p-4 shadow-md border border-gray-100">
+        <section class="univ-card mb-6 p-4">
           <div class="flex gap-6 text-xs text-gray-400">
             <span>创建时间：{{ detail.createdAt?.slice(0, 10) }}</span>
             <span>更新时间：{{ detail.updatedAt?.slice(0, 10) }}</span>
@@ -200,3 +205,44 @@ onMounted(fetchDetail)
     </main>
   </div>
 </template>
+
+<style scoped>
+/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
+.univ-card {
+  /* !important 覆盖 .app-shell main > * 的透底规则（卡片是 main 直接子） */
+  background: #ffffff !important;
+  background-image: none !important;
+  border-radius: 1rem;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
+  border-top-width: 3px;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+  transition: all 0.25s ease;
+}
+
+/* ===== 橙系药丸标签 ===== */
+.pill-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e8722a;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+/* ===== 统计数字卡：浅橙渐变底 ===== */
+.stat-card {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+/* ===== 主按钮 token 覆盖（本页生效，不动全局） ===== */
+.btn-brand {
+  background: linear-gradient(90deg, #f97316, #fb923c) !important;
+  border-color: transparent !important;
+}
+</style>

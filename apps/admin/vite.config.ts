@@ -24,6 +24,7 @@ export default defineConfig({
       '@haifeng/shared': resolve(__dirname, '../../packages/shared/src'),
     },
   },
+  base: '/admin/',
   server: {
     port: 3000,
     open: true,

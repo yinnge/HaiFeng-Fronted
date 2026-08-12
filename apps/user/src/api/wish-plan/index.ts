@@ -54,6 +54,10 @@ export interface WishPlanGroupVO {
   recommendationYear: number
   recommendationRate: number
   allExported?: boolean
+  /** 组级安全等级（0~1），取组内专业快照 safetyLevel 最大值 */
+  safetyLevel?: number
+  /** 组级等级简写（搏/冲/稳/保/垫/禁） */
+  levelShort?: string
 }
 
 export interface WishPlanMajorVO {
@@ -100,7 +104,7 @@ export interface WishPlanExportFileVO {
 export const getDefaultLimits = () =>
   request.get<R<WishPlanLimitVO>>(`${PREFIX}/default-limits`)
 
-export const addMajors = (data: { planId: string | null; groupId: string; majorIds: string[] }) =>
+export const addMajors = (data: { planId: string | null; groupId: string; majorIds: string[]; planName?: string | null }) =>
   request.post<R<WishPlanListVO>>(`${PREFIX}/add-majors`, data)
 
 export const getMyPlans = () =>
