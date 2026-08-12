@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import type { AdmissionGroupVO, ConstraintCheckResult } from '@/api/gaokao'
+
+const recharge = useRechargeDialog()
 
 const props = defineProps<{
   group: AdmissionGroupVO
@@ -199,7 +202,7 @@ const cardClass = computed(() => {
           </svg>
         </div>
         <p class="text-sm text-gray-500 mb-2">升级会员查看完整数据</p>
-        <span class="text-xs text-brand-orange font-semibold cursor-pointer hover:underline">立即升级</span>
+        <span class="text-xs text-brand-orange font-semibold cursor-pointer hover:underline" @click="recharge.open()">立即升级</span>
       </div>
     </div>
   </div>

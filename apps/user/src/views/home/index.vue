@@ -7,6 +7,7 @@ import type { SiteInfoVO, AnnouncementListVO, AnnouncementDetailVO, PlannerListV
 import { ProvinceOptions, MemberType } from '@haifeng/shared'
 import { useUserStore } from '@/store/modules/user'
 import PlannerCard from './components/PlannerCard.vue'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import AnnouncementWheel from './components/AnnouncementWheel.vue'
 import AnnouncementDetailPanel from './components/AnnouncementDetailPanel.vue'
 
@@ -59,6 +60,7 @@ const animateStats = () => {
 
 let observer: IntersectionObserver | null = null
 
+const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -122,7 +124,7 @@ const openExpertDialog = async () => {
         cancelButtonText: '取消',
         type: 'warning',
       })
-      router.push('/profile')
+      recharge.open()
     } catch {
       // 取消开通
     }

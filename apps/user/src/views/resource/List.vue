@@ -7,6 +7,9 @@ import { getResourceList, getResourceCategories, getResourceUrl } from '@/api/re
 import type { ResourceListVO, ResourceQueryDTO, ResourceUrlVO } from '@/types/resource'
 import { useUserStore } from '@/store'
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -94,7 +97,7 @@ async function handleDownload(id: string) {
           cancelButtonText: '取消',
           type: 'warning',
         })
-        router.push('/profile')
+        recharge.open()
       } catch { /* 用户取消 */ }
       return
     }

@@ -5,8 +5,10 @@ import { useUserStore } from '@/store/modules/user'
 import { getAdmissionGroupDetail, getMajorScores } from '@/api/university'
 import { MemberType } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import type { AdmissionGroupDetailVO, MajorScoreVO } from '@/types/university'
 
+const recharge = useRechargeDialog()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -67,7 +69,7 @@ function goLogin() {
 }
 
 function goVip() {
-  router.push('/profile')
+  recharge.open()
 }
 
 onMounted(fetchDetail)

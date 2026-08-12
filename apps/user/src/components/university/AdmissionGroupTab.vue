@@ -6,10 +6,12 @@ import { getAdmissionGroupPage } from '@/api/university'
 import { ProvinceOptions } from '@haifeng/shared'
 import { MemberType } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import type { AdmissionGroupListVO, AdmissionGroupQueryDTO } from '@/types/university'
 
-const props = defineProps<{ universityId: string }>()
+const recharge = useRechargeDialog()
 const router = useRouter()
+const props = defineProps<{ universityId: string }>()
 const userStore = useUserStore()
 
 const loading = ref(false)
@@ -84,7 +86,7 @@ function goLogin() {
 }
 
 function goVip() {
-  router.push('/profile')
+  recharge.open()
 }
 
 onMounted(() => {

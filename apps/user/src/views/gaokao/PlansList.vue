@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { useSelectionStore } from '@/store/modules/selection'
 import {
   getDefaultLimits,
@@ -15,6 +16,7 @@ import {
 
 const router = useRouter()
 const userStore = useUserStore()
+const recharge = useRechargeDialog()
 const selectionStore = useSelectionStore()
 
 const loading = ref(false)
@@ -62,11 +64,13 @@ onMounted(async () => {
 async function handleCreate() {
   if (plans.value.length >= maxPlans) {
     const typeName = userStore.userInfo?.memberType === 'vip' ? 'VIP' : userStore.userInfo?.memberType === 'pro' ? 'Pro' : '普通'
-    ElMessageBox.alert(
+    ElMessageBox.confirm(
       `当前${typeName}会员最多允许 ${maxPlans} 个志愿表，请删除旧方案或升级会员`,
       '已达上限',
-      { confirmButtonText: '我知道了', type: 'warning' }
-    )
+      { confirmButtonText: '立即升级', cancelButtonText: '取消', type: 'warning' }
+    ).then(() => {
+      recharge.open()
+    }).catch(() => {})
     return
   }
 
