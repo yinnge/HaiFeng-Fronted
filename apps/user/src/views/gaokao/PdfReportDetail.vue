@@ -15,11 +15,13 @@ import {
 import { renderMarkdown } from '@/utils/markdown'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 import { useUserStore } from '@/store/modules/user'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
 const router = useRouter()
 const route = useRoute()
 const recordId = route.params.recordId as string
 const userStore = useUserStore()
+const recharge = useRechargeDialog()
 
 const loading = ref(true)
 const record = ref<PdfRecordDetailVO | null>(null)
@@ -113,11 +115,13 @@ async function handleDownload() {
 
 async function handleRegenerate() {
   if (!isVip.value) {
-    ElMessageBox.alert(
-      '重新生成报告需要VIP会员，请先升级',
+    ElMessageBox.confirm(
+      '重新生成报告需要VIP会员，是否前往开通？',
       '功能受限',
-      { confirmButtonText: '我知道了', type: 'warning' }
-    )
+      { confirmButtonText: '立即升级', cancelButtonText: '取消', type: 'warning' }
+    ).then(() => {
+      recharge.open()
+    }).catch(() => {})
     return
   }
   const word = record.value?.status === 1

@@ -5,8 +5,10 @@ import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 import { getPostgradMajorsByUniversity } from '@/api/postgrad-major'
 import type { PostgradMajorBriefVO } from '@/types/postgrad-major'
 import { useUserStore } from '@/store'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { MemberType } from '@haifeng/shared'
 
+const recharge = useRechargeDialog()
 const props = defineProps<{
   universityId: string
 }>()
@@ -120,6 +122,12 @@ onMounted(() => {
         </svg>
         <h3 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看该校考研专业</h3>
         <p class="text-gray-500 mb-4">包含学术学位与专业学位硕士研究生招生专业信息</p>
+        <button
+          class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
+          @click="recharge.open()"
+        >
+          立即升级
+        </button>
       </div>
     </template>
 

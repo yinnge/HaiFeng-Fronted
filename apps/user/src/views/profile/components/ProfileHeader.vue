@@ -6,6 +6,7 @@ import { MemberTypeLabel, MemberTypeTag } from '@haifeng/shared'
 import type { MemberInfoVO } from '@/types/member/info'
 import type { MemberProfileVO } from '@/types/member/profile'
 import logoMain from '@/assets/images/logo-main.png'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
 const props = defineProps<{
   memberInfo: MemberInfoVO | null
@@ -14,8 +15,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update-avatar'): void
-  (e: 'open-upgrade'): void
 }>()
+
+const recharge = useRechargeDialog()
 
 const memberTypeLabel = computed(() => {
   if (!props.memberInfo) return ''
@@ -117,7 +119,7 @@ function handleAvatarClick() {
         <div class="stat-value">{{ profile?.favoriteCount || 0 }}</div>
         <div class="stat-label">我的收藏</div>
       </div>
-      <button class="upgrade-btn" @click="emit('open-upgrade')">
+      <button class="upgrade-btn" @click="recharge.open()">
         <svg class="upgrade-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
         </svg>
