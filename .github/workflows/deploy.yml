@@ -2,7 +2,7 @@ name: Deploy Frontend
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
@@ -15,6 +15,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm' # 缓存 pnpm 依赖
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -23,7 +24,7 @@ jobs:
         run: pnpm install
 
       - name: Build Project
-        run: pnpm build # 确保你的 package.json 里有 build 脚本
+        run: pnpm build # 这会递归构建所有子项目
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.0
@@ -33,20 +34,32 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            # 在服务器上创建目录
+            # 在服务器上创建目录（如果不存在）
             mkdir -p /opt/haifeng/dist/user
             mkdir -p /opt/haifeng/dist/admin
 
-      - name: Copy Files via SCP
+      - name: Copy User Files via SCP
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "dist/*" # 本地构建产物的路径
-          target: "/opt/haifeng/dist" # 服务器目标路径
-          strip_components: 1 # 去掉路径前缀，确保文件落位正确
+          source: "apps/user/dist/*"
+          target: "/opt/haifeng/dist/user"
+          strip_components: 2
+          overwrite: true
+
+      - name: Copy Admin Files via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "apps/admin/dist/*"
+          target: "/opt/haifeng/dist/admin"
+          strip_components: 2
           overwrite: true
 
       - name: Restart Nginx
