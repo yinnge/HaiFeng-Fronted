@@ -51,7 +51,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           source: "apps/user/dist/*"
           target: "/opt/haifeng/dist/user"
-          strip_components: 2
+          strip_components: 3
           overwrite: true
 
       - name: Copy Admin Files via SCP
@@ -63,7 +63,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           source: "apps/admin/dist/*"
           target: "/opt/haifeng/dist/admin"
-          strip_components: 2
+          strip_components: 3
           overwrite: true
 
       - name: Restart Nginx
