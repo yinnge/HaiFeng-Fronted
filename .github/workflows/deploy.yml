@@ -2,7 +2,7 @@ name: Deploy Frontend
 
 on:
   push:
-    branches: [ "main" ] # 只保留 main 分支，如果你的分支叫 master，请自行修改
+    branches: [ "main" ] # 确保你的分支名是 main，如果是 master 请修改
 
 jobs:
   build-and-deploy:
@@ -14,17 +14,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: '24' # 使用 Node 24，解决弃用警告
+          cache: '' # 不在此处设置缓存，由后续步骤处理
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        uses: pnpm/action-setup@v4 # 使用 pnpm 官方 action 安装 pnpm
+        with:
+          version: 10 # 安装 pnpm 10.x
+          run_install: false # 不自动安装依赖，由后续步骤控制
+          cache: true # 启用 pnpm store 缓存
+          cache_dependency_path: 'pnpm-lock.yaml' # 指定锁文件路径
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile # 使用冻结锁文件模式，确保一致性
 
       - name: Build Project
-        run: pnpm build
+        run: pnpm build # 递归构建所有子项目
 
       - name: Prepare Server Directories
         uses: appleboy/ssh-action@v1.0.0
@@ -70,5 +75,5 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd /opt/haifeng
-            # 仅重启 Nginx 容器，不要执行构建命令！
+            # 仅重启 Nginx 容器，不要执行后端构建命令！
             docker compose -f docker-compose.prod.yml restart nginx
