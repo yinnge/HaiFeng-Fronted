@@ -8,6 +8,9 @@ import { useUserStore } from '@/store'
 import { MemberType } from '@haifeng/shared'
 import { Motion } from 'motion-v'
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -400,7 +403,7 @@ onMounted(() => {
             <h3 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看完整薪资就业排行</h3>
             <p class="text-gray-500 mb-4">包含各专业薪资水平、就业率排名等深度数据</p>
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-              @click="router.push('/profile')"
+              @click="recharge.open()"
             >
               立即升级
             </button>

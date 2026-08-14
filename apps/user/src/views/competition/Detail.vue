@@ -7,6 +7,9 @@ import { getCompetitionDetail, getCompetitionMajors } from '@/api/certificate'
 import type { CompetitionDetailVO, CompetitionMajorBriefVO } from '@/types/certificate'
 import { useUserStore } from '@/store'
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -234,7 +237,7 @@ onMounted(() => {
                     <p class="text-gray-500 mb-4">了解该竞赛适合哪些本科专业报考</p>
                     <button
                       class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-                      @click="router.push('/profile')"
+                      @click="recharge.open()"
                     >
                       立即升级
                     </button>

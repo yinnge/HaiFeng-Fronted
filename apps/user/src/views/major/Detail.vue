@@ -11,6 +11,9 @@ import { getMajorPostgradDirections } from '@/api/major'
 import type { PostgradMajorDirectionBriefVO } from '@/types/postgrad-major'
 import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const route = useRoute()
 
@@ -266,7 +269,7 @@ onMounted(() => {
                     <p class="text-gray-500 mb-4">了解该本科专业可以报考哪些研究生专业</p>
                     <button
                       class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-                      @click="router.push('/profile')"
+                      @click="recharge.open()"
                     >
                       立即升级
                     </button>
@@ -308,7 +311,7 @@ onMounted(() => {
                     <p class="text-gray-500 mb-4">了解该专业适合参加哪些学科竞赛</p>
                     <button
                       class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-                      @click="router.push('/profile')"
+                      @click="recharge.open()"
                     >
                       立即升级
                     </button>

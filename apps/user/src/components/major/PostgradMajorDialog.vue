@@ -17,6 +17,9 @@ const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
 }>()
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -274,7 +277,9 @@ watch(() => props.visible, (val) => {
           <template v-else>
             <div class="upgrade-block p-6 text-center">
               <p class="text-sm text-gray-600 mb-3">开通专业版，查看可报考该考研方向的本科专业</p>
-              <button class="btn-pill" @click="router.push('/profile')">立即升级</button>
+              <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
+                @click="recharge.open()"
+              >立即升级</button>
             </div>
           </template>
         </section>
@@ -332,7 +337,9 @@ watch(() => props.visible, (val) => {
           <template v-else>
             <div class="upgrade-block p-6 text-center">
               <p class="text-sm text-gray-600 mb-3">开通专业版，查看开设该考研专业的院校列表</p>
-              <button class="btn-pill" @click="router.push('/profile')">立即升级</button>
+              <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
+                @click="recharge.open()"
+              >立即升级</button>
             </div>
           </template>
         </section>

@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import {
   getPlanGroups,
   getPlanGroupMajors,
@@ -20,6 +21,7 @@ import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const recharge = useRechargeDialog()
 
 const planId = route.params.id as string
 
@@ -265,11 +267,13 @@ async function handleExport() {
 function handleAiAnalysis() {
   const mt = userStore.userInfo?.memberType || 'normal'
   if (mt !== 'pro' && mt !== 'vip') {
-    ElMessageBox.alert(
-      'AI智能分析需要Pro或VIP会员，请先升级',
+    ElMessageBox.confirm(
+      'AI智能分析需要Pro或VIP会员，是否前往开通？',
       '功能受限',
-      { confirmButtonText: '我知道了', type: 'warning' }
-    )
+      { confirmButtonText: '立即升级', cancelButtonText: '取消', type: 'warning' }
+    ).then(() => {
+      recharge.open()
+    }).catch(() => {})
     return
   }
   showGenerateDialog.value = true

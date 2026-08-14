@@ -10,13 +10,10 @@ import AccountInfo from './components/AccountInfo.vue'
 import CommissionPanel from './components/CommissionPanel.vue'
 import NotificationPanel from './components/NotificationPanel.vue'
 import AvatarSelector from './components/AvatarSelector.vue'
-import RechargeDialog from './components/RechargeDialog.vue'
 import type { MemberInfoVO } from '@/types/member/info'
 import type { MemberProfileVO } from '@/types/member/profile'
-import type { SiteInfoVO } from '@/types/home'
 import { getProfile } from '@/api/member/profile'
 import { getMemberInfo } from '@/api/member/info'
-import { getSiteInfo } from '@/api/home'
 import { useUserStore } from '@/store'
 
 const route = useRoute()
@@ -24,7 +21,6 @@ const userStore = useUserStore()
 const activeTab = ref('profile')
 const memberInfo = ref<MemberInfoVO | null>(null)
 const profile = ref<MemberProfileVO | null>(null)
-const siteInfo = ref<SiteInfoVO | null>(null)
 const loading = ref(false)
 
 async function loadData() {
@@ -48,15 +44,6 @@ async function loadData() {
   }
 }
 
-async function loadSiteInfo() {
-  try {
-    const res = await getSiteInfo()
-    siteInfo.value = res.data.data
-  } catch {
-    // 静默处理
-  }
-}
-
 function handleRefresh() {
   loadData()
 }
@@ -73,12 +60,6 @@ function handleAvatarUpdated() {
   loadData()
 }
 
-const showUpgradeDialog = ref(false)
-
-function handleOpenUpgrade() {
-  showUpgradeDialog.value = true
-}
-
 watch(
   () => route.query.tab,
   (tab) => {
@@ -91,7 +72,6 @@ watch(
 
 onMounted(() => {
   loadData()
-  loadSiteInfo()
 })
 </script>
 
@@ -109,7 +89,6 @@ onMounted(() => {
           :member-info="memberInfo"
           :profile="profile"
           @update-avatar="handleUpdateAvatar"
-          @open-upgrade="handleOpenUpgrade"
         />
 
         <!-- Tab 切换 + 内容区 -->
@@ -136,12 +115,6 @@ onMounted(() => {
       v-model:visible="showAvatarSelector"
       :current-avatar="currentAvatar"
       @updated="handleAvatarUpdated"
-    />
-
-    <RechargeDialog
-      v-model:visible="showUpgradeDialog"
-      :member-info="memberInfo"
-      :site-info="siteInfo"
     />
   </div>
 </template>

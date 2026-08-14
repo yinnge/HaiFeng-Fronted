@@ -6,6 +6,9 @@ import { getPositions, getEnterpriseIndustries, getEnterpriseDetail } from '@/ap
 import type { EnterprisePositionVO, EnterpriseIndustryGroupVO } from '@/types/enterprise'
 import { Motion } from 'motion-v'
 
+import { useRechargeDialog } from '@/composables/useRechargeDialog'
+
+const recharge = useRechargeDialog()
 const router = useRouter()
 const route = useRoute()
 
@@ -251,7 +254,7 @@ onMounted(() => {
               <div v-else class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
                 <p class="text-sm text-gray-600">
                   🔒 升级
-                  <router-link to="/profile" class="text-orange-500 font-semibold hover:underline">专业版</router-link>
+                  <span class="text-orange-500 font-semibold hover:underline cursor-pointer" @click="recharge.open()">专业版</span>
                   可查看企业关联行业信息
                 </p>
               </div>
