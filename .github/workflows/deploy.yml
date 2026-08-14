@@ -1,14 +1,67 @@
-name: Deploy Backend
+name: Deploy Frontend
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ] # 只保留 main 分支，如果你的分支叫 master，请自行修改
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Server
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Project
+        run: pnpm build
+
+      - name: Prepare Server Directories
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            mkdir -p /opt/haifeng/dist/user
+            mkdir -p /opt/haifeng/dist/admin
+
+      - name: Copy User Files via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "apps/user/dist/*"
+          target: "/opt/haifeng/dist/user"
+          strip_components: 2
+          overwrite: true
+
+      - name: Copy Admin Files via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "apps/admin/dist/*"
+          target: "/opt/haifeng/dist/admin"
+          strip_components: 2
+          overwrite: true
+
+      - name: Restart Nginx
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -17,22 +70,5 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd /opt/haifeng
-            
-            # 1. 拉取最新代码
-            git pull --rebase origin master
-            
-            # 2. 重新构建 haifeng-admin 镜像（单独执行，避免并行）
-            docker compose -f docker-compose.prod.yml build haifeng-admin
-            
-            # 3. 重新构建 haifeng-app 镜像（单独执行，避免并行）
-            docker compose -f docker-compose.prod.yml build haifeng-app
-            
-            # 4. 重启 haifeng-admin 容器
-            docker compose -f docker-compose.prod.yml up -d haifeng-admin
-            
-            # 5. 重启 haifeng-app 容器
-            docker compose -f docker-compose.prod.yml up -d haifeng-app
-            
-            # 6. 清理旧镜像（可选，节省空间）
-            docker image prune -f
-          timeout: 90m # 设置为 90 分钟，给构建留出足够时间
+            # 仅重启 Nginx 容器，不要执行构建命令！
+            docker compose -f docker-compose.prod.yml restart nginx
