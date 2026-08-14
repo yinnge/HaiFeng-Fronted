@@ -20,7 +20,6 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4 # 使用 pnpm 官方 action 安装 pnpm
         with:
-          version: 10 # 安装 pnpm 10.x
           run_install: false # 不自动安装依赖，由后续步骤控制
           cache: true # 启用 pnpm store 缓存
           cache_dependency_path: 'pnpm-lock.yaml' # 指定锁文件路径
