@@ -53,6 +53,7 @@ declare module 'vue' {
     ElUpload: typeof import('element-plus/es')['ElUpload']
     JsonbArrayEditor: typeof import('./components/JsonbArrayEditor.vue')['default']
     JsonbObjectEditor: typeof import('./components/JsonbObjectEditor.vue')['default']
+    LottiePlayer: typeof import('./components/ui/LottiePlayer.vue')['default']
     Particles: typeof import('./components/ui/Particles.vue')['default']
     ReportForm: typeof import('./components/ReportForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

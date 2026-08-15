@@ -16,7 +16,6 @@ body {
   width: 100%;
   min-height: 100%;
   font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -55,12 +54,6 @@ html {
 #app > * {
   background-color: transparent !important;
   background-image: none !important;
-}
-
-/* 修复弹窗打开时右侧滚动条消失、页面左右抖动的问题 */
-body.el-popup-parent--hidden {
-  width: 100% !important;
-  overflow: hidden;
 }
 
 /* 自定义滚动条 */

@@ -120,6 +120,9 @@ importers:
       motion-v:
         specifier: ^2.2.1
         version: 2.2.1(@vueuse/core@14.3.0(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
+      ogl:
+        specifier: ^1.0.11
+        version: 1.0.11
       pinia:
         specifier: ^2.1.7
         version: 2.3.1(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3))
@@ -1583,6 +1586,9 @@ packages:
   object.assign@4.1.7:
     resolution: {integrity: sha512-nK28WOo+QIjBkDduTINE4JkF/UJJKyf2EJxvJKfblDpyg0Q+pkOHNTL0Qwy6NP6FhE/EnzV73BxxqcJaXY9anw==}
     engines: {node: '>= 0.4'}
+
+  ogl@1.0.11:
+    resolution: {integrity: sha512-kUpC154AFfxi16pmZUK4jk3J+8zxwTWGPo03EoYA8QPbzikHoaC82n6pNTbd+oEaJonaE8aPWBlX7ad9zrqLsA==}
 
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElDialog } from 'element-plus'
+import { ElMessage, ElMessageBox, ElDialog } from 'element-plus'
 import { getChannelDetail, getChannelUniversityList, getChannelUniversityDetail } from '@/api/special'
 import { ProvinceOptions } from '@haifeng/shared'
+import { useUserStore } from '@/store/modules/user'
 import type { SpecialChannelDetailVO, ChannelUniversityListVO, ChannelUniversityDetailVO } from '@/types/special'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 const loading = ref(false)
 const detail = ref<SpecialChannelDetailVO | null>(null)
@@ -75,15 +77,29 @@ function onUnivPageChange(page: number) {
   fetchUniversityList()
 }
 
-async function viewUnivDetail(universityId: string) {
+async function viewUnivDetail(channelUnivId: string) {
+  // 详情接口需登录(@RequireLogin)，未登录时友好引导而非直接发请求触发拦截器强制跳转
+  if (!userStore.isLoggedIn()) {
+    try {
+      await ElMessageBox.confirm(
+        '查看该大学特殊通道详情需要登录，是否前往登录？',
+        '登录提示',
+        { confirmButtonText: '去登录', cancelButtonText: '取消', type: 'info' },
+      )
+      userStore.setRedirectPath(route.fullPath)
+      router.push('/login')
+    } catch {
+      /* 用户取消，留在原页 */
+    }
+    return
+  }
   univDetailLoading.value = true
-  showUnivDialog.value = true
   try {
-    const res = await getChannelUniversityDetail(universityId)
+    const res = await getChannelUniversityDetail(channelUnivId)
     univDetail.value = res.data.data
+    showUnivDialog.value = true
   } catch (e: any) {
-    ElMessage.error(e?.message || '获取关联大学详情失败')
-    showUnivDialog.value = false
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取关联大学详情失败')
   } finally {
     univDetailLoading.value = false
   }
@@ -175,7 +191,7 @@ onMounted(async () => {
                 </p>
                 <button
                   class="w-full rounded-lg border border-orange-200 py-1.5 text-sm text-orange-500 font-medium hover:bg-orange-50 transition-all"
-                  @click="viewUnivDetail(String(item.universityId))"
+                  @click="viewUnivDetail(String(item.id))"
                 >
                   查看详情
                 </button>

@@ -27,6 +27,8 @@ export interface SpecialChannelDetailVO {
 
 // ==== Channel-University Association (通道-大学关联) ====
 export interface ChannelUniversityListVO {
+  /** 通道-大学关联记录主键，详情接口据此定位 */
+  id: string
   universityId: string
   universityName: string
   year: number
