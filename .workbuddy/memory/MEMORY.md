@@ -37,3 +37,13 @@
 | 768~1700px | 桌面 nav +「更多」折叠 | ✅ |
 | ≥1700px | 完整菜单 space-between | ✅ |
 | ≥2100px | 容器 max-width:2100 封顶，两侧留白（预期，非 bug） | ⚠️ |
+
+## 已知坑：详情页根容器背景被全局规则强制透出暖橙（2026-08-17）
+- `apps/user/src/assets/styles/index.css` 有 `.app-shell main > *, #app > * { background-color: transparent !important; background-image: none !important; }`，**路由组件根 `<div>` 的背景被强制透明**，透出 `html` 的暖橙画布（`#fff7ed` 径向渐变）。
+- 后果：详情页根 div 写 `bg-gradient-to-b from-slate-50 to-white`（冷灰）**不会生效**，页面整体仍是暖橙底（与 `AGENTS.md`「白底透橘」画布一致）。
+- 真正呈现效果：「**暖橙底 + 白卡 + 橙 Hero**」——这就是专业详情页 `major/Detail.vue` 的实际观感（虽然代码写的也是冷灰，但被透明）。做 mockup 原型时**别用 widget 自带冷灰容器误导用户**，页面底色就是暖橙。
+- 用户体感"区分度好" = 暖橙底白卡对比清晰，**不是冷灰底**。做详情页标准：①根 div 不写背景（让它透出暖橙）；②内容卡用 `bg-white border-gray-100` 与背景拉开；③Hero 保留橙渐变做品牌。
+- **不要给根 div 加 `background: ... !important` 强行覆盖**——会破坏全局设计意图（白底透橘），且原型/mockup 画冷灰底是错的设计稿，应改 mockup 而不是改代码。
+- **重要补充（2026-08-17，踩坑）**：上面那条说"根容器透出暖橙"只是表面——**`.app-shell main > *` 选择器会命中详情页组件内部嵌套 `<main>` 的直接子 = 各张卡片**，强制 `background-color: transparent !important`，把卡片的 `bg-white` 直接压没（scoped 类的 specificity 高，但 `!important` > 普通规则 specificity，所以普通 `bg-white` 输）。结果用户看到的"暖橙卡片"其实是透明卡片 + 底层暖橙 html 画布。专业详情页也踩这个坑（所以"区分度好"其实是「暖橙底 + 白字内容」风格，并非真正的白卡）。
+- **修复**：在用户要求"卡片必须白"时，详情页里所有大块卡片（`.detail-card`/`.stat-card`/`.prospect-card`/`.major-card`/`.city-card`/`.team-card`/`.stage-badge` 等）必须在 `<style scoped>` 加 `background: #ffffff !important;`，压过全局 `transparent !important`。内层 `<main>` 本身透明没问题（让页面底色透出）。
+- **再补充（2026-08-17）**：Hero（`.lab-hero` / `.dept-hero` 等带渐变的"展示名称"section）**同样会被全局 `background-image: none !important` 清掉渐变**变成透明、透出 html 浅橙画布。要让 Hero 是真正的实心橙渐变（不是透出浅橙），必须给 Hero 的 `background: linear-gradient(...)` 加 `!important`。上一轮只给白色卡片加了 `!important`，漏了 Hero，导致 Hero 看起来是浅橙而不是品牌橙——切记**所有需要"实心背景"的区块（白卡 + 橙 Hero）一律 `!important`**。

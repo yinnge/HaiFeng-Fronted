@@ -146,6 +146,7 @@ watch(() => props.visible, (val) => {
     width="800px"
     top="5vh"
     destroy-on-close
+    append-to-body
     class="postgrad-dialog"
   >
     <div v-loading="loading" class="min-h-[300px]">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getUniversityDetail } from '@/api/university'
 import type { UniversityDetailVO } from '@/types/university'
@@ -53,6 +53,45 @@ function goGuide() {
 }
 
 onMounted(fetchDetail)
+
+// ===== 亮点数字滚动计数（纯展示动效，不触碰业务逻辑）=====
+const scoreAnim = reactive({
+  history: 0,
+  science: 0,
+  recommend: 0,
+  majors: 0,
+})
+
+function animateNumber(key: keyof typeof scoreAnim, target: number) {
+  const from = scoreAnim[key]
+  if (from === target) return
+  const duration = 700
+  const start = performance.now()
+  const step = (now: number) => {
+    const p = Math.min((now - start) / duration, 1)
+    const eased = 1 - Math.pow(1 - p, 3)
+    scoreAnim[key] = Math.round(from + (target - from) * eased)
+    if (p < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
+watch(detail, (d) => {
+  if (!d) return
+  animateNumber('history', d.historyGroupScore ?? 0)
+  animateNumber('science', d.scienceGroupScore ?? 0)
+  animateNumber('majors', d.majorCount ?? 0)
+  animateNumber('recommend', d.recommendationRate ?? 0)
+})
+
+// ===== 排行榜 key → 中文名 + 缩写 + 简称（纯展示映射，未知 key 兜底）=====
+const rankingMeta: Record<string, { name: string; abbr: string; short: string }> = {
+  qs: { name: 'QS 世界大学排名', abbr: 'QS', short: 'QS 世界大学' },
+  ruanke: { name: '软科中国大学排名', abbr: '软', short: '软科中国大学' },
+  usnews: { name: 'US News 世界大学排名', abbr: 'US', short: 'US News 世界' },
+  wushulian: { name: '武书连中国大学排名', abbr: '武', short: '武书连中国大学' },
+  xiaoyouhui: { name: '校友会中国大学排名', abbr: '校', short: '校友会中国大学' },
+}
 </script>
 
 <template>
@@ -60,303 +99,238 @@ onMounted(fetchDetail)
     <main class="flex-1 container mx-auto px-4 sm:px-6 py-8 max-w-6xl">
       <!-- 骨架屏 -->
       <template v-if="loading && !detail">
-        <div class="flex justify-between items-center mb-6">
-          <div class="space-y-2">
-            <div class="h-8 skeleton w-48 rounded" />
-            <div class="h-4 skeleton w-24 rounded" />
-          </div>
-          <div class="h-10 skeleton w-24 rounded-full" />
+        <div class="rounded-2xl overflow-hidden mb-6">
+          <div class="skeleton w-full h-[320px] rounded-2xl" />
         </div>
-        <div class="carousel-full skeleton aspect-[16/8] rounded-2xl mb-6" />
-        <div class="detail-layout">
-          <aside class="detail-aside">
-            <div class="name-card rounded-2xl shadow-card border-t-2 border-brand-orange p-5 space-y-3">
-              <div class="h-6 skeleton w-32 rounded" />
-              <div class="h-3 skeleton w-24 rounded" />
-              <div class="flex gap-2">
-                <div v-for="i in 3" :key="i" class="h-5 skeleton w-12 rounded-full" />
-              </div>
-              <div class="h-px bg-brand-orange/15" />
-              <div class="space-y-2.5">
-                <div v-for="i in 6" :key="i" class="h-3 skeleton w-full rounded" />
-              </div>
-              <div class="h-9 skeleton w-full rounded-full" />
-              <div class="h-9 skeleton w-full rounded-full" />
-            </div>
-          </aside>
-          <div class="detail-main space-y-6">
-            <div class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white space-y-4">
-              <div class="h-5 skeleton w-28 rounded" />
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div v-for="i in 9" :key="i" class="space-y-1.5">
-                  <div class="h-3 skeleton w-14 rounded" />
-                  <div class="h-4 skeleton w-20 rounded" />
-                </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div v-for="i in 4" :key="i" class="skeleton h-20 rounded-xl" />
+        </div>
+        <div class="space-y-6">
+          <div class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white space-y-4">
+            <div class="h-5 skeleton w-28 rounded" />
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div v-for="i in 9" :key="i" class="space-y-1.5">
+                <div class="h-3 skeleton w-14 rounded" />
+                <div class="h-4 skeleton w-20 rounded" />
               </div>
             </div>
-            <div class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white space-y-3">
-              <div class="h-5 skeleton w-20 rounded" />
-              <div v-for="i in 3" :key="i" class="h-3 skeleton rounded" :style="{ width: `${100 - i * 15}%` }" />
-            </div>
-            <div class="flex justify-center pt-2">
-              <div class="inline-flex gap-2">
-                <div v-for="i in 6" :key="i" class="h-10 skeleton w-20 rounded-full" />
-              </div>
-            </div>
+          </div>
+          <div class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white space-y-3">
+            <div class="h-5 skeleton w-20 rounded" />
+            <div v-for="i in 3" :key="i" class="h-3 skeleton rounded" :style="{ width: `${100 - i * 15}%` }" />
           </div>
         </div>
       </template>
 
       <template v-else-if="detail">
-        <!-- 顶部操作栏 -->
-        <div class="flex justify-between items-center mb-6 detail-topbar">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-800">{{ detail.name }}</h1>
-            <p class="text-sm text-gray-500 mt-1">{{ detail.nameEn || '院校详情' }}</p>
+        <!-- 沉浸式 Hero：校名/标签/档案/按钮叠加在大图横幅上 -->
+        <section class="hero relative rounded-2xl overflow-hidden shadow-card mb-6">
+          <template v-if="detail.carouselImages?.length">
+            <el-carousel height="360px" indicator-position="none" arrow="always" class="hero-carousel">
+              <el-carousel-item v-for="(img, idx) in detail.carouselImages" :key="idx">
+                <img :src="img" :alt="`${detail.name} ${idx + 1}`" class="h-full w-full object-cover" />
+              </el-carousel-item>
+            </el-carousel>
+          </template>
+          <div v-else class="hero-fallback" />
+
+          <!-- 渐隐遮罩，保证文字可读 -->
+          <div class="hero-mask" />
+
+          <!-- 叠加信息层 -->
+          <div class="hero-info">
+            <h1 class="hero-name">{{ detail.name }}</h1>
+            <p v-if="detail.nameEn" class="hero-name-en">{{ detail.nameEn }}</p>
+
+            <div v-if="detail.tags?.length" class="hero-tags">
+              <span v-for="tag in detail.tags" :key="tag" class="hero-tag">{{ tag }}</span>
+            </div>
+
+            <p
+              v-if="[detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).length"
+              class="hero-meta"
+            >
+              {{ [detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).join(' · ') }}
+            </p>
+
+            <div class="hero-actions">
+              <button class="hero-btn-ghost" @click="goBack">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                返回列表
+              </button>
+              <button class="hero-btn-solid" @click="goGuide">
+                查看适应指南
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <button
-            class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5"
-            @click="goBack"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            返回列表
-          </button>
-        </div>
+        </section>
 
-        <!-- 轮播图（全宽提顶） -->
-        <div v-if="detail.carouselImages?.length" class="carousel-full rounded-2xl shadow-card overflow-hidden mb-6">
-          <el-carousel height="360px" indicator-position="outside" arrow="always">
-            <el-carousel-item v-for="(img, idx) in detail.carouselImages" :key="idx">
-              <img :src="img" :alt="`${detail.name} ${idx + 1}`" class="h-full w-full object-cover" />
-            </el-carousel-item>
-          </el-carousel>
-        </div>
+        <!-- 亮点统计卡 -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="stat-card">
+            <p class="stat-label">历史组分数线</p>
+            <p class="stat-value">{{ detail.historyGroupScore ? scoreAnim.history : '-' }}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">物理组分数线</p>
+            <p class="stat-value">{{ detail.scienceGroupScore ? scoreAnim.science : '-' }}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">推荐率</p>
+            <p class="stat-value">{{ detail.recommendationRate ? `${scoreAnim.recommend}%` : '-' }}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">专业数</p>
+            <p class="stat-value">{{ detail.majorCount ? scoreAnim.majors : '-' }}</p>
+          </div>
+        </section>
 
-        <!-- 双栏布局：左内容流 + 右 sticky 名片 -->
-        <div class="detail-layout">
-          <!-- 右栏 sticky 院校名片（DOM 在前，移动端置顶） -->
-          <aside class="detail-aside">
-            <div class="name-card rounded-2xl shadow-card border-t-2 border-brand-orange overflow-hidden">
-              <div class="p-5 space-y-3.5">
-                <!-- 名称 -->
-                <div>
-                  <h2 class="text-2xl font-bold text-gray-800 leading-tight">{{ detail.name }}</h2>
-                  <p v-if="detail.nameEn" class="text-xs text-gray-400 mt-1">{{ detail.nameEn }}</p>
-                </div>
+        <!-- 单栏内容流 -->
+        <div class="space-y-6">
+          <!-- 详细信息 -->
+          <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+              <h3 class="text-xl font-bold text-gray-800">详细信息</h3>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3.5 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">所属联盟</span>
+                <span class="text-gray-700 font-medium">{{ detail.famousUnion || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-brand shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">博士点</span>
+                <span class="text-gray-700 font-medium">{{ detail.hasDoctorate ? '有' : '无' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-brand shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">硕士点</span>
+                <span class="text-gray-700 font-medium">{{ detail.hasMaster ? '有' : '无' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-brand shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">学历层次</span>
+                <span class="text-gray-700 font-medium">{{ detail.educationLevel || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">主管部门</span>
+                <span class="text-gray-700 font-medium">{{ detail.department || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">地址</span>
+                <span class="text-gray-700">{{ detail.address || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">招生电话</span>
+                <span class="text-gray-700">{{ detail.admissionPhone || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">官网</span>
+                <a v-if="detail.website" :href="detail.website" target="_blank" class="text-brand-orange hover:underline truncate">{{ detail.website }}</a>
+                <span v-else class="text-gray-700">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">推荐年份</span>
+                <span class="text-gray-700 font-medium">{{ detail.recommendationYear ?? '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">出国比例</span>
+                <span class="text-gray-700">{{ detail.abroadRate || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="dot-gray shrink-0" />
+                <span class="text-gray-400 w-20 shrink-0">男女比例</span>
+                <span class="text-gray-700 font-medium">{{ detail.genderRatio || '-' }}</span>
+              </div>
+            </div>
 
-                <!-- 标签 -->
-                <div v-if="detail.tags?.length" class="flex flex-wrap gap-1.5">
-                  <span v-for="tag in detail.tags" :key="tag" class="pill pill-orange text-xs">{{ tag }}</span>
-                </div>
-
-                <div class="h-px bg-brand-orange/15" />
-
-                <!-- 核心档案 -->
-                <div class="space-y-2.5">
-                  <p class="text-xs font-semibold text-brand-orange/80 tracking-wide">核心档案</p>
-                  <div v-if="detail.region" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">大区</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.region }}</span>
+            <!-- 排行榜 -->
+            <div v-if="detail.rankings && Object.keys(detail.rankings).length" class="mt-5 pt-4 border-t border-gray-100/80">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-1 h-3.5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                <p class="text-sm font-semibold text-gray-700">排行榜</p>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                <div v-for="(val, key) in detail.rankings" :key="key" class="rounded-lg bg-white border border-gray-200 px-2 py-3 text-center">
+                  <el-tooltip :content="rankingMeta[key]?.name || key" placement="top">
+                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-brand-gold-light text-white text-xs font-bold cursor-help shadow-md">{{ rankingMeta[key]?.abbr || key.slice(0, 1).toUpperCase() }}</span>
+                  </el-tooltip>
+                  <p class="mt-1.5 text-xs text-gray-700 leading-snug min-h-[28px] flex items-center justify-center">{{ rankingMeta[key]?.short || rankingMeta[key]?.name || key }}</p>
+                  <div class="mt-1 flex items-baseline justify-center gap-0.5">
+                    <span class="text-xl font-bold text-brand-orange tabular-nums">{{ val }}</span>
+                    <span class="text-xs text-gray-400">名</span>
                   </div>
-                  <div v-if="detail.provinceName" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">省份</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.provinceName }}</span>
-                  </div>
-                  <div v-if="detail.category" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">类型</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.category }}</span>
-                  </div>
-                  <div v-if="detail.nature" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">性质</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.nature }}</span>
-                  </div>
-                  <div v-if="detail.educationLevel" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">学历层次</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.educationLevel }}</span>
-                  </div>
-                  <div v-if="detail.department" class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 text-sm w-20 shrink-0">主管部门</span>
-                    <span class="text-gray-700 font-medium text-sm">{{ detail.department }}</span>
-                  </div>
-                </div>
-
-                <div class="h-px bg-brand-orange/15" />
-
-                <!-- 操作按钮 -->
-                <div class="space-y-2 pt-1">
-                  <button
-                    class="btn-secondary w-full px-4 py-2.5 text-sm flex items-center justify-center gap-1.5"
-                    @click="goBack"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    返回列表
-                  </button>
-                  <button
-                    class="btn-brand w-full px-4 py-2.5 text-sm flex items-center justify-center gap-1.5"
-                    @click="goGuide"
-                  >
-                    查看适应指南
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             </div>
-          </aside>
+          </section>
 
-          <!-- 左栏内容流 -->
-          <div class="detail-main space-y-6">
-            <!-- 详细信息 -->
-            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
-              <div class="flex items-center gap-3 mb-5">
-                <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                <h3 class="text-xl font-bold text-gray-800">详细信息</h3>
-              </div>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3.5 text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">所属联盟</span>
-                  <span class="text-gray-700 font-medium">{{ detail.famousUnion || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-brand shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">专业数</span>
-                  <span class="text-gray-700 font-medium num-pop">{{ detail.majorCount ?? '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-brand shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">博士点</span>
-                  <span class="text-gray-700 font-medium">{{ detail.hasDoctorate ? '有' : '无' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-brand shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">硕士点</span>
-                  <span class="text-gray-700 font-medium">{{ detail.hasMaster ? '有' : '无' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">地址</span>
-                  <span class="text-gray-700">{{ detail.address || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">招生电话</span>
-                  <span class="text-gray-700">{{ detail.admissionPhone || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">官网</span>
-                  <a v-if="detail.website" :href="detail.website" target="_blank" class="text-brand-orange hover:underline truncate">{{ detail.website }}</a>
-                  <span v-else class="text-gray-700">-</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gold shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">历史组分数线</span>
-                  <span class="text-brand-orange font-semibold num-pop">{{ detail.historyGroupScore ?? '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-blue shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">物理组分数线</span>
-                  <span class="text-brand-orange font-semibold num-pop">{{ detail.scienceGroupScore ?? '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gold shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">推荐率</span>
-                  <span class="text-brand-orange font-semibold num-pop">{{ detail.recommendationRate ? `${detail.recommendationRate}%` : '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">推荐年份</span>
-                  <span class="text-gray-700 font-medium">{{ detail.recommendationYear ?? '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">出国比例</span>
-                  <span class="text-gray-700">{{ detail.abroadRate || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="dot-gray shrink-0" />
-                  <span class="text-gray-400 w-20 shrink-0">男女比例</span>
-                  <span class="text-gray-700 font-medium">{{ detail.genderRatio || '-' }}</span>
-                </div>
-              </div>
+          <!-- 院校介绍 -->
+          <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+              <h3 class="text-xl font-bold text-gray-800">院校介绍</h3>
+            </div>
+            <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
+          </section>
 
-              <!-- 排行榜 -->
-              <div v-if="detail.rankings && Object.keys(detail.rankings).length" class="mt-5 pt-4 border-t border-gray-100/80">
-                <p class="text-xs text-gray-400 mb-2.5">排行榜</p>
-                <div class="flex flex-wrap gap-2">
-                  <span v-for="(val, key) in detail.rankings" :key="key" class="pill pill-gold text-xs">
-                    {{ key }}: 第 {{ val }} 名
-                  </span>
-                </div>
-              </div>
-            </section>
+          <!-- Tab 导航 -->
+          <section class="flex justify-center">
+            <div class="tab-bar inline-flex items-center gap-1 rounded-2xl shadow-card border border-gray-100/60 p-1.5 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
+              <button
+                v-for="tab in tabs"
+                :key="tab.key"
+                class="tab-btn"
+                :class="activeTab === tab.key ? 'tab-active' : 'tab-idle'"
+                @click="activeTab = tab.key"
+              >
+                <svg v-if="tab.iconClass === 'laboratory'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <svg v-else-if="tab.iconClass === 'postgrad'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <svg v-else-if="tab.iconClass === 'department'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <svg v-else-if="tab.iconClass === 'evaluation'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <svg v-else-if="tab.iconClass === 'channel'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <svg v-else-if="tab.iconClass === 'admission'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                {{ tab.label }}
+              </button>
+            </div>
+          </section>
 
-            <!-- 院校介绍 -->
-            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                <h3 class="text-xl font-bold text-gray-800">院校介绍</h3>
-              </div>
-              <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
-            </section>
-
-            <!-- Tab 导航 -->
-            <section class="flex justify-center">
-              <div class="tab-bar inline-flex items-center gap-1 rounded-2xl shadow-card border border-gray-100/60 p-1.5 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white">
-                <button
-                  v-for="tab in tabs"
-                  :key="tab.key"
-                  class="tab-btn"
-                  :class="activeTab === tab.key ? 'tab-active' : 'tab-idle'"
-                  @click="activeTab = tab.key"
-                >
-                  <svg v-if="tab.iconClass === 'laboratory'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                  </svg>
-                  <svg v-else-if="tab.iconClass === 'postgrad'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  <svg v-else-if="tab.iconClass === 'department'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <svg v-else-if="tab.iconClass === 'evaluation'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <svg v-else-if="tab.iconClass === 'channel'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <svg v-else-if="tab.iconClass === 'admission'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  {{ tab.label }}
-                </button>
-              </div>
-            </section>
-
-            <!-- Tab 内容区 -->
-            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white min-h-[200px]">
-              <Transition name="fade" mode="out-in">
-                <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="route.params.id as string" />
-                <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="route.params.id as string" />
-                <DepartmentTab v-else-if="activeTab === 'department'" :university-id="route.params.id as string" />
-                <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="route.params.id as string" />
-                <ChannelTab v-else-if="activeTab === 'channel'" :university-id="route.params.id as string" />
-                <AdmissionGroupTab v-else-if="activeTab === 'admission'" :university-id="route.params.id as string" />
-              </Transition>
-            </section>
-          </div>
+          <!-- Tab 内容区 -->
+          <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white min-h-[200px]">
+            <Transition name="fade" mode="out-in">
+              <LaboratoryTab v-if="activeTab === 'laboratory'" :university-id="route.params.id as string" />
+              <PostgradMajorForUniversityTab v-else-if="activeTab === 'postgrad'" :university-id="route.params.id as string" />
+              <DepartmentTab v-else-if="activeTab === 'department'" :university-id="route.params.id as string" />
+              <SubjectEvaluationTab v-else-if="activeTab === 'evaluation'" :university-id="route.params.id as string" />
+              <ChannelTab v-else-if="activeTab === 'channel'" :university-id="route.params.id as string" />
+              <AdmissionGroupTab v-else-if="activeTab === 'admission'" :university-id="route.params.id as string" />
+            </Transition>
+          </section>
         </div>
       </template>
     </main>
@@ -364,28 +338,122 @@ onMounted(fetchDetail)
 </template>
 
 <style scoped>
-/* ===== 双栏布局：左内容流 + 右 sticky 名片 ===== */
-.detail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  grid-template-areas: "main aside";
-  gap: 1.5rem;
-  align-items: start;
+/* ===== 沉浸式 Hero ===== */
+.hero {
+  height: 360px;
+  animation: fadeUp 0.55s ease both;
 }
-.detail-main {
-  grid-area: main;
-  min-width: 0;
+.hero-carousel {
+  height: 100%;
 }
-.detail-aside {
-  grid-area: aside;
-  position: sticky;
-  top: 5rem;
-  align-self: flex-start;
+.hero-fallback {
+  height: 100%;
+  background: linear-gradient(135deg, #e8722a 0%, #f5a54a 100%);
+}
+.hero-mask {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(22, 14, 6, 0.72) 0%, rgba(22, 14, 6, 0.35) 40%, rgba(22, 14, 6, 0) 68%);
+  pointer-events: none;
+}
+.hero-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.5rem 2rem;
+}
+.hero-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+}
+.hero-name-en {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 2px;
+}
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.hero-tag {
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(2px);
+  color: #ffffff;
+  font-size: 12px;
+}
+.hero-meta {
+  margin-top: 0.5rem;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.hero-btn-ghost,
+.hero-btn-solid {
+  padding: 0.55rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+.hero-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: #ffffff;
+}
+.hero-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.hero-btn-solid {
+  background: #ffffff;
+  color: #e8722a;
+  font-weight: 500;
+}
+.hero-btn-solid:hover {
+  background: #fff4e6;
 }
 
-/* ===== 右栏核心名片：暖橙渐变背景 ===== */
-.name-card {
-  background: linear-gradient(160deg, #fff4e6 0%, #ffedd5 45%, #ffffff 100%);
+/* ===== 亮点统计卡 ===== */
+.stat-card {
+  background: #ffffff;
+  border: 1px solid rgba(232, 114, 42, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: fadeUp 0.55s ease both;
+}
+.stat-card:nth-child(1) { animation-delay: 0.08s; }
+.stat-card:nth-child(2) { animation-delay: 0.14s; }
+.stat-card:nth-child(3) { animation-delay: 0.20s; }
+.stat-card:nth-child(4) { animation-delay: 0.26s; }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px -10px rgba(232, 114, 42, 0.18);
+}
+.stat-label {
+  font-size: 13px;
+  color: #9aa3ad;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #e8722a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 
 /* ===== 字段前色点 ===== */
@@ -394,53 +462,27 @@ onMounted(fetchDetail)
   height: 6px;
   border-radius: 9999px;
   background: #e8722a;
+  flex-shrink: 0;
 }
 .dot-gray {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
   background: #cbd5e1;
-}
-.dot-gold {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: #f5a54a;
-}
-.dot-blue {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: #1e88e5;
+  flex-shrink: 0;
 }
 
-/* ===== 全宽轮播 + 右名片：入场动效 ===== */
-.carousel-full,
-.name-card {
-  animation: fadeUp 0.55s ease both;
-}
-.name-card {
-  animation-delay: 0.08s;
-}
-
-/* ===== 左栏卡片：入场 stagger + hover 动效 ===== */
+/* ===== 卡片：入场 stagger + hover 动效 ===== */
 .detail-card {
   animation: fadeUp 0.55s ease both;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-.detail-main > .detail-card:nth-child(1) { animation-delay: 0.12s; }
-.detail-main > .detail-card:nth-child(2) { animation-delay: 0.20s; }
-.detail-main > .detail-card:nth-child(3) { animation-delay: 0.28s; }
-.detail-main > .detail-card:nth-child(4) { animation-delay: 0.36s; }
+.space-y-6 > .detail-card:nth-child(1) { animation-delay: 0.30s; }
+.space-y-6 > .detail-card:nth-child(2) { animation-delay: 0.36s; }
+.space-y-6 > .detail-card:nth-child(4) { animation-delay: 0.42s; }
 .detail-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 14px 32px -10px rgba(232, 114, 42, 0.18);
-}
-
-/* ===== 关键数值：弹入动效（tabular-nums 防数字跳动） ===== */
-.num-pop {
-  font-variant-numeric: tabular-nums;
-  animation: numPop 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 /* ===== Tab 按钮 ===== */
@@ -473,11 +515,6 @@ onMounted(fetchDetail)
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes numPop {
-  0% { opacity: 0; transform: translateY(8px) scale(0.85); }
-  60% { opacity: 1; transform: translateY(-2px) scale(1.04); }
-  100% { opacity: 1; transform: none; }
-}
 
 /* ===== Tab 内容切换过渡 ===== */
 .fade-enter-active,
@@ -489,14 +526,19 @@ onMounted(fetchDetail)
   opacity: 0;
 }
 
-/* ===== 响应式：移动端回落单列，名片置顶、取消 sticky ===== */
-@media (max-width: 1023px) {
-  .detail-layout {
-    grid-template-columns: 1fr;
-    grid-template-areas: "aside" "main";
+/* ===== 响应式 ===== */
+@media (max-width: 767px) {
+  .hero {
+    height: 280px;
   }
-  .detail-aside {
-    position: static;
+  .hero-info {
+    padding: 1rem 1.25rem;
+  }
+  .hero-name {
+    font-size: 1.5rem;
+  }
+  .stat-value {
+    font-size: 22px;
   }
 }
 </style>
