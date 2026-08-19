@@ -27,8 +27,16 @@
 - 影响面：**全局**，user/admin 所有 `el-dialog`/`ElMessageBox`/`el-drawer`/`el-image` 预览都触发，不止首页。
 - 修复（2026-08-15 已实施，方案 A）：移除 user/admin `index.css` 里的 `scrollbar-gutter:stable` 与 `body.el-popup-parent--hidden{width:100%!important}`、admin 的 `.el-popup-parent--hidden body{...}` 死规则，回归 Element Plus 默认补偿。**以后不要再加 scrollbar-gutter / width:100%!important / 自写 el-popup-parent--hidden 规则干预锁滚动。** NotificationPanel.vue 的 `scrollbar-gutter:stable` 是嵌套滚动容器内的合法用法，保留。
 
+## 特殊通道「两个入口、三个组件」链路（2026-08-19 改错文件教训，权威）
+- **入口①（用户真实入口，gaokao 页）**：gaokao 首页通道卡片（综合评价/强基/专项/民族班/联招 5 张）→ `goChannel()` → `/gaokao/channel/:id` → **`views/gaokao/ChannelUniversities.vue`**。此页 STRONG_BASE 通道内嵌 `components/gaokao/StrongBaseList.vue`（强基列表），点"查看详情"→ `/special/strong-base/:id` → **`views/special/StrongBaseDetail.vue`**。
+- **入口②（special 独立入口，易被忽略）**：`/special` → 通道卡片 → `/special/channel/:id` → **`views/special/ChannelDetail.vue`**。
+- **教训**：用户说"点进入通道"，实际走的是入口①（GaokaoChannelUniversities.vue + StrongBaseList.vue），不是 special 的 ChannelDetail.vue。**改特殊通道页面必须先确认用户从哪个入口进**；两个入口的 4 通道详情页结构相同（Hero+chip 云+搜索栏+无限滚动），已同步统一为新样式（2026-08-19）。
+- **入口统一（2026-08-19 用户拍板）**：特殊通道 Tab1 的 5 张通道卡片（含强基）跳转已从 `/special/channel/:id` 改为 `/gaokao/channel/:id` → 两个入口共用 `GaokaoChannelUniversities.vue`（含 STRONG_BASE 分支渲染 StrongBaseList）。`views/special/ChannelDetail.vue` 保留文件不再被引用。返回按钮保持原状（回 `/gaokao`），用户确认可接受。强基 Tab2 与强基详情仍是 `/special/strong-base/:id` → StrongBaseDetail.vue 不变。
+- 组件差异：ChannelUniversities 点卡片→跳 `/university/:id`；ChannelDetail 点卡片→弹窗（需登录引导）。改动时别串。
+
 ## git 红线
 - 每个任务收尾必 commit（至少 `git add -A && git commit`）；`git pull --rebase` 前先确认 `git status` 干净，否则静默丢弃未提交修改（2026-08-02 曾从 stash 找回城市模块）。
+- 用户明确"不要 git commit"的任务（如纯样式优化）遵守，但要在记忆里标注遗留未提交改动。
 
 ## user 端导航响应式断点（改导航必须逐档验证）
 | 断点 | 行为 | 状态 |

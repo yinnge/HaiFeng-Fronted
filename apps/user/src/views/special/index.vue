@@ -140,7 +140,8 @@ function onPageChange(page: number) {
 }
 
 function viewChannelDetail(id: string) {
-  router.push(`/special/channel/${id}`)
+  // 统一入口：特殊通道卡片与高考报志愿共用 GaokaoChannelUniversities.vue（含 STRONG_BASE 分支）
+  router.push(`/gaokao/channel/${id}`)
 }
 
 function viewStrongBaseDetail(id: string) {

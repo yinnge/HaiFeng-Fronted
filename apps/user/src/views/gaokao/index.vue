@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Motion, useReducedMotion } from 'motion-v'
 import { getChannelList } from '@/api/special'
-import { getArchive } from '@/api/gaokao'
+import { getArchive, type GaokaoArchiveVO } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
 
@@ -16,17 +17,73 @@ const channels = ref<SpecialChannelListVO[]>([])
 // 是否已建立高考档案（决定统招卡片展示「填写档案」还是「进入报志愿」）
 const hasArchive = ref(false)
 
+// 高考档案摘要（纯展示用，不改动任何业务流程/接口）
+const archive = ref<GaokaoArchiveVO | null>(null)
+
+// 尊重系统「减弱动态效果」设置：开启时区块直接静态呈现，不做浮现动画
+const reduceMotion = useReducedMotion()
+const revealInitial = computed(() =>
+  reduceMotion.value ? undefined : { opacity: 0, y: 24 },
+)
+const revealIn = computed(() =>
+  reduceMotion.value ? undefined : { opacity: 1, y: 0 },
+)
+
 // 其余通道代码（按展示顺序）
 // 注意：统招不在此列表内——它是产品固定入口，直接硬编码展示，
 // 不依赖后台是否在 t_special_channel 录入 NORMAL 记录，否则运营没录数据时入口会整个消失
 const channelCodes = ['COMPREHENSIVE', 'STRONG_BASE', 'SPECIAL_PROGRAM', 'ETHNIC_MINORITY', 'JOINT_NATIONAL']
 
-const channelIcon: Record<string, string> = {
-  COMPREHENSIVE: '📊',
-  STRONG_BASE: '🏛️',
-  SPECIAL_PROGRAM: '📋',
-  ETHNIC_MINORITY: '🌟',
-  JOINT_NATIONAL: '🌏',
+// 内联手绘线稿图标（stroke-width 2，延续全站 SVG 线稿风格）
+interface ChannelGlyph {
+  paths: string[]
+}
+
+const normalGlyph: ChannelGlyph = {
+  paths: [
+    'M12 4 3.5 8.5 12 13l8.5-4.5L12 4Z',
+    'M6 11.5v4.2c0 1.7 2.7 3.3 6 3.3s6-1.6 6-3.3v-4.2',
+    'M21 8.8V14',
+  ],
+}
+
+const channelIcon: Record<string, ChannelGlyph> = {
+  COMPREHENSIVE: {
+    paths: ['M12 3.6 14.5 8.6l5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 3.6Z'],
+  },
+  STRONG_BASE: {
+    paths: [
+      'M4 21h16',
+      'M6.5 21V9.5m3.5 11.5V9.5m4 11.5V9.5m3.5 11.5V9.5',
+      'M3.5 9.5 12 4.5l8.5 5',
+    ],
+  },
+  SPECIAL_PROGRAM: {
+    paths: [
+      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+      'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z',
+      'M12 11.6h.01',
+    ],
+  },
+  ETHNIC_MINORITY: {
+    paths: [
+      'M12 4.5l1.8 3.9 3.9 1.8-3.9 1.8-1.8 3.9-1.8-3.9-3.9-1.8 3.9-1.8 1.8-3.9Z',
+      'M18.7 15l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z',
+    ],
+  },
+  JOINT_NATIONAL: {
+    paths: [
+      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+      'M3.6 9.5h16.8M3.6 14.5h16.8',
+      'M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18',
+    ],
+  },
+  FALLBACK: {
+    paths: [
+      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+      'M16 8l-2.3 5.7L8 16l2.3-5.7L16 8Z',
+    ],
+  },
 }
 
 const channelDesc: Record<string, string> = {
@@ -101,11 +158,23 @@ async function fetchChannels() {
 async function fetchArchive() {
   try {
     const res = await getArchive()
+    archive.value = res.data.data
     hasArchive.value = !!res.data.data
   } catch {
     // 未建档或查询失败，统一按「未填写档案」处理
+    archive.value = null
     hasArchive.value = false
   }
+}
+
+// 通道卡「热门」标签（纯展示）
+function isHot(code: string) {
+  return code === 'COMPREHENSIVE' || code === 'STRONG_BASE'
+}
+
+// 通道卡「需资格」标签（纯展示）
+function isQualified(code: string) {
+  return code === 'SPECIAL_PROGRAM'
 }
 
 // 其余通道：进入通道大学列表
@@ -155,84 +224,144 @@ async function initPage() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
+  <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
     <main class="flex-1">
-      <div class="container mx-auto px-6 py-12 text-center">
-        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
-          <span class="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-          选择报考类型
-        </div>
-        <h2 class="mb-4 text-3xl font-bold text-gray-800 md:text-4xl">
-          高考志愿填报
-        </h2>
-        <p class="mx-auto max-w-2xl text-gray-500">
-          选择您的报考类型，查看该通道关联的招生院校，为志愿填报做好准备
-        </p>
-      </div>
-
-      <div class="container mx-auto px-6 pb-16">
-        <div v-loading="loading" class="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto min-h-[200px]">
-          <!-- 统招：产品固定入口，始终展示，不依赖后端通道数据 -->
-          <div
-            class="group rounded-2xl bg-white p-8 shadow-lg border-2 border-orange-200 hover:shadow-xl transition-all cursor-pointer"
-            @click="goNormal"
+      <div class="container mx-auto px-6 pb-16 relative">
+        <div class="max-w-5xl mx-auto min-h-[200px]">
+          <!-- 纯白品牌 Hero：无装饰、无发光，突出文字层级 -->
+          <Motion
+            :initial="revealInitial"
+            :while-in-view="revealIn"
+            :transition="{ duration: 0.5 }"
+            :in-view-options="{ once: true }"
+            class="pt-10 md:pt-12"
           >
-            <div class="mb-5 flex items-start justify-between">
-              <div class="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 text-3xl group-hover:from-orange-200 group-hover:to-amber-200 transition-colors">
-                🎓
+            <div class="inline-flex items-center gap-2 rounded-full bg-brand-orange/10 px-4 py-1.5 text-sm font-medium text-brand-orange border border-brand-orange/20">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path v-for="d in normalGlyph.paths" :key="d" :d="d" />
+              </svg>
+              高考志愿填报
+            </div>
+            <h2 class="mt-5 text-3xl font-bold tracking-tight text-gray-800 md:text-4xl">选对赛道，让每一分都不浪费</h2>
+            <p class="mt-3 text-base text-gray-500">统招是主渠道，特殊类型招生是更多可能</p>
+          </Motion>
+
+          <!-- 统招主通道大卡：核心位置，橙渐变主视觉 + 档案状态 + 双按钮 -->
+          <Motion
+            :initial="revealInitial"
+            :while-in-view="revealIn"
+            :transition="{ duration: 0.5, delay: 0.1 }"
+            :in-view-options="{ once: true }"
+            class="mt-7"
+          >
+            <section
+              class="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-brand-orange-dark via-brand-orange to-brand-orange-light p-7 shadow-card-active transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-6px_rgba(232,114,42,0.4)] md:p-9"
+              @click="goNormal"
+            >
+              <div class="flex flex-col gap-6 md:flex-row md:items-center">
+                <!-- 左：图标 + 标题 + 描述 -->
+                <div class="flex-1">
+                  <div class="flex flex-wrap items-center gap-4">
+                    <div class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white transition-transform duration-300 group-hover:scale-105">
+                      <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path v-for="d in normalGlyph.paths" :key="d" :d="d" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2.5">
+                        <h3 class="text-xl font-bold text-white md:text-2xl">统招 · 主通道</h3>
+                        <span class="inline-flex items-center rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white border border-white/30">
+                          志愿填报首选
+                        </span>
+                      </div>
+                      <p class="mt-1 text-[15px] font-medium text-white/90">全体考生适用，从这里开始</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 右：档案状态 + 操作按钮 -->
+                <div class="shrink-0 space-y-3 md:w-[360px]">
+                  <div class="rounded-xl bg-white/10 px-4 py-3 text-sm">
+                    <template v-if="hasArchive && archive">
+                      <div class="flex items-center gap-2 font-medium text-white">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-300" />
+                        已建档
+                      </div>
+                      <div class="mt-1.5 leading-relaxed text-white/85">
+                        {{ archive.gaokaoYear ?? '-' }} · {{ archive.gaokaoProvince || '-' }} · {{ archive.subjectType || '-' }} · {{ archive.score ?? '-' }} 分 · 位次 {{ archive.rank ?? '-' }}
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="flex items-center gap-2 font-medium text-white">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-300" />
+                        尚未填写高考档案
+                      </div>
+                      <div class="mt-1.5 leading-relaxed text-white/85">填写档案后开启志愿规划 · 约 30 秒即可完成</div>
+                    </template>
+                  </div>
+                  <div class="flex flex-wrap gap-2.5">
+                    <button
+                      class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-orange-dark shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
+                    >
+                      {{ hasArchive ? '进入报志愿 →' : '填写高考档案 →' }}
+                    </button>
+                    <button
+                      v-if="hasArchive"
+                      class="rounded-full border border-white/50 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/15"
+                      @click.stop="goArchive"
+                    >
+                      修改档案
+                    </button>
+                  </div>
+                </div>
               </div>
-              <span
-                v-if="hasArchive"
-                class="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600"
-              >
-                已建档
-              </span>
-            </div>
-            <h3 class="mb-3 text-xl font-bold text-gray-800">统招</h3>
-            <p class="text-gray-500 leading-relaxed">普通高考统招志愿填报，填写高考档案后开始规划</p>
+            </section>
+          </Motion>
 
-            <div v-if="hasArchive" class="mt-6 flex gap-2">
-              <button
-                class="flex-1 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-                @click.stop="goWishPlan"
-              >
-                进入报志愿 →
-              </button>
-              <button
-                class="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-600 transition-all"
-                @click.stop="goArchive"
-              >
-                修改档案
-              </button>
-            </div>
-            <button
-              v-else
-              class="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-              @click.stop="goArchive"
-            >
-              填写高考档案 →
-            </button>
+          <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
+          <div class="mt-12 mb-5 flex items-baseline justify-between gap-4">
+            <h3 class="border-l-[4px] border-brand-blue pl-3 text-xl font-bold text-gray-800">特殊通道</h3>
+            <span class="hidden md:block text-sm text-gray-400">综合评价 · 强基计划 · 专项计划 · 民族班 · 全国联招</span>
           </div>
 
-          <!-- 其余通道：进入通道大学列表 -->
-          <div
-            v-for="item in displayChannels"
-            :key="item.channelCode"
-            class="group rounded-2xl bg-white p-8 shadow-lg border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all cursor-pointer"
-            @click="goChannel(item)"
-          >
-            <div class="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 text-3xl group-hover:from-orange-200 group-hover:to-amber-200 transition-colors">
-              {{ channelIcon[item.channelCode] || '📌' }}
-            </div>
-            <h3 class="mb-3 text-xl font-bold text-gray-800">{{ item.channelName }}</h3>
-            <p class="text-gray-500 leading-relaxed">{{ channelDesc[item.channelCode] || item.subtitle }}</p>
-            <button
-              class="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
+          <div v-loading="loading" class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
+            <Motion
+              v-for="(item, i) in displayChannels"
+              :key="item.channelCode"
+              :initial="revealInitial"
+              :while-in-view="revealIn"
+              :in-view-options="{ once: true }"
+              :transition="{ duration: 0.5, delay: 0.15 + i * 0.06 }"
+              class="h-full"
             >
-              进入通道 →
-            </button>
+              <div
+                class="group flex h-full flex-col rounded-2xl bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white p-6 shadow-card border border-gray-100/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-blue/40 hover:shadow-card-hover cursor-pointer"
+                @click="goChannel(item)"
+              >
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors group-hover:bg-brand-blue/15">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path v-for="d in (channelIcon[item.channelCode] || channelIcon.FALLBACK).paths" :key="d" :d="d" />
+                  </svg>
+                </div>
+                <h4 class="text-[17px] font-bold text-gray-800">{{ item.channelName }}</h4>
+                <div class="mb-2 flex min-h-[24px] flex-wrap gap-1.5">
+                  <span v-if="isHot(item.channelCode)" class="inline-flex items-center rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-medium text-brand-orange border border-brand-orange/20">热门</span>
+                  <span v-if="isQualified(item.channelCode)" class="inline-flex items-center rounded-full bg-brand-blue/10 px-2.5 py-0.5 text-xs font-medium text-brand-blue border border-brand-blue/20">需资格</span>
+                </div>
+                <p class="flex-1 text-sm leading-relaxed text-gray-500">{{ channelDesc[item.channelCode] || item.subtitle }}</p>
+                <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-blue">
+                  进入通道
+                  <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6.5 3.5 11 8l-4.5 4.5" />
+                  </svg>
+                </span>
+              </div>
+            </Motion>
           </div>
         </div>
+
+        <!-- 底部品牌橙渐变分隔条（衔接直通考院，消除硬断崖） -->
+        <div class="mx-auto mt-12 h-[3px] max-w-5xl rounded-full bg-gradient-to-r from-transparent via-brand-orange/40 to-transparent" aria-hidden="true"></div>
         <div v-if="!loading && !displayChannels.length" class="mt-6 text-center text-sm text-gray-400">
           暂无其他报考通道数据
         </div>
