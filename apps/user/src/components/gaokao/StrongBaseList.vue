@@ -82,10 +82,10 @@ onMounted(fetchData)
       <span class="sb-count">共 {{ total }} 条</span>
     </div>
 
-    <!-- 搜索栏 -->
+    <!-- 搜索栏：7 条件 + 按钮，控件 170px 靠左两行排满 -->
     <div class="white-card mb-6">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
+      <div class="sb-search">
+        <div class="sb-field">
           <label class="search-label">年份</label>
           <el-select v-model="sYear" placeholder="全部" clearable class="w-full">
             <el-option
@@ -96,27 +96,25 @@ onMounted(fetchData)
             />
           </el-select>
         </div>
-        <div>
+        <div class="sb-field">
           <label class="search-label">省份</label>
           <el-select v-model="sProvince" placeholder="全部" clearable filterable class="w-full">
             <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-        <div>
+        <div class="sb-field">
           <label class="search-label">科类</label>
           <el-select v-model="sSubjectType" placeholder="全部" clearable class="w-full">
             <el-option v-for="opt in SubjectTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-        <div>
+        <div class="sb-field">
           <label class="search-label">入围类型</label>
           <el-select v-model="sEntryScoreType" placeholder="全部" clearable class="w-full">
             <el-option v-for="opt in EntryScoreTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div>
+        <div class="sb-field">
           <label class="search-label">大学名称</label>
           <input
             v-model="sUniversityName"
@@ -126,7 +124,7 @@ onMounted(fetchData)
             @keyup.enter="onSearch"
           />
         </div>
-        <div>
+        <div class="sb-field">
           <label class="search-label">专业名称</label>
           <input
             v-model="sMajorName"
@@ -136,7 +134,7 @@ onMounted(fetchData)
             @keyup.enter="onSearch"
           />
         </div>
-        <div>
+        <div class="sb-field">
           <label class="search-label">专业代码</label>
           <input
             v-model="sMajorCode"
@@ -146,9 +144,7 @@ onMounted(fetchData)
             @keyup.enter="onSearch"
           />
         </div>
-      </div>
-      <div class="flex justify-center">
-        <button class="search-btn" @click="onSearch">搜索</button>
+        <button class="sb-search-btn" @click="onSearch">搜索</button>
       </div>
     </div>
 
@@ -277,20 +273,31 @@ onMounted(fetchData)
 .search-input:focus {
   border-color: #e8722a;
 }
-.search-btn {
-  padding: 10px 32px;
+.sb-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+.sb-field {
+  width: 170px;
+  flex: none;
+}
+.sb-search-btn {
+  width: 170px;
+  height: 32px;
+  flex: none;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #e8722a, #f59e0b);
+  border-radius: 8px;
+  background: #f97316;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(232, 114, 42, 0.25);
-  transition: filter 0.2s ease;
+  transition: background 0.2s ease;
 }
-.search-btn:hover {
-  filter: brightness(1.05);
+.sb-search-btn:hover {
+  background: #ea580c;
 }
 
 /* ===== 强基卡片 ===== */

@@ -162,10 +162,10 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-screen channel-page">
-    <main class="container mx-auto px-6 py-8" v-loading="loading">
+    <main class="container mx-auto px-6 py-8 max-w-6xl" v-loading="loading">
       <template v-if="detail">
         <!-- Hero 头部（品牌橙渐变，压过全局 transparent 规则需 !important） -->
-        <section class="channel-hero fade-up">
+        <section class="channel-hero fade-up" :class="{ 'hero-warm': detail.channelCode !== 'STRONG_BASE' }">
           <div class="hero-orb" aria-hidden="true" />
           <div class="hero-back">
             <button class="hero-back-btn" @click="goBack">← 返回选择报考类型</button>
@@ -174,13 +174,6 @@ onUnmounted(() => {
             <div class="hero-badge">{{ detail.filterLabel || '特殊通道' }}</div>
             <h2 class="hero-title">{{ detail.channelName }}</h2>
             <p v-if="detail.subtitle" class="hero-subtitle">{{ detail.subtitle }}</p>
-            <div v-if="detail.channelCode !== 'STRONG_BASE'" class="hero-chips">
-              <span class="hero-chip">
-                <span class="chip-dot" />
-                关联大学 {{ univTotal }} 所
-              </span>
-              <span class="hero-chip hero-chip-outline">{{ DisplayTypeLabel[detail.displayType] || detail.displayType }}</span>
-            </div>
           </div>
         </section>
 
@@ -218,13 +211,13 @@ onUnmounted(() => {
 
             <!-- 搜索栏（label 已去掉 >= / <=） -->
             <div class="search-bar">
-              <div class="search-field">
-                <label class="search-label">地区</label>
+              <div class="search-field province-field">
+                <label class="search-label">省份</label>
                 <el-select v-model="univRegionTag" placeholder="全部" clearable filterable class="w-full" @change="onUnivSearch">
                   <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
                 </el-select>
               </div>
-              <div class="search-field">
+              <div class="search-field date-field">
                 <label class="search-label">报名开始</label>
                 <el-date-picker
                   v-model="univSignupStart"
@@ -235,7 +228,7 @@ onUnmounted(() => {
                   @change="onUnivSearch"
                 />
               </div>
-              <div class="search-field">
+              <div class="search-field date-field">
                 <label class="search-label">报名结束</label>
                 <el-date-picker
                   v-model="univSignupEnd"
@@ -258,15 +251,21 @@ onUnmounted(() => {
                   class="univ-card fade-up"
                   :style="{ animationDelay: `${(idx % 5) * 70}ms` }"
                 >
-                  <div class="univ-avatar">{{ item.universityName?.slice(0, 1) || '大' }}</div>
-                  <h4 class="univ-name">{{ item.universityName }}</h4>
-                  <div class="univ-meta">
-                    <span class="univ-meta-item">{{ item.year }} 年</span>
-                    <span v-if="item.regionTag" class="univ-region">{{ item.regionTag }}</span>
+                  <div class="univ-head">
+                    <div class="univ-avatar">{{ item.universityName?.slice(0, 1) || '大' }}</div>
+                    <div class="univ-head-info">
+                      <h4 class="univ-name">{{ item.universityName }}</h4>
+                      <div class="univ-meta">
+                        <span class="univ-meta-item">{{ item.year }} 年</span>
+                        <span v-if="item.regionTag" class="univ-region">{{ item.regionTag }}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p class="univ-time">
-                    报名 {{ item.signupStart?.slice(0, 10) || '待定' }} ~ {{ item.signupEnd?.slice(0, 10) || '待定' }}
-                  </p>
+                  <div class="univ-divider" />
+                  <div class="univ-time">
+                    <span class="time-label">报名时间</span>
+                    <span class="time-range">{{ item.signupStart?.slice(0, 10) || '待定' }} ~ {{ item.signupEnd?.slice(0, 10) || '待定' }}</span>
+                  </div>
                   <button class="univ-btn" @click="goUnivDetail(item.universityId)">查看详情</button>
                 </div>
               </div>
@@ -329,6 +328,30 @@ onUnmounted(() => {
   /* 全局 .app-shell main > * 会强制透明，必须 !important 保证实心橙渐变 */
   background: linear-gradient(135deg, #e8722a 0%, #f59e0b 100%) !important;
   color: #fff;
+}
+
+/* 4 通道专用：柔和亮暖橙（STRONG_BASE 强基页保持原渐变不变） */
+.channel-hero.hero-warm {
+  background: linear-gradient(120deg, #f97316 0%, #fbbf24 100%) !important;
+  padding: 14px 22px 18px;
+}
+.channel-hero.hero-warm .hero-back {
+  margin-bottom: 10px;
+}
+.channel-hero.hero-warm .hero-badge {
+  margin-bottom: 8px;
+}
+.channel-hero.hero-warm .hero-title {
+  font-size: 22px;
+  margin: 0 0 4px 0;
+}
+.channel-hero.hero-warm .hero-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 区块间纵向间距：Hero 已有 24px，下面 section 统一 20px，相邻 margin 取大值不冲突 */
@@ -404,34 +427,6 @@ section.fade-up:last-of-type {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
 }
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.hero-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #b45309;
-  font-size: 13px;
-  font-weight: 500;
-}
-.hero-chip-outline {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: #fff;
-  font-weight: 400;
-}
-.chip-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f59e0b;
-}
 
 /* ===== 白卡（压过全局 transparent 规则） ===== */
 .white-card {
@@ -494,25 +489,47 @@ section.fade-up:last-of-type {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 18px;
   padding: 16px;
   border-radius: 14px;
-  background: #fffaf5;
-  border: 1px solid #f5ece3;
+  background: #fff;
+  border: 1px solid #f0e9e3;
 }
 .search-field {
   flex: 1;
   min-width: 160px;
+}
+/* 省份短、日期长的固定宽度布局：靠左不占满，间距 16px */
+.search-field.province-field {
+  flex: 0 0 140px;
+  min-width: 0;
+}
+.search-field.date-field {
+  flex: 0 0 180px;
+  min-width: 0;
+}
+/* 强制日期控件贴合容器宽度（Element Plus 默认 220px 会溢出覆盖相邻控件） */
+.search-field.date-field :deep(.el-date-editor) {
+  width: 100%;
+}
+@media (max-width: 767px) {
+  .search-field,
+  .search-field.province-field,
+  .search-field.date-field {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 }
 .search-label {
   display: block;
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: #374151;
 }
 .search-btn {
+  flex: none;
   height: 40px;
   padding: 0 28px;
   border: none;
@@ -529,32 +546,27 @@ section.fade-up:last-of-type {
   filter: brightness(1.05);
 }
 
-/* ===== 关联大学卡片 ===== */
+/* ===== 关联大学大卡画廊（3 列） ===== */
 .univ-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 14px;
 }
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .univ-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1024px) {
   .univ-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1280px) {
-  .univ-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 .univ-card {
   display: flex;
   flex-direction: column;
-  padding: 18px 16px;
-  border-radius: 14px;
+  padding: 18px;
+  border-radius: 16px;
   background: #fff;
   border: 1px solid #f0e9e3;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
@@ -564,21 +576,30 @@ section.fade-up:last-of-type {
   border-color: #fdd9c3;
   box-shadow: 0 8px 20px rgba(232, 114, 42, 0.1);
 }
+.univ-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.univ-head-info {
+  min-width: 0;
+}
 .univ-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 10px;
-  border-radius: 12px;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #fff3e8, #ffe8d6);
   color: #e8722a;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
 }
 .univ-name {
-  margin: 0 0 6px 0;
+  margin: 0 0 3px 0;
   font-size: 15px;
   font-weight: 700;
   color: #1f2937;
@@ -590,7 +611,6 @@ section.fade-up:last-of-type {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
 }
 .univ-meta-item {
   font-size: 12px;
@@ -603,25 +623,40 @@ section.fade-up:last-of-type {
   color: #e8722a;
   font-size: 11px;
 }
+.univ-divider {
+  height: 1px;
+  background: #f8f3ed;
+  margin-bottom: 12px;
+}
 .univ-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0 0 14px 0;
+}
+.time-label {
   font-size: 12px;
-  color: #6b7280;
+  color: #9ca3af;
+}
+.time-range {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
 }
 .univ-btn {
   margin-top: auto;
-  padding: 7px 0;
-  border: 1px solid #f5c9a8;
+  padding: 8px 0;
+  border: none;
   border-radius: 10px;
-  background: transparent;
-  color: #e8722a;
+  background: #ea580c;
+  color: #fff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 .univ-btn:hover {
-  background: #fff3e8;
+  background: #c2410c;
 }
 .empty-tip {
   padding: 48px 0;
