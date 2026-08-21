@@ -24,6 +24,18 @@ const homeRoutes: RouteRecordRaw = {
       component: () => import('@/views/home/institution/index.vue'),
       meta: { title: '培训机构管理', moduleCode: 'home_institution' },
     },
+    {
+      path: 'middle-school',
+      name: 'HomeMiddleSchool',
+      component: () => import('@/views/home/middleSchool/index.vue'),
+      meta: { title: '初中资源', moduleCode: 'fileload_middle' },
+    },
+    {
+      path: 'high-school',
+      name: 'HomeHighSchool',
+      component: () => import('@/views/home/highSchool/index.vue'),
+      meta: { title: '高中资源', moduleCode: 'fileload_high' },
+    },
   ],
 }
 
