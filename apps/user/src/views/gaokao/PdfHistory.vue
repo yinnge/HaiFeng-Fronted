@@ -7,13 +7,18 @@ import {
   getPdfRecords,
   downloadPdf,
   deletePdfRecord,
+  savePdfFile,
   type PdfRecordListVO,
 } from '@/api/pdf-report'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
+import { usePdfQuota } from '@/composables/usePdfQuota'
+import { getMyPlans } from '@/api/wish-plan'
 
 const router = useRouter()
 const route = useRoute()
 const planId = route.params.planId as string
+
+const { quota, loadQuota } = usePdfQuota()
 
 const loading = ref(false)
 const records = ref<PdfRecordListVO[]>([])
@@ -31,7 +36,10 @@ const statusMap: Record<number, { label: string; color: string; bg: string }> = 
   2: { label: '失败', color: 'text-red-600', bg: 'bg-red-50' },
 }
 
-onMounted(loadRecords)
+onMounted(() => {
+  loadRecords()
+  loadQuota()
+})
 
 async function loadRecords() {
   loading.value = true
@@ -58,12 +66,8 @@ function handlePageChange(val: number) {
 async function handleDownload(record: PdfRecordListVO) {
   try {
     const { blob, filename } = await downloadPdf(String(record.id))
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+    savePdfFile(blob, filename)
+    ElMessage.success('下载完成')
   } catch (e: any) {
     ElMessage.error(e?.message || '下载失败')
   }
@@ -101,6 +105,24 @@ async function handleDelete(record: PdfRecordListVO) {
 
 function handleGenerateSuccess() {
   loadRecords()
+  loadQuota()
+}
+
+// 前往 AI 分析：跳转志愿表列表；若无任何志愿表则提示先选择
+async function goAiAnalysis() {
+  try {
+    const res = await getMyPlans()
+    const plans = (res.data.data as unknown[]) || []
+    router.push('/gaokao/plans')
+    if (plans.length === 0) {
+      ElMessageBox.alert('请先选择志愿表进行AI分析', '提示', {
+        confirmButtonText: '我知道了',
+        type: 'warning',
+      })
+    }
+  } catch (e: any) {
+    router.push('/gaokao/plans')
+  }
 }
 
 function formatTime(dateStr: string) {
@@ -122,6 +144,25 @@ function formatTime(dateStr: string) {
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-4xl">
+      <!-- 今日生成配额提示 + 前往 AI 分析 -->
+      <div class="flex items-center justify-between gap-4 mb-6 flex-wrap">
+        <div class="flex items-center gap-2 text-sm">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            今日生成剩余次数：{{ quota.remaining }} 次
+          </span>
+          <span class="text-gray-400 text-xs">（每日上限 {{ quota.limit }} 次）</span>
+        </div>
+        <button
+          class="btn-brand px-4 py-2 text-sm shrink-0"
+          @click="goAiAnalysis"
+        >
+          前往AI分析
+        </button>
+      </div>
+
       <div v-if="loading" class="flex justify-center py-20">
         <el-icon class="is-loading text-4xl text-violet-500"><Loading /></el-icon>
       </div>
@@ -196,7 +237,9 @@ function formatTime(dateStr: string) {
                   下载PDF
                 </button>
                 <button
-                  class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                  class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="quota.remaining <= 0"
+                  :title="quota.remaining <= 0 ? '今日次数已用完' : ''"
                   @click="handleRegenerate(record)"
                 >
                   重新生成
@@ -212,7 +255,9 @@ function formatTime(dateStr: string) {
               <!-- 失败 -->
               <template v-else-if="record.status === 2">
                 <button
-                  class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                  class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="quota.remaining <= 0"
+                  :title="quota.remaining <= 0 ? '今日次数已用完' : ''"
                   @click="handleRegenerate(record)"
                 >
                   重新生成

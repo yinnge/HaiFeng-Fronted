@@ -7,6 +7,7 @@ import {
   getPdfRecordDetail,
   downloadPdf,
   deletePdfRecord,
+  savePdfFile,
   type PdfRecordDetailVO,
   type MapResultItem,
   type ReduceResult,
@@ -16,17 +17,20 @@ import { renderMarkdown } from '@/utils/markdown'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 import { useUserStore } from '@/store/modules/user'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
+import { usePdfQuota } from '@/composables/usePdfQuota'
 
 const router = useRouter()
 const route = useRoute()
 const recordId = route.params.recordId as string
 const userStore = useUserStore()
 const recharge = useRechargeDialog()
+const { quota, loadQuota } = usePdfQuota()
 
 const loading = ref(true)
 const record = ref<PdfRecordDetailVO | null>(null)
 const activeTab = ref<'analysis' | 'pdf'>('analysis')
 const pdfObjectUrl = ref('')
+const pdfError = ref('')
 
 // 重新生成弹窗
 const showGenerateDialog = ref(false)
@@ -71,6 +75,7 @@ const planSnapshot = computed<PlanSnapshot>(() => {
 onMounted(async () => {
   await userStore.fetchUserInfo()
   loadDetail()
+  loadQuota()
 })
 
 async function loadDetail() {
@@ -87,27 +92,31 @@ async function loadDetail() {
 
 async function loadPdf() {
   if (pdfObjectUrl.value) return
+  pdfError.value = ''
   try {
     const { blob } = await downloadPdf(recordId)
     pdfObjectUrl.value = URL.createObjectURL(blob)
   } catch (e: any) {
-    ElMessage.error(e?.message || 'PDF加载失败')
+    pdfError.value = e?.message || 'PDF加载失败'
+    ElMessage.error(pdfError.value)
   }
 }
 
-function handleTabChange(tab: string) {
+function switchTab(tab: 'analysis' | 'pdf') {
+  activeTab.value = tab
   if (tab === 'pdf') loadPdf()
+}
+
+function retryLoadPdf() {
+  pdfError.value = ''
+  loadPdf()
 }
 
 async function handleDownload() {
   try {
     const { blob, filename } = await downloadPdf(recordId)
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+    savePdfFile(blob, filename)
+    ElMessage.success('下载完成')
   } catch (e: any) {
     ElMessage.error(e?.message || '下载失败')
   }
@@ -160,6 +169,7 @@ function handleGenerateSuccess(newRecordId: string) {
   } else {
     loadDetail()
   }
+  loadQuota()
 }
 
 function renderMd(md: string | null | undefined) {
@@ -170,6 +180,17 @@ function renderMd(md: string | null | undefined) {
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-5xl">
+      <!-- 今日生成配额提示 -->
+      <div class="mb-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          今日生成剩余次数：{{ quota.remaining }} 次
+        </span>
+        <span class="text-gray-400 text-xs ml-2">（每日上限 {{ quota.limit }} 次）</span>
+      </div>
+
       <div class="flex justify-end gap-3 mb-4">
         <button
           class="rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-600 transition-all shadow-md disabled:opacity-50"
@@ -180,7 +201,8 @@ function renderMd(md: string | null | undefined) {
         </button>
         <button
           class="rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 px-4 py-2 text-white text-sm font-medium hover:from-orange-500 hover:to-amber-500 transition-all shadow-md disabled:opacity-50"
-          :disabled="record?.status === 0"
+          :disabled="record?.status === 0 || quota.remaining <= 0"
+          :title="quota.remaining <= 0 ? '今日次数已用完' : ''"
           @click="handleRegenerate"
         >
           重新生成
@@ -219,7 +241,9 @@ function renderMd(md: string | null | undefined) {
           <p class="text-lg text-gray-500">报告生成失败</p>
           <p v-if="record.failReason" class="text-sm text-red-500 mt-2">{{ record.failReason }}</p>
           <button
-            class="mt-6 px-6 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors font-medium"
+            class="mt-6 px-6 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="quota.remaining <= 0"
+            :title="quota.remaining <= 0 ? '今日次数已用完' : ''"
             @click="handleRegenerate"
           >
             重新生成
@@ -235,7 +259,7 @@ function renderMd(md: string | null | undefined) {
               :class="activeTab === 'analysis'
                 ? 'text-violet-600 border-violet-500'
                 : 'text-gray-500 border-transparent hover:text-gray-700'"
-              @click="activeTab = 'analysis'"
+              @click="switchTab('analysis')"
             >
               AI 分析
             </button>
@@ -244,7 +268,7 @@ function renderMd(md: string | null | undefined) {
               :class="activeTab === 'pdf'
                 ? 'text-violet-600 border-violet-500'
                 : 'text-gray-500 border-transparent hover:text-gray-700'"
-              @click="activeTab = 'pdf'"
+              @click="switchTab('pdf')"
             >
               PDF 预览
             </button>
@@ -360,7 +384,16 @@ function renderMd(md: string | null | undefined) {
 
           <!-- PDF 预览 Tab -->
           <div v-if="activeTab === 'pdf'" class="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div v-if="!pdfObjectUrl" class="flex justify-center py-20">
+            <div v-if="pdfError" class="flex flex-col items-center justify-center py-20 gap-4">
+              <p class="text-sm text-red-500">{{ pdfError }}</p>
+              <button
+                class="px-6 py-2 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-600 transition-colors"
+                @click="retryLoadPdf"
+              >
+                重试
+              </button>
+            </div>
+            <div v-else-if="!pdfObjectUrl" class="flex justify-center py-20">
               <el-icon class="is-loading text-4xl text-violet-500"><Loading /></el-icon>
             </div>
             <iframe

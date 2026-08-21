@@ -11,7 +11,14 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  /* 显式让根元素成为滚动容器，避免 body 作为视口滚动源；
+     配合 scrollbar-gutter: stable，弹窗打开(body 被加 el-popup-parent--hidden 锁滚动)时，
+     右侧滚动条占位不被回收，页面内容不再左右抖动。 */
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 body {
   width: 100%;
   min-height: 100%;
@@ -54,6 +61,17 @@ html {
 #app > * {
   background-color: transparent !important;
   background-image: none !important;
+}
+
+/* 修复弹窗打开时右侧滚动条消失、页面左右抖动的问题 */
+/* 弹窗打开时同步锁住根滚动容器(html)；滚动条占位由 html 的 scrollbar-gutter: stable 保留 */
+html:has(body.el-popup-parent--hidden) {
+  overflow: hidden;
+}
+
+body.el-popup-parent--hidden {
+  width: 100% !important;
+  overflow: hidden;
 }
 
 /* 自定义滚动条 */

@@ -1,8 +1,8 @@
 # 项目长期记忆（海枫前端 monorepo）
 
 ## 通用规范
-- 设计令牌见 `AGENTS.md`：品牌主色 `#e8722a`（brand-orange），admin 端暖橙渐变+橙色顶底边框卡片，user 端纯白微灰+无色细边卡片+阴影。改动前逐条对照对应端的 Checklist。
-- **页面根背景不变**：user 端页面根容器始终保持暖色渐变（`from-brand-gray-50 via-orange-50/20 to-white`），但所有内层 div（卡片、列表、搜索栏、Tab 导航、Tab 内容区）必须使用**白色微灰渐变背景**（`bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white`），确保橙色元素与背景有足够对比度。
+- 设计令牌见 `AGENTS.md`：品牌主色 `#F97316` / 渐变端 `#FB923C`（两端共享），admin 端暖橙渐变+橙色顶底边框卡片，user 端橙渐变顶边+纯白卡片+橙色块（postgraduate 风格，见下方 User 端规范）。改动前逐条对照对应端的 Checklist。
+- **根背景橙色不可变**：user 端 `html` 全局暖橙画布（背景 `#ffedd5` + 顶部/底部透白雾 + 三道光晕，见 `apps/user/src/assets/styles/index.css`）是品牌底色，**任何改动不得修改它**。页面内容容器透明底露出画布，卡片内部才使用白色 / 橙色块。
 - 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
 
@@ -176,89 +176,70 @@ Reading this as: 企业级后台管理系统界面 redesign for 管理员用户,
 
 ## Design Read
 
-Reading this as: C端教育规划平台界面 for 高考学生/家长, with a 清爽、鲜明、专业的产品语言, leaning toward 白底卡片+品牌色药丸+三级灰色层级+SVG图标辅助.
+Reading this as: C端教育规划平台界面 for 高考学生/家长/研究生, with a 清爽、鲜明、专业的内容驱动产品语言, leaning toward 橙渐变顶边白卡片 + 橙色强调块 + 数据驱动写入.
 
 目标：
-User 端面向 C 端用户（高考学生/家长），核心功能：高考志愿填报、院校查询。视觉风格清爽鲜明，以纯白卡片为基底，品牌橙色作为强调色（药丸、按钮、链接），文字用三级灰色层级保证可读性。参考 Groups.vue 的实际样式。
+User 端面向 C 端用户（高考学生/家长/研究生），核心功能：高考志愿填报、院校查询、内容专栏。视觉风格统一为「橙渐变顶边 + 纯白卡片 + 橙色块」：卡片纯白底、`1px` 橙描边、顶部橙渐变粗边（`border-image`）；强调元素（徽标/按钮/竖条/圆点/统计数字）用橙色渐变或浅橙底。参考实现：`apps/user/src/views/postgraduate/index.vue`、`apps/user/src/views/postgraduate/first-year.vue`。
 
 ## UI 设计规范
 
 ### 品牌色（与 admin 共享 token）
-- 主色 `#e8722a`（brand-orange），渐变端 `#f5a54a`（brand-orange-light）
-- 蓝色 `#1e88e5`（brand-blue），金色 `#f59e0b`（brand-gold）
-- 主操作统一使用橙色渐变 `linear-gradient(135deg, #e8722a, #f5a54a)`
+- 主色 `#F97316`，渐变端 `#FB923C`，hover `#EA580C`，active `#C2410C`
+- 强调文字橙 `#e8722a`（徽标/指南标题/链接文字）
+- 主渐变 `linear-gradient(90deg, #f97316, #fb923c)`（按钮 / 顶边 / 竖条 / 圆点 / 渐变文字）
 
-### 页面背景
-- 根容器：`bg-gradient-to-b from-brand-gray-50 to-white`（纯白微灰渐变）
-- **关键原则**：页面背景保持干净，卡片/列表内部必须是纯白 `bg-white`，避免橙色元素与背景色混淆
-- 枫叶 logo 水印 `@/assets/images/logo-main.png`，`opacity: 0.05`，右上 + 左下各一个，`pointer-events: none`
+### 页面根背景（**不可变**）
+- `html` 全局暖橙画布：`background-color: #ffedd5` + 顶部/底部透白雾 + 三道光晕（已在 `apps/user/src/assets/styles/index.css` 实现）。**任何改动不得修改 html 画布**，只允许在页面内层做白色 / 橙色块。
+- 页面内容容器 `.xx-page`：`max-width: 1280px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem;`，背景透明露出画布（禁止给根容器整屏铺色）。
+
+### Hero（页面首屏区块，可选）
+- 背景：半透明暖白渐变 `linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,247,237,0.92))`
+- 边框：`1px solid rgba(249,115,22,0.18)` + 渐变顶边 + 圆角 `1.5rem` + 阴影 `0 10px 40px rgba(249,115,22,0.1)`
+- 徽标 `.xx-hero-badge`：浅橙渐变底 + 深橙字 + 橙描边药丸（`linear-gradient(90deg, rgba(249,115,22,0.12), rgba(251,146,60,0.12))` + 文字 `#e8722a` + `border: 1px solid rgba(249,115,22,0.25)` + `border-radius: 9999px`）
+- 标题：`clamp(1.6rem, 2.6vw, 2.6rem)` / `font-weight: 800` / `#1f2937`
+- 统计数字：橙渐变文字（`background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent`）
 
 ### 卡片（Card）
-- 白色背景 `bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white`，`rounded-2xl`（16px 圆角）
-- **背景渐变**：左边浅灰→右边纯白水平渐变，白色占据大部分区域（约 4/5），灰色只在左侧边缘淡淡存在，增强与暖橙页面背景的对比度
-- 边框：`border border-gray-100/60`（无色细边，半透明灰色）
-- 阴影：`shadow-card`（默认态）→ hover `shadow-card-hover` + `-translate-y-0.5`（微上浮）
-- **禁止**使用橙色顶底边框（那是 admin 风格）
+- 背景纯白 `#ffffff`，圆角 `1rem`
+- 描边 `1px solid rgba(249,115,22,0.15)`
+- **渐变顶边（标志性，必须保留）**：
+  ```css
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
+  border-top-width: 3px;
+  ```
+- 阴影 `0 4px 20px rgba(249,115,22,0.06)`
+- hover：`translateY(-6px)` + `box-shadow: 0 14px 34px rgba(249,115,22,0.14)` + 描边加深 `rgba(249,115,22,0.35)`
+- 内层小卡（如 tips 卡）：浅橙渐变底 `linear-gradient(160deg, #fffdf9, #fff7ed)` + `1px solid rgba(249,115,22,0.12)`，hover 上浮 `-4px`
 
-### 药丸标签（Pill）
-- 基础类 `.pill`：`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium`
-- 橙色 `.pill-orange`：`bg-brand-orange/10 text-brand-orange border border-brand-orange/20`
-- 蓝色 `.pill-blue`：`bg-brand-blue/10 text-brand-blue border border-brand-blue/20`
-- 金色 `.pill-gold`：`bg-brand-gold/10 text-brand-gold-dark border border-brand-gold/20`
-- 视觉：半透明底 + 彩色文字 + 细描边，清爽不厚重
-- **禁止**使用实色渐变底+白字（那是 admin 风格）
+### 橙色块（强调元素）
+- 区域标题：左侧 4px 橙渐变竖条（`::before`，`linear-gradient(180deg, #f97316, #fb923c)`，宽 4px 高 1.25rem 圆角）+ `1.5rem / 800 / #1f2937`
+- 药丸徽标/标签：浅橙渐变底 + `#e8722a` 文字 + `1px solid rgba(249,115,22,0.25)` + `border-radius: 9999px`
+- 按钮 `.xx-btn`：橙渐变底 `linear-gradient(90deg, #f97316, #fb923c)` + 白字 + `border-radius: 9999px` + 阴影 `0 4px 14px rgba(249,115,22,0.28)`，hover 上浮 `-2px` + 阴影增强
+- 模块图标底：浅橙渐变圆角方块（`linear-gradient(135deg, rgba(249,115,22,0.12), rgba(251,146,60,0.12))` + `1px solid rgba(249,115,22,0.22)` + `border-radius: 0.75~0.9rem`）
+- 列表圆点：橙渐变小圆点（`width/height: 0.45rem; border-radius: 50%; background: linear-gradient(135deg, #f97316, #fb923c)`）
+- 指南块：浅橙渐变底 `linear-gradient(135deg, rgba(249,115,22,0.06), rgba(251,146,60,0.06))` + `1px dashed rgba(249,115,22,0.35)`，内部小项白底 + 橙描边
 
-### 按钮（Button）
-- 主操作 `.btn-brand`：`bg-gradient-to-r from-brand-orange to-brand-orange-light text-white rounded-full shadow-brand`，hover `-translate-y-0.5` + `shadow-brand-hover`
-- 次操作 `.btn-secondary`：`bg-white border border-gray-200 text-gray-700 rounded-full`，hover `border-brand-orange text-brand-orange`
-- 危险操作：红色渐变药丸 `linear-gradient(135deg, #ef4444, #f87171)`
+### 文字层级（三级灰）
+- 标题：`#1f2937` / `font-weight: 700~800`
+- 正文/描述：`#6b7280`；列表项：`#4b5563`
+- 辅助文字：`#9ca3af`
+- 品牌强调：`#e8722a` / 橙渐变文字（统计数字、重要数值）
 
-### 字体颜色层级（3级灰色）
-- 标题：`text-gray-800`（#1e293b）+ `font-bold`
-- 正文/值：`text-gray-700`（#334155）+ `font-medium`
-- 辅助文字：`text-gray-500`（#64748b）
-- 图标/分隔线：`text-gray-400`（#94a3b8）
-- 品牌色强调：`text-brand-orange`（#e8722a）用于链接、重要数值、可点击元素
+### 图标
+- **统一使用 SVG 语义图标（禁止 emoji）**，`stroke-width="2"`、`w-4 h-4` 基准；徽标/模块图标底内放 SVG 白/橙图标
+- 注：参考文件当前实现为 emoji，按本规范后续改造时应替换为 SVG
 
-### Tab 导航
-- 容器：`inline-flex items-center gap-2 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white rounded-2xl shadow-card border border-gray-100/60 p-1.5`
-- Active：`bg-gradient-to-r from-brand-orange to-brand-orange-light text-white shadow-brand rounded-xl`
-- Inactive：`text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange rounded-xl`
-- 每个 Tab 配 SVG 语义图标（非 emoji）
+### 写入手法（数据驱动）
+- 页面内容由 `<script setup>` 中的 `interface` + 常量数组驱动，模板 `v-for` 渲染，避免手写重复 DOM：
+  - 定义 `interface StageItem / ModuleItem` 等，字段含 `title / desc / btn / route / developing / features[]` 等
+  - 跳转统一 `go(item)`：`developing` 标记的弹「该功能正在开发中」（`ElMessage.info`），有 `route` 的 `router.push`
+- 内容区块结构：`Hero（可选）→ section（标题 + 副标题 + 卡片网格）`
+- 网格：`display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem`（自适应列数）
 
-### 搜索/筛选栏
-- 卡片容器：`rounded-2xl bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white p-6 shadow-card border border-gray-100/60`
-- 搜索框：左侧 SVG 放大镜图标 + `rounded-xl border-gray-200 focus:border-brand-orange focus:ring-brand-orange/20`
-- 筛选区：`border-t border-gray-100/60` 分隔，`grid` 布局
-- 按钮：`btn-brand`（查询）+ `btn-secondary`（重置）
-
-### 分页
-- 自定义手写分页（禁止使用 el-pagination）
-- 容器：`inline-flex items-center gap-1 bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white rounded-2xl shadow-card border border-gray-100/60 p-1.5`
-- 当前页：`bg-gradient-to-br from-brand-orange to-brand-orange-light text-white shadow-brand rounded-xl`
-- 非当前页：`text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange rounded-xl`
-- 每页条数：原生 `<select>` + `rounded-lg border-gray-200`
-
-### 阴影体系（3级）
-- `shadow-card`：`0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)`（默认态）
-- `shadow-card-hover`：`0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)`（hover态）
-- `shadow-brand`：`0 4px 14px 0 rgba(232,114,42,0.25)`（品牌按钮/激活态）
-- `shadow-card-active`：`0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)`（点击态）
-
-### 动画
-- 列表入场：`<TransitionGroup name="list">`，`opacity 0→1` + `translateY(20px)→0`，逐卡片交错 `animation-delay: i * 80ms`
-- Tab 切换：`<Transition name="fade" mode="out-in">`，`opacity` 过渡 0.25s
-- 卡片 hover：`transition-all duration-300 ease-out` + `-translate-y-0.5 shadow-card-hover`
-- 骨架屏：`.skeleton` 类 + `animate-shimmer`，匹配最终布局形状
-
-### SVG 图标
-- 每个信息字段配语义图标（地点🏫、学校🎓、书本📖、文档📄、图表📊、闪电⚡等）
-- 图标颜色跟随文字层级：`text-gray-400`（辅助）/ `text-brand-orange`（强调）/ `text-brand-blue`（信息）/ `text-brand-gold`（亮点）
-- 标准化 `stroke-width="2"`，图标尺寸 `w-4 h-4`（标准）/ `w-3.5 h-3.5`（紧凑）
-
-### 页面标题
-- 左上角：标题（`text-2xl font-bold text-gray-800`）+ 副标题（`text-sm text-gray-500 mt-1`）
-- 右侧操作按钮区：`flex items-center gap-3`
+### 参考实现
+- `apps/user/src/views/postgraduate/index.vue`：Hero + 阶段导航卡（4 张白卡）+ 核心模块卡（3 张白卡 + features 列表）
+- `apps/user/src/views/postgraduate/first-year.vue`：模块块（白卡大容器）+ 内层提示卡网格 + 指南块（虚线橙描边）
 
 ---
 
@@ -266,30 +247,25 @@ User 端面向 C 端用户（高考学生/家长），核心功能：高考志�
 
 每次新增或修改 user 端模块前，逐项自检：
 
-- [ ] 页面背景是否为纯白微灰渐变（`from-brand-gray-50 to-white`）？
-- [ ] 卡片是否为白色微灰渐变背景（`from-gray-100/40 to-white`）+ 无色细边 `border-gray-100/60` + `shadow-card`？
-- [ ] 操作按钮是否为药丸渐变 `btn-brand`（主）/ 描边 `btn-secondary`（次）？
-- [ ] 标签是否为半透明底 `pill-orange` / `pill-blue` / `pill-gold`？
-- [ ] 文字层级是否为三级灰色（800/700/500/400）？
-- [ ] 信息字段是否配了 SVG 语义图标？
-- [ ] Tab 是否为内联药丸 + SVG 图标（非 emoji）？
-- [ ] 分页是否为自定义手写分页（非 el-pagination）？
-- [ ] 列表是否有入场动画 + hover 微交互？
-- [ ] 卡片是否有 3 级阴影（card / hover / brand）？
-- [ ] 空状态是否有图标 + 引导文案（非纯文字）？
-- [ ] 骨架屏是否匹配最终布局形状？
+- [ ] `html` 全局暖橙画布（`#ffedd5` + 白雾 + 光晕）未被改动？
+- [ ] 页面根容器是否透明底 + `max-width: 1280px` 居中（未整屏铺色）？
+- [ ] 卡片是否纯白 `#ffffff` + `1px` 橙描边 + 渐变顶边（`border-image`）？
+- [ ] 卡片 hover 是否上浮 + 橙阴影增强？
+- [ ] 强调元素是否橙色系（徽标 / 按钮 / 竖条 / 圆点 / 渐变文字）？
+- [ ] 主按钮是否为橙渐变药丸 + 白字？
+- [ ] 图标是否全部 SVG（无 emoji）？
+- [ ] 内容是否数据驱动（`interface` + 数组 + `v-for`）？
+- [ ] 文字层级是否为三级灰 + 橙强调？
+- [ ] 跳转是否统一 `go(item)`（`developing` 弹「开发中」）？
 
 ---
 
 ## 禁止事项（User 端）
 
-- ❌ 禁止卡片使用橙色顶底边框（用无色细边 + 阴影替代）
-- ❌ 禁止卡片使用纯白 `bg-white`（用白色微灰渐变 `from-gray-100/40 to-white` 替代）
-- ❌ 禁止药丸标签使用实色渐变底 + 白字（用半透明底 + 彩色文字 + 细描边）
-- ❌ 禁止页面内卡片 / 列表使用暖色背景（必须纯白 `bg-white`）
-- ❌ 禁止使用 el-pagination（用自定义手写分页）
-- ❌ 禁止 Tab 使用 emoji 图标（用 SVG 语义图标）
-- ❌ 禁止信息区纯文字无图标（每个字段配 SVG 图标）
-- ❌ 禁止使用 Element Plus 默认灰色按钮作为主操作
-- ❌ 禁止按钮无圆角（统一 `rounded-full` 药丸形）
-- ❌ 禁止硬编码颜色（品牌色使用上述 Tailwind token）
+- ❌ 禁止修改 `html` 全局暖橙画布背景（**根背景橙色不可变**）
+- ❌ 禁止卡片使用无色细边 `border-gray-100/60` / 纯白微灰渐变（必须白底 + 橙描边 + 渐变顶边）
+- ❌ 禁止卡片缺少渐变顶边（标志性 `border-image` 顶边必须保留）
+- ❌ 禁止使用 emoji 图标（统一 SVG 语义图标）
+- ❌ 禁止页面根容器整屏铺色 / 不透明背景（必须露出全局暖橙画布）
+- ❌ 禁止硬编码颜色（品牌色用上述色值）
+- ❌ 禁止按钮无圆角（统一 `border-radius: 9999px` 药丸形）

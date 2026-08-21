@@ -1,6 +1,7 @@
 export interface CommunityQueryDTO {
   page?: number
   size?: number
+  keyword?: string
   positionName?: string
   streetOffice?: string
   communityName?: string

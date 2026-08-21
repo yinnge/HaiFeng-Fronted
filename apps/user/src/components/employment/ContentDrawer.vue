@@ -17,7 +17,7 @@ const noticeVisible = ref(false)
     ]"
     @click="!drawerExpanded && (drawerExpanded = true)"
   >
-    <div v-if="drawerExpanded" class="sticky top-24 flex flex-col gap-3">
+    <div v-if="drawerExpanded" class="sticky top-24 flex flex-col gap-3 items-center min-h-[calc(100vh-6rem)] justify-center">
       <button
         class="group relative flex h-44 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50/70 to-white p-5 text-left shadow-lg border-t-[3px] border-t-[#F97316] border-b-[3px] border-b-[#FB923C] hover:-translate-y-0.5 hover:shadow-xl transition-all"
         @click="examGuideVisible = true"
@@ -54,7 +54,7 @@ const noticeVisible = ref(false)
 
     <div
       v-else
-      class="sticky top-24 flex flex-col items-center gap-2 rounded-l-xl border border-r-0 border-gray-200 bg-white/90 py-3 shadow-md"
+      class="sticky top-24 flex flex-col items-center gap-2 rounded-l-xl border border-r-0 border-gray-200 bg-white/90 py-3 shadow-md min-h-[calc(100vh-6rem)] justify-center"
     >
       <button
         class="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-gray-400 transition-all hover:bg-orange-50 hover:text-orange-500"

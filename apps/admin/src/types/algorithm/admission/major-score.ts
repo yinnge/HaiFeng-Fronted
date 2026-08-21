@@ -4,10 +4,16 @@ export interface AdmissionMajorScoreListVO {
   majorCode: string
   majorName: string
   educationLevel: string | null
-  admissionCount: number | null
-  minScore: number | null
-  minRank: number | null
-  avgScore: number | null
+  history: Array<{
+    year: number
+    admissionCount: number | null
+    minScore: number | null
+    minRank: number | null
+    avgScore: number | null
+    avgRank: number | null
+    maxScore: number | null
+    maxRank: number | null
+  }>
   isDeleted: boolean
 }
 
@@ -21,13 +27,16 @@ export interface AdmissionMajorScoreDetailVO {
   duration: string | null
   tuition: string | null
   description: string | null
-  admissionCount: number | null
-  minScore: number | null
-  minRank: number | null
-  avgScore: number | null
-  avgRank: number | null
-  maxScore: number | null
-  maxRank: number | null
+  history: Array<{
+    year: number
+    admissionCount: number | null
+    minScore: number | null
+    minRank: number | null
+    avgScore: number | null
+    avgRank: number | null
+    maxScore: number | null
+    maxRank: number | null
+  }>
   constraints: string[]
   isDeleted: boolean
   createdAt: string
@@ -44,8 +53,20 @@ export interface AdmissionMajorScoreQueryDTO {
   isDeleted?: boolean
 }
 
+export interface ScoreHistoryItem {
+  year: number
+  admissionCount: number | null
+  minScore: number | null
+  minRank: number | null
+  avgScore: number | null
+  avgRank: number | null
+  maxScore: number | null
+  maxRank: number | null
+}
+
 export interface AdmissionMajorScoreAddDTO {
   groupId: string
+  year: number | null
   majorId?: number
   majorCode: string
   majorName: string
@@ -61,6 +82,8 @@ export interface AdmissionMajorScoreAddDTO {
   maxScore?: number
   maxRank?: number
   constraints?: string[]
+  /** 多年度分数数组（优先于平铺分数字段），新增整体写入 / 修改整体替换 */
+  history?: ScoreHistoryItem[]
 }
 
 export interface AdmissionMajorScoreUpdateDTO extends AdmissionMajorScoreAddDTO {}

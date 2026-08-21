@@ -13,6 +13,17 @@ export interface WishPlanLimitVO {
   floorCount: number
 }
 
+export interface SafetyLevelDictVO {
+  code: string
+  name: string
+  nameShort: string
+  minCoefficient: number
+  maxCoefficient: number
+  color: string
+  description: string
+  limit: number
+}
+
 export interface WishPlanListVO {
   id: string
   planName: string
@@ -54,6 +65,10 @@ export interface WishPlanGroupVO {
   recommendationYear: number
   recommendationRate: number
   allExported?: boolean
+  /** 组级安全等级（0~1），取组内专业快照 safetyLevel 最大值 */
+  safetyLevel?: number
+  /** 组级等级简写（搏/冲/稳/保/垫/禁） */
+  levelShort?: string
 }
 
 export interface WishPlanMajorVO {
@@ -82,6 +97,26 @@ export interface WishPlanMajorVO {
   }[]
 }
 
+/** 可导出的专业明细（is_exported=true，AI 分析确认弹窗用） */
+export interface WishExportMajorVO {
+  majorId: string
+  majorName: string
+  safetyLevel: number
+  levelShort: string
+}
+
+/** 可导出的专业组上下文（is_exported 专业组 + 专业明细，AI 分析确认弹窗用） */
+export interface ExportGroupContextVO {
+  groupSnapshotId: number
+  universityId: number
+  universityName: string
+  cityName: string
+  groupSortOrder: number
+  groupCode: string
+  groupName: string
+  exportableMajors: WishExportMajorVO[]
+}
+
 export interface WishPlanExportProgressVO {
   totalMajors: number
   exportedMajors: number
@@ -100,7 +135,10 @@ export interface WishPlanExportFileVO {
 export const getDefaultLimits = () =>
   request.get<R<WishPlanLimitVO>>(`${PREFIX}/default-limits`)
 
-export const addMajors = (data: { planId: string | null; groupId: string; majorIds: string[] }) =>
+export const getLevelDict = () =>
+  request.get<R<SafetyLevelDictVO[]>>(`${PREFIX}/level-dict`)
+
+export const addMajors = (data: { planId: string | null; groupId: string; majorCodes: string[]; planName?: string | null }) =>
   request.post<R<WishPlanListVO>>(`${PREFIX}/add-majors`, data)
 
 export const getMyPlans = () =>
@@ -113,6 +151,9 @@ export const getPlanGroups = (planId: string, params?: { page?: number; size?: n
   request.get<R<{ records: WishPlanGroupVO[]; total: number; size: number; current: number; pages: number }>>(
     `${PREFIX}/${planId}/groups`, { params }
   )
+
+export const getExportGroupContexts = (planId: string) =>
+  request.get<R<ExportGroupContextVO[]>>(`${PREFIX}/${planId}/export-group-contexts`)
 
 export const getPlanGroupMajors = (planId: string, groupSnapshotId: string, params?: { page?: number; size?: number }) =>
   request.get<R<{ records: WishPlanMajorVO[]; total: number; size: number; current: number; pages: number }>>(

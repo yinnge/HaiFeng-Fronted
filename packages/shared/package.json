@@ -12,7 +12,8 @@
     "./constants/*": "./src/constants/*"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
   },
   "dependencies": {
     "@inspira-ui/plugins": "^0.0.2",
