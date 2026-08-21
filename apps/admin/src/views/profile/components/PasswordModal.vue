@@ -28,7 +28,11 @@ const rules: FormRules = {
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 16, message: '密码长度 6-16 位', trigger: 'blur' },
+    {
+      pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/,
+      message: '密码必须是数字+字母，长度6-16位',
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
@@ -61,8 +65,8 @@ async function handleSubmit() {
     } else {
       ElMessage.error(data.msg || '修改失败')
     }
-  } catch (error) {
-    ElMessage.error('修改失败')
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.msg || error?.message || '修改失败')
   } finally {
     loading.value = false
   }
@@ -116,7 +120,7 @@ function handleClose() {
         <el-input
           v-model="form.newPassword"
           type="password"
-          placeholder="请输入 6-16 位新密码"
+          placeholder="请输入字母+数字，6-16位新密码"
           show-password
         />
       </el-form-item>

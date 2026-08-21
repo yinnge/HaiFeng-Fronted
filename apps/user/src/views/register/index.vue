@@ -36,7 +36,11 @@ const rules: FormRules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+    {
+      pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/,
+      message: '密码必须是数字+字母，长度6-16位',
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -206,7 +210,7 @@ onMounted(() => {
                   <el-input
                     v-model="form.password"
                     type="password"
-                    placeholder="密码（至少6位）"
+                    placeholder="密码（字母+数字，6-16位）"
                     size="large"
                     show-password
                     class="custom-input"
