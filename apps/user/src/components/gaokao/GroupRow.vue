@@ -41,6 +41,37 @@ const safetyGradient = computed(() => safetyGradientMap[props.group.levelShort] 
 const hasHardConflict = computed(() => props.conflicts && !props.conflicts.isPass)
 const hasSoftConflict = computed(() => props.conflicts && props.conflicts.isPass && props.conflicts.softConflicts.length > 0)
 
+/** 选科类型组合文案：必选1 → 必选【科目】；必选2/3 → 【A】和【B】(和【C】)必选；2选1/3选1 → 【A】和【B】(和【C】)选一；不限 → 不限 */
+const requirementText = computed(() => {
+  const type = props.group.requirementType || ''
+  const list = props.group.subjects || []
+  if (!type || type === '不限') return '不限'
+  const wrap = (s: string) => `【${s}】`
+  const must = type.match(/^必选(\d+)$/)
+  if (must) {
+    const n = parseInt(must[1], 10)
+    const picked = list.slice(0, n)
+    if (picked.length === 0) return type
+    return n <= 1 ? `必选${wrap(picked[0])}` : `${picked.map(wrap).join('和')}必选`
+  }
+  const pick = type.match(/^(\d+)选(\d+)$/)
+  if (pick) {
+    const m = parseInt(pick[1], 10)
+    const n = parseInt(pick[2], 10)
+    const picked = list.slice(0, m)
+    if (picked.length === 0) return type
+    const cn = ['零', '一', '二', '三', '四', '五', '六'][n] || String(n)
+    return `${picked.map(wrap).join('和')}选${cn}`
+  }
+  return type
+})
+
+/** 条件限制文本：constraints 逗号隔开；为空则不展示 */
+const restrictionText = computed(() => {
+  const list = props.group.constraints || []
+  return list.join('，')
+})
+
 const cardClass = computed(() => {
   const base = 'group relative rounded-2xl border transition-all duration-300 ease-out'
   if (props.isMasked) return `${base} opacity-60`
@@ -102,23 +133,15 @@ const cardClass = computed(() => {
             <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            选科：{{ group.requirementType }}
+            选科：{{ requirementText }}
           </span>
         </div>
 
-        <p class="mt-3 text-sm text-gray-500 line-clamp-2 leading-relaxed">{{ group.description }}</p>
+        <p class="mt-3 text-sm text-gray-500 leading-relaxed break-words">{{ group.description }}</p>
 
-        <div v-if="group.constraints.length > 0" class="mt-3 flex flex-wrap gap-1.5">
-          <span
-            v-for="c in group.constraints"
-            :key="c"
-            class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-100"
-          >
-            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            {{ c }}
-          </span>
+        <!-- 条件限制：红色字体贴底，有才展示 -->
+        <div v-if="restrictionText" class="mt-2.5 text-xs text-red-500 leading-relaxed">
+          限制：{{ restrictionText }}
         </div>
 
         <div v-if="hasHardConflict" class="mt-3 text-sm text-red-600 bg-red-50 rounded-xl p-3 border border-red-100">
@@ -145,7 +168,7 @@ const cardClass = computed(() => {
         </div>
       </div>
 
-      <div class="w-[28rem] shrink-0 border-l border-gray-100/60 p-4 bg-gray-50/30">
+      <div class="w-[32rem] shrink-0 border-l border-gray-100/60 p-4 bg-gray-50/30">
         <div class="flex items-center mb-3">
           <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -160,6 +183,7 @@ const cardClass = computed(() => {
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">最低分/位次</th>
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">平均分/位次</th>
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">最高分/位次</th>
+                <th class="text-center font-semibold text-gray-600 px-4 py-2">录取人数</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100/60">
@@ -168,6 +192,7 @@ const cardClass = computed(() => {
                 <td class="px-4 py-2 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
                 <td class="px-4 py-2 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
                 <td class="px-4 py-2 tabular-nums">{{ s.maxScore }}/{{ s.maxRank }}</td>
+                <td class="px-4 py-2 tabular-nums text-center">{{ s.admissionCount }}</td>
               </tr>
             </tbody>
           </table>
@@ -209,10 +234,4 @@ const cardClass = computed(() => {
 </template>
 
 <style scoped>
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 </style>

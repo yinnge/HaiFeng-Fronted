@@ -14,7 +14,7 @@ export const getGroupDetail = (id: string): Promise<AxiosResponse<R<AdmissionGro
 export const addGroup = (data: AdmissionGroupAddDTO): Promise<AxiosResponse<R<number>>> =>
   request.post(PREFIX, data)
 
-export const updateGroup = (id: string, data: AdmissionGroupUpdateDTO): Promise<AxiosResponse<R<void>>> =>
+export const updateGroup = (id: string, data: AdmissionGroupUpdateDTO): Promise<AxiosResponse<R<number>>> =>
   request.put(`${PREFIX}/${id}`, data)
 
 export const updateGroupStatus = (id: string, isDeleted: boolean): Promise<AxiosResponse<R<void>>> =>

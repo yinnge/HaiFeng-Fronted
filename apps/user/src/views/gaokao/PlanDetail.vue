@@ -7,6 +7,7 @@ import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import {
   getPlanGroups,
   getPlanGroupMajors,
+  getExportGroupContexts,
   sortPlanGroups,
   sortPlanGroupMajors,
   toggleMajorExport,
@@ -15,6 +16,7 @@ import {
   downloadExport,
   type WishPlanGroupVO,
   type WishPlanMajorVO,
+  type ExportGroupContextVO,
 } from '@/api/wish-plan'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 
@@ -35,6 +37,12 @@ const exporting = ref(false)
 
 // AI 智能分析
 const showGenerateDialog = ref(false)
+
+// AI 智能分析确认弹窗（展示将分析的 is_exported 专业组与专业明细）
+const showConfirmDialog = ref(false)
+const exportContexts = ref<ExportGroupContextVO[]>([])
+const confirmLoading = ref(false)
+const totalExportableMajors = ref(0)
 
 const safetyColorMap: Record<string, string> = {
   '搏': '#ef4444',
@@ -276,6 +284,32 @@ function handleAiAnalysis() {
     }).catch(() => {})
     return
   }
+  // 加载 is_exported 的专业组与专业明细，先弹确认框
+  loadExportContexts()
+}
+
+// 加载可导出（is_exported=true）的专业组与专业明细
+async function loadExportContexts() {
+  confirmLoading.value = true
+  try {
+    const res = await getExportGroupContexts(planId)
+    exportContexts.value = res.data.data || []
+    totalExportableMajors.value = exportContexts.value.reduce((sum, g) => sum + (g.exportableMajors?.length || 0), 0)
+    if (exportContexts.value.length === 0 || totalExportableMajors.value === 0) {
+      ElMessage.warning('当前志愿表没有可分析的专业，请先在志愿表中勾选要分析的（全选导出）')
+      return
+    }
+    showConfirmDialog.value = true
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载可分析专业失败')
+  } finally {
+    confirmLoading.value = false
+  }
+}
+
+// 确认后开始 AI 智能分析
+function confirmAndGenerate() {
+  showConfirmDialog.value = false
   showGenerateDialog.value = true
 }
 
@@ -631,6 +665,69 @@ function goToPdfHistory() {
         </TransitionGroup>
       </div>
     </main>
+
+    <!-- AI 智能分析确认弹窗 -->
+    <el-dialog
+      v-model="showConfirmDialog"
+      title="AI 智能分析"
+      width="600px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <div class="py-2">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          <span class="text-sm font-medium text-gray-700">是否进行AI智能分析？</span>
+        </div>
+        <p class="text-xs text-gray-400 mb-3">
+          将分析以下 {{ exportContexts.length }} 个专业组、共 {{ totalExportableMajors }} 个专业明细（仅已勾选导出的专业）：
+        </p>
+        <div
+          v-loading="confirmLoading"
+          class="max-h-[45vh] overflow-y-auto rounded-xl border border-gray-100/80 divide-y divide-gray-100/60"
+        >
+          <div v-for="g in exportContexts" :key="g.groupSnapshotId" class="p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-800 truncate">
+                {{ g.universityName }} · {{ g.groupName }}
+              </span>
+              <span class="shrink-0 ml-2 text-xs text-gray-400">{{ g.exportableMajors.length }} 个专业</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="m in g.exportableMajors"
+                :key="m.majorId"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-gray-50 text-gray-600 border border-gray-100/80"
+              >
+                <span
+                  class="w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0"
+                  :style="{ backgroundColor: safetyColorMap[m.levelShort] || '#94a3b8' }"
+                >
+                  {{ m.levelShort }}
+                </span>
+                {{ m.majorName }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button
+          class="px-5 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+          @click="showConfirmDialog = false"
+        >
+          取消
+        </button>
+        <button
+          class="px-5 py-2 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-600 transition-colors ml-2"
+          @click="confirmAndGenerate"
+        >
+          智能分析
+        </button>
+      </template>
+    </el-dialog>
 
     <PdfGenerateDialog
       v-model:visible="showGenerateDialog"

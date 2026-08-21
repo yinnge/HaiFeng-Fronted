@@ -75,3 +75,21 @@ export interface DashboardOverviewVO {
   systemInfo: SystemInfoVO
   todoList: TodoListVO
 }
+
+/** 系统资源（CPU / 内存）使用情况 VO
+ *  数值字段可能因后端序列化表现为 number 或 string，前端统一按 number | string 处理
+ */
+export interface SystemResourceVO {
+  osName: string | null
+  osArch: string | null
+  cpuCores: number | string | null
+  totalMemoryGb: number | string | null
+  usedMemoryGb: number | string | null
+  freeMemoryGb: number | string | null
+  /** 内存使用率（%，0~100） */
+  memoryUsageRate: number | string | null
+  /** CPU 使用率（%，0~100）；部分容器/JDK 环境不支持时为空 */
+  cpuUsageRate: number | string | null
+  /** 采样时间戳（毫秒） */
+  timestamp: number | string | null
+}

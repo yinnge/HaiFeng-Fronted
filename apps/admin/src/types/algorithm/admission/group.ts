@@ -44,6 +44,16 @@ export interface AdmissionGroupDetailVO {
   avgRank: number | null
   maxScore: number | null
   maxRank: number | null
+  history: Array<{
+    year: number
+    admissionCount: number | null
+    minScore: number | null
+    minRank: number | null
+    avgScore: number | null
+    avgRank: number | null
+    maxScore: number | null
+    maxRank: number | null
+  }>
   isDeleted: boolean
   createdAt: string
   updatedAt: string

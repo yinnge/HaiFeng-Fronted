@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { getDashboardStats, getMemberTrend, getOrderTrend, getDashboardOverview } from '@/api/dashboard'
-import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO } from '@/types/dashboard'
+import { getDashboardStats, getMemberTrend, getOrderTrend, getDashboardOverview, getSystemResource } from '@/api/dashboard'
+import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO, SystemResourceVO } from '@/types/dashboard'
 import { Line, Column } from '@antv/g2plot'
 
 const router = useRouter()
@@ -13,6 +13,8 @@ const trendError = ref('')
 const overviewError = ref('')
 const stats = ref<DashboardStatsVO | null>(null)
 const overview = ref<DashboardOverviewVO | null>(null)
+const systemResource = ref<SystemResourceVO | null>(null)
+const resourceError = ref('')
 const activeDays = ref(7)
 
 let memberTrendChart: Line | null = null
@@ -87,6 +89,20 @@ async function fetchOverview() {
   } catch (e: any) {
     console.error('获取概览数据失败:', e)
     overviewError.value = e?.message || '获取概览数据失败'
+  }
+}
+
+async function fetchSystemResource() {
+  try {
+    const res = await getSystemResource()
+    if (res.data.code === 200 && res.data.data) {
+      systemResource.value = res.data.data
+    } else {
+      resourceError.value = res.data.msg || '获取资源信息失败'
+    }
+  } catch (e: any) {
+    console.error('获取系统资源失败:', e)
+    resourceError.value = e?.message || '获取系统资源失败'
   }
 }
 
@@ -342,8 +358,24 @@ function formatTime(timeStr: string): string {
   return `${month}-${day} ${hours}:${minutes}`
 }
 
+/** 格式化比率（%），后端返回 0~100 的数值；不支持的环境返回「不支持」 */
+function formatRate(v: number | string | null): string {
+  if (v === null || v === undefined || v === '') return '不支持'
+  const n = Number(v)
+  if (Number.isNaN(n)) return '不支持'
+  return `${n.toFixed(2)}%`
+}
+
+/** 格式化 GB 数值，保留两位小数 */
+function formatGb(v: number | string | null): string {
+  if (v === null || v === undefined || v === '') return '-'
+  const n = Number(v)
+  if (Number.isNaN(n)) return '-'
+  return n.toFixed(2)
+}
+
 onMounted(async () => {
-  await Promise.all([fetchStats(), fetchOverview()])
+  await Promise.all([fetchStats(), fetchOverview(), fetchSystemResource()])
   await fetchTrends()
   await nextTick()
   renderEntityCompareChart()
@@ -443,6 +475,22 @@ onBeforeUnmount(() => {
             <div class="overview-item">
               <span class="overview-label">管理员数</span>
               <span class="overview-value overview-value--highlight">{{ overview.systemInfo.adminCount }}</span>
+            </div>
+            <div v-if="systemResource" class="overview-item">
+              <span class="overview-label">CPU 核心数</span>
+              <span class="overview-value">{{ systemResource.cpuCores }} 核</span>
+            </div>
+            <div v-if="systemResource" class="overview-item">
+              <span class="overview-label">CPU 使用率</span>
+              <span class="overview-value overview-value--highlight">{{ formatRate(systemResource.cpuUsageRate) }}</span>
+            </div>
+            <div v-if="systemResource" class="overview-item">
+              <span class="overview-label">内存占用</span>
+              <span class="overview-value overview-value--highlight">{{ formatGb(systemResource.usedMemoryGb) }} / {{ formatGb(systemResource.totalMemoryGb) }} GB</span>
+            </div>
+            <div v-if="systemResource" class="overview-item">
+              <span class="overview-label">内存使用率</span>
+              <span class="overview-value overview-value--highlight">{{ formatRate(systemResource.memoryUsageRate) }}</span>
             </div>
           </div>
           <div v-else class="chart-empty">{{ overviewError || '暂无数据' }}</div>

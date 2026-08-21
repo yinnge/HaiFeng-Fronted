@@ -1,6 +1,6 @@
 import request from '@haifeng/shared/utils/request'
 import type { R } from '@haifeng/shared'
-import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO } from '@/types/dashboard'
+import type { DashboardStatsVO, TrendDataVO, DashboardOverviewVO, SystemResourceVO } from '@/types/dashboard'
 
 const PREFIX = '/api/v1/admin/dashboard'
 
@@ -22,4 +22,9 @@ export const getOrderTrend = (days: number) => {
 /** 获取仪表盘概览（系统信息 + 待办事项） */
 export const getDashboardOverview = () => {
   return request.get<R<DashboardOverviewVO>>(`${PREFIX}/overview`)
+}
+
+/** 获取系统资源（CPU / 内存）使用情况 */
+export const getSystemResource = () => {
+  return request.get<R<SystemResourceVO>>('/api/v1/admin/system/monitor/resource')
 }

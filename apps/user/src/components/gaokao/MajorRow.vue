@@ -10,6 +10,7 @@ const props = defineProps<{
 
 defineEmits<{
   toggleSelect: []
+  clickMajor: [name: string]
 }>()
 
 const safetyColorMap: Record<string, string> = {
@@ -33,6 +34,19 @@ const safetyGradientMap: Record<string, string> = {
 const safetyBallColor = computed(() => safetyColorMap[props.major.levelShort] || '#94a3b8')
 const safetyGradient = computed(() => safetyGradientMap[props.major.levelShort] || 'from-gray-400 to-gray-500')
 const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMasked)
+
+/** 学制规范化：'4' → '4年'，'4年' → '4年' */
+const displayDuration = computed(() => {
+  const d = props.major.duration || ''
+  if (!d) return '-'
+  return /\d$/.test(d) ? `${d}年` : d
+})
+
+/** 条件限制文本：constraints 逗号隔开；为空则不展示 */
+const restrictionText = computed(() => {
+  const list = props.major.constraints || []
+  return list.join('，')
+})
 </script>
 
 <template>
@@ -56,7 +70,14 @@ const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMa
 
     <div class="flex-1 min-w-0 p-4">
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-sm font-semibold text-gray-800">{{ major.majorName }}</span>
+        <button
+          type="button"
+          class="text-sm font-semibold text-gray-800 hover:text-brand-orange hover:underline underline-offset-2 transition-colors cursor-pointer"
+          title="查看专业信息"
+          @click.stop="$emit('clickMajor', major.majorName)"
+        >
+          {{ major.majorName }}
+        </button>
         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500">{{ major.majorCode }}</span>
       </div>
       <div class="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
@@ -67,23 +88,23 @@ const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMa
           {{ major.educationLevel }}
         </span>
         <span class="text-gray-300">·</span>
-        <span>{{ major.duration }}</span>
-        <span class="text-gray-300">·</span>
-        <span class="text-brand-orange font-medium">{{ major.tuition }}</span>
-      </div>
-      <p class="mt-2 text-xs text-gray-500 line-clamp-1 leading-relaxed">{{ major.description }}</p>
-      <div v-if="major.constraints.length > 0" class="mt-2 flex flex-wrap gap-1">
-        <span
-          v-for="c in major.constraints"
-          :key="c"
-          class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-red-50 text-red-600 border border-red-100"
-        >
-          {{ c }}
+        <span class="inline-flex items-center">
+          <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          学制 {{ displayDuration }}
         </span>
+        <span class="text-gray-300">·</span>
+        <span class="text-brand-orange font-medium">{{ major.tuition }}/年</span>
+      </div>
+      <p class="mt-2 text-xs text-gray-500 leading-relaxed break-words">{{ major.description }}</p>
+      <!-- 条件限制：红色字体贴底，有才展示 -->
+      <div v-if="restrictionText" class="mt-2 text-xs text-red-500 leading-relaxed">
+        限制：{{ restrictionText }}
       </div>
     </div>
 
-    <div class="w-[26rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
+    <div class="w-[30rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
       <div class="overflow-hidden rounded-lg border border-gray-200/60">
         <table class="w-full text-[11px]">
           <thead>
@@ -92,6 +113,7 @@ const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMa
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最低分/位次</th>
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">平均分/位次</th>
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最高分/位次</th>
+              <th class="text-center font-semibold text-gray-600 px-3 py-1.5">录取人数</th>
             </tr>
           </thead>
           <tbody class="text-gray-600 divide-y divide-gray-100/60">
@@ -100,6 +122,7 @@ const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMa
               <td class="px-3 py-1.5 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
               <td class="px-3 py-1.5 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
               <td class="px-3 py-1.5 tabular-nums">{{ s.maxScore }}/{{ s.maxRank }}</td>
+              <td class="px-3 py-1.5 tabular-nums text-center">{{ s.admissionCount }}</td>
             </tr>
           </tbody>
         </table>
@@ -126,10 +149,4 @@ const canSelect = computed(() => props.major.levelShort !== '禁' && !props.isMa
 </template>
 
 <style scoped>
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 </style>

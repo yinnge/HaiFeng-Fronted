@@ -14,6 +14,7 @@ import {
   recalcAllGroups,
 } from '@/api/algorithm/admission/group'
 import { getUniversityPage } from '@/api/university/info'
+import { getDictPage } from '@/api/algorithm/constraint'
 import type {
   AdmissionGroupListVO,
   AdmissionGroupDetailVO,
@@ -27,6 +28,24 @@ const loading = ref(false)
 const tableData = ref<AdmissionGroupListVO[]>([])
 const total = ref(0)
 const selectedIds = ref<string[]>([])
+
+/* ===== 约束字典（约束条件下拉：label=约束名称 name，value=约束 code） ===== */
+const constraintOptions = ref<{ label: string; value: string }[]>([])
+
+const fetchConstraintOptions = async () => {
+  try {
+    const res = await getDictPage({ page: 1, size: 100 })
+    if (res.data.code === 200) {
+      constraintOptions.value = res.data.data.records
+        .filter((d) => d.isActive)
+        .map((d) => ({ label: d.name, value: d.code }))
+    } else {
+      constraintOptions.value = []
+    }
+  } catch {
+    constraintOptions.value = []
+  }
+}
 
 const provinceOptions = [
   '北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏',
@@ -274,7 +293,14 @@ const handleSubmit = async () => {
     }
 
     if (res.data.code === 200) {
-      ElMessage.success(dialogMode.value === 'add' ? '新增成功' : '修改成功')
+      if (dialogMode.value === 'edit') {
+        const updatedCount = res.data.data || 0
+        ElMessage.success(updatedCount > 0
+          ? `修改成功，对应 ${updatedCount} 条专业明细已更新并添加了限制`
+          : '修改成功')
+      } else {
+        ElMessage.success('新增成功')
+      }
       dialogVisible.value = false
       fetchData()
     } else {
@@ -410,6 +436,7 @@ const formatSubjects = (subjects: string[], requirementType: string) => {
 
 onMounted(() => {
   fetchData()
+  fetchConstraintOptions()
 })
 </script>
 
@@ -446,7 +473,7 @@ onMounted(() => {
                 </el-form-item>
               </el-col>
               <el-col :span="5">
-                <el-form-item label="省份" style="width: 100%; margin-bottom: 16px;">
+                <el-form-item label="面向招生省份" style="width: 100%; margin-bottom: 16px;">
                   <el-select v-model="queryParams.province" placeholder="全部" clearable filterable style="width: 100%;">
                     <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
                   </el-select>
@@ -535,7 +562,7 @@ onMounted(() => {
         <el-table-column prop="universityName" label="大学名称" min-width="130" show-overflow-tooltip />
         <el-table-column prop="cityName" label="城市" min-width="90" />
         <el-table-column prop="year" label="年份" min-width="70" />
-        <el-table-column prop="province" label="省份" min-width="80" />
+        <el-table-column prop="province" label="面向招生省份" min-width="90" />
         <el-table-column prop="batch" label="批次" min-width="90" />
         <el-table-column prop="enrollmentCode" label="省招代码" min-width="110" />
         <el-table-column prop="groupCode" label="专业组代码" min-width="100" />
@@ -594,7 +621,7 @@ onMounted(() => {
                 <el-descriptions-item label="大学名称">{{ detailData.universityName }}</el-descriptions-item>
                 <el-descriptions-item label="城市">{{ detailData.cityName }}</el-descriptions-item>
                 <el-descriptions-item label="年份">{{ detailData.year }}</el-descriptions-item>
-                <el-descriptions-item label="省份">{{ detailData.province }}</el-descriptions-item>
+                <el-descriptions-item label="面向招生省份">{{ detailData.province }}</el-descriptions-item>
                 <el-descriptions-item label="批次">{{ detailData.batch }}</el-descriptions-item>
                 <el-descriptions-item label="省招代码">{{ detailData.enrollmentCode || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="专业组代码">{{ detailData.groupCode }}</el-descriptions-item>
@@ -630,6 +657,21 @@ onMounted(() => {
                 <el-descriptions-item label="最高分">{{ detailData.maxScore ?? '-' }}</el-descriptions-item>
                 <el-descriptions-item label="最高位次">{{ detailData.maxRank ?? '-' }}</el-descriptions-item>
               </el-descriptions>
+            </el-tab-pane>
+            <el-tab-pane label="历年分数">
+              <el-table :data="(detailData.history || []).slice().reverse()" border size="small">
+                <el-table-column prop="year" label="年份" width="80" />
+                <el-table-column prop="admissionCount" label="录取人数" min-width="80" />
+                <el-table-column prop="minScore" label="最低分" min-width="70" />
+                <el-table-column prop="minRank" label="最低位次" min-width="80" />
+                <el-table-column prop="avgScore" label="平均分" min-width="70" />
+                <el-table-column prop="avgRank" label="平均位次" min-width="80" />
+                <el-table-column prop="maxScore" label="最高分" min-width="70" />
+                <el-table-column prop="maxRank" label="最高位次" min-width="80" />
+              </el-table>
+              <div v-if="!detailData.history || detailData.history.length === 0" style="text-align: center; color: #999; padding: 20px;">
+                暂无历史数据
+              </div>
             </el-tab-pane>
             <el-tab-pane label="时间信息">
               <el-descriptions :column="2" border>
@@ -685,7 +727,7 @@ onMounted(() => {
             </el-row>
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item label="省份" required class="dialog-form-item">
+                <el-form-item label="面向招生省份" required class="dialog-form-item">
                   <el-select v-model="formData.province" placeholder="请选择" filterable style="width: 100%;">
                     <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
                   </el-select>
@@ -746,11 +788,12 @@ onMounted(() => {
                 v-model="formData.constraints"
                 multiple
                 filterable
-                allow-create
-                default-first-option
-                placeholder="输入约束条件后回车"
+                placeholder="请选择约束条件"
                 style="width: 100%;"
-              />
+              >
+                <el-option v-for="c in constraintOptions" :key="c.value" :label="c.label" :value="c.value" />
+              </el-select>
+              <div class="form-tip">仅可选择约束字典中已启用的约束项</div>
             </el-form-item>
             <el-form-item label="专业组简介" class="dialog-form-item">
               <el-input v-model="formData.description" type="textarea" :rows="3" maxlength="2000" show-word-limit />
@@ -1048,6 +1091,12 @@ onMounted(() => {
 }
 .dialog-form-item {
   margin-bottom: 18px !important;
+}
+.form-tip {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+  line-height: 1.5;
 }
 
 /* ===== 大学名称远程搜索下拉：选项双行（名称 + 省市/类型） ===== */

@@ -3,8 +3,8 @@ import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
-import { getCityBriefByName, getUniversityBriefByName } from '@/api/gaokao/brief'
-import type { CityBriefVO, UniversityBriefVO, BriefDrawerData } from '@/types/gaokao/brief'
+import { getCityBriefByName, getUniversityBriefByName, getMajorBriefByName } from '@/api/gaokao/brief'
+import type { CityBriefVO, UniversityBriefVO, MajorBriefVO, BriefDrawerData } from '@/types/gaokao/brief'
 
 const props = defineProps<{
   visible: boolean
@@ -19,6 +19,7 @@ const router = useRouter()
 const loading = ref(false)
 const cityData = ref<CityBriefVO | null>(null)
 const universityData = ref<UniversityBriefVO | null>(null)
+const majorData = ref<MajorBriefVO | null>(null)
 
 const drawerVisible = computed({
   get: () => props.visible,
@@ -35,10 +36,14 @@ watch(
     loading.value = true
     cityData.value = null
     universityData.value = null
+    majorData.value = null
     try {
       if (data.type === 'city') {
         const res = await getCityBriefByName(data.name)
         cityData.value = res.data.data
+      } else if (data.type === 'major') {
+        const res = await getMajorBriefByName(data.name)
+        majorData.value = res.data.data
       } else {
         const res = await getUniversityBriefByName(data.name)
         universityData.value = res.data.data
@@ -59,6 +64,9 @@ const currentId = computed(() => {
   if (currentType.value === 'university' && universityData.value) {
     return universityData.value.id
   }
+  if (currentType.value === 'major' && majorData.value) {
+    return majorData.value.id
+  }
   return null
 })
 
@@ -70,6 +78,8 @@ function goDetail() {
   drawerVisible.value = false
   if (currentType.value === 'city') {
     router.push(`/city/${currentId.value}`)
+  } else if (currentType.value === 'major') {
+    router.push(`/major/${currentId.value}`)
   } else {
     router.push(`/university/${currentId.value}`)
   }
@@ -96,7 +106,7 @@ function handleClose() {
       </div>
 
       <!-- 无数据 -->
-      <div v-else-if="!cityData && !universityData" class="flex-1 flex items-center justify-center text-gray-400">
+      <div v-else-if="!cityData && !universityData && !majorData" class="flex-1 flex items-center justify-center text-gray-400">
         暂无数据
       </div>
 
@@ -191,6 +201,84 @@ function handleClose() {
                 <div class="text-sm font-medium text-orange-500">{{ universityData.recommendationRate ?? '-' }}</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 专业信息 -->
+      <div v-else-if="currentType === 'major' && majorData" class="flex-1 overflow-y-auto">
+        <div class="p-6">
+          <div class="mb-6">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xl font-bold shrink-0">
+                {{ majorData.majorName.charAt(0) }}
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-800">{{ majorData.majorName }}</h2>
+                <p class="text-sm text-gray-500 font-mono">代码：{{ majorData.majorCode }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="majorData.majorTags" class="mb-6">
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in majorData.majorTags.split(/[,，、]/).filter(Boolean)"
+                :key="tag"
+                class="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-medium"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">基本信息</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">门类</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.disciplineName || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">专业类别</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.majorCategory || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">所属大类</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.parentCategory || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">专业类型</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.majorType || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">授予学位</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.degreeAwarded || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">学制</div>
+                <div class="text-sm font-medium text-gray-700">{{ majorData.studyDuration || '-' }}</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">就业率</div>
+                <div class="text-sm font-medium text-orange-500">
+                  {{ majorData.employmentRate != null ? `${(majorData.employmentRate * 100).toFixed(1)}%` : '-' }}
+                </div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="text-xs text-gray-400 mb-1">薪资区间</div>
+                <div class="text-sm font-medium text-orange-500">
+                  {{ majorData.salaryMin != null && majorData.salaryMax != null
+                    ? `¥${majorData.salaryMin} ~ ¥${majorData.salaryMax}`
+                    : '-' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="majorData.description" class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">专业简介</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">{{ majorData.description }}</p>
           </div>
         </div>
       </div>

@@ -429,6 +429,18 @@ async function handleSave() {
 
   saving.value = true
   try {
+    // 组装再选科目（第二/第三科目）名称，供后端选科匹配与查询过滤使用
+    form.secondSubjectType = undefined
+    form.thirdSubjectType = undefined
+    const model = reformModel.value?.reformModel
+    if (model === '3+1+2') {
+      if (secondSubjects.value.length > 0) form.secondSubjectType = secondSubjects.value[0]
+      if (secondSubjects.value.length > 1) form.thirdSubjectType = secondSubjects.value[1]
+    } else if (model === '3+3') {
+      if (firstSubjects.value.length > 1) form.secondSubjectType = firstSubjects.value[1]
+      if (firstSubjects.value.length > 2) form.thirdSubjectType = firstSubjects.value[2]
+    }
+
     await saveArchive(form)
     saved.value = true
     ElMessage.success('档案保存成功')

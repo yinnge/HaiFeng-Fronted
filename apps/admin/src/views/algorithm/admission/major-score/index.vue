@@ -13,11 +13,14 @@ import {
   batchHardDeleteMajorScore,
 } from '@/api/algorithm/admission/major-score'
 import { getGroupPage } from '@/api/algorithm/admission/group'
+import { getMajorPage } from '@/api/major'
+import { getDictPage } from '@/api/algorithm/constraint'
 import type {
   AdmissionMajorScoreListVO,
   AdmissionMajorScoreDetailVO,
   AdmissionMajorScoreQueryDTO,
   AdmissionMajorScoreAddDTO,
+  ScoreHistoryItem,
 } from '@/types/algorithm/admission'
 
 const route = useRoute()
@@ -26,7 +29,25 @@ const tableData = ref<AdmissionMajorScoreListVO[]>([])
 const total = ref(0)
 const selectedIds = ref<string[]>([])
 
-const groupOptions = ref<{ id: string; label: string }[]>([])
+/* ===== 约束字典（约束条件下拉：label=约束名称 name，value=约束 code） ===== */
+const constraintOptions = ref<{ label: string; value: string }[]>([])
+
+const fetchConstraintOptions = async () => {
+  try {
+    const res = await getDictPage({ page: 1, size: 100 })
+    if (res.data.code === 200) {
+      constraintOptions.value = res.data.data.records
+        .filter((d) => d.isActive)
+        .map((d) => ({ label: d.name, value: d.code }))
+    } else {
+      constraintOptions.value = []
+    }
+  } catch {
+    constraintOptions.value = []
+  }
+}
+
+const groupOptions = ref<{ id: string; label: string; year: number }[]>([])
 const educationLevelOptions = ['本科', '专科']
 
 const queryParams = reactive<AdmissionMajorScoreQueryDTO>({
@@ -48,6 +69,7 @@ const detailData = ref<AdmissionMajorScoreDetailVO | null>(null)
 
 const formData = reactive<AdmissionMajorScoreAddDTO>({
   groupId: '',
+  year: new Date().getFullYear(),
   majorCode: '',
   majorName: '',
   educationLevel: '',
@@ -64,6 +86,33 @@ const formData = reactive<AdmissionMajorScoreAddDTO>({
   constraints: [],
 })
 
+// 多年度分数信息（对应后端 JSONB history 数组）
+const scoreInfos = ref<ScoreHistoryItem[]>([])
+
+const newEmptyScore = (year?: number): ScoreHistoryItem => ({
+  year: year ?? new Date().getFullYear(),
+  admissionCount: null,
+  minScore: null,
+  minRank: null,
+  avgScore: null,
+  avgRank: null,
+  maxScore: null,
+  maxRank: null,
+})
+
+// 新增一份分数信息（复制最后一条，年份自动 +1）
+const addScoreInfo = () => {
+  const last = scoreInfos.value[scoreInfos.value.length - 1]
+  scoreInfos.value.push({
+    ...(last ? { ...last } : newEmptyScore()),
+    year: last?.year ? last.year + 1 : new Date().getFullYear(),
+  })
+}
+
+const removeScoreInfo = (index: number) => {
+  scoreInfos.value.splice(index, 1)
+}
+
 const fetchGroupOptions = async () => {
   try {
     const res = await getGroupPage({ page: 1, size: 100, isDeleted: false })
@@ -71,6 +120,7 @@ const fetchGroupOptions = async () => {
       groupOptions.value = res.data.data.records.map((g) => ({
         id: g.id,
         label: `${g.universityName} - ${g.groupName || g.groupCode} (${g.year})`,
+        year: g.year,
       }))
     }
   } catch {
@@ -116,6 +166,41 @@ const handleReset = () => {
   fetchData()
 }
 
+const getLatestFromHistory = (history: any[] | null | undefined, field: string): any => {
+  if (!history || history.length === 0) return null
+  const latest = history[history.length - 1]
+  return latest[field] ?? null
+}
+
+// 专业名称模糊联想（复用 /api/v1/admin/major/list 的 majorName 模糊查询）
+const queryMajorSuggestions = async (
+  queryString: string,
+  cb: (results: { value: string; majorCode: string }[]) => void
+) => {
+  if (!queryString) {
+    cb([])
+    return
+  }
+  try {
+    const res = await getMajorPage({ page: 1, size: 10, majorName: queryString })
+    if (res.data.code === 200) {
+      const list = res.data.data.records || []
+      cb(list.map((m) => ({ value: m.majorName, majorCode: m.majorCode })))
+    } else {
+      cb([])
+    }
+  } catch {
+    cb([])
+  }
+}
+
+// 选中联想项：专业名称 + 专业代码一并填入（也可不选，直接手动输入）
+const handleMajorSelect = (item: Record<string, any>) => {
+  if (!item?.value) return
+  formData.majorName = String(item.value)
+  formData.majorCode = item.majorCode ? String(item.majorCode) : ''
+}
+
 const handlePageChange = (page: number) => {
   queryParams.page = page
   fetchData()
@@ -133,6 +218,7 @@ const handleSelectionChange = (selection: AdmissionMajorScoreListVO[]) => {
 
 const resetFormData = () => {
   formData.groupId = queryParams.groupId ? String(queryParams.groupId) : ''
+  formData.year = new Date().getFullYear()
   formData.majorCode = ''
   formData.majorName = ''
   formData.educationLevel = ''
@@ -147,6 +233,8 @@ const resetFormData = () => {
   formData.maxScore = 0
   formData.maxRank = 0
   formData.constraints = []
+  // 分数信息默认一条（当前年份）
+  scoreInfos.value = [newEmptyScore()]
 }
 
 const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
@@ -172,14 +260,30 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           formData.duration = d.duration || ''
           formData.tuition = d.tuition || ''
           formData.description = d.description || ''
-          formData.admissionCount = d.admissionCount ?? 0
-          formData.minScore = d.minScore ?? 0
-          formData.minRank = d.minRank ?? 0
-          formData.avgScore = d.avgScore ?? 0
-          formData.avgRank = d.avgRank ?? 0
-          formData.maxScore = d.maxScore ?? 0
-          formData.maxRank = d.maxRank ?? 0
+          // 默认加载最新年份的数据
+          const latestHistory = d.history && d.history.length > 0 ? d.history[d.history.length - 1] : null
+          formData.year = latestHistory?.year ?? new Date().getFullYear()
+          formData.admissionCount = latestHistory?.admissionCount ?? 0
+          formData.minScore = latestHistory?.minScore ?? 0
+          formData.minRank = latestHistory?.minRank ?? 0
+          formData.avgScore = latestHistory?.avgScore ?? 0
+          formData.avgRank = latestHistory?.avgRank ?? 0
+          formData.maxScore = latestHistory?.maxScore ?? 0
+          formData.maxRank = latestHistory?.maxRank ?? 0
           formData.constraints = d.constraints || []
+          // 加载全部年度分数到表单（支持多条，可新增/删除）
+          scoreInfos.value = d.history && d.history.length > 0
+            ? d.history.map((h: any) => ({
+                year: h.year,
+                admissionCount: h.admissionCount ?? null,
+                minScore: h.minScore ?? null,
+                minRank: h.minRank ?? null,
+                avgScore: h.avgScore ?? null,
+                avgRank: h.avgRank ?? null,
+                maxScore: h.maxScore ?? null,
+                maxRank: h.maxRank ?? null,
+              }))
+            : [newEmptyScore()]
         } else {
           dialogTitle.value = '专业明细详情'
           detailData.value = d
@@ -200,41 +304,42 @@ const handleSubmit = async () => {
     ElMessage.warning('请填写完整信息（必填字段）')
     return
   }
+  if (scoreInfos.value.length === 0) {
+    ElMessage.warning('请至少添加一条分数信息')
+    return
+  }
+
+  // 组装多年度分数数组（优先于平铺分数字段，后端整体写入/替换 history）
+  const historyPayload = scoreInfos.value.map((s) => ({
+    year: s.year,
+    admissionCount: s.admissionCount ?? null,
+    minScore: s.minScore ?? null,
+    minRank: s.minRank ?? null,
+    avgScore: s.avgScore ?? null,
+    avgRank: s.avgRank ?? null,
+    maxScore: s.maxScore ?? null,
+    maxRank: s.maxRank ?? null,
+  }))
+
+  const payload: AdmissionMajorScoreAddDTO = {
+    groupId: formData.groupId,
+    year: scoreInfos.value[0]?.year ?? new Date().getFullYear(),
+    majorCode: formData.majorCode,
+    majorName: formData.majorName,
+    educationLevel: formData.educationLevel || undefined,
+    duration: formData.duration || undefined,
+    tuition: formData.tuition || undefined,
+    description: formData.description || undefined,
+    constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
+    history: historyPayload,
+  }
 
   try {
     let res: any
     if (dialogMode.value === 'add') {
-      res = await addMajorScore({
-        ...formData,
-        educationLevel: formData.educationLevel || undefined,
-        duration: formData.duration || undefined,
-        tuition: formData.tuition || undefined,
-        description: formData.description || undefined,
-        admissionCount: formData.admissionCount || undefined,
-        minScore: formData.minScore || undefined,
-        minRank: formData.minRank || undefined,
-        avgScore: formData.avgScore || undefined,
-        avgRank: formData.avgRank || undefined,
-        maxScore: formData.maxScore || undefined,
-        maxRank: formData.maxRank || undefined,
-        constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
-      })
+      res = await addMajorScore(payload)
     } else if (dialogMode.value === 'edit' && currentId.value) {
-      res = await updateMajorScore(currentId.value, {
-        ...formData,
-        educationLevel: formData.educationLevel || undefined,
-        duration: formData.duration || undefined,
-        tuition: formData.tuition || undefined,
-        description: formData.description || undefined,
-        admissionCount: formData.admissionCount || undefined,
-        minScore: formData.minScore || undefined,
-        minRank: formData.minRank || undefined,
-        avgScore: formData.avgScore || undefined,
-        avgRank: formData.avgRank || undefined,
-        maxScore: formData.maxScore || undefined,
-        maxRank: formData.maxRank || undefined,
-        constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
-      })
+      res = await updateMajorScore(currentId.value, payload)
     } else {
       return
     }
@@ -339,6 +444,7 @@ watch(() => route.query.groupId, (val) => {
 
 onMounted(() => {
   fetchGroupOptions()
+  fetchConstraintOptions()
   if (route.query.groupId) {
     queryParams.groupId = Number(route.query.groupId)
   }
@@ -444,10 +550,26 @@ onMounted(() => {
         <el-table-column prop="majorCode" label="专业代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="educationLevel" label="层次" min-width="80" />
-        <el-table-column prop="admissionCount" label="录取人数" min-width="90" />
-        <el-table-column prop="minScore" label="最低分" min-width="80" />
-        <el-table-column prop="minRank" label="最低位次" min-width="90" />
-        <el-table-column prop="avgScore" label="平均分" min-width="80" />
+        <el-table-column label="最新年份" min-width="80">
+          <template #default="{ row }">
+            {{ row.history && row.history.length > 0 ? row.history[row.history.length - 1].year : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="最新最低分" min-width="80">
+          <template #default="{ row }">
+            {{ getLatestFromHistory(row.history, 'minScore') ?? '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="最新最低位次" min-width="90">
+          <template #default="{ row }">
+            {{ getLatestFromHistory(row.history, 'minRank') ?? '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="历史年数" min-width="80">
+          <template #default="{ row }">
+            {{ row.history ? row.history.length : 0 }}
+          </template>
+        </el-table-column>
         <el-table-column label="状态" min-width="80" align="center">
           <template #default="{ row }">
             <span :class="['status-pill', row.isDeleted ? 'status-disabled' : 'status-enabled']">
@@ -512,16 +634,20 @@ onMounted(() => {
                 </el-descriptions-item>
               </el-descriptions>
             </el-tab-pane>
-            <el-tab-pane label="分数信息">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="录取人数">{{ detailData.admissionCount ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="最低分">{{ detailData.minScore ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="最低位次">{{ detailData.minRank ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="中位分">{{ detailData.avgScore ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="中位位次">{{ detailData.avgRank ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="最高分">{{ detailData.maxScore ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="最高位次">{{ detailData.maxRank ?? '-' }}</el-descriptions-item>
-              </el-descriptions>
+            <el-tab-pane label="历史分数">
+              <el-table :data="(detailData.history || []).slice(-5).reverse()" border size="small">
+                <el-table-column prop="year" label="年份" width="80" />
+                <el-table-column prop="admissionCount" label="录取人数" min-width="80" />
+                <el-table-column prop="minScore" label="最低分" min-width="70" />
+                <el-table-column prop="minRank" label="最低位次" min-width="80" />
+                <el-table-column prop="avgScore" label="中位分" min-width="70" />
+                <el-table-column prop="avgRank" label="中位位次" min-width="80" />
+                <el-table-column prop="maxScore" label="最高分" min-width="70" />
+                <el-table-column prop="maxRank" label="最高位次" min-width="80" />
+              </el-table>
+              <div v-if="!detailData.history || detailData.history.length === 0" style="text-align: center; color: #999; padding: 20px;">
+                暂无历史数据
+              </div>
             </el-tab-pane>
             <el-tab-pane label="时间信息">
               <el-descriptions :column="2" border>
@@ -543,12 +669,26 @@ onMounted(() => {
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="专业代码" required class="dialog-form-item">
-                  <el-input v-model="formData.majorCode" placeholder="请输入" maxlength="20" />
+                  <el-input v-model="formData.majorCode" placeholder="选中专业自动填入，也可手动输入" maxlength="20" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="专业名称" required class="dialog-form-item">
-                  <el-input v-model="formData.majorName" placeholder="请输入" maxlength="100" />
+                  <el-autocomplete
+                    v-model="formData.majorName"
+                    :fetch-suggestions="queryMajorSuggestions"
+                    placeholder="输入名称模糊查询，选中自动带出专业代码；也可直接输入"
+                    clearable
+                    style="width: 100%"
+                    @select="handleMajorSelect"
+                  >
+                    <template #default="{ item }">
+                      <div class="flex items-center justify-between gap-4">
+                        <span class="truncate">{{ item.value }}</span>
+                        <span class="shrink-0 text-xs text-gray-400">{{ item.majorCode }}</span>
+                      </div>
+                    </template>
+                  </el-autocomplete>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -572,55 +712,85 @@ onMounted(() => {
               </el-col>
             </el-row>
             <el-divider>分数信息</el-divider>
-            <el-row :gutter="16">
-              <el-col :span="6">
-                <el-form-item label="录取人数" class="dialog-form-item">
-                  <el-input v-model.number="formData.admissionCount" type="number" :min="0" :max="99999" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="最低分" class="dialog-form-item">
-                  <el-input v-model.number="formData.minScore" type="number" :min="0" :max="900" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="中位分" class="dialog-form-item">
-                  <el-input v-model.number="formData.avgScore" type="number" :min="0" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="最高分" class="dialog-form-item">
-                  <el-input v-model.number="formData.maxScore" type="number" :min="0" :max="900" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="16">
-              <el-col :span="6">
-                <el-form-item label="最低位次" class="dialog-form-item">
-                  <el-input v-model.number="formData.minRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="中位位次" class="dialog-form-item">
-                  <el-input v-model.number="formData.avgRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="最高位次" class="dialog-form-item">
-                  <el-input v-model.number="formData.maxRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-            </el-row>
+            <div
+              v-for="(s, idx) in scoreInfos"
+              :key="idx"
+              class="score-info-block"
+            >
+              <div class="score-info-header">
+                <span class="score-info-title">
+                  <span class="score-info-index">{{ idx + 1 }}</span>
+                  第 {{ idx + 1 }} 条分数（{{ s.year }} 年）
+                </span>
+                <button type="button" class="score-remove-btn" @click="removeScoreInfo(idx)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  删除本条
+                </button>
+              </div>
+              <el-row :gutter="16">
+                <el-col :span="8">
+                  <el-form-item label="年份" required class="dialog-form-item">
+                    <el-input v-model.number="s.year" type="number" :min="2000" :max="2100" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="录取人数" class="dialog-form-item">
+                    <el-input v-model.number="s.admissionCount" type="number" :min="0" :max="99999" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="最低分" class="dialog-form-item">
+                    <el-input v-model.number="s.minScore" type="number" :min="0" :max="900" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="16">
+                <el-col :span="8">
+                  <el-form-item label="最低位次" class="dialog-form-item">
+                    <el-input v-model.number="s.minRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="中位分" class="dialog-form-item">
+                    <el-input v-model.number="s.avgScore" type="number" :min="0" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="中位位次" class="dialog-form-item">
+                    <el-input v-model.number="s.avgRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="16">
+                <el-col :span="8">
+                  <el-form-item label="最高分" class="dialog-form-item">
+                    <el-input v-model.number="s.maxScore" type="number" :min="0" :max="900" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="最高位次" class="dialog-form-item">
+                    <el-input v-model.number="s.maxRank" type="number" :min="0" :max="9999999" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
+            <el-form-item class="dialog-form-item">
+              <button type="button" class="add-score-btn" @click="addScoreInfo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                新增分数信息
+              </button>
+            </el-form-item>
             <el-form-item label="约束条件" class="dialog-form-item">
               <el-select
                 v-model="formData.constraints"
                 multiple
                 filterable
-                allow-create
-                default-first-option
-                placeholder="输入约束条件后回车"
+                placeholder="请选择约束条件"
                 style="width: 100%;"
-              />
+              >
+                <el-option v-for="c in constraintOptions" :key="c.value" :label="c.label" :value="c.value" />
+              </el-select>
+              <div class="form-tip">仅可选择约束字典中已启用的约束项</div>
             </el-form-item>
             <el-form-item label="专业简介" class="dialog-form-item">
               <el-input v-model="formData.description" type="textarea" :rows="3" maxlength="2000" show-word-limit />
@@ -912,6 +1082,81 @@ onMounted(() => {
 }
 .dialog-form-item {
   margin-bottom: 18px !important;
+}
+.form-tip {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* 多年度分数信息卡片 */
+.score-info-block {
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 10px;
+  padding: 12px 14px 0;
+  margin-bottom: 12px;
+  background: rgba(255, 247, 237, 0.35);
+}
+.score-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.score-info-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.score-info-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  font-size: 11px;
+}
+.score-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #ef4444;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.score-remove-btn:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+.add-score-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px dashed #F97316;
+  background: #fff7ed;
+  color: #F97316;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.add-score-btn:hover {
+  background: #ffedd5;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.2);
 }
 
 .dialog-cancel-btn {
