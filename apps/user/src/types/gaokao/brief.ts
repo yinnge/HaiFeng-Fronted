@@ -24,8 +24,26 @@ export interface UniversityBriefVO {
   imageUrl: string
 }
 
+/** 专业简要信息 VO */
+export interface MajorBriefVO {
+  id: string
+  majorCode: string
+  majorName: string
+  disciplineName: string
+  majorType: string
+  majorCategory: string
+  parentCategory: string
+  majorTags: string
+  degreeAwarded: string
+  studyDuration: string
+  employmentRate: number
+  salaryMin: number
+  salaryMax: number
+  description: string
+}
+
 /** 抽屉展示的数据类型 */
-export type BriefType = 'university' | 'city'
+export type BriefType = 'university' | 'city' | 'major'
 
 /** 抽屉数据 */
 export interface BriefDrawerData {

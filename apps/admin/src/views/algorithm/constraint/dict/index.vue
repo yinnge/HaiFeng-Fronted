@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getDictPage,
@@ -56,15 +56,18 @@ const severityOptions = [
   { label: '软提示', value: 'SOFT' },
 ]
 
+// 运算符选项：value 必须与后端 OperatorStrategyFactory 注册的 key 一致（后端为权威）
 const checkOperatorOptions = [
   { label: '等于', value: 'EQ' },
-  { label: '不等于', value: 'NEQ' },
+  { label: '不等于', value: 'NE' },
   { label: '小于', value: 'LT' },
-  { label: '小于等于', value: 'LTE' },
+  { label: '小于等于', value: 'LE' },
   { label: '大于', value: 'GT' },
-  { label: '大于等于', value: 'GTE' },
+  { label: '大于等于', value: 'GE' },
   { label: '为真', value: 'IS_TRUE' },
   { label: '为假', value: 'IS_FALSE' },
+  { label: '为空', value: 'IS_NULL' },
+  { label: '不为空', value: 'IS_NOT_NULL' },
   { label: '在范围内', value: 'IN' },
   { label: '不在范围内', value: 'NOT_IN' },
 ]
@@ -104,6 +107,89 @@ const checkFieldOptions = [
   { label: '历史分数', value: 'score_history' },
   { label: '地理分数', value: 'score_geography' },
 ]
+
+// ========== 检查字段类型（用于动态渲染「检查值」控件，消除 true/false 填写困惑） ==========
+const BOOLEAN_FIELDS = new Set([
+  'is_color_blind', 'is_color_weak', 'has_smell_disorder',
+  'is_left_handed', 'has_tattoo', 'has_scar', 'has_stutter',
+  'is_fresh_graduate', 'is_poverty_county',
+])
+const NUMBER_FIELDS = new Set([
+  'vision_left', 'vision_right', 'height_cm', 'weight_kg',
+  'score_chinese', 'score_math', 'score_english',
+  'score_physics', 'score_chemistry', 'score_biology',
+  'score_politics', 'score_history', 'score_geography',
+])
+// 无需填写检查值的运算符（后端策略忽略 checkValue）
+const VALUE_LESS_OPERATORS = ['IS_TRUE', 'IS_FALSE', 'IS_NULL', 'IS_NOT_NULL']
+
+const fieldType = computed<'boolean' | 'number' | 'text'>(() => {
+  const f = formData.checkField
+  if (BOOLEAN_FIELDS.has(f)) return 'boolean'
+  if (NUMBER_FIELDS.has(f)) return 'number'
+  return 'text'
+})
+
+const valueRequired = computed(() => !VALUE_LESS_OPERATORS.includes(formData.checkOperator))
+
+const checkValueHint = computed(() => {
+  const op = formData.checkOperator
+  if (op === 'IS_TRUE' || op === 'IS_FALSE') return '「为真/为假」无需填写检查值，直接匹配是/否'
+  if (op === 'IS_NULL' || op === 'IS_NOT_NULL') return '「为空/不为空」无需填写检查值'
+  if (fieldType.value === 'boolean') return '布尔字段：是 = true，否 = false'
+  if (fieldType.value === 'number') return '数字字段：请输入数值，如 60 或 5.0'
+  if (op === 'IN' || op === 'NOT_IN') return '多个值用英文逗号分隔，如 3+3,3+1+2'
+  return ''
+})
+
+const numericCheckValue = computed({
+  get: () => {
+    const v = formData.checkValue
+    if (v === '' || v == null) return undefined
+    const n = Number(v)
+    return Number.isNaN(n) ? undefined : n
+  },
+  set: (v: number | undefined) => {
+    formData.checkValue = v == null || Number.isNaN(v) ? '' : String(v)
+  },
+})
+
+// ========== 附加条件（可选）同样类型感知 ==========
+const extraFieldType = computed<'boolean' | 'number' | 'text'>(() => {
+  const f = formData.extraField
+  if (BOOLEAN_FIELDS.has(f)) return 'boolean'
+  if (NUMBER_FIELDS.has(f)) return 'number'
+  return 'text'
+})
+
+const extraValueRequired = computed(() => !VALUE_LESS_OPERATORS.includes(formData.extraOperator))
+
+const extraValueHint = computed(() => {
+  const op = formData.extraOperator
+  if (op === 'IS_TRUE' || op === 'IS_FALSE') return '「为真/为假」无需填写附加值'
+  if (op === 'IS_NULL' || op === 'IS_NOT_NULL') return '「为空/不为空」无需填写附加值'
+  if (extraFieldType.value === 'boolean') return '是 = true，否 = false'
+  if (extraFieldType.value === 'number') return '请输入数值，如 60 或 5.0'
+  if (op === 'IN' || op === 'NOT_IN') return '多个值用英文逗号分隔'
+  return ''
+})
+
+const extraNumericValue = computed({
+  get: () => {
+    const v = formData.extraValue
+    if (v === '' || v == null) return undefined
+    const n = Number(v)
+    return Number.isNaN(n) ? undefined : n
+  },
+  set: (v: number | undefined) => {
+    formData.extraValue = v == null || Number.isNaN(v) ? '' : String(v)
+  },
+})
+
+const operatorLabel = (val: string | null | undefined) => {
+  const opt = checkOperatorOptions.find((o) => o.value === val)
+  return opt ? opt.label : (val || '-')
+}
 
 const fieldLabel = (val: string | null | undefined) => {
   const opt = checkFieldOptions.find((o) => o.value === val)
@@ -449,10 +535,10 @@ onMounted(() => {
             </el-descriptions-item>
             <el-descriptions-item label="排序值">{{ detailData.sortOrder }}</el-descriptions-item>
             <el-descriptions-item label="检查字段">{{ fieldLabel(detailData.checkField) }}</el-descriptions-item>
-            <el-descriptions-item label="检查运算符">{{ detailData.checkOperator || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="检查运算符">{{ operatorLabel(detailData.checkOperator) }}</el-descriptions-item>
             <el-descriptions-item label="检查值">{{ detailData.checkValue || '-' }}</el-descriptions-item>
             <el-descriptions-item label="附加条件字段">{{ fieldLabel(detailData.extraField) }}</el-descriptions-item>
-            <el-descriptions-item label="附加条件运算符">{{ detailData.extraOperator || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="附加条件运算符">{{ operatorLabel(detailData.extraOperator) }}</el-descriptions-item>
             <el-descriptions-item label="附加条件值">{{ detailData.extraValue || '-' }}</el-descriptions-item>
             <el-descriptions-item label="详细说明" :span="2">
               <div class="max-h-32 overflow-y-auto whitespace-pre-wrap">{{ detailData.description || '-' }}</div>
@@ -509,7 +595,22 @@ onMounted(() => {
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="检查值">
-                  <el-input v-model="formData.checkValue" placeholder="判断值" maxlength="100" />
+                  <template v-if="!valueRequired">
+                    <div class="value-hint">{{ checkValueHint }}</div>
+                  </template>
+                  <template v-else-if="fieldType === 'boolean'">
+                    <el-select v-model="formData.checkValue" placeholder="选择是/否" style="width: 100%">
+                      <el-option label="是（true）" value="true" />
+                      <el-option label="否（false）" value="false" />
+                    </el-select>
+                  </template>
+                  <template v-else-if="fieldType === 'number'">
+                    <el-input-number v-model="numericCheckValue" :controls-position="'right'" style="width: 100%" />
+                  </template>
+                  <template v-else>
+                    <el-input v-model="formData.checkValue" placeholder="判断值" maxlength="100" />
+                  </template>
+                  <div v-if="valueRequired && checkValueHint" class="value-hint">{{ checkValueHint }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -536,7 +637,22 @@ onMounted(() => {
               </el-col>
               <el-col :span="8">
                 <el-form-item label="附加值">
-                  <el-input v-model="formData.extraValue" placeholder="值" maxlength="100" />
+                  <template v-if="!extraValueRequired">
+                    <div class="value-hint">{{ extraValueHint }}</div>
+                  </template>
+                  <template v-else-if="extraFieldType === 'boolean'">
+                    <el-select v-model="formData.extraValue" placeholder="是/否" style="width: 100%">
+                      <el-option label="是（true）" value="true" />
+                      <el-option label="否（false）" value="false" />
+                    </el-select>
+                  </template>
+                  <template v-else-if="extraFieldType === 'number'">
+                    <el-input-number v-model="extraNumericValue" :controls-position="'right'" style="width: 100%" />
+                  </template>
+                  <template v-else>
+                    <el-input v-model="formData.extraValue" placeholder="值" maxlength="100" />
+                  </template>
+                  <div v-if="extraValueRequired && extraValueHint" class="value-hint">{{ extraValueHint }}</div>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -823,6 +939,16 @@ onMounted(() => {
 .dict-dialog :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
 .dict-dialog :deep(.el-input-number.is-controls-right .el-input__wrapper) { padding-right: 36px; }
 .dict-dialog :deep(.el-form-item) { margin-bottom: 18px; }
+.value-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px dashed #fbbf24;
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: 100%;
+}
 
 .dialog-footer {
   display: flex;

@@ -62,6 +62,9 @@ onMounted(async () => {
 })
 
 async function handleCreate() {
+  // 新建前先清理指向已删除/禁用专业组的孤儿暂存项，保证提示里的专业数与角标一致
+  await selectionStore.pruneInvalidSelections()
+
   if (plans.value.length >= maxPlans) {
     const typeName = userStore.userInfo?.memberType === 'vip' ? 'VIP' : userStore.userInfo?.memberType === 'pro' ? 'Pro' : '普通'
     ElMessageBox.confirm(
@@ -78,6 +81,17 @@ async function handleCreate() {
     ElMessage.warning('请先在专业组页面选择专业')
     router.push('/gaokao/groups')
     return
+  }
+
+  // 提示：新建志愿表会把之前勾选的专业组一起创建进来
+  try {
+    await ElMessageBox.confirm(
+      `新建志愿表会创建之前您所选择的专业组（共 ${selectionStore.totalCount} 个专业），确定继续吗？`,
+      '新建志愿表',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
+    )
+  } catch {
+    return // 用户取消
   }
 
   try {
@@ -98,18 +112,25 @@ async function handleCreate() {
 async function createPlanAndAddMajors(planName: string) {
   const groups = Object.values(selectionStore.selections)
   let planId: string | null = null
-  let hasError = false
+  let hasFatalError = false
 
   for (const group of groups) {
-    const majorIds = group.majors.map(m => String(m.majorId))
+    const majorCodes = group.majors.map(m => m.majorCode)
     try {
-      const res = await addMajors({ planId, groupId: String(group.groupId), majorIds, planName })
+      const res = await addMajors({ planId, groupId: String(group.groupId), majorCodes, planName })
       if (!planId && res.data.data?.id) {
         planId = String(res.data.data.id)
       }
     } catch (e: any) {
+      const msg = e?.message || ''
+      // 该专业组可能已被后台删除/禁用（孤儿暂存项）：跳过它，不中断其余有效组的创建
+      if (msg.includes('均不存在') || msg.includes('请刷新页面后重试') || msg.includes('专业组不存在')) {
+        selectionStore.removeGroup(group.groupId)
+        continue
+      }
       ElMessage.error(e?.message || `添加「${group.universityName}」专业组失败`)
-      hasError = true
+      selectionStore.clearSelection()
+      hasFatalError = true
       break
     }
   }
@@ -118,6 +139,10 @@ async function createPlanAndAddMajors(planName: string) {
     selectionStore.clearSelection()
     ElMessage.success('志愿表创建成功')
     router.push(`/gaokao/plans/${planId}`)
+  } else if (!hasFatalError) {
+    // 全部暂存专业组均已失效（被后台删除），清理后提示重新选择
+    selectionStore.clearSelection()
+    ElMessage.warning('所选专业组均已失效（可能已被后台删除），已为您清空，请重新选择')
   }
 }
 
@@ -152,6 +177,13 @@ function goBack() {
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">我的志愿表</h1>
         <p class="text-sm text-gray-500 mt-1">管理你的志愿方案，一键导出</p>
+        <div class="mt-3 inline-flex items-center gap-2 text-sm">
+          <span class="text-gray-500">升级会员可提升创建志愿表的次数上限（普通 1 / Pro 5 / VIP 10）</span>
+          <button
+            class="text-brand-orange font-medium hover:underline whitespace-nowrap"
+            @click="recharge.open()"
+          >立即升级 ›</button>
+        </div>
       </div>
 
       <!-- 骨架屏加载 -->

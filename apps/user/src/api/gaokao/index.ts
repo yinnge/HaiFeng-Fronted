@@ -117,6 +117,8 @@ export interface GaokaoArchiveForm {
   score: number
   rank: number
   subjectType: string
+  secondSubjectType?: string
+  thirdSubjectType?: string
   batch: string
   batchDataYear: number
   batchLineScore: number
@@ -196,7 +198,11 @@ export const getGroupPage = (params: {
   batch: string
   universityName?: string
   cityName?: string
+  groupName?: string
+  enrollmentCode?: string
   subjectFilter?: boolean
+  minSafetyLevel?: number
+  maxSafetyLevel?: number
   page?: number
   size?: number
 }) => request.get<R<PageResult<AdmissionGroupVO>>>(`${ADMISSION_PREFIX}/group/page`, { params })
@@ -208,3 +214,7 @@ export const getMajorPage = (params: {
   page?: number
   size?: number
 }) => request.get<R<PageResult<AdmissionMajorVO>>>(`${ADMISSION_PREFIX}/major/page`, { params })
+
+// 批量校验专业组是否仍存在于目录，返回仍有效的组 id 列表（已删除/禁用的不会返回）
+export const checkGroupsExist = (ids: string[]) =>
+  request.get<R<number[]>>(`${ADMISSION_PREFIX}/group/exists`, { params: { ids: ids.join(',') } })

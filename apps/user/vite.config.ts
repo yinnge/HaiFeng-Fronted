@@ -23,5 +23,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // 不内联小资源为 data URI（预设头像等小 SVG 内联后 >500 字符，超出数据库 varchar 列）
+    assetsInlineLimit: 0,
   },
 })
