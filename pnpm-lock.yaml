@@ -3603,6 +3603,8 @@ snapshots:
       has-symbols: 1.1.0
       object-keys: 1.1.1
 
+  ogl@1.0.11: {}
+
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
