@@ -784,7 +784,7 @@ const handleImportSubmit = async () => {
 
     else { ElMessage.error(res.data.msg || '导入失败') }
 
-  } catch (err: any) { ElMessage.error(err.response?.data?.msg || '导入失败') }
+  } catch (err: any) { ElMessage.error(err.response?.data?.msg || err.message || '导入失败') }
 
   finally { importLoading.value = false }
 
