@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getLaboratoryDetail } from '@/api/university/laboratory'
 import type { LaboratoryDetailVO } from '@/types/university/laboratory'
@@ -28,139 +28,203 @@ async function fetchDetail() {
   }
 }
 
-/** 返回院校详情：优先用来源 universityId，其次回退浏览器历史，最后回院校列表 */
-function goBackUniversity() {
-  const from = (route.query.from as string) || ''
-  if (from) {
-    router.push(`/university/${from}`)
-  } else if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/university')
-  }
+function goBack() {
+  router.back()
 }
 
 onMounted(fetchDetail)
+
+// ===== 统计数据数字滚动（纯展示动效，不触碰数据逻辑）=====
+const statDisplay = ref<{ label: string; count: number }[]>([])
+const statColors = ['#16a34a', '#2563eb', '#9333ea', '#d97706', '#e11d48', '#0d9488']
+
+function animateStats(targets: { label: string; count: number }[]) {
+  const duration = 700
+  const start = performance.now()
+  const step = (now: number) => {
+    const p = Math.min((now - start) / duration, 1)
+    const eased = 1 - Math.pow(1 - p, 3)
+    statDisplay.value = targets.map((t) => ({ label: t.label, count: Math.round(t.count * eased) }))
+    if (p < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
+watch(detail, (d) => {
+  if (d?.statistics?.length) animateStats(d.statistics)
+})
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <main class="container mx-auto px-6 py-8" v-loading="loading">
-      <!-- 顶部操作栏 -->
-      <div class="flex justify-between items-center gap-4 mb-6">
-        <div class="min-w-0">
-          <h1 class="text-2xl font-bold text-gray-800 truncate">{{ detail?.labType || '实验室详情' }}</h1>
-          <p class="text-sm text-gray-500 mt-1 truncate">{{ detail?.universityName || '重点实验室' }}</p>
-        </div>
-        <button
-          class="btn-secondary shrink-0 px-4 py-2 text-sm flex items-center gap-1.5"
-          @click="goBackUniversity"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          返回院校
-        </button>
-      </div>
-
+  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <main class="container mx-auto px-4 sm:px-6 py-8 max-w-6xl" v-loading="loading">
       <template v-if="detail">
-        <section class="univ-card mb-6 p-6">
-          <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ detail.labType }}</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
-            <div><span class="text-gray-400">所属院校：</span><span class="text-gray-700">{{ detail.universityName }}</span></div>
-            <div><span class="text-gray-400">成立时间：</span><span class="text-gray-700">{{ detail.establishedYear || '-' }}</span></div>
-            <div><span class="text-gray-400">所在地区：</span><span class="text-gray-700">{{ detail.region || '-' }}</span></div>
-            <div><span class="text-gray-400">主管部门：</span><span class="text-gray-700">{{ detail.department || '-' }}</span></div>
-            <div><span class="text-gray-400">实验室主任：</span><span class="text-gray-700">{{ detail.director || '-' }}</span></div>
-            <div><span class="text-gray-400">人员规模：</span><span class="text-gray-700">{{ detail.staffCount || '-' }}</span></div>
-            <div><span class="text-gray-400">学生规模：</span><span class="text-gray-700">{{ detail.studentCount || '-' }}</span></div>
-            <div><span class="text-gray-400">联系邮箱：</span><span class="text-gray-700">{{ detail.email || '-' }}</span></div>
-            <div><span class="text-gray-400">联系电话：</span><span class="text-gray-700">{{ detail.phone || '-' }}</span></div>
-          </div>
-        </section>
-
-        <section class="univ-card mb-6 p-6 space-y-4">
-          <div v-if="detail.introduction">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">实验室简介</h3>
-            <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction }}</p>
-          </div>
-          <div v-if="detail.researchDescription">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">研究方向描述</h3>
-            <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.researchDescription }}</p>
-          </div>
-          <div v-if="detail.labSpace">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">实验室空间</h3>
-            <p class="text-gray-600">{{ detail.labSpace }}</p>
-          </div>
-          <div v-if="detail.researchFields?.length">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">研究领域</h3>
-            <div class="flex flex-wrap gap-2">
-              <span v-for="field in detail.researchFields" :key="field" class="pill-new text-sm">{{ field }}</span>
-            </div>
-          </div>
-          <div v-if="detail.majorEquipment?.length">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">主要设备</h3>
-            <div class="flex flex-wrap gap-2">
-              <span v-for="eq in detail.majorEquipment" :key="eq" class="pill-new text-sm">{{ eq }}</span>
-            </div>
-          </div>
-          <div v-if="detail.openTopics">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">开放课题</h3>
-            <p class="text-gray-600">{{ detail.openTopics }}</p>
-          </div>
-          <div v-if="detail.cooperation">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">合作交流</h3>
-            <p class="text-gray-600">{{ detail.cooperation }}</p>
-          </div>
-          <div v-if="detail.visitingScholars">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">访问学者</h3>
-            <p class="text-gray-600">{{ detail.visitingScholars }}</p>
-          </div>
-        </section>
-
-        <section v-if="detail.coreTeam?.length" class="univ-card mb-6 p-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">核心团队</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-gray-100 text-gray-400">
-                  <th class="text-left py-2 px-3">姓名</th>
-                  <th class="text-left py-2 px-3">职务</th>
-                  <th class="text-left py-2 px-3">岗位角色</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(member, idx) in detail.coreTeam" :key="idx" class="border-b border-gray-50">
-                  <td class="py-2.5 px-3 text-gray-800 font-medium">{{ member.memberName }}</td>
-                  <td class="py-2.5 px-3 text-gray-600">{{ member.position || '-' }}</td>
-                  <td class="py-2.5 px-3 text-gray-600">{{ member.role || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section v-if="detail.statistics?.length" class="univ-card mb-6 p-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4">统计数据</h3>
-          <div class="flex flex-wrap gap-4">
-            <div v-for="(stat, idx) in detail.statistics" :key="idx" class="stat-card rounded-xl px-5 py-3 text-center flex-1 min-w-[120px]">
-              <div class="text-2xl font-bold text-orange-600">{{ stat.count }}</div>
-              <div class="text-xs text-gray-500 mt-1">{{ stat.label }}</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 底部操作 -->
-        <div class="flex justify-center pb-8">
-          <button
-            class="btn-brand px-6 py-2.5 text-sm flex items-center gap-1.5"
-            @click="goBackUniversity"
-          >
+        <!-- 沉浸式 Hero 头图（橙→琥珀渐变，对齐专业详情页） -->
+        <section class="lab-hero relative overflow-hidden rounded-2xl shadow-lg shadow-orange-200/60 mb-6">
+          <div class="lab-orb lab-orb-1" />
+          <div class="lab-orb lab-orb-2" />
+          <button class="lab-back" @click="goBack">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6" />
             </svg>
-            返回院校
+            返回
           </button>
+          <div class="relative z-10 px-6 sm:px-8 py-9 sm:py-12">
+            <h1 class="lab-title">{{ detail.labType }}</h1>
+            <div class="lab-chips">
+              <span v-if="detail.universityName" class="lab-chip">所属院校：{{ detail.universityName }}</span>
+              <span v-if="detail.establishedYear" class="lab-chip">成立：{{ detail.establishedYear }} 年</span>
+              <span v-if="detail.region" class="lab-chip">{{ detail.region }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 双栏主体：左 2/3 阅读型主体 + 右 1/3 速览（sticky） -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+          <!-- 左栏：阅读型重内容 -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- 实验室概况 -->
+            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100 bg-white space-y-5">
+              <div v-if="detail.introduction">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">实验室简介</h3>
+                </div>
+                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction }}</p>
+              </div>
+              <div v-if="detail.researchDescription">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">研究方向描述</h3>
+                </div>
+                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.researchDescription }}</p>
+              </div>
+              <div v-if="detail.labSpace">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">实验室空间</h3>
+                </div>
+                <p class="text-gray-600">{{ detail.labSpace }}</p>
+              </div>
+            </section>
+
+            <!-- 研究领域 / 主要设备（彩色 chip，对齐专业详情页） -->
+            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100 bg-white space-y-5">
+              <div v-if="detail.researchFields?.length">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">研究领域</h3>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="field in detail.researchFields" :key="field" class="rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-700">{{ field }}</span>
+                </div>
+              </div>
+              <div v-if="detail.majorEquipment?.length">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">主要设备</h3>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="eq in detail.majorEquipment" :key="eq" class="rounded-lg bg-green-50 px-3 py-1.5 text-sm text-green-700">{{ eq }}</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 开放课题 / 合作交流 / 访问学者 -->
+            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100 bg-white space-y-5">
+              <div v-if="detail.openTopics">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">开放课题</h3>
+                </div>
+                <p class="text-gray-600">{{ detail.openTopics }}</p>
+              </div>
+              <div v-if="detail.cooperation">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">合作交流</h3>
+                </div>
+                <p class="text-gray-600">{{ detail.cooperation }}</p>
+              </div>
+              <div v-if="detail.visitingScholars">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                  <h3 class="text-lg font-bold text-gray-800">访问学者</h3>
+                </div>
+                <p class="text-gray-600">{{ detail.visitingScholars }}</p>
+              </div>
+            </section>
+
+            <!-- 核心团队（头像卡片，2 列） -->
+            <section v-if="detail.coreTeam?.length" class="detail-card rounded-2xl p-6 shadow-card border border-gray-100 bg-white">
+              <div class="flex items-center gap-3 mb-5">
+                <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                <h3 class="text-lg font-bold text-gray-800">核心团队</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div v-for="(member, idx) in detail.coreTeam" :key="idx" class="team-card flex items-center gap-3">
+                  <div class="team-avatar shrink-0">{{ (member.name || '?').charAt(0) }}</div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ member.name || '-' }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ member.position || '-' }}</p>
+                    <p v-if="member.title" class="text-xs text-brand-orange truncate">{{ member.title }}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- 右栏：速览摘要（sticky 跟随滚动） -->
+          <div class="space-y-6 lg:sticky lg:top-24">
+            <!-- 统计卡（白底 + 彩色数字 + 滚动） -->
+            <section v-if="statDisplay.length" class="detail-card rounded-2xl p-5 shadow-card border border-gray-100 bg-white">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                <h3 class="text-lg font-bold text-gray-800">统计速览</h3>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div v-for="(stat, idx) in statDisplay" :key="idx" class="stat-card">
+                  <p class="stat-label">{{ stat.label }}</p>
+                  <p class="stat-value" :style="{ color: statColors[idx % statColors.length] }">{{ stat.count }}</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- 基本信息（上标签下值竖排，适配窄栏） -->
+            <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100 bg-white">
+              <div class="flex items-center gap-3 mb-5">
+                <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                <h3 class="text-lg font-bold text-gray-800">基本信息</h3>
+              </div>
+              <div class="space-y-4 text-sm">
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">实验室主任</p>
+                  <p class="text-gray-700 font-medium">{{ detail.director || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">主管部门</p>
+                  <p class="text-gray-700 font-medium">{{ detail.department || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">人员规模</p>
+                  <p class="text-gray-700 font-medium">{{ detail.staffCount || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">学生规模</p>
+                  <p class="text-gray-700 font-medium">{{ detail.studentCount || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">联系邮箱</p>
+                  <p class="text-gray-700 break-all">{{ detail.email || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-400 text-xs mb-1">联系电话</p>
+                  <p class="text-gray-700">{{ detail.phone || '-' }}</p>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </template>
     </main>
@@ -168,42 +232,166 @@ onMounted(fetchDetail)
 </template>
 
 <style scoped>
-/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
-.univ-card {
-  /* !important 覆盖 .app-shell main > * 的透底规则（卡片是 main 直接子） */
-  background: #ffffff !important;
-  background-image: none !important;
-  border-radius: 1rem;
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
-  border-top-width: 3px;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
-  transition: all 0.25s ease;
+/* ===== 沉浸式 Hero（橙→琥珀，对齐专业详情页） ===== */
+.lab-hero {
+  min-height: 200px;
+  background: linear-gradient(90deg, #f97316 0%, #f59e0b 100%) !important;
+  animation: fadeUp 0.55s ease both;
 }
-
-/* ===== 橙系药丸标签 ===== */
-.pill-new {
+.lab-orb {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+.lab-orb-1 {
+  width: 260px;
+  height: 260px;
+  top: -90px;
+  right: -60px;
+}
+.lab-orb-2 {
+  width: 180px;
+  height: 180px;
+  bottom: -70px;
+  left: 24%;
+}
+.lab-back {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.8rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 9999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #e8722a;
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
-  border: 1px solid rgba(249, 115, 22, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #ffffff;
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.2s ease;
+}
+.lab-back:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.lab-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+.lab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+.lab-chip {
+  padding: 3px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 12px;
 }
 
-/* ===== 按钮 token 覆盖（本页生效，不动全局） ===== */
-.btn-brand {
-  background: linear-gradient(90deg, #f97316, #fb923c) !important;
-  border-color: transparent !important;
-}
-
-/* ===== 统计数字卡：浅橙渐变底 ===== */
+/* ===== 统计卡（白底 + 阴影，数字彩色由内联 style 控制） ===== */
 .stat-card {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.12));
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  background: #ffffff !important;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: fadeUp 0.55s ease both;
+}
+.stat-card:nth-child(1) { animation-delay: 0.08s; }
+.stat-card:nth-child(2) { animation-delay: 0.14s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.26s; }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.16);
+}
+.stat-label {
+  font-size: 13px;
+  color: #9aa3ad;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* ===== 字段色点 ===== */
+.dot-brand {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #e8722a;
+  flex-shrink: 0;
+}
+.dot-gray {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+  flex-shrink: 0;
+}
+
+/* ===== 卡片入场 stagger + hover ===== */
+.detail-card {
+  background: #ffffff !important;
+  animation: fadeUp 0.55s ease both;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.detail-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px -12px rgba(0, 0, 0, 0.12);
+}
+
+/* ===== 团队头像卡片（白卡） ===== */
+.team-card {
+  background: #ffffff !important;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: fadeUp 0.55s ease both;
+}
+.team-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.14);
+}
+.team-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #f59e0b);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 767px) {
+  .lab-title {
+    font-size: 1.5rem;
+  }
+  .stat-value {
+    font-size: 20px;
+  }
 }
 </style>

@@ -322,12 +322,16 @@ async function handleSave() {
 
 <style scoped>
 .profile-form {
-  padding: 0.5rem 0;
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
 .form-section {
   margin-bottom: 2rem;
-  padding-top: 1.25rem;
+  padding: 1.5rem 1.5rem 0;
 }
 
 .form-section:last-of-type {
@@ -356,7 +360,7 @@ async function handleSave() {
 .section-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, #f5a54a 30%, #e8722a 70%, transparent);
-  margin: 0.5rem 0 1.5rem;
+  margin: 0.5rem 1.5rem 1.5rem;
 }
 
 .form-grid {
@@ -374,7 +378,7 @@ async function handleSave() {
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  padding-top: 1rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid #f3f4f6;
 }
 

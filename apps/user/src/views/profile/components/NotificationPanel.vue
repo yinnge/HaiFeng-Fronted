@@ -432,6 +432,7 @@ onMounted(() => {
   border-radius: 0.75rem;
   border: 1px solid #f3f4f6;
   margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .filter-fields {
@@ -517,6 +518,7 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .empty-icon {
@@ -535,6 +537,7 @@ onMounted(() => {
   border-radius: 12px;
   border: 1px solid #f3f4f6;
   padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
   animation: cardSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--index, 0) * 300ms);
@@ -664,6 +667,7 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 :deep(.el-pagination) {

@@ -320,7 +320,9 @@ const handleImport = async () => {
       const res = await importGuide(file)
       if (res.data.code === 200) { ElMessage.success('导入成功'); fetchData() }
       else ElMessage.error(res.data.msg || '导入失败')
-    } catch { ElMessage.error('导入失败') }
+    } catch (err: any) {
+      ElMessage.error(err.response?.data?.msg || err.message || '导入失败')
+    }
   }
   input.click()
 }

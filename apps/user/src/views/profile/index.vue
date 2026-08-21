@@ -161,44 +161,67 @@ onMounted(() => {
 
 .profile-tabs :deep(.el-tabs__header) {
   margin-bottom: 0;
-  background: white;
-  padding: 0;
-  border-bottom: 2px solid #f5a54a;
+  background: linear-gradient(to right, #fff7ed, #fffaf5);
+  padding: 0.875rem 1rem;
+  border-bottom: none;
 }
 
-/* 白色切换条：左缩进 50px，让“账号安全”等标签整体右移 */
+/* 胶囊式导航：取消左缩进 */
 .profile-tabs :deep(.el-tabs__nav-scroll) {
-  padding-left: 50px;
+  padding-left: 0;
 }
 
-/* 内容区单独加内边距（因为上面去掉了 card body 的内边距） */
+/* 内容区单独加内边距 + 暖橙渐变底（配合页面根背景暖色调，白卡片浮于其上） */
 .profile-tabs :deep(.el-tabs__content) {
   padding: 1.5rem;
+  background: linear-gradient(to right, #fff7ed, #fffaf5 50%, #ffffff);
 }
 
 .profile-tabs :deep(.el-tabs__nav-wrap::after) {
   height: 0;
 }
 
+/* 胶囊式导航不需要下划线 */
 .profile-tabs :deep(.el-tabs__active-bar) {
-  background: linear-gradient(90deg, #fbbf24, #f5a54a, #e8722a);
-  height: 3px;
+  display: none;
 }
 
+/* 胶囊式标签 */
 .profile-tabs :deep(.el-tabs__item) {
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: #1f2937;
-  padding: 0 1.5rem;
-  height: 48px;
-  line-height: 48px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #6b7280;
+  padding: 0 1.25rem;
+  height: 40px;
+  line-height: 40px;
+  margin: 0 0.2rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  border-left: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.2s ease;
 }
 
-.profile-tabs :deep(.el-tabs__item.is-active) {
-  color: #e8722a;
+/* 强制首尾胶囊 padding 对称：Element Plus 的规则是 .el-tabs__item:nth-child(2){padding-left:0}
+   （nav 的 DOM 顺序是 [active-bar, ...items]，第一个 item 是 nth-child(2) 而非 :first-child）
+   加 !important 兜底确保压过 Element Plus 同优先级规则 */
+.profile-tabs :deep(.el-tabs__item:nth-child(2)),
+.profile-tabs :deep(.el-tabs__item:last-child) {
+  padding: 0 1.25rem !important;
 }
 
 .profile-tabs :deep(.el-tabs__item:hover) {
-  color: #f5a54a;
+  color: #e8722a;
+  background: #fff7ed;
+}
+
+.profile-tabs :deep(.el-tabs__item.is-active),
+.profile-tabs :deep(.el-tabs__item.is-active:hover) {
+  color: #ffffff;
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  font-weight: 600;
 }
 </style>

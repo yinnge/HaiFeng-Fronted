@@ -314,11 +314,24 @@ watch(
   </el-dialog>
 </template>
 
-<style scoped>
-/* ═══════ 全局弹窗底色 ═══════ */
-.recharge-dialog :deep(.el-dialog) {
+<style>
+/* el-dialog teleport 到 body，scoped 的 data-v 属性在 teleport 元素上丢失，
+   导致 .recharge-dialog 选不到根元素、background:transparent 失效。
+   此处用全局非 scoped 样式 + !important 强制令弹窗根元素背景透明，
+   只保留三列卡片本身的白底，卡片间露出遮罩。 */
+.el-dialog.recharge-dialog {
+  background: transparent !important;
+  box-shadow: none !important;
   border-radius: 24px;
-  overflow: hidden;
+  overflow: visible;
+}
+</style>
+
+<style scoped>
+/* ═══════ 全局弹窗底色（scoped 内备用，实际靠上面全局样式生效） ═══════ */
+.recharge-dialog {
+  border-radius: 24px;
+  overflow: visible;
   background: transparent;
   box-shadow: none;
 }
@@ -439,8 +452,9 @@ watch(
 /* ═══════ 三列布局 ═══════ */
 .columns-wrap {
   display: flex;
-  gap: 0;
+  gap: 16px;
   justify-content: center;
+  padding: 12px 8px;
 }
 
 /* ═══════ 单列卡片 ═══════ */
@@ -448,11 +462,11 @@ watch(
   flex: 1;
   min-width: 0;
   background: #ffffff;
-  border-radius: 0;
-  padding: 55px 24px 60px;
+  border-radius: 16px;
+  padding: 44px 24px 40px;
   position: relative;
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
 /* —— 顶部装饰条 —— */
@@ -462,7 +476,7 @@ watch(
   left: 0;
   right: 0;
   height: 4px;
-  border-radius: 0;
+  border-radius: 16px 16px 0 0;
 }
 
 /* —— 等级徽章（右上角） —— */
@@ -480,8 +494,7 @@ watch(
 
 /* ── 免费列 ── */
 .plan-free {
-  border: 1.5px solid #f3f4f6;
-  border-right: none;
+  border: 2px solid #e5e7eb;
 }
 .plan-free.active {
   border-color: #d1d5db;
@@ -495,12 +508,10 @@ watch(
 
 /* ── Pro 列 ── */
 .plan-pro {
-  border: 3px solid #fb923c;
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  border: 2px solid #fdba74;
 }
 .plan-pro.active {
   border-color: #f97316;
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18);
 }
 .plan-pro.disabled {
   border-color: #e5e7eb;
@@ -536,12 +547,32 @@ watch(
 
 /* ── VIP 列 ── */
 .plan-vip {
-  border: 1.5px solid #f59e0b;
-  border-left: none;
+  border: 2px solid #fcd34d;
 }
 .plan-vip.active {
   border-color: #d97706;
-  border-width: 2px;
+}
+
+/* —— hover 动态高亮：鼠标悬停任意可点列即上浮 + 边框点亮 —— */
+.plan-col:hover {
+  transform: translateY(-8px);
+}
+.plan-free:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+.plan-pro:hover {
+  border-color: #f97316;
+  box-shadow: 0 14px 30px rgba(249, 115, 22, 0.3);
+}
+.plan-vip:hover {
+  border-color: #d97706;
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.3);
+}
+.plan-pro.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e5e7eb;
 }
 .vip-bar { background: linear-gradient(90deg, #f59e0b, #fb923c); }
 .vip-badge { background: linear-gradient(135deg, #f59e0b, #d97706); }

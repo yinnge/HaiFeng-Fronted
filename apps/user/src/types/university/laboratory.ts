@@ -24,5 +24,5 @@ export interface LaboratoryDetailVO {
   researchFields: string[]
   statistics: { label: string; count: number }[]
   majorEquipment: string[]
-  coreTeam: { memberName: string; position: string; role: string }[]
+  coreTeam: { name: string; position: string; title: string }[]
 }

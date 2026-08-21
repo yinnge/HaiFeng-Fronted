@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSiteInfo, getAnnouncements, getAnnouncementDetail, getPlanners, getInstitutions } from '@/api/home'
 import type { SiteInfoVO, AnnouncementListVO, AnnouncementDetailVO, PlannerListVO, InstitutionListVO } from '@/types/home'
-import { ProvinceOptions, MemberType } from '@haifeng/shared'
+import { MemberType } from '@haifeng/shared'
 import { useUserStore } from '@/store/modules/user'
 import PlannerCard from './components/PlannerCard.vue'
+import CircularGallery from './components/CircularGallery.vue'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import AnnouncementWheel from './components/AnnouncementWheel.vue'
 import AnnouncementDetailPanel from './components/AnnouncementDetailPanel.vue'
@@ -313,7 +314,6 @@ const filteredInstitutions = computed(() => {
 })
 
 const searchInstitution = () => {
-  institutionPageIndex.value = 0
   fetchInstitutions()
 }
 
@@ -325,114 +325,18 @@ const goInstitutionDetail = (id: string) => {
   router.push(`/home/institution/${id}`)
 }
 
-// ===== Institution Overlap Carousel =====
-const institutionPageIndex = ref(0)
-const institutionHoveredId = ref('')
-
-const institutionProfile = (i: number) => {
-  const r = (n: number) => {
-    const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453
-    return x - Math.floor(x)
-  }
-  const front = r(1) < 0.35
-  const sizeV = r(2)
-  const tier = sizeV < 0.34 ? 'big' : sizeV < 0.72 ? 'mid' : 'small'
-  return {
-    tier,
-    offset: Math.round((r(3) - 0.5) * 42),
-    rotate: Math.round((r(4) - 0.5) * 60) / 10,
-    blur: front ? 0 : Math.round(r(5) * 8) / 10,
-    opacity: front ? 1 : Math.round((0.95 + r(6) * 0.05) * 100) / 100,
-    z: front ? 30 : 5,
-  }
-}
-
-const institutionFloatingCards = computed(() =>
-  filteredInstitutions.value.map((inst, i) => ({
-    inst,
-    profile: institutionProfile(i),
+// ===== Institution Gallery =====
+const institutionGalleryItems = computed(() =>
+  filteredInstitutions.value.map(inst => ({
+    image: inst.images?.[0] || '',
+    text: inst.name,
   }))
 )
 
-const institutionsPerPage = computed(() => {
-  if (viewportWidth.value < 768) return 4
-  if (viewportWidth.value < 1024) return 8
-  return 10
-})
-
-const institutionColumns = computed(() => {
-  if (viewportWidth.value < 768) return 2
-  if (viewportWidth.value < 1024) return 4
-  return 5
-})
-
-const institutionPages = computed(() => {
-  const pages = []
-  const cards = institutionFloatingCards.value
-  for (let i = 0; i < cards.length; i += institutionsPerPage.value) {
-    pages.push(cards.slice(i, i + institutionsPerPage.value))
-  }
-  return pages
-})
-
-const currentInstitutionPage = computed(
-  () => institutionPages.value[institutionPageIndex.value] || []
-)
-
-const currentInstitutionPageRows = computed(() => {
-  const rows = []
-  const cols = institutionColumns.value
-  const cards = currentInstitutionPage.value
-  for (let i = 0; i < cards.length; i += cols) {
-    rows.push(cards.slice(i, i + cols))
-  }
-  return rows
-})
-
-const prevInstitutionPage = () => {
-  if (institutionPageIndex.value > 0) institutionPageIndex.value--
+const onInstitutionSelect = (index: number) => {
+  const inst = filteredInstitutions.value[index]
+  if (inst) goInstitutionDetail(inst.id)
 }
-
-const nextInstitutionPage = () => {
-  if (institutionPageIndex.value < institutionPages.value.length - 1) institutionPageIndex.value++
-}
-
-const onInstitutionEnter = (id: string) => {
-  institutionHoveredId.value = id
-}
-
-const onInstitutionLeave = () => {
-  institutionHoveredId.value = ''
-}
-
-let institutionTouchStartX = 0
-let institutionTouchStartY = 0
-
-const onInstitutionTouchStart = (e: TouchEvent) => {
-  institutionTouchStartX = e.touches[0].clientX
-  institutionTouchStartY = e.touches[0].clientY
-}
-
-const onInstitutionTouchEnd = (e: TouchEvent) => {
-  const dx = e.changedTouches[0].clientX - institutionTouchStartX
-  const dy = e.changedTouches[0].clientY - institutionTouchStartY
-  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
-  if (dx < 0) {
-    nextInstitutionPage()
-  } else {
-    prevInstitutionPage()
-  }
-}
-
-watch(institutionPages, (pages) => {
-  if (institutionPageIndex.value >= pages.length) {
-    institutionPageIndex.value = Math.max(0, pages.length - 1)
-  }
-})
-
-watch(institutionType, () => {
-  institutionPageIndex.value = 0
-})
 
 onMounted(() => {
   fetchAnnouncements()
@@ -530,22 +434,6 @@ onUnmounted(() => {
         <div class="container mx-auto px-6">
           <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">公告信息</h2>
 
-          <div class="mx-auto mb-8 flex max-w-xl items-center gap-3">
-            <input
-              v-model="announcementTag"
-              type="text"
-              placeholder="输入标签或标题关键词搜索"
-              class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-              @keyup.enter="searchAnnouncement"
-            />
-            <button
-              class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-              @click="searchAnnouncement"
-            >
-              搜索
-            </button>
-          </div>
-
           <div v-if="announcementLoading" class="mx-auto flex max-w-5xl justify-center py-16">
             <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
@@ -568,29 +456,6 @@ onUnmounted(() => {
       <section class="bg-gradient-to-b from-slate-50 to-white py-16">
         <div class="container mx-auto px-6">
           <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">专业规划师</h2>
-
-          <div class="mx-auto mb-8 flex max-w-xl items-center gap-3">
-            <el-select
-              v-model="plannerRegion"
-              placeholder="选择地区筛选"
-              clearable
-              class="flex-1"
-              @change="searchPlanner"
-            >
-              <el-option
-                v-for="opt in ProvinceOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
-            </el-select>
-            <button
-              class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-              @click="searchPlanner"
-            >
-              搜索
-            </button>
-          </div>
 
           <div v-if="plannerPages.length" class="flex items-center justify-center">
             <button
@@ -683,99 +548,19 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div v-if="institutionPages.length" class="flex items-center justify-center">
-            <button
-              class="z-10 mr-1 md:mr-4 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="institutionPageIndex === 0"
-              @click="prevInstitutionPage"
-            >
-              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <div
-              class="flex flex-col items-center"
-              @touchstart="onInstitutionTouchStart"
-              @touchend="onInstitutionTouchEnd"
-            >
-              <div
-                v-for="(row, r) in currentInstitutionPageRows"
-                :key="r"
-                class="flex items-center justify-center"
-                :class="r % 2 === 1 ? 'translate-x-4 md:translate-x-8' : ''"
-              >
-                <div
-                  v-for="card in row"
-                  :key="card.inst.id"
-                  class="-mx-2 md:-mx-2.5"
-                  :class="{
-                    'w-28 sm:w-36 md:w-40 lg:w-44 xl:w-56': card.profile.tier === 'big',
-                    'w-24 sm:w-32 md:w-36 lg:w-40 xl:w-52': card.profile.tier === 'mid',
-                    'w-24 sm:w-28 md:w-32 lg:w-36 xl:w-48': card.profile.tier === 'small',
-                  }"
-                  :style="{
-                    transform: institutionHoveredId === card.inst.id
-                      ? 'translate(-6px, -18px) rotate(0deg) scale(1.06)'
-                      : `translate(0px, ${card.profile.offset}px) rotate(${card.profile.rotate}deg)`,
-                    filter: institutionHoveredId === card.inst.id ? 'none' : `blur(${card.profile.blur}px)`,
-                    opacity: institutionHoveredId === card.inst.id ? 1 : card.profile.opacity,
-                    zIndex: institutionHoveredId === card.inst.id ? 50 : card.profile.z,
-                    transition: 'transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease',
-                  }"
-                  @mouseenter="onInstitutionEnter(card.inst.id)"
-                  @mouseleave="onInstitutionLeave"
-                >
-                  <div class="group overflow-hidden rounded-xl bg-white border border-gray-100 shadow-lg shadow-orange-100/40">
-                    <div class="aspect-[4/3] overflow-hidden bg-gray-50">
-                      <img
-                        :src="card.inst.images?.[0] || ''"
-                        :alt="card.inst.name"
-                        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div :class="card.profile.tier === 'big' ? 'p-3' : 'p-2.5'">
-                      <h4 class="text-sm font-bold text-gray-800 truncate">{{ card.inst.name }}</h4>
-                      <span class="inline-block mt-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] text-orange-600">{{ card.inst.type }}</span>
-                      <p
-                        v-if="card.profile.tier !== 'small'"
-                        :class="card.profile.tier === 'big' ? 'line-clamp-2' : 'line-clamp-1'"
-                        class="mt-2 text-xs text-gray-500"
-                      >{{ card.inst.description }}</p>
-                      <button
-                        class="mt-2.5 w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-1.5 text-xs text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-                        @click.stop="goInstitutionDetail(card.inst.id)"
-                      >
-                        查看详情
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div v-if="filteredInstitutions.length" class="relative">
+            <div class="h-[440px] sm:h-[500px] md:h-[560px]">
+              <CircularGallery
+                :items="institutionGalleryItems"
+                :bend="3"
+                text-color="#1f2937"
+                @select="onInstitutionSelect"
+              />
             </div>
-
-            <button
-              class="z-10 ml-1 md:ml-4 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="institutionPageIndex >= institutionPages.length - 1"
-              @click="nextInstitutionPage"
-            >
-              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            <p class="mt-2 text-center text-xs text-gray-400">左右拖拽 / 滚动浏览 · 点击卡片查看详情</p>
           </div>
           <div v-else class="py-12 text-center text-gray-400">
             暂无培训机构
-          </div>
-
-          <div v-if="institutionPages.length > 1" class="mt-6 flex justify-center gap-2">
-            <span
-              v-for="(_, i) in institutionPages"
-              :key="i"
-              class="inline-block h-2 w-2 rounded-full transition-colors cursor-pointer"
-              :class="i === institutionPageIndex ? 'bg-orange-500' : 'bg-gray-300'"
-              @click="institutionPageIndex = i"
-            ></span>
           </div>
 
           <div class="mt-8 flex items-center justify-end">

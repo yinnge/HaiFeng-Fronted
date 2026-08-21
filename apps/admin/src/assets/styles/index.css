@@ -13,7 +13,6 @@ html {
   width: 100%;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  scrollbar-gutter: stable;
 }
 
 body {
@@ -21,7 +20,4 @@ body {
   overflow-y: auto;
 }
 
-/* 弹窗打开时保持滚动条空间，避免页面抖动 */
-.el-popup-parent--hidden body {
-  overflow-y: scroll !important;
-}
+/* 弹窗打开时锁滚动 + 宽度补偿由 Element Plus 内置处理，此处不再干预，避免与内置补偿叠加导致页面左移 */

@@ -76,14 +76,17 @@ onMounted(fetchData)
 </script>
 
 <template>
-  <section class="mb-8">
-    <h3 class="text-xl font-bold text-gray-800 mb-4">强基计划入围/录取数据</h3>
+  <section class="sb-section fade-up delay-1">
+    <div class="sb-head">
+      <h3 class="sb-title">强基计划入围/录取数据</h3>
+      <span class="sb-count">共 {{ total }} 条</span>
+    </div>
 
-    <!-- 搜索栏 -->
-    <div class="mb-6 rounded-2xl bg-white p-5 shadow-md border border-gray-100">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">年份</label>
+    <!-- 搜索栏：7 条件 + 按钮，控件 170px 靠左两行排满 -->
+    <div class="white-card mb-6">
+      <div class="sb-search">
+        <div class="sb-field">
+          <label class="search-label">年份</label>
           <el-select v-model="sYear" placeholder="全部" clearable class="w-full">
             <el-option
               v-for="opt in yearOptions"
@@ -93,114 +96,102 @@ onMounted(fetchData)
             />
           </el-select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">省份</label>
+        <div class="sb-field">
+          <label class="search-label">省份</label>
           <el-select v-model="sProvince" placeholder="全部" clearable filterable class="w-full">
             <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">科类</label>
+        <div class="sb-field">
+          <label class="search-label">科类</label>
           <el-select v-model="sSubjectType" placeholder="全部" clearable class="w-full">
             <el-option v-for="opt in SubjectTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">入围类型</label>
+        <div class="sb-field">
+          <label class="search-label">入围类型</label>
           <el-select v-model="sEntryScoreType" placeholder="全部" clearable class="w-full">
             <el-option v-for="opt in EntryScoreTypeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">大学名称</label>
+        <div class="sb-field">
+          <label class="search-label">大学名称</label>
           <input
             v-model="sUniversityName"
             type="text"
             placeholder="模糊搜索"
-            class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            class="search-input"
             @keyup.enter="onSearch"
           />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">专业名称</label>
+        <div class="sb-field">
+          <label class="search-label">专业名称</label>
           <input
             v-model="sMajorName"
             type="text"
             placeholder="模糊搜索"
-            class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            class="search-input"
             @keyup.enter="onSearch"
           />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1.5">专业代码</label>
+        <div class="sb-field">
+          <label class="search-label">专业代码</label>
           <input
             v-model="sMajorCode"
             type="text"
             placeholder="模糊搜索"
-            class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+            class="search-input"
             @keyup.enter="onSearch"
           />
         </div>
-      </div>
-      <div class="flex justify-center">
-        <button
-          class="px-8 py-2.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-md shadow-orange-200"
-          @click="onSearch"
-        >
-          搜索
-        </button>
+        <button class="sb-search-btn" @click="onSearch">搜索</button>
       </div>
     </div>
 
     <!-- 卡片网格 -->
     <div v-loading="loading" class="min-h-[200px]">
-      <div v-if="records.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-if="records.length" class="sb-grid">
         <div
-          v-for="item in records"
+          v-for="(item, idx) in records"
           :key="item.id"
-          class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all"
+          class="sb-card fade-up"
+          :style="{ animationDelay: `${(idx % 4) * 70}ms` }"
         >
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-lg font-bold text-gray-800">{{ item.universityName }}</h4>
-            <span class="text-xs text-gray-400">{{ item.year }}年</span>
+          <div class="sb-card-head">
+            <div class="sb-card-title">
+              <span class="sb-avatar">{{ item.universityName?.slice(0, 1) || '大' }}</span>
+              <h4 class="sb-name">{{ item.universityName }}</h4>
+            </div>
+            <span class="sb-year">{{ item.year }}年</span>
           </div>
-          <p class="text-sm text-gray-600 mb-3">
+          <p class="sb-major">
             {{ item.majorName }}
-            <span v-if="item.majorCode" class="text-xs text-gray-400">({{ item.majorCode }})</span>
+            <span v-if="item.majorCode" class="sb-major-code">({{ item.majorCode }})</span>
           </p>
-          <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
+          <div class="sb-meta">
             <span>省份: {{ item.province }}</span>
             <span>科类: {{ item.subjectType }}</span>
             <span>入围类型: {{ item.entryScoreType }}</span>
             <span>入围比例: {{ item.entryRatio }}</span>
           </div>
-          <div class="flex items-center justify-between py-2 border-t border-gray-100">
-            <div class="text-sm">
-              <span class="text-gray-400">入围分: </span>
-              <span class="font-semibold text-orange-500">{{ item.entryScore ?? '-' }}</span>
+          <div class="sb-scores">
+            <div class="sb-score">
+              <span class="sb-score-label">入围分</span>
+              <span class="sb-score-value">{{ item.entryScore ?? '-' }}</span>
             </div>
-            <div class="text-sm">
-              <span class="text-gray-400">录取分: </span>
-              <span class="font-semibold text-orange-500">{{ item.admissionScore ?? '-' }}</span>
+            <div class="sb-score">
+              <span class="sb-score-label">录取分</span>
+              <span class="sb-score-value">{{ item.admissionScore ?? '-' }}</span>
             </div>
-            <div class="text-sm">
-              <span class="text-gray-400">计划/录取: </span>
-              <span class="font-semibold text-gray-700">{{ item.planCount ?? '-' }}/{{ item.admissionCount ?? '-' }}</span>
+            <div class="sb-score">
+              <span class="sb-score-label">计划/录取</span>
+              <span class="sb-score-value">{{ item.planCount ?? '-' }}/{{ item.admissionCount ?? '-' }}</span>
             </div>
           </div>
-          <button
-            class="mt-3 w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-            @click="viewDetail(item.id)"
-          >
-            查看详情 →
-          </button>
+          <button class="univ-btn" @click="viewDetail(item.id)">查看详情</button>
         </div>
       </div>
-      <div v-else-if="!loading" class="py-12 text-center text-gray-400">
-        暂无强基计划数据
-      </div>
+      <div v-else-if="!loading" class="empty-tip">暂无强基计划数据</div>
     </div>
 
     <div v-if="total > pageSize" class="mt-6 flex justify-center">
@@ -215,3 +206,229 @@ onMounted(fetchData)
     </div>
   </section>
 </template>
+
+<style scoped>
+/* ===== 入场动画（与父级 GaokaoChannelUniversities 一致） ===== */
+.fade-up {
+  opacity: 0;
+  animation: fadeUp 0.5s ease-out forwards;
+}
+.delay-1 { animation-delay: 100ms; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation: none; opacity: 1; }
+}
+
+/* ===== 区块头部 ===== */
+.sb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sb-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.sb-count {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* ===== 白卡（压过全局 transparent 规则） ===== */
+.white-card {
+  background: #ffffff !important;
+  border: 1px solid #f0e9e3;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== 搜索栏 ===== */
+.search-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid #ece4db;
+  background: #fff;
+  font-size: 14px;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.search-input:focus {
+  border-color: #e8722a;
+}
+.sb-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+.sb-field {
+  width: 170px;
+  flex: none;
+}
+.sb-search-btn {
+  width: 170px;
+  height: 32px;
+  flex: none;
+  border: none;
+  border-radius: 8px;
+  background: #f97316;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.sb-search-btn:hover {
+  background: #ea580c;
+}
+
+/* ===== 强基卡片 ===== */
+.sb-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 768px) {
+  .sb-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sb-card {
+  padding: 18px 18px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #f0e9e3;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.sb-card:hover {
+  transform: translateY(-3px);
+  border-color: #fdd9c3;
+  box-shadow: 0 8px 20px rgba(232, 114, 42, 0.1);
+}
+.sb-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.sb-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.sb-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #fff3e8, #ffe8d6);
+  color: #e8722a;
+  font-size: 16px;
+  font-weight: 700;
+}
+.sb-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-year {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff3e8;
+  color: #e8722a;
+  font-size: 12px;
+  font-weight: 500;
+}
+.sb-major {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+.sb-major-code {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.sb-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: #faf7f4;
+  font-size: 12px;
+  color: #6b7280;
+}
+.sb-scores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sb-score {
+  padding: 10px 0;
+  text-align: center;
+  border-radius: 10px;
+  background: #fffaf5;
+  border: 1px solid #f5ece3;
+}
+.sb-score-label {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+.sb-score-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8722a;
+}
+.univ-btn {
+  width: 100%;
+  padding: 8px 0;
+  border: 1px solid #f5c9a8;
+  border-radius: 10px;
+  background: transparent;
+  color: #e8722a;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.univ-btn:hover {
+  background: #fff3e8;
+}
+.empty-tip {
+  padding: 48px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+</style>

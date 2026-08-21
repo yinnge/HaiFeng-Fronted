@@ -6,12 +6,12 @@
 - 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
 
-## 已知坑：Element Plus 弹窗锁滚动 + scrollbar-gutter 抖动
-- 现象：`el-dialog`（lock-scroll 默认开）打开时，`useLockscreen` 给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`），并**内联** `body.style.width = calc(100% - 滚动条宽)` 补偿位移。
-- 若全局已用 `html,body{ scrollbar-gutter: stable }` 预留滚动条位置，二者会**重复计算**：gutter 占一份 + body 再缩一份 → 打开弹窗内容左移抖动。
-- 干净修法（user 端已采用）：保留 `scrollbar-gutter: stable`，并加 `body.el-popup-parent--hidden{ width:100% !important; overflow:hidden }` 覆盖内联收缩（gutter 已留好位置，body 无需再缩）。
-- admin 端当前用的是另一种 hack：`.el-popup-parent--hidden{ overflow:scroll !important }`（强制常驻滚动条轨道来防抖，略丑但能用）。如需统一为 user 端的 scrollbar-gutter 方案，需确认 admin 真实滚动容器（admin 多为定高布局 + 嵌套滚动容器，谨慎改动）。
-- 验证：浏览器实测 localhost:3001 个人中心，逐个点开弹窗看右侧是否不再抖动。CSS 改动 Vite HMR 即时生效。
+## 已知坑：Element Plus 弹窗锁滚动 + 页面左移抖动（2026-08-15 已修复）
+- 现象：未登录点「开始志愿填报」等触发弹窗（el-dialog / ElMessageBox / el-drawer / el-image 预览）时，右侧滚动条消失、整页左移约 6px。
+- 机制（element-plus 实际装 2.13.7）：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`）并内联 `body.style.width = calc(100% - 滚动条宽)` 补偿位移，关闭 200ms 后还原。**这套默认补偿本身是正确的、无位移。**
+- 根因：曾在全局加 `html,body{ scrollbar-gutter:stable }`（overflow 默认 visible，stable 对 visible **不生效**，等于没留 gutter）+ `body.el-popup-parent--hidden{ width:100%!important }`（把 Element Plus 的补偿**顶掉**）→ 滚动条消失又无补偿 = 左移。admin 端的 `.el-popup-parent--hidden body{ overflow-y:scroll!important }` 是错误选择器（类加在 body 上，body 非其后代）= 死 CSS。
+- 正确修法（2026-08-15 已采用）：**移除上述破坏性 CSS，回归 Element Plus 默认的「隐藏滚动条 + 宽度补偿」**。不要再用 scrollbar-gutter / width:100%!important / 自写 el-popup-parent--hidden 规则去干预，否则会与内置补偿叠加再次抖动。
+- 影响面：全局（user/admin 所有弹层），改一处即可。验证：浏览器实测打开各类弹窗看右侧是否不再左移，CSS 改动 Vite HMR 即时生效。
 
 ## admin 控制面板「系统信息」字段来源（跨端：后端 haifeng-admin）
 - 接口：`GET /api/v1/admin/dashboard/overview` → `DashboardController.getDashboardOverview()` → `DashboardServiceImpl.getSystemInfo()`（《DashboardServiceImpl.java:109-126》）。
