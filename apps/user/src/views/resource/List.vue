@@ -6,6 +6,7 @@ import { Motion } from 'motion-v'
 import { getResourceList, getResourceCategories, getResourceUrl } from '@/api/resource'
 import type { ResourceListVO, ResourceQueryDTO, ResourceUrlVO } from '@/types/resource'
 import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
@@ -71,14 +72,9 @@ function handleReset() {
 async function handleDownload(id: string) {
   if (!userStore.isLoggedIn()) {
     userStore.setRedirectPath(router.currentRoute.value.fullPath)
-    try {
-      await ElMessageBox.confirm('您还没有登录，请先登录', '提示', {
-        confirmButtonText: '前往登录',
-        cancelButtonText: '取消',
-        type: 'warning',
-      })
+    if (await confirmLogin()) {
       router.push('/login')
-    } catch { /* cancelled */ }
+    }
     return
   }
 

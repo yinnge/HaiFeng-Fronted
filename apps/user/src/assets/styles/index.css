@@ -193,3 +193,75 @@ body.el-popup-parent--hidden {
     @apply bg-brand-gold/10 text-brand-gold-dark border border-brand-gold/20;
   }
 }
+
+/* ===== 登录引导弹窗（渐变浅橙主题，配合 utils/loginGuide.ts） ===== */
+.login-guide-box {
+  width: 360px;
+  padding: 0;
+  border: 1px solid rgba(232, 114, 42, 0.25);
+  border-radius: 14px;
+  background: linear-gradient(165deg, #fffaf3 0%, #ffedd5 100%);
+  overflow: hidden;
+}
+.login-guide-box .el-message-box__header {
+  display: none;
+}
+.login-guide-box .el-message-box__content {
+  padding: 0;
+}
+.login-guide-box .el-message-box__message {
+  width: 100%;
+}
+.login-guide__banner {
+  height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fbbf24, #f97316, #e8722a);
+  color: #fff;
+}
+.login-guide__banner span {
+  font-size: 13px;
+  font-weight: 500;
+}
+.login-guide__body {
+  padding: 24px 26px 10px;
+  text-align: center;
+}
+.login-guide__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #7c2d12;
+}
+.login-guide__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #9a5b2a;
+}
+.login-guide-box .el-message-box__btns {
+  padding: 16px 26px 22px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.login-guide-box .el-message-box__btns .el-button {
+  margin: 0;
+  flex: 1;
+  border-radius: 20px;
+  padding: 9px 0;
+}
+.login-guide-box .el-message-box__btns .el-button--primary {
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  border: none;
+  color: #fff;
+  font-weight: 500;
+}
+.login-guide-box .el-message-box__btns .el-button--default {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(232, 114, 42, 0.3);
+  color: #b45309;
+}

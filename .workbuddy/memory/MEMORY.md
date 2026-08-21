@@ -34,6 +34,18 @@
 - **入口统一（2026-08-19 用户拍板）**：特殊通道 Tab1 的 5 张通道卡片（含强基）跳转已从 `/special/channel/:id` 改为 `/gaokao/channel/:id` → 两个入口共用 `GaokaoChannelUniversities.vue`（含 STRONG_BASE 分支渲染 StrongBaseList）。`views/special/ChannelDetail.vue` 保留文件不再被引用。返回按钮保持原状（回 `/gaokao`），用户确认可接受。强基 Tab2 与强基详情仍是 `/special/strong-base/:id` → StrongBaseDetail.vue 不变。
 - 组件差异：ChannelUniversities 点卡片→跳 `/university/:id`；ChannelDetail 点卡片→弹窗（需登录引导）。改动时别串。
 
+## 密码规则全站统一（2026-08-21，方案 A，权威）
+- **全站唯一密码规则：字母+数字，6-16 位**，正则 `^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$`，提示文案统一「密码必须是数字+字母，长度6-16位」。**新增任何密码输入入口（登录/注册/改密/重置/新增管理员）都必须用这个 pattern，禁止再出现 min/max 长度或其它字符规则**。
+- 覆盖范围：后端 common `LoginDTO`、app `RegisterDTO`/`ForgotPasswordResetDTO`/`member PasswordUpdateDTO`、admin `profile PasswordUpdateDTO`/`AdminAddDTO`/`AdminUpdateDTO`（改密 2 个 DTO 于当日从旧规则改齐）；前端 admin 5 处（PasswordModal/AdminLoginForm/UserLoginForm/UserRegisterForm/AdminDetailModal）+ user 3 处（LoginCard/register/AccountInfo）。
+- 历史坑（勿重蹈）：改密规则曾与登录规则不一致 → 用户设置 >16 位或纯数字密码后登录被 @Pattern 拦，**永远登不进去**。admin 改密曾要求 8-32+大小写数字，与登录 6-16 互斥。
+- admin 改密弹窗 catch 已修透传 `err.message`（拦截器 reject 的是普通 Error）；user 改密弹窗有「确认新密码」字段，admin 本就有。
+- 存量风险：历史上不合规的存量密码统一后无法登录，需走忘记密码重置。
+
+## user 端登录引导弹窗（2026-08-21 统一，权威）
+- **凡是「未登录拦截→提示去登录」的场景，一律用 `confirmLogin()`**（`utils/loginGuide.ts`，默认文案「登录后可查看详细内容」），不要再用 `ElMessageBox.confirm('请先登录...')`。用法：`userStore.setRedirectPath(xxx); if (await confirmLogin()) router.push('/login')`。
+- 主题（变体2 横幅点睛版）：顶部 88px 金→橙渐变横幅（锁图标+「登录后解锁完整内容」）+ 浅橙渐变卡身 + 橙渐变按钮；样式集中在 `index.css` 的 `.login-guide-box`（`login-guide__banner/__body/__title/__desc`）。
+- 坑：element-plus 2.13.7 `ElMessageBoxOptions` 类型**没有 width/showHeader**，用 CSS 控制（.login-guide-box{width:360px}、.el-message-box__header{display:none}），别传这些 option 否则 typecheck 报 TS2353。
+
 ## git 红线
 - 每个任务收尾必 commit（至少 `git add -A && git commit`）；`git pull --rebase` 前先确认 `git status` 干净，否则静默丢弃未提交修改（2026-08-02 曾从 stash 找回城市模块）。
 - 用户明确"不要 git commit"的任务（如纯样式优化）遵守，但要在记忆里标注遗留未提交改动。
