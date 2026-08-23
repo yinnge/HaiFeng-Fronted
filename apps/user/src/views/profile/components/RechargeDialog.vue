@@ -318,12 +318,28 @@ watch(
 /* el-dialog teleport 到 body，scoped 的 data-v 属性在 teleport 元素上丢失，
    导致 .recharge-dialog 选不到根元素、background:transparent 失效。
    此处用全局非 scoped 样式 + !important 强制令弹窗根元素背景透明，
-   只保留三列卡片本身的白底，卡片间露出遮罩。 */
+   只保留三列卡片本身的白底，卡片间及四周透出背后页面内容（遮罩也透明）。 */
 .el-dialog.recharge-dialog {
   background: transparent !important;
   box-shadow: none !important;
   border-radius: 24px;
   overflow: visible;
+}
+
+/* header / body 也必须全局化：scoped :deep 在 teleport 后选不中，
+   body 会保留 Element Plus 默认 padding，透明区透出画布顶部白雾/底部橙晕。 */
+.el-dialog.recharge-dialog .el-dialog__header {
+  display: none;
+}
+
+.el-dialog.recharge-dialog .el-dialog__body {
+  padding: 0;
+}
+
+/* 遮罩轻度压暗（rgba 0.2）：背后页面内容仍可见，同时突出三张卡。
+   :has 选中充值弹窗的祖先 .el-overlay（用户确认，替代完全透明版）。 */
+.el-overlay:has(.recharge-dialog) {
+  background: rgba(0, 0, 0, 0.2) !important;
 }
 </style>
 
@@ -336,17 +352,8 @@ watch(
   box-shadow: none;
 }
 
-.recharge-dialog :deep(.el-overlay-dialog) {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.recharge-dialog :deep(.el-dialog__header) {
-  display: none;
-}
-
-.recharge-dialog :deep(.el-dialog__body) {
-  padding: 0;
-}
+/* header 隐藏 / body padding 归零 / 遮罩透明已上移全局非 scoped 段，
+   scoped :deep 在 teleport 后选不中，此处不再重复。 */
 
 /* ═══════ 通用：对话框头部 ═══════ */
 .step-two-inner {
