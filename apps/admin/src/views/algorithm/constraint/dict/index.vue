@@ -73,6 +73,8 @@ const checkOperatorOptions = [
 ]
 
 const checkFieldOptions = [
+  // 高考档案基础信息
+  { label: '性别（男/女）', value: 'gender' },
   // 身体视觉
   { label: '是否色盲', value: 'is_color_blind' },
   { label: '是否色弱', value: 'is_color_weak' },
@@ -134,6 +136,7 @@ const valueRequired = computed(() => !VALUE_LESS_OPERATORS.includes(formData.che
 
 const checkValueHint = computed(() => {
   const op = formData.checkOperator
+  if (formData.checkField === 'gender') return '性别字段：请填 男 或 女（如「等于」→ 男）'
   if (op === 'IS_TRUE' || op === 'IS_FALSE') return '「为真/为假」无需填写检查值，直接匹配是/否'
   if (op === 'IS_NULL' || op === 'IS_NOT_NULL') return '「为空/不为空」无需填写检查值'
   if (fieldType.value === 'boolean') return '布尔字段：是 = true，否 = false'
@@ -166,6 +169,7 @@ const extraValueRequired = computed(() => !VALUE_LESS_OPERATORS.includes(formDat
 
 const extraValueHint = computed(() => {
   const op = formData.extraOperator
+  if (formData.extraField === 'gender') return '性别字段：请填 男 或 女（如「等于」→ 男）'
   if (op === 'IS_TRUE' || op === 'IS_FALSE') return '「为真/为假」无需填写附加值'
   if (op === 'IS_NULL' || op === 'IS_NOT_NULL') return '「为空/不为空」无需填写附加值'
   if (extraFieldType.value === 'boolean') return '是 = true，否 = false'

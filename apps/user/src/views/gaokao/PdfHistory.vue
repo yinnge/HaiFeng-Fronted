@@ -11,6 +11,7 @@ import {
   type PdfRecordListVO,
 } from '@/api/pdf-report'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
+import PdfProfileDialog from '@/components/pdf/PdfProfileDialog.vue'
 import { usePdfQuota } from '@/composables/usePdfQuota'
 import { getMyPlans } from '@/api/wish-plan'
 
@@ -29,6 +30,10 @@ const pageSize = ref(10)
 // SSE 重新生成弹窗
 const showGenerateDialog = ref(false)
 const regenerateRecordId = ref('')
+
+// 重新生成前先确认/完善 AI 分析档案
+const showProfileDialog = ref(false)
+const pendingRegenerate = ref<PdfRecordListVO | null>(null)
 
 const statusMap: Record<number, { label: string; color: string; bg: string }> = {
   0: { label: '生成中', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -81,9 +86,19 @@ async function handleRegenerate(record: PdfRecordListVO) {
       cancelButtonText: '取消',
       type: record.status === 1 ? 'warning' : 'info',
     })
-    regenerateRecordId.value = String(record.id)
-    showGenerateDialog.value = true
+    pendingRegenerate.value = record
+    showProfileDialog.value = true
   } catch {}
+}
+
+// 档案弹窗确认后，继续打开重新生成弹窗
+function handleProfileProceed() {
+  showProfileDialog.value = false
+  if (pendingRegenerate.value) {
+    regenerateRecordId.value = String(pendingRegenerate.value.id)
+    showGenerateDialog.value = true
+  }
+  pendingRegenerate.value = null
 }
 
 async function handleDelete(record: PdfRecordListVO) {
@@ -293,6 +308,12 @@ function formatTime(dateStr: string) {
       :is-regenerate="true"
       :record-id="regenerateRecordId"
       @success="handleGenerateSuccess"
+    />
+
+    <!-- 重新生成前：AI 分析档案确认/填写 -->
+    <PdfProfileDialog
+      v-model:visible="showProfileDialog"
+      @proceed="handleProfileProceed"
     />
   </div>
 </template>

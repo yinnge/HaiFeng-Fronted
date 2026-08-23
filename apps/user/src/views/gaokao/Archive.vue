@@ -33,6 +33,7 @@ const form = reactive<GaokaoArchiveForm>({
   batch: '',
   batchDataYear: new Date().getFullYear(),
   batchLineScore: 0,
+  gender: '',
 })
 
 // 改革模式数据
@@ -369,6 +370,7 @@ async function loadArchive() {
         batch: data.batch,
         batchDataYear: data.batchDataYear,
         batchLineScore: data.batchLineScore,
+        gender: data.gender || '',
         scoreChinese: data.scoreChinese,
         scoreMath: data.scoreMath,
         scoreEnglish: data.scoreEnglish,
@@ -543,6 +545,13 @@ onMounted(async () => {
               <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">高考总分 *</label>
                 <el-input-number v-model="form.score" :min="0" :max="750" class="w-full" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">性别（可选）</label>
+                <el-select v-model="form.gender" placeholder="选择性别" clearable class="w-full">
+                  <el-option label="男" value="男" />
+                  <el-option label="女" value="女" />
+                </el-select>
               </div>
             </div>
           </div>

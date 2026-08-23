@@ -14,14 +14,15 @@ const routes: RouteRecordRaw[] = [
     name: 'MiddleSchoolFiles',
     component: () => import('@/views/fileload/FileLoadPage.vue'),
     props: { audience: 'middle', title: '初中专栏' },
-    meta: { title: '初中专栏', requiresAuth: true },
+    // 列表公开免登录；点卡片详情仍由页面内做登录/VIP 引导
+    meta: { title: '初中专栏' },
   },
   {
     path: '/high',
     name: 'HighSchoolFiles',
     component: () => import('@/views/fileload/FileLoadPage.vue'),
     props: { audience: 'high', title: '高中专栏' },
-    meta: { title: '高中专栏', requiresAuth: true },
+    meta: { title: '高中专栏' },
   },
   {
     path: '/gaokao',

@@ -359,84 +359,88 @@ function displayValue(key: keyof ProfileForm): string {
 </script>
 
 <template>
-  <el-dialog
+    <el-dialog
     :model-value="visible"
+    class="ai-profile-dialog"
     :title="'AI分析档案'"
-    width="640px"
+    width="800px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     @update:model-value="(v: boolean) => emit('update:visible', v)"
   >
-    <div v-loading="loading" class="min-h-[120px]">
+    <div v-loading="loading" class="min-h-[140px]">
       <!-- ========== 模式一：确认弹窗 ========== -->
       <div v-if="mode === 'confirm'">
         <div class="flex items-start gap-3">
-          <div class="w-10 h-10 shrink-0 rounded-xl bg-brand-orange/10 flex items-center justify-center">
-            <svg class="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-brand-orange to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
           <div class="flex-1">
-            <p class="text-base font-semibold text-gray-800 leading-snug">请确认是否填写完整AI分析档案表</p>
-            <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">
+            <p class="text-lg font-bold text-gray-800 leading-snug">请确认是否填写完整 AI 分析档案表</p>
+            <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
               填写考生画像（发展定位、性格、身体状况、工作偏好等）后，AI 将结合你的情况生成更精准的志愿分析报告。全部选填，可随时修改。
             </p>
           </div>
         </div>
-        <div class="mt-4 rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 flex items-center gap-2">
-          <svg class="w-4 h-4 text-brand-orange shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mt-5 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100/60 border border-orange-200 px-4 py-3.5 flex items-center gap-2.5">
+          <svg class="w-5 h-5 text-brand-orange shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="text-xs text-orange-600">当前已填写 <b class="font-semibold">{{ filledCount }}</b> / {{ totalCount }} 项</span>
+          <span class="text-sm text-orange-700 font-medium">当前已填写 <b class="font-bold text-brand-orange">{{ filledCount }}</b> / {{ totalCount }} 项</span>
         </div>
       </div>
 
       <!-- ========== 模式二：渐进式填写 ========== -->
       <div v-else-if="mode === 'fill'">
         <div class="flex items-center justify-between mb-5">
-          <div>
-            <span class="text-sm font-semibold text-gray-700">第 {{ currentPart }} / {{ parts.length }} 部分</span>
-            <span class="text-xs text-gray-400 ml-2">{{ parts[currentPart - 1].title }}</span>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-brand-orange to-red-500 text-white text-sm font-bold shadow-md shadow-orange-500/20">{{ currentPart }}</span>
+            <span class="text-base font-bold text-gray-800">{{ parts[currentPart - 1].title }}</span>
+            <span class="text-xs text-gray-500 font-medium">第 {{ currentPart }} / {{ parts.length }} 部分</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span
               v-for="i in parts.length"
               :key="i"
-              class="w-6 h-1.5 rounded-full transition-colors"
-              :class="i <= currentPart ? 'bg-brand-orange' : 'bg-gray-200'"
+              class="w-7 h-2 rounded-full transition-colors"
+              :class="i <= currentPart ? 'bg-gradient-to-r from-brand-orange to-red-500' : 'bg-gray-200'"
             />
           </div>
         </div>
-        <div class="max-h-[52vh] overflow-y-auto pr-1">
-          <div v-for="field in parts[currentPart - 1].fields" :key="field.key" class="mb-5">
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <div class="max-h-[58vh] overflow-y-auto pr-1">
+          <div v-for="field in parts[currentPart - 1].fields" :key="field.key" class="mb-6">
+            <label class="block text-sm font-bold text-gray-800 mb-2">
+              <span class="inline-block w-1 h-4 bg-brand-orange rounded-full mr-2 align-middle"></span>
               {{ field.label }}
-              <span class="text-xs text-gray-400 font-normal">（选填）</span>
+              <span class="text-xs text-gray-500 font-normal">（选填）</span>
             </label>
             <el-select
               v-if="field.type === 'select'"
               v-model="form[field.key]"
               placeholder="请选择"
               clearable
+              size="large"
               class="w-full"
             >
               <el-option v-for="o in field.options ?? []" :key="o" :label="o" :value="o" />
             </el-select>
-            <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.key]" class="pt-1">
-              <el-radio v-for="o in field.options ?? []" :key="o" :value="o">{{ o }}</el-radio>
+            <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.key]" size="large" class="pt-1">
+              <el-radio v-for="o in field.options ?? []" :key="o" :value="o" class="!text-gray-700 !font-medium">{{ o }}</el-radio>
             </el-radio-group>
             <el-input
               v-else-if="field.type === 'textarea'"
               v-model="form[field.key]"
               type="textarea"
-              :rows="3"
+              :rows="5"
               :placeholder="field.placeholder"
               maxlength="500"
               show-word-limit
             />
-            <el-input v-else v-model="form[field.key]" :placeholder="field.placeholder" maxlength="100" />
-            <p v-if="field.hint" class="text-xs text-gray-400 leading-relaxed mt-1.5 flex items-start gap-1">
-              <svg class="w-3.5 h-3.5 mt-0.5 shrink-0 text-brand-orange/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <el-input v-else v-model="form[field.key]" :placeholder="field.placeholder" maxlength="100" size="large" />
+            <p v-if="field.hint" class="text-xs text-gray-600 leading-relaxed mt-2 flex items-start gap-1.5">
+              <svg class="w-4 h-4 mt-0.5 shrink-0 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>{{ field.hint }}</span>
@@ -447,27 +451,30 @@ function displayValue(key: keyof ProfileForm): string {
 
       <!-- ========== 模式三：总体档案展示 ========== -->
       <div v-else>
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-sm font-semibold text-gray-700">AI分析档案总览</p>
-          <span class="text-xs text-gray-400">已填写 {{ filledCount }}/{{ totalCount }} 项</span>
+        <div class="flex items-center justify-between mb-5">
+          <p class="text-base font-bold text-gray-800 flex items-center gap-2">
+            <span class="inline-block w-1.5 h-5 bg-brand-orange rounded-full"></span>
+            AI分析档案总览
+          </p>
+          <span class="text-sm font-semibold text-brand-orange bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-lg">已填写 {{ filledCount }}/{{ totalCount }} 项</span>
         </div>
-        <div class="max-h-[52vh] overflow-y-auto pr-1">
-          <div v-for="(part, idx) in parts" :key="idx" class="mb-5">
-            <h4 class="text-xs font-semibold text-brand-orange mb-2.5 flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-brand-orange/10 text-brand-orange text-[10px] flex items-center justify-center font-bold">{{ idx + 1 }}</span>
+        <div class="max-h-[58vh] overflow-y-auto pr-1">
+          <div v-for="(part, idx) in parts" :key="idx" class="mb-6">
+            <h4 class="text-sm font-bold text-brand-orange mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-gradient-to-br from-brand-orange to-red-500 text-white text-[10px] flex items-center justify-center font-bold shadow-sm">{{ idx + 1 }}</span>
               {{ part.title }}
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
               <div
                 v-for="field in part.fields"
                 :key="field.key"
-                class="mb-3"
+                class="mb-4"
                 :class="field.type === 'textarea' || field.type === 'select' ? 'sm:col-span-2' : ''"
               >
-                <label class="block text-xs text-gray-400 mb-1">{{ field.label }}</label>
+                <label class="block text-sm font-bold text-gray-700 mb-1.5">{{ field.label }}</label>
                 <div
                   v-if="!viewEditable"
-                  class="text-sm text-gray-700 rounded-lg bg-gray-50 px-3 py-2 min-h-[2.25rem] leading-relaxed"
+                  class="text-sm text-gray-800 rounded-lg bg-orange-50/40 border border-orange-100 px-3.5 py-2.5 min-h-[2.75rem] leading-relaxed"
                 >
                   {{ displayValue(field.key) }}
                 </div>
@@ -477,23 +484,24 @@ function displayValue(key: keyof ProfileForm): string {
                     v-model="form[field.key]"
                     placeholder="请选择"
                     clearable
+                    size="large"
                     class="w-full"
                   >
                     <el-option v-for="o in field.options ?? []" :key="o" :label="o" :value="o" />
                   </el-select>
-                  <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.key]" class="pt-1">
-                    <el-radio v-for="o in field.options ?? []" :key="o" :value="o">{{ o }}</el-radio>
+                  <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.key]" size="large" class="pt-1">
+                    <el-radio v-for="o in field.options ?? []" :key="o" :value="o" class="!text-gray-700 !font-medium">{{ o }}</el-radio>
                   </el-radio-group>
                   <el-input
                     v-else-if="field.type === 'textarea'"
                     v-model="form[field.key]"
                     type="textarea"
-                    :rows="2"
+                    :rows="4"
                     :placeholder="field.placeholder"
                     maxlength="500"
                     show-word-limit
                   />
-                  <el-input v-else v-model="form[field.key]" :placeholder="field.placeholder" maxlength="100" />
+                  <el-input v-else v-model="form[field.key]" :placeholder="field.placeholder" maxlength="100" size="large" />
                 </template>
               </div>
             </div>
@@ -507,8 +515,8 @@ function displayValue(key: keyof ProfileForm): string {
       <!-- 确认弹窗 -->
       <div v-if="mode === 'confirm'" class="flex items-center justify-end gap-2">
         <button class="btn-secondary px-5 py-2 text-sm" @click="close">取消</button>
-        <button class="btn-secondary px-5 py-2 text-sm" @click="handleViewOrModify">查看并修改档案</button>
-        <button class="btn-brand px-5 py-2 text-sm" @click="handleConfirmAnalyze">确认并AI分析</button>
+        <button class="px-5 py-2 text-sm font-medium text-brand-orange bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors" @click="handleViewOrModify">查看并修改档案</button>
+        <button class="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-brand-orange to-red-500 rounded-lg hover:shadow-lg hover:shadow-orange-500/30 transition-all" @click="handleConfirmAnalyze">确认并AI分析</button>
       </div>
 
       <!-- 渐进式填写 -->
@@ -539,6 +547,27 @@ function displayValue(key: keyof ProfileForm): string {
 
 <style scoped>
 :deep(.el-dialog__body) {
-  padding-top: 8px;
+  padding-top: 12px;
+}
+:deep(.el-dialog__title) {
+  color: #f97316;
+  font-weight: 700;
+  font-size: 18px;
+}
+:deep(.el-textarea__inner) {
+  min-height: 120px !important;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 15px;
+}
+:deep(.el-input__inner) {
+  height: 44px;
+  font-size: 15px;
+}
+:deep(.el-radio__label) {
+  font-size: 15px;
+}
+:deep(.el-select .el-input__inner) {
+  height: 44px;
 }
 </style>

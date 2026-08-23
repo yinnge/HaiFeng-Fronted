@@ -19,6 +19,7 @@ import {
   type ExportGroupContextVO,
 } from '@/api/wish-plan'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
+import PdfProfileDialog from '@/components/pdf/PdfProfileDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -37,6 +38,9 @@ const exporting = ref(false)
 
 // AI 智能分析
 const showGenerateDialog = ref(false)
+
+// AI 分析档案确认/填写弹窗（导出 PDF 前先完善考生画像）
+const showProfileDialog = ref(false)
 
 // AI 智能分析确认弹窗（展示将分析的 is_exported 专业组与专业明细）
 const showConfirmDialog = ref(false)
@@ -285,6 +289,12 @@ function handleAiAnalysis() {
     return
   }
   // 加载 is_exported 的专业组与专业明细，先弹确认框
+  showProfileDialog.value = true
+}
+
+// AI 档案弹窗确认后，继续原有 AI 分析确认流程
+function handleProfileProceed() {
+  showProfileDialog.value = false
   loadExportContexts()
 }
 
@@ -325,13 +335,23 @@ function goToPdfHistory() {
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
-      <!-- 顶部标题 + 操作按钮 -->
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800">志愿表详情</h1>
-          <p class="text-sm text-gray-500 mt-1">拖拽调整志愿顺序，导出你的志愿方案</p>
-        </div>
-        <div class="flex items-center gap-3">
+      <!-- 返回 + 标题 + 操作按钮 -->
+      <div class="mb-6">
+        <button
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:text-brand-orange hover:border-brand-orange/30 hover:bg-orange-50/50 transition-all shadow-sm"
+          @click="router.push('/gaokao/plans')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5 5-5M18 12H6" />
+          </svg>
+          返回志愿表列表
+        </button>
+        <div class="flex justify-between items-center mt-3">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">志愿表详情</h1>
+            <p class="text-sm text-gray-500 mt-1">拖拽调整志愿顺序，导出你的志愿方案</p>
+          </div>
+          <div class="flex items-center gap-3">
           <button class="btn-secondary px-4 py-2 text-sm" @click="handleAiAnalysis">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -367,6 +387,7 @@ function goToPdfHistory() {
             {{ exporting ? '导出中...' : '导出xlsx' }}
           </button>
         </div>
+      </div>
       </div>
 
       <!-- 骨架屏加载 -->
@@ -669,20 +690,26 @@ function goToPdfHistory() {
     <!-- AI 智能分析确认弹窗 -->
     <el-dialog
       v-model="showConfirmDialog"
+      class="ai-confirm-dialog"
       title="AI 智能分析"
-      width="600px"
+      width="760px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
     >
       <div class="py-2">
-        <div class="flex items-center gap-2 mb-4">
-          <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          <span class="text-sm font-medium text-gray-700">是否进行AI智能分析？</span>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shadow-md shadow-violet-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-gray-800 leading-snug">是否进行 AI 智能分析？</p>
+            <p class="text-xs text-gray-400 mt-0.5">AI 将基于以下专业生成专属志愿分析报告</p>
+          </div>
         </div>
-        <p class="text-xs text-gray-400 mb-3">
-          将分析以下 {{ exportContexts.length }} 个专业组、共 {{ totalExportableMajors }} 个专业明细（仅已勾选导出的专业）：
+        <p class="text-xs text-gray-500 mb-3">
+          将分析以下 <b class="text-violet-600 font-semibold">{{ exportContexts.length }}</b> 个专业组、共 <b class="text-violet-600 font-semibold">{{ totalExportableMajors }}</b> 个专业明细（仅已勾选导出的专业）：
         </p>
         <div
           v-loading="confirmLoading"
@@ -715,13 +742,13 @@ function goToPdfHistory() {
       </div>
       <template #footer>
         <button
-          class="px-5 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+          class="px-5 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           @click="showConfirmDialog = false"
         >
           取消
         </button>
         <button
-          class="px-5 py-2 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-600 transition-colors ml-2"
+          class="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:shadow-lg hover:shadow-violet-500/30 transition-all ml-2"
           @click="confirmAndGenerate"
         >
           智能分析
@@ -733,6 +760,11 @@ function goToPdfHistory() {
       v-model:visible="showGenerateDialog"
       :plan-id="planId"
       @success="handleGenerateSuccess"
+    />
+
+    <PdfProfileDialog
+      v-model:visible="showProfileDialog"
+      @proceed="handleProfileProceed"
     />
   </div>
 </template>

@@ -24,9 +24,9 @@ const plans = ref<WishPlanListVO[]>([])
 const limits = ref<WishPlanLimitVO | null>(null)
 
 const MAX_PLANS: Record<string, number> = {
-  normal: 1,
-  pro: 5,
-  vip: 10,
+  normal: 2,
+  pro: 10,
+  vip: 20,
 }
 
 const levelColors: Record<string, string> = {
@@ -78,7 +78,7 @@ async function handleCreate() {
   }
 
   if (selectionStore.totalCount === 0) {
-    ElMessage.warning('请先在专业组页面选择专业')
+    ElMessage.warning('您还没有添加任何专业，请先在专业组查询添加')
     router.push('/gaokao/groups')
     return
   }
@@ -174,16 +174,27 @@ function goBack() {
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
       <!-- 页面标题 -->
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">我的志愿表</h1>
-        <p class="text-sm text-gray-500 mt-1">管理你的志愿方案，一键导出</p>
-        <div class="mt-3 inline-flex items-center gap-2 text-sm">
-          <span class="text-gray-500">升级会员可提升创建志愿表的次数上限（普通 1 / Pro 5 / VIP 10）</span>
-          <button
-            class="text-brand-orange font-medium hover:underline whitespace-nowrap"
-            @click="recharge.open()"
-          >立即升级 ›</button>
+      <div class="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">我的志愿表</h1>
+          <p class="text-sm text-gray-500 mt-1">管理你的志愿方案，一键导出</p>
+          <div class="mt-3 inline-flex items-center gap-2 text-sm">
+            <span class="text-gray-500">升级会员可提升创建志愿表的次数上限（普通 2 / Pro 10 / VIP 20）</span>
+            <button
+              class="text-brand-orange font-medium hover:underline whitespace-nowrap"
+              @click="recharge.open()"
+            >立即升级 ›</button>
+          </div>
         </div>
+        <button
+          class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5 shrink-0"
+          @click="goBack"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5 5-5M18 12H6" />
+          </svg>
+          返回查看志愿
+        </button>
       </div>
 
       <!-- 骨架屏加载 -->
