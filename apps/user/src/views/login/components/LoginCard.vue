@@ -28,7 +28,11 @@ const rules: FormRules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+    {
+      pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/,
+      message: '密码必须是数字+字母，长度6-16位',
+      trigger: 'blur',
+    },
   ],
   captchaCode: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
 }

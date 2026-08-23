@@ -26,9 +26,10 @@ const wechatEditing = ref(false)
 const newWechatId = ref('')
 
 const passwordVisible = ref(false)
-const passwordForm = ref<PasswordUpdateDTO>({
+const passwordForm = ref<PasswordUpdateDTO & { confirmPassword?: string }>({
   oldPassword: '',
   newPassword: '',
+  confirmPassword: '',
 })
 const passwordLoading = ref(false)
 
@@ -91,22 +92,29 @@ async function handleSaveWechat() {
 }
 
 function handleOpenPassword() {
-  passwordForm.value = { oldPassword: '', newPassword: '' }
+  passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
   passwordVisible.value = true
 }
 
 async function handleSavePassword() {
-  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
+  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
     ElMessage.warning('请填写完整')
     return
   }
-  if (passwordForm.value.newPassword.length < 6 || passwordForm.value.newPassword.length > 20) {
-    ElMessage.warning('新密码长度需为6-20位')
+  if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/.test(passwordForm.value.newPassword)) {
+    ElMessage.warning('密码必须是数字+字母，长度6-16位')
+    return
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    ElMessage.warning('两次输入的密码不一致')
     return
   }
   passwordLoading.value = true
   try {
-    await updatePassword(passwordForm.value)
+    await updatePassword({
+      oldPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword,
+    })
     ElMessage.success('密码修改成功')
     passwordVisible.value = false
   } catch (err: any) {
@@ -215,9 +223,18 @@ async function handleSavePassword() {
           <el-input
             v-model="passwordForm.newPassword"
             type="password"
-            placeholder="请输入新密码（6-20位）"
+            placeholder="请输入新密码（字母+数字，6-16位）"
             show-password
-            maxlength="20"
+            maxlength="16"
+          />
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            placeholder="请再次输入新密码"
+            show-password
+            maxlength="16"
           />
         </el-form-item>
       </el-form>

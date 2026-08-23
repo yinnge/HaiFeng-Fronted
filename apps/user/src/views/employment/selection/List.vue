@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
+import { confirmLogin } from '@/utils/loginGuide'
 import { getSelectionList, getSelectionYears } from '@/api/employment/selection'
 import type { SelectionPositionListVO, SelectionPositionSearchDTO } from '@/types/employment/selection'
 import { SelectionStatusTag } from '@/types/employment/selection'
@@ -96,11 +97,10 @@ function onPageSizeChange(newSize: number) { pageSize.value = newSize; page.valu
 async function goDetail(id: string) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
-    try {
-      await ElMessageBox.confirm('请先登录查看详情', '提示', { confirmButtonText: '前往登录', cancelButtonText: '取消', type: 'warning' })
-      userStore.setRedirectPath(`/employment/selection/${id}`)
+    userStore.setRedirectPath(`/employment/selection/${id}`)
+    if (await confirmLogin()) {
       router.push({ name: 'Login' })
-    } catch { /* cancelled */ }
+    }
     return
   }
   router.push(`/employment/selection/${id}`)

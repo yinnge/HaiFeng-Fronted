@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
+import { confirmLogin } from '@/utils/loginGuide'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -407,18 +407,9 @@ router.beforeEach(async (to, _from, next) => {
       // 存储目标路由
       userStore.setRedirectPath(to.fullPath)
 
-      try {
-        await ElMessageBox.confirm(
-          '您还没有登录，请先登录',
-          '提示',
-          {
-            confirmButtonText: '前往登录',
-            cancelButtonText: '取消',
-            type: 'warning',
-          }
-        )
+      if (await confirmLogin()) {
         next({ name: 'Login' })
-      } catch {
+      } else {
         next(false)
       }
       return

@@ -6,6 +6,7 @@ import { getSiteInfo, getAnnouncements, getAnnouncementDetail, getPlanners, getI
 import type { SiteInfoVO, AnnouncementListVO, AnnouncementDetailVO, PlannerListVO, InstitutionListVO } from '@/types/home'
 import { MemberType } from '@haifeng/shared'
 import { useUserStore } from '@/store/modules/user'
+import { confirmLogin } from '@/utils/loginGuide'
 import PlannerCard from './components/PlannerCard.vue'
 import CircularGallery from './components/CircularGallery.vue'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
@@ -104,16 +105,9 @@ const fetchSiteInfo = async () => {
 
 const openExpertDialog = async () => {
   if (!userStore.isLoggedIn()) {
-    try {
-      await ElMessageBox.confirm('您还没有登录，请先登录', '提示', {
-        confirmButtonText: '前往登录',
-        cancelButtonText: '取消',
-        type: 'warning',
-      })
-      userStore.setRedirectPath(router.currentRoute.value.fullPath)
+    userStore.setRedirectPath(router.currentRoute.value.fullPath)
+    if (await confirmLogin()) {
       router.push('/login')
-    } catch {
-      // 取消登录
     }
     return
   }

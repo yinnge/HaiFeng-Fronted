@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox, ElDialog } from 'element-plus'
+import { ElMessage, ElDialog } from 'element-plus'
 import { getChannelDetail, getChannelUniversityList, getChannelUniversityDetail } from '@/api/special'
 import { ProvinceOptions } from '@haifeng/shared'
 import { useUserStore } from '@/store/modules/user'
+import { confirmLogin } from '@/utils/loginGuide'
 import { DisplayTypeLabel } from '@/types/special'
 import type { SpecialChannelDetailVO, ChannelUniversityListVO, ChannelUniversityDetailVO } from '@/types/special'
 
@@ -141,16 +142,9 @@ function onUnivPageChange(page: number) {
 async function viewUnivDetail(channelUnivId: string) {
   // 详情接口需登录(@RequireLogin)，未登录时友好引导而非直接发请求触发拦截器强制跳转
   if (!userStore.isLoggedIn()) {
-    try {
-      await ElMessageBox.confirm(
-        '查看该大学特殊通道详情需要登录，是否前往登录？',
-        '登录提示',
-        { confirmButtonText: '去登录', cancelButtonText: '取消', type: 'info' },
-      )
-      userStore.setRedirectPath(route.fullPath)
+    userStore.setRedirectPath(route.fullPath)
+    if (await confirmLogin()) {
       router.push('/login')
-    } catch {
-      /* 用户取消，留在原页 */
     }
     return
   }

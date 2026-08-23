@@ -46,8 +46,8 @@ const rules: FormRules = {
       validator: (rule, value, callback) => {
         if (!isEdit.value && !value) {
           callback(new Error('请输入密码'))
-        } else if (value && value.length < 6) {
-          callback(new Error('密码长度不能少于6个字符'))
+        } else if (value && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/.test(value)) {
+          callback(new Error('密码必须是数字+字母，长度6-16位'))
         } else {
           callback()
         }

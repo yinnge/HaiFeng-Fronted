@@ -53,6 +53,7 @@ declare module 'vue' {
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
+    ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     JsonbArrayEditor: typeof import('./components/JsonbArrayEditor.vue')['default']
     JsonbObjectEditor: typeof import('./components/JsonbObjectEditor.vue')['default']

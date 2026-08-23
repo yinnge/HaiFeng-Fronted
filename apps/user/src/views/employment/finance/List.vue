@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
+import { confirmLogin } from '@/utils/loginGuide'
 import { ProvinceOptions } from '@haifeng/shared'
 import { getFinanceList, getFinanceFilters } from '@/api/employment/finance'
 import type { FinancePositionListVO, FinanceQueryDTO } from '@/types/employment/finance'
@@ -102,11 +103,10 @@ function onPageSizeChange(newSize: number) { pageSize.value = newSize; page.valu
 async function goDetail(id: string) {
   const userStore = useUserStore()
   if (!userStore.isLoggedIn()) {
-    try {
-      await ElMessageBox.confirm('请先登录查看详情', '提示', { confirmButtonText: '前往登录', cancelButtonText: '取消', type: 'warning' })
-      userStore.setRedirectPath(`/employment/finance/${id}`)
+    userStore.setRedirectPath(`/employment/finance/${id}`)
+    if (await confirmLogin()) {
       router.push({ name: 'Login' })
-    } catch { /* cancelled */ }
+    }
     return
   }
   router.push(`/employment/finance/${id}`)
