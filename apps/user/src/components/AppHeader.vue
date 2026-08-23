@@ -6,7 +6,7 @@ import logoMain from '@/assets/images/logo-main.png'
 import UserAvatar from './UserAvatar.vue'
 import NotificationBell from './NotificationBell.vue'
 import MobileNavDrawer from './MobileNavDrawer.vue'
-import { navItems, type NavItem, type NavSubItem } from '@/config/navigation'
+import { navItems, moreNavItems, type NavItem, type NavSubItem } from '@/config/navigation'
 import { pushNavItem } from '@/utils/navAnchor'
 
 const router = useRouter()
@@ -100,16 +100,8 @@ const visibleItems = computed<NavItem[]>(() =>
 const overflowItems = computed<NavItem[]>(() =>
   overflowCount.value > 0 ? navItems.slice(navItems.length - overflowCount.value) : [],
 )
-// 竞赛证书在「更多」面板里永远排在第一位
-const orderedOverflowItems = computed<NavItem[]>(() => {
-  const items = [...overflowItems.value]
-  const compIdx = items.findIndex((i) => i.id === 'competition')
-  if (compIdx > 0) {
-    const [comp] = items.splice(compIdx, 1)
-    items.unshift(comp)
-  }
-  return items
-})
+// 「更多」面板 = 固定项（英语四六级 / 规划工具）+ 放不下的溢出项（保持导航顺序）
+const morePanelItems = computed<NavItem[]>(() => [...moreNavItems, ...overflowItems.value])
 
 function setItemRef(el: unknown, id: string) {
   if (el) itemRefs[id] = el as HTMLElement
@@ -135,6 +127,7 @@ async function measure() {
 
   const cs = getComputedStyle(container)
   const gap = parseFloat(cs.columnGap || cs.gap || '4') || 4
+  // 更多按钮常驻，无论是否溢出都预留其宽度
   const moreW = MORE_RESERVE + gap
   const avail = container.clientWidth
 
@@ -144,7 +137,7 @@ async function measure() {
     for (let i = 0; i < k; i++) {
       total += (itemRefs[ids[i]]?.offsetWidth ?? 0) + (i > 0 ? gap : 0)
     }
-    if (total + (k < n ? moreW : 0) <= avail) {
+    if (total + moreW <= avail) {
       fit = k
       break
     }
@@ -243,9 +236,8 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <!-- 更多：放不下的菜单自动收进来 -->
+        <!-- 更多：固定收纳项（英语四六级/规划工具）+ 放不下的菜单自动收进来 -->
         <div
-          v-show="overflowCount > 0"
           class="nav-dropdown-wrapper more-wrapper"
           @mouseenter="openDropdown('more')"
           @mouseleave="scheduleClose"
@@ -263,7 +255,7 @@ onBeforeUnmount(() => {
 
           <Transition name="dropdown">
             <div v-if="openDropdownId === 'more'" class="dropdown-panel more-panel">
-              <template v-for="item in orderedOverflowItems" :key="item.id">
+              <template v-for="item in morePanelItems" :key="item.id">
                 <!-- 就业信息专栏：右侧飞入三级面板 -->
                 <template v-if="item.id === 'employment' && item.subItems">
                   <div class="flyout-trigger-wrapper">

@@ -12,6 +12,8 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { id: 'home', label: '首 页', route: '/' },
+  { id: 'middle', label: '初中专栏', route: '/middle' },
+  { id: 'high', label: '高中专栏', route: '/high' },
   {
     id: 'gaokao',
     label: '志愿填报',
@@ -53,7 +55,6 @@ export const navItems: NavItem[] = [
       { label: '行业专项招聘', route: '/employment/teacher' },
     ],
   },
-  { id: 'cet', label: '英语四六级' },
   { id: 'city', label: '城市查询', route: '/city' },
   {
     id: 'enterprise-industry',
@@ -64,7 +65,6 @@ export const navItems: NavItem[] = [
     ],
   },
   { id: 'resource', label: '资料档案', route: '/resource' },
-  { id: 'tools', label: '规划工具' },
   {
     id: 'competition',
     label: '竞赛证书',
@@ -74,4 +74,12 @@ export const navItems: NavItem[] = [
       { label: '证书', route: '/certificate' },
     ],
   },
+]
+
+/**
+ * 固定收纳在导航栏「更多」下拉里的菜单项（不随宽度变化，始终在更多面板中）
+ */
+export const moreNavItems: NavItem[] = [
+  { id: 'cet', label: '英语四六级' },
+  { id: 'tools', label: '规划工具' },
 ]

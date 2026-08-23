@@ -2,8 +2,11 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { navItems, type NavItem, type NavSubItem } from '@/config/navigation'
+import { navItems, moreNavItems, type NavItem, type NavSubItem } from '@/config/navigation'
 import { pushNavItem } from '@/utils/navAnchor'
+
+// 抽屉全量展示主菜单 + 固定「更多」项（移动端不分折叠，全部可见）
+const allItems: NavItem[] = [...navItems, ...moreNavItems]
 
 const router = useRouter()
 const route = useRoute()
@@ -62,7 +65,7 @@ function close() {
         </div>
 
         <nav class="drawer-nav">
-          <template v-for="item in navItems" :key="item.id">
+          <template v-for="item in allItems" :key="item.id">
             <div class="nav-item-wrapper">
               <button
                 class="nav-item-btn"
