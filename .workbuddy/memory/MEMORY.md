@@ -43,6 +43,7 @@
 
 ## user 端登录引导弹窗（2026-08-21 统一，权威）
 - **凡是「未登录拦截→提示去登录」的场景，一律用 `confirmLogin()`**（`utils/loginGuide.ts`，默认文案「登录后可查看详细内容」），不要再用 `ElMessageBox.confirm('请先登录...')`。用法：`userStore.setRedirectPath(xxx); if (await confirmLogin()) router.push('/login')`。
+- **路由守卫（router/index.ts beforeEach）也已用 confirmLogin**（2026-08-22）：`requiresAuth` 路由未登录时 `if (await confirmLogin()) next({name:'Login'}) else next(false)`。新增 requiresAuth 路由自动生效。**改登录引导弹窗前先全局搜「请先登录/您还没有登录/去登录」，页面内与守卫都要覆盖。**
 - 主题（变体2 横幅点睛版）：顶部 88px 金→橙渐变横幅（锁图标+「登录后解锁完整内容」）+ 浅橙渐变卡身 + 橙渐变按钮；样式集中在 `index.css` 的 `.login-guide-box`（`login-guide__banner/__body/__title/__desc`）。
 - 坑：element-plus 2.13.7 `ElMessageBoxOptions` 类型**没有 width/showHeader**，用 CSS 控制（.login-guide-box{width:360px}、.el-message-box__header{display:none}），别传这些 option 否则 typecheck 报 TS2353。
 
