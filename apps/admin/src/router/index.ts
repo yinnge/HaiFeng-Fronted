@@ -5,6 +5,7 @@ import systemRoutes from './modules/system'
 import permissionRoutes from './modules/permission'
 import userRoutes from './modules/user'
 import homeRoutes from './modules/home'
+import fileloadRoutes from './modules/fileload'
 import universityRoutes from './modules/university'
 import majorRoutes from './modules/major'
 import cityRoutes from './modules/city'
@@ -56,6 +57,7 @@ export const asyncRoutes: RouteRecordRaw[] = [
       permissionRoutes,
       userRoutes,
       homeRoutes,
+      fileloadRoutes,
       universityRoutes,
       majorRoutes,
       cityRoutes,
