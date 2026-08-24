@@ -26,6 +26,21 @@ export const getFileLoadPage = (audience: FileTargetAudience, params: FileLoadQu
   return request.get<R<PageResult<FileLoadListVO>>>(`${PREFIX_MAP[audience]}/list`, { params })
 }
 
+/** 动态返回 applicable_stage 去重值（筛选下拉，不再写死） */
+export const getFileLoadStages = (audience: FileTargetAudience) => {
+  return request.get<R<string[]>>(`${PREFIX_MAP[audience]}/stages`)
+}
+
+/** 动态返回 subject 去重值 */
+export const getFileLoadSubjects = (audience: FileTargetAudience) => {
+  return request.get<R<string[]>>(`${PREFIX_MAP[audience]}/subjects`)
+}
+
+/** 动态返回 tag 去重值 */
+export const getFileLoadTags = (audience: FileTargetAudience) => {
+  return request.get<R<string[]>>(`${PREFIX_MAP[audience]}/tags`)
+}
+
 /** 获取文件详情（返回预签名下载 URL） */
 export const getFileLoadDetail = (audience: FileTargetAudience, id: string) => {
   return request.get<R<FileLoadDetailVO>>(`${PREFIX_MAP[audience]}/${id}`)

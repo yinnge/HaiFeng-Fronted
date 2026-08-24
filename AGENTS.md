@@ -6,12 +6,26 @@
 - 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
 
-## 已知坑：Element Plus 弹窗锁滚动 + 页面左移抖动（2026-08-15 已修复）
-- 现象：未登录点「开始志愿填报」等触发弹窗（el-dialog / ElMessageBox / el-drawer / el-image 预览）时，右侧滚动条消失、整页左移约 6px。
-- 机制（element-plus 实际装 2.13.7）：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`）并内联 `body.style.width = calc(100% - 滚动条宽)` 补偿位移，关闭 200ms 后还原。**这套默认补偿本身是正确的、无位移。**
-- 根因：曾在全局加 `html,body{ scrollbar-gutter:stable }`（overflow 默认 visible，stable 对 visible **不生效**，等于没留 gutter）+ `body.el-popup-parent--hidden{ width:100%!important }`（把 Element Plus 的补偿**顶掉**）→ 滚动条消失又无补偿 = 左移。admin 端的 `.el-popup-parent--hidden body{ overflow-y:scroll!important }` 是错误选择器（类加在 body 上，body 非其后代）= 死 CSS。
-- 正确修法（2026-08-15 已采用）：**移除上述破坏性 CSS，回归 Element Plus 默认的「隐藏滚动条 + 宽度补偿」**。不要再用 scrollbar-gutter / width:100%!important / 自写 el-popup-parent--hidden 规则去干预，否则会与内置补偿叠加再次抖动。
-- 影响面：全局（user/admin 所有弹层），改一处即可。验证：浏览器实测打开各类弹窗看右侧是否不再左移，CSS 改动 Vite HMR 即时生效。
+## 已知坑：Element Plus 弹窗锁滚动 + 页面左移抖动（2026-08-22 彻底根治）
+- 现象：未登录点「开始志愿填报」等触发弹窗（el-dialog / ElMessageBox / el-drawer / el-image 预览）时，右侧滚动条消失、整页左移约 6px；或短页面/没滚动条时弹窗也抖动。
+- 机制（element-plus 实际装 2.13.7）：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`），并**内联** `body.style.width = calc(100% - 滚动条宽)` 补偿位移，关闭 200ms 后还原。**这套默认补偿本身是正确的**。
+- **正确根治（2026-08-22 落地于 `apps/user/src/assets/styles/index.css`）**：
+  1) 滚动容器从 `html` 挪到 `body`：`body { overflow-y: scroll; scrollbar-gutter: stable; }` ——**永远显示滚动条 + 永远预留槽位**，弹窗开/关不会出现宽度变化。
+  2) 不写任何 `html:has(body.el-popup-parent--hidden)` 或 `body.el-popup-parent--hidden { width:100%!important }` 自定义规则，让 Element Plus 默认补偿 + 第 1 步的 stable gutter 共同工作。
+  3) 短页面（内容不溢出）也会显示一条 6px 灰色细滚动条（已用 `::-webkit-scrollbar { width:6px }` 样式做得很不显眼），弹窗零抖动。
+- 早期错误版本：曾加 `body.el-popup-parent--hidden { width:100%!important }` 把 Element Plus 的 `calc(100% - 滚动条宽)` 补偿顶掉 → 滚动条消失 + 宽度不补偿 = 左移 6px；或加在 `html` 上的 `scrollbar-gutter:stable` 在 `overflow:visible` 默认下不生效。两种 bug 都已彻底移除。
+- 验证：浏览器实测打开各类弹窗（ElMessageBox.confirm / alert / prompt、el-dialog、el-drawer、el-image 预览）—— 右侧滚动条位置恒定，页面零位移。CSS 改动 Vite HMR 即时生效。
+- 影响面：全局（user/admin 所有弹层），改 `index.css` 一处即可。
+
+## ElMessageBox / el-dialog 全局美化（橙色品牌，2026-08-22）
+- 同样在 `apps/user/src/assets/styles/index.css` 第 94 行往后，全局统一样式：
+  - 圆角 16px + 顶/底 3px 橙渐变边框 + 深阴影。
+  - 头部：浅橙渐变底 + 底部分隔线 + 标题 16px 粗。
+  - 关闭按钮：30×30 圆角方块、灰色清晰可见、悬停变橙。
+  - 状态图标：info=橙、warning=琥珀、success=绿、error=红（与品牌色协调）。
+  - 按钮：药丸 20px 圆角、确定按钮用 `#F97316→#FB923C` 渐变 + 阴影、取消按钮灰边悬停变橙。
+  - 输入框（prompt）：10px 圆角、focus 橙色 inset 边框 + 外发光。
+- 所有 ElMessageBox.confirm / alert / prompt 与 el-dialog（PlanDetail）共享同一套样式，无需逐文件改。
 
 ## admin 控制面板「系统信息」字段来源（跨端：后端 haifeng-admin）
 - 接口：`GET /api/v1/admin/dashboard/overview` → `DashboardController.getDashboardOverview()` → `DashboardServiceImpl.getSystemInfo()`（《DashboardServiceImpl.java:109-126》）。

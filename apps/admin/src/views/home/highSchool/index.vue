@@ -32,6 +32,7 @@ const queryParams = reactive<FileLoadQueryDTO>({
   fileName: '',
   subject: '',
   applicableStage: '',
+  tag: '',
 })
 
 // 详情弹窗
@@ -53,6 +54,7 @@ const fetchData = async () => {
     if (queryParams.fileName) params.fileName = queryParams.fileName
     if (queryParams.subject) params.subject = queryParams.subject
     if (queryParams.applicableStage) params.applicableStage = queryParams.applicableStage
+    if (queryParams.tag) params.tag = queryParams.tag
     const res = await getFileLoadPage(AUDIENCE, params as FileLoadQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
@@ -67,10 +69,11 @@ const fetchData = async () => {
   }
 }
 
-const handleSearch = (params: Pick<FileLoadQueryDTO, 'fileName' | 'subject' | 'applicableStage'>) => {
+const handleSearch = (params: Pick<FileLoadQueryDTO, 'fileName' | 'subject' | 'applicableStage' | 'tag'>) => {
   queryParams.fileName = params.fileName
   queryParams.subject = params.subject
   queryParams.applicableStage = params.applicableStage
+  queryParams.tag = params.tag
   queryParams.page = 1
   fetchData()
 }
@@ -79,6 +82,7 @@ const handleReset = () => {
   queryParams.fileName = ''
   queryParams.subject = ''
   queryParams.applicableStage = ''
+  queryParams.tag = ''
   queryParams.page = 1
   fetchData()
 }
@@ -166,7 +170,7 @@ const handleEdit = async (id: string) => {
 }
 
 // 提交上传/修改
-const handleSubmit = async (data: { file?: File; subject: string; applicableStage: string }) => {
+const handleSubmit = async (data: { file?: File; subject: string; applicableStage: string; description?: string; tag?: string }) => {
   if (!data.subject) {
     ElMessage.warning('请选择学科')
     return
@@ -184,12 +188,16 @@ const handleSubmit = async (data: { file?: File; subject: string; applicableStag
       formData.append('targetAudience', AUDIENCE)
       formData.append('subject', data.subject)
       if (data.applicableStage) formData.append('applicableStage', data.applicableStage)
+      if (data.description) formData.append('description', data.description)
+      if (data.tag) formData.append('tag', data.tag)
       res = await uploadFileLoad(AUDIENCE, formData)
     } else if (formMode.value === 'edit' && currentId.value) {
       const payload: FileLoadUploadDTO = {
         targetAudience: AUDIENCE,
         subject: data.subject,
         applicableStage: data.applicableStage || undefined,
+        description: data.description || undefined,
+        tag: data.tag || undefined,
         version: initialFormData.value?.version,
       }
       res = await updateFileLoad(AUDIENCE, currentId.value, payload)
@@ -268,6 +276,7 @@ onMounted(() => {
     </div>
 
     <HighSchoolSearch
+      :audience="AUDIENCE"
       @search="handleSearch"
       @reset="handleReset"
     />

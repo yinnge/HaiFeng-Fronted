@@ -12,16 +12,17 @@
 }
 
 html {
-  /* 显式让根元素成为滚动容器，避免 body 作为视口滚动源；
-     配合 scrollbar-gutter: stable，弹窗打开(body 被加 el-popup-parent--hidden 锁滚动)时，
-     右侧滚动条占位不被回收，页面内容不再左右抖动。 */
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  height: 100%;
 }
 
 body {
   width: 100%;
   min-height: 100%;
+  /* 显式让 body 成为滚动容器，配合 scrollbar-gutter: stable 永久保留滚动条占位：
+     弹窗打开时（Element Plus 给 body 加 el-popup-parent--hidden + 内联 width 补偿），
+     视觉上不发生宽度变化 → 页面不再左右抖动。 */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -63,16 +64,13 @@ html {
   background-image: none !important;
 }
 
-/* 修复弹窗打开时右侧滚动条消失、页面左右抖动的问题 */
-/* 弹窗打开时同步锁住根滚动容器(html)；滚动条占位由 html 的 scrollbar-gutter: stable 保留 */
-html:has(body.el-popup-parent--hidden) {
-  overflow: hidden;
-}
-
-body.el-popup-parent--hidden {
-  width: 100% !important;
-  overflow: hidden;
-}
+/* 弹窗锁滚动处理说明：
+   Element Plus 2.13.7 的 useLockscreen 在打开弹窗时会：
+   1) 给 body 加 .el-popup-parent--hidden（class 内置 overflow:hidden 锁滚动）
+   2) 内联 body.style.width = calc(100% - 滚动条宽) 补偿位移
+   配合上方 body { overflow-y: scroll; scrollbar-gutter: stable }，
+   滚动条槽位永久保留，弹窗开/关无宽度变化，无需也不应再写自定义 el-popup-parent 规则干预
+   （旧版本曾加 body { width:100%!important } 把默认补偿顶掉导致左移抖动，已彻底移除）。*/
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
@@ -93,11 +91,256 @@ body.el-popup-parent--hidden {
   background: #94a3b8;
 }
 
+/* ============ ElMessageBox / el-dialog 弹框全局美化（海枫橙色品牌） ============ */
+/* 背景遮罩：更深 + 微模糊，让弹窗更聚焦 */
+.el-message-box__overlay,
+.el-overlay-dialog {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(2px);
+}
+
+/* 弹窗主体容器：圆角 + 阴影 + 橙色顶边 */
+.el-message-box,
+.el-dialog {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+  border-top: 3px solid #F97316;
+  border-bottom: 3px solid #FB923C;
+}
+
+/* 头部：底部分隔线 + 浅橙渐变底 */
+.el-message-box__header,
+.el-dialog__header {
+  padding: 18px 56px 16px 24px !important;
+  border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.el-message-box__title,
+.el-dialog__title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+/* 关闭按钮：清晰可见，悬停变橙 */
+.el-message-box__headerbtn,
+.el-dialog__headerbtn {
+  top: 14px !important;
+  right: 14px !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  transition: all 0.2s ease;
+}
+
+.el-message-box__headerbtn .el-message-box__close,
+.el-dialog__headerbtn .el-dialog__close {
+  color: #9ca3af;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.el-message-box__headerbtn:hover,
+.el-dialog__headerbtn:hover {
+  background: #fff7ed !important;
+}
+
+.el-message-box__headerbtn:hover .el-message-box__close,
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #F97316;
+}
+
+/* 内容区：合理留白 */
+.el-message-box__content,
+.el-dialog__body {
+  padding: 24px !important;
+}
+
+.el-message-box__container {
+  gap: 14px;
+}
+
+.el-message-box__message {
+  font-size: 14px !important;
+  color: #4b5563;
+  line-height: 1.7;
+  padding-left: 38px; /* 给左侧图标留位 */
+}
+
+.el-message-box__message p {
+  margin: 0;
+}
+
+/* 状态图标：橙色基底 */
+.el-message-box__status {
+  font-size: 22px !important;
+}
+
+.el-message-box__status.el-message-box-icon--info {
+  color: #F97316;
+}
+
+.el-message-box__status.el-message-box-icon--warning {
+  color: #f59e0b;
+}
+
+.el-message-box__status.el-message-box-icon--success {
+  color: #10b981;
+}
+
+.el-message-box__status.el-message-box-icon--error {
+  color: #ef4444;
+}
+
+/* 输入框（prompt 弹窗） */
+.el-message-box__input {
+  padding: 0 24px 16px;
+}
+
+.el-message-box__input .el-input__wrapper {
+  border-radius: 10px;
+  padding: 4px 12px;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
+  transition: all 0.2s ease;
+}
+
+.el-message-box__input .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px #fdba74 inset;
+}
+
+.el-message-box__input .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #F97316 inset, 0 0 0 3px rgba(249, 115, 22, 0.12);
+}
+
+.el-message-box__errormsg {
+  padding: 0 24px 8px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+/* 底部按钮区 */
+.el-message-box__btns,
+.el-dialog__footer {
+  padding: 12px 24px 20px !important;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.el-dialog__footer {
+  padding: 16px 24px !important;
+}
+
+/* ElMessageBox 按钮：药丸 + 橙色品牌 */
+.el-message-box__btns .el-button {
+  border-radius: 20px !important;
+  padding: 9px 22px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  transition: all 0.25s ease !important;
+}
+
+.el-message-box__btns .el-button--primary {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+.el-message-box__btns .el-button--primary:hover {
+  background: linear-gradient(135deg, #ea6a0f, #f97316) !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.el-message-box__btns .el-button:not(.el-button--primary) {
+  background: #ffffff !important;
+  border-color: #d1d5db !important;
+  color: #6b7280 !important;
+}
+
+.el-message-box__btns .el-button:not(.el-button--primary):hover {
+  border-color: #F97316 !important;
+  color: #F97316 !important;
+  background: #fff7ed !important;
+}
+
 /* 选择文本样式 */
 ::selection {
   background: rgba(232, 114, 42, 0.2);
   color: #1e293b;
 }
+
+/* ========== AI 专属弹窗增强（AI分析档案 / AI智能分析确认） ==========
+   - 放大标题字号、加左侧主题色图标徽标、标题底部分隔线
+   - 配色：AI 分析档案 = 橙→红渐变；AI 智能分析 = 紫→蓝渐变
+   这两个 class 由 PlanDetail.vue / PdfProfileDialog.vue 的 el-dialog 注入 */
+.ai-profile-dialog .el-dialog__header,
+.ai-confirm-dialog .el-dialog__header {
+  margin-right: 0;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ai-profile-dialog .el-dialog__title,
+.ai-confirm-dialog .el-dialog__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.01em;
+}
+
+/* 关闭按钮强化：清晰可见，悬停变主题色 */
+.ai-profile-dialog .el-dialog__headerbtn,
+.ai-confirm-dialog .el-dialog__headerbtn {
+  width: 32px;
+  height: 32px;
+  top: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.ai-profile-dialog .el-dialog__headerbtn .el-dialog__close,
+.ai-confirm-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: #94a3b8;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ai-profile-dialog .el-dialog__headerbtn:hover,
+.ai-confirm-dialog .el-dialog__headerbtn:hover {
+  background: rgba(249, 115, 22, 0.12);
+}
+
+.ai-profile-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #f97316;
+}
+
+.ai-confirm-dialog .el-dialog__headerbtn:hover {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.ai-confirm-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #8b5cf6;
+}
+
+.ai-profile-dialog .el-dialog__body,
+.ai-confirm-dialog .el-dialog__body {
+  padding: 18px 24px 8px;
+}
+
+.ai-profile-dialog .el-dialog__footer,
+.ai-confirm-dialog .el-dialog__footer {
+  padding: 12px 24px 20px;
+}
+
+
 
 /* 骨架屏动画 */
 @layer utilities {

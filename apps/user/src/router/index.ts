@@ -10,6 +10,35 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' },
   },
   {
+    path: '/middle',
+    name: 'MiddleSchoolFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    props: { audience: 'middle', title: '初中专栏' },
+    // 列表公开免登录；点卡片详情仍由页面内做登录/VIP 引导
+    meta: { title: '初中专栏' },
+  },
+  {
+    path: '/high',
+    name: 'HighSchoolFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    props: { audience: 'high', title: '高中专栏' },
+    meta: { title: '高中专栏' },
+  },
+  {
+    path: '/middle/:id',
+    name: 'MiddleSchoolFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'middle', title: '初中专栏' },
+    meta: { title: '初中文件详情', requiresAuth: true },
+  },
+  {
+    path: '/high/:id',
+    name: 'HighSchoolFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'high', title: '高中专栏' },
+    meta: { title: '高中文件详情', requiresAuth: true },
+  },
+  {
     path: '/gaokao',
     name: 'GaokaoEntry',
     component: () => import('@/views/gaokao/index.vue'),

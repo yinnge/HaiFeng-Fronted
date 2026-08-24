@@ -15,6 +15,7 @@ import {
 } from '@/api/pdf-report'
 import { renderMarkdown } from '@/utils/markdown'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
+import PdfProfileDialog from '@/components/pdf/PdfProfileDialog.vue'
 import { useUserStore } from '@/store/modules/user'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { usePdfQuota } from '@/composables/usePdfQuota'
@@ -34,6 +35,9 @@ const pdfError = ref('')
 
 // 重新生成弹窗
 const showGenerateDialog = ref(false)
+
+// 重新生成前先确认/完善 AI 分析档案
+const showProfileDialog = ref(false)
 
 const isVip = computed(() => (userStore.userInfo?.memberType || 'normal') === 'vip')
 
@@ -142,8 +146,14 @@ async function handleRegenerate() {
       cancelButtonText: '取消',
       type: record.value?.status === 1 ? 'warning' : 'info',
     })
-    showGenerateDialog.value = true
+    showProfileDialog.value = true
   } catch {}
+}
+
+// 档案弹窗确认后，继续打开重新生成弹窗
+function handleProfileProceed() {
+  showProfileDialog.value = false
+  showGenerateDialog.value = true
 }
 
 async function handleDelete() {
@@ -414,6 +424,12 @@ function renderMd(md: string | null | undefined) {
       :is-regenerate="true"
       :record-id="recordId"
       @success="handleGenerateSuccess"
+    />
+
+    <!-- 重新生成前：AI 分析档案确认/填写 -->
+    <PdfProfileDialog
+      v-model:visible="showProfileDialog"
+      @proceed="handleProfileProceed"
     />
   </div>
 </template>

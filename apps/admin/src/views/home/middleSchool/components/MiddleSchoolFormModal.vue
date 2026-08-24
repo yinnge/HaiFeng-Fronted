@@ -12,28 +12,41 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
-  (e: 'submit', data: { file?: File; subject: string; applicableStage: string }): void
+  (e: 'submit', data: { file?: File; subject: string; applicableStage: string; description?: string; tag?: string }): void
 }>()
 
 const file = ref<File | null>(null)
-const formData = ref<{ subject: string; applicableStage: string }>({
+const uploadRef = ref<any>(null)
+const formData = ref<{ subject: string; applicableStage: string; description: string; tag: string }>({
   subject: '',
   applicableStage: '',
+  description: '',
+  tag: '',
 })
+
+// 清空上传组件内部文件列表（避免关闭后再次打开仍残留上次选择的文件）
+const resetUploader = () => {
+  file.value = null
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
 
 // 监听弹窗打开 / 初始数据变化
 watch(
   () => [props.visible, props.initialData, props.mode] as const,
   ([visible, initial, mode]) => {
     if (visible) {
-      file.value = null
+      resetUploader()
       if (mode === 'edit' && initial) {
         formData.value = {
           subject: initial.subject || '',
           applicableStage: initial.applicableStage || '',
+          description: initial.description || '',
+          tag: initial.tag || '',
         }
       } else {
-        formData.value = { subject: '', applicableStage: '' }
+        formData.value = { subject: '', applicableStage: '', description: '', tag: '' }
       }
     }
   },
@@ -51,10 +64,13 @@ const handleSubmit = () => {
     file: file.value || undefined,
     subject: formData.value.subject,
     applicableStage: formData.value.applicableStage,
+    description: formData.value.description || undefined,
+    tag: formData.value.tag || undefined,
   })
 }
 
 const handleClose = () => {
+  resetUploader()
   emit('update:visible', false)
 }
 
@@ -74,6 +90,7 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
       <el-form :model="formData" label-width="90px" class="file-form">
         <el-form-item v-if="mode === 'upload'" label="文件" required>
           <el-upload
+            ref="uploadRef"
             drag
             :auto-upload="false"
             :show-file-list="true"
@@ -108,6 +125,23 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
           >
             <el-option v-for="item in MIDDLE_STAGE_OPTIONS" :key="item" :label="item" :value="item" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input
+            v-model="formData.tag"
+            placeholder="如：备考指南 / 就业辅导（可选）"
+            clearable
+            style="width: 260px"
+          />
+        </el-form-item>
+        <el-form-item label="文档简介">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="选填，用于前端详情页展示"
+            style="width: 420px"
+          />
         </el-form-item>
       </el-form>
     </div>

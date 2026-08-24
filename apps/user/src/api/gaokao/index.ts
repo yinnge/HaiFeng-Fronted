@@ -122,6 +122,8 @@ export interface GaokaoArchiveForm {
   batch: string
   batchDataYear: number
   batchLineScore: number
+  // 性别（男/女，可选）
+  gender?: string
   scoreChinese?: number
   scoreMath?: number
   scoreEnglish?: number

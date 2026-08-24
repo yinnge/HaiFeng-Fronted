@@ -84,6 +84,28 @@ export interface PdfQuotaVO {
   remaining: number
 }
 
+/**
+ * PDF 分析档案（考生画像与约束条件，PDF 报告用）。
+ * 不含性别（性别属于志愿表/基础档案字段）；全部选填，布尔字段可空。
+ */
+export interface PdfProfileVO {
+  careerDevPath?: string | null
+  personalityTraits?: string | null
+  interestDirection?: string | null
+  otherHealthConditions?: string | null
+  politicalReviewStatus?: string | null
+  stayInProvince?: boolean | null
+  familyResources?: string | null
+  tuitionAffordability?: string | null
+  acceptGrassroot?: boolean | null
+  acceptShiftWork?: boolean | null
+  acceptNightWork?: boolean | null
+  acceptBusinessTrip?: boolean | null
+  acceptRelocation?: boolean | null
+  rejectedIndustries?: string | null
+  rejectedDirections?: string | null
+}
+
 // ========== API 函数 ==========
 
 /**
@@ -119,6 +141,20 @@ export function getPdfRecordDetail(recordId: string) {
  */
 export function getPdfQuotaToday() {
   return request.get<R<PdfQuotaVO>>(`${PREFIX}/quota/today`)
+}
+
+/**
+ * 获取当前用户的 PDF 分析档案（未填写过则返回全空字段）
+ */
+export function getPdfProfile() {
+  return request.get<R<PdfProfileVO>>(`${PREFIX}/profile`)
+}
+
+/**
+ * 保存当前用户的 PDF 分析档案（存在则更新，不存在则创建）
+ */
+export function savePdfProfile(data: PdfProfileVO) {
+  return request.post<R<null>>(`${PREFIX}/profile`, data)
 }
 
 /**
