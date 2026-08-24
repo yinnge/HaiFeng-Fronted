@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
-import { SUBJECT_OPTIONS, HIGH_STAGE_OPTIONS } from '@/types/home/fileload'
+import { reactive, ref, onMounted } from 'vue'
 import type { FileLoadQueryDTO } from '@/types/home/fileload'
+import type { FileTargetAudience } from '@/types/home/fileload'
+import { getFileLoadStages, getFileLoadSubjects, getFileLoadTags } from '@/api/home/fileload'
+
+const props = defineProps<{ audience: FileTargetAudience }>()
 
 const emit = defineEmits<{
-  (e: 'search', params: Pick<FileLoadQueryDTO, 'fileName' | 'subject' | 'applicableStage'>): void
+  (e: 'search', params: Pick<FileLoadQueryDTO, 'fileName' | 'subject' | 'applicableStage' | 'tag'>): void
   (e: 'reset'): void
 }>()
 
@@ -12,17 +15,40 @@ const searchForm = reactive<{
   fileName: string
   subject: string
   applicableStage: string
+  tag: string
 }>({
   fileName: '',
   subject: '',
   applicableStage: '',
+  tag: '',
 })
+
+// 动态选项（从后端 distinct 查询，不再写死）
+const stageOptions = ref<string[]>([])
+const subjectOptions = ref<string[]>([])
+const tagOptions = ref<string[]>([])
+
+async function fetchOptions() {
+  try {
+    const [s, sub, t] = await Promise.all([
+      getFileLoadStages(props.audience),
+      getFileLoadSubjects(props.audience),
+      getFileLoadTags(props.audience),
+    ])
+    stageOptions.value = s.data.data || []
+    subjectOptions.value = sub.data.data || []
+    tagOptions.value = t.data.data || []
+  } catch {
+    /* 选项加载失败忽略 */
+  }
+}
 
 const handleSearch = () => {
   emit('search', {
     fileName: searchForm.fileName,
     subject: searchForm.subject,
     applicableStage: searchForm.applicableStage,
+    tag: searchForm.tag,
   })
 }
 
@@ -30,8 +56,11 @@ const handleReset = () => {
   searchForm.fileName = ''
   searchForm.subject = ''
   searchForm.applicableStage = ''
+  searchForm.tag = ''
   emit('reset')
 }
+
+onMounted(fetchOptions)
 </script>
 
 <template>
@@ -63,7 +92,7 @@ const handleReset = () => {
             clearable
             style="width: 130px"
           >
-            <el-option v-for="item in SUBJECT_OPTIONS" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in subjectOptions" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
         <el-form-item label="适合人群">
@@ -73,7 +102,17 @@ const handleReset = () => {
             clearable
             style="width: 130px"
           >
-            <el-option v-for="item in HIGH_STAGE_OPTIONS" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in stageOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select
+            v-model="searchForm.tag"
+            placeholder="全部"
+            clearable
+            style="width: 130px"
+          >
+            <el-option v-for="item in tagOptions" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
       </div>

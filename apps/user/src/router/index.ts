@@ -25,6 +25,20 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '高中专栏' },
   },
   {
+    path: '/middle/:id',
+    name: 'MiddleSchoolFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'middle', title: '初中专栏' },
+    meta: { title: '初中文件详情', requiresAuth: true },
+  },
+  {
+    path: '/high/:id',
+    name: 'HighSchoolFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'high', title: '高中专栏' },
+    meta: { title: '高中文件详情', requiresAuth: true },
+  },
+  {
     path: '/gaokao',
     name: 'GaokaoEntry',
     component: () => import('@/views/gaokao/index.vue'),

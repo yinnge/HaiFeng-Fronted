@@ -73,6 +73,14 @@ const handleClose = () => {
             <span v-if="detailData.applicableStage" class="tag-pill stage-pill">{{ detailData.applicableStage }}</span>
             <span v-else class="dim-text">-</span>
           </el-descriptions-item>
+          <el-descriptions-item label="标签">
+            <span v-if="detailData.tag" class="tag-pill tag-pill-custom">{{ detailData.tag }}</span>
+            <span v-else class="dim-text">-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="文档简介">
+            <span v-if="detailData.description">{{ detailData.description }}</span>
+            <span v-else class="dim-text">-</span>
+          </el-descriptions-item>
           <el-descriptions-item label="上传人">
             <span v-if="detailData.createBy">{{ detailData.createBy }}</span>
             <span v-else class="dim-text">-</span>
@@ -178,6 +186,12 @@ const handleClose = () => {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(96, 165, 250, 0.12));
   color: #1d4ed8;
   border-color: rgba(37, 99, 235, 0.2);
+}
+
+.tag-pill-custom {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(244, 114, 182, 0.12));
+  color: #be185d;
+  border-color: rgba(236, 72, 153, 0.2);
 }
 
 .type-pill {

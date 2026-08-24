@@ -6,6 +6,8 @@ export interface FileLoadQueryDTO extends BasePageQuery {
   subject?: string
   /** 适用阶段筛选（可选） */
   applicableStage?: string
+  /** 标签筛选（可选） */
+  tag?: string
 }
 
 /** 文件列表 VO（对应后端 FileLoadListVO） */
@@ -18,6 +20,10 @@ export interface FileLoadListVO {
   fileSize: number
   subject?: string
   applicableStage?: string
+  /** 文档简介（后端 t_file_info.description） */
+  description?: string
+  /** 标签（后端 t_file_info.tag，单值：备考指南/就业辅导等） */
+  tag?: string
   createTime?: string
 }
 

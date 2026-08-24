@@ -6,7 +6,7 @@
 - 设计令牌：品牌主色 `#e8722a`（brand-orange）；admin 暖橙渐变+橙色顶底边框卡片，user 纯白微灰+细边卡片。改样式前对照 `AGENTS.md` 对应端 Checklist；仅样式任务不动 `<script>`。
 - 数据列用 `min-width` 撑满，`width` 只给窄固定列（状态/操作）。
 - 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）；Vite dev 用 esbuild 不做类型检查。
-- **环境**：bash 里 `pnpm` 失效，用 PowerShell 调 `E:\Nodejs\node_global\pnpm.cmd`；后端无 devtools，改 Java 必重启生效。
+- **环境**：bash 里 `pnpm` 失效，用 PowerShell 调 `D:\npm\npm-global\pnpm.cmd`（旧 `E:\Nodejs\node_global\pnpm.cmd` 已失效）；后端无 devtools，改 Java 必重启生效。
 - **JVM 红线**：后端服务运行期间禁止 `mvn clean`/IDE Rebuild（无 spring-boot-devtools，会触发 $Builder 缺失 NoClassDefFoundError）。
 
 ## 高频「已知坑」索引（详见 AGENTS.md）
@@ -18,6 +18,7 @@
 6. CORS `allowedMethods` 必须含 PATCH（否则 12 模块状态接口全挂）。
 7. **Element Plus 弹窗锁滚动抖动**（见下）。
 8. **列表 VO 必须返回记录主键 `id`**，否则前端详情接口（后端 `selectById(id)` 按主键查）误传 businessId→404 + 弹窗闪退。典型案例（2026-08-15）：特殊通道 `SpecialChannelUnivListVO` 漏 `id`，前端误传 `universityId` 给 `/channel-univ/{id}`，报「通道大学关联不存在」。顺带：详情接口若 `@RequireLogin`，未登录点会触发响应拦截器强制跳 `/login`，应在前端调用前判 `isLoggedIn()` 友好引导。
+9. **OSS 预签名响应头：`aliyun-sdk-oss:3.17.4` 只有 `ResponseHeaderOverrides` 旧式 API**（无 `setResponseDisposition`/`setResponseHeaders(Map)`，这两个是 3.18+ 才加）。设置下载文件名用 `ResponseHeaderOverrides.setContentDisposition("attachment; filename*=UTF-8''"+URLEncoder.encode(name))` + `GeneratePresignedUrlRequest#setResponseHeaders(ResponseHeaderOverrides)`。详见文末「OSS SDK API 误判更正（2026-08-23）」。
 
 ## 已知坑：弹窗打开页面左移抖动（2026-08-15 定位根因，待用户确认修复）
 - 现象：未登录点「开始志愿填报」→ 路由守卫弹登录框 → 右侧滚动条消失、页面左移约 6px。
@@ -68,3 +69,44 @@
 - **重要补充（2026-08-17，踩坑）**：上面那条说"根容器透出暖橙"只是表面——**`.app-shell main > *` 选择器会命中详情页组件内部嵌套 `<main>` 的直接子 = 各张卡片**，强制 `background-color: transparent !important`，把卡片的 `bg-white` 直接压没（scoped 类的 specificity 高，但 `!important` > 普通规则 specificity，所以普通 `bg-white` 输）。结果用户看到的"暖橙卡片"其实是透明卡片 + 底层暖橙 html 画布。专业详情页也踩这个坑（所以"区分度好"其实是「暖橙底 + 白字内容」风格，并非真正的白卡）。
 - **修复**：在用户要求"卡片必须白"时，详情页里所有大块卡片（`.detail-card`/`.stat-card`/`.prospect-card`/`.major-card`/`.city-card`/`.team-card`/`.stage-badge` 等）必须在 `<style scoped>` 加 `background: #ffffff !important;`，压过全局 `transparent !important`。内层 `<main>` 本身透明没问题（让页面底色透出）。
 - **再补充（2026-08-17）**：Hero（`.lab-hero` / `.dept-hero` 等带渐变的"展示名称"section）**同样会被全局 `background-image: none !important` 清掉渐变**变成透明、透出 html 浅橙画布。要让 Hero 是真正的实心橙渐变（不是透出浅橙），必须给 Hero 的 `background: linear-gradient(...)` 加 `!important`。上一轮只给白色卡片加了 `!important`，漏了 Hero，导致 Hero 看起来是浅橙而不是品牌橙——切记**所有需要"实心背景"的区块（白卡 + 橙 Hero）一律 `!important`**。
+
+## 已知坑：OSS SDK 预签名响应头 3.17.4 仅 ResponseHeaderOverrides API（2026-08-23）
+- **根因**：`aliyun-sdk-oss:3.17.4` 这一版 `GeneratePresignedUrlRequest.setResponseHeaders` 形参类型就是 `ResponseHeaderOverrides`，**既无 `setResponseDisposition(String)` 也无 `setResponseHeaders(Map)`**（这两个是 3.18+/3.19+ 才引入）。项目未锁更高版本，所以编译只能用旧式 API。
+- **正确写法**（haifeng-common `OssService.generatePresignedUrl(objectKey, downloadFileName)`）：
+  ```java
+  ResponseHeaderOverrides responseHeaders = new ResponseHeaderOverrides();
+  // URLEncoder 是表单编码（空格→+），RFC 5987 attr-value 须 percent-encoded（空格→%20），
+  // 否则浏览器文件名显示为 +（实测：吉晨峰 · … → 吉晨峰+·+…）
+  responseHeaders.setContentDisposition("attachment; filename*=UTF-8''"
+          + URLEncoder.encode(downloadFileName, StandardCharsets.UTF_8).replace("+", "%20"));
+  request.setResponseHeaders(responseHeaders);
+  ```
+- **预览/下载 URL 分离**：KKFileView 预览必须用【干净】OSS 预签名 URL（不带 disposition），下载才带 disposition；否则 KKFileView 解析 `response-content-disposition` 的 `+`/中文百分号编码时 500。
+- **KKFileView 预览 url 参数编码**（fileload 专栏页）：**标准 Base64 + 再 URL 编码**（`Base64.getEncoder()` + `URLEncoder.encode(b64)`），**不是** URL-safe Base64（KKFileView 用 Spring Base64Utils 标准解码，`_` → `Illegal base64 character 5f`），也**不是**百分号编码原文（`:` → `3a`）；且 KKFileView 会再 `URLDecoder.decode` 一次源 URL（`%2B`→`+` 被 OSS 当空格 → 签名 403），须**先 `url.replace("%","%25")` 双重编码**再 Base64（docx 必现，PDF 靠运气）。详见 `2026-08-23.md`「专栏文件三修复」。
+- **不是依赖冲突、不是被降级**：四个 pom 仅 common 一处声明 3.17.4，其余依赖均不传 OSS，本地 `.m2` 也只有 3.17.4（已解包 jar 核实 `GeneratePresignedUrlRequest` 无 `setResponseDisposition`）。**无需钉版本、无需查依赖树**。
+- **教训**：下次改 `OssService` 预签名 URL 响应头一律用 `ResponseHeaderOverrides.setContentDisposition`；编译器报 `setResponseHeaders(ResponseHeaderOverrides) cannot be applied to (Map)` 即铁证该版本 API=ResponseHeaderOverrides。完整排查见 `2026-08-23.md` 文末「OSS SDK API 误判更正」。
+
+## 后端已知坑汇总（用户历史总结，2026-08-23 沉淀，权威参考）
+> 以下为用户在多次踩坑后亲自整理的清单，涉及 MyBatis-Plus / 事务 / 校验 / 幂等等。@TableLogic+@Version+updateById 静默失效已于当日（2026-08-23）在 fileload 模块实锤并重修。
+
+| 类别 | 要点 |
+|------|------|
+| MP 逻辑删除/乐观锁 | **@TableLogic + @Version + `updateById` 组合会导致逻辑删除/更新静默不生效（影响行数 0 但方法不抛异常、返回 200）**。fileload 模块已于 2026-08-23 改用 `LambdaUpdateWrapper` 显式 SET（`entity=null` 绕开 @TableLogic 拦截）修复。**新增任何带 @TableLogic/@Version 实体的写操作，禁止用 `updateById(entity)` 做逻辑删除/局部更新，统一用 `UpdateWrapper`**。 |
+| 乐观锁 | 高并发 `updateById` 在 version 不匹配时必抛 OptimisticLockException；写操作务必校验 version 并在影响行数=0 时显式抛业务异常，不要静默吞。 |
+| 事务 | 缺 `@Transactional` 的地方（写多表/写+OSS）要补；但注意 `@Transactional` 内调 `generatePresignedUrl`（每次 createClient+shutdown）不影响正确性，仅性能。 |
+| 硬删除 | `hardDeleteById` 可能引入孤儿引用 / 悬空；优先逻辑删除；跨表删除前必须评估外键引用。 |
+| DTO/Entity 类型 | DTO 字段类型必须与 DB 列类型一致，否则转换失败；`BeanUtils.copyProperties` 会把 DTO 中未传字段覆盖为 null（DTO 字段可选时，改部分字段会丢失已有值）——**局部更新必须用 UpdateWrapper 而非 copyProperties 全覆盖**。 |
+| 校验注解 | 列表/集合参数用 `@NotEmpty`+`@Size(max=100)` 而非 `@NotNull`；`@NotBlank` 优于 `@NotNull`（防空串绕过）；`@RequestBody` 必须配 `@Valid`、`@PathVariable` 配 `@Validated` 才触发校验。 |
+| LIKE 查询 | 必须 `@Size(max=50)` 限制长度，防超长注入/全表扫。 |
+| 性能 | `page()`/`detail()` 用 `BeanUtils.copyProperties` 反射复制性能差，量大建议手动 set 或 MapStruct。 |
+| 幂等 | 佣金/下单等写操作必须幂等（同订单重复调用不能重复加余额/建记录）。 |
+| SQL 边界 | `year` 等可 NULL 字段用 `= NULL` 永远 false，应 `IS NULL`；Mapper XML 中 `subjects &&` / `@>` 对空数组边界行为需显式处理。 |
+| 关联表一致性 | 改源表（如 t_major 专业名）不会自动同步关联表里的冗余字段（major_name），需业务层同步或去掉冗余。 |
+| 雪花 ID | `SnowflakeIdGenerator` 是静态调用，不要在 Spring Bean 里当实例方法用。 |
+| 日志 | 禁止打印完整手机号（脱敏）；删除上千条时不要打印完整 ID 列表（截断或只打数量）；关键写操作补 `@OperationLog`。 |
+| HTTP 语义 | 批量删除用 `@PostMapping`（兼容所有代理/网关），不要 HTTP DELETE + Body。 |
+
+## 已知坑：fileload admin 端"删除/update 静默失效 + 下载 NoSuchKey"（2026-08-23 实锤修复）
+- **删除/update 静默失效**：admin `FileLoadServiceImpl` 早期用 `updateById(entity)` 做软删除/局部更新，受 `@TableLogic`+`@Version` 干扰，影响行数=0 但 MP 不抛异常 → 接口 200、库 `is_deleted` 仍 false。铁证：`SELECT id,file_name,is_deleted,version FROM t_file_info WHERE id=2091526091121496064` → `false,0`。**修复**：delete/update 改用 `LambdaUpdateWrapper`（entity=null 绕开 @TableLogic，显式 SET + `setSql("version=version+1")`，影响行数 0 抛 409）。
+- **下载 NoSuchKey（admin 端）**：admin 与 user 端 `detail()` 生成下载 URL 代码逐行一致（同用 `generatePresignedUrl(fileUrl, fileName)`，fileUrl 存纯 objectKey `haifeng/files/uuid.ext`），前端下载按钮点 `detailData.fileUrl` 也正确。若 admin 仍报 NoSuchKey 而 OSS 控制台有该文件、user 端能下，优先核对：①该记录的 `file_url` DB 字段值是否真的是纯 `haifeng/files/...`（无 bucket 前缀）；②admin 启动时的 `OSS_BUCKET_NAME`/`OSS_ENDPOINT` 环境变量是否和 user 端一致（同一 `.env`，但 admin 若用不同启动方式可能覆盖）。
+- **上传秒传隐患**：`upload()` 按 `file_md5` 查重，命中即返回 existing id 不再上传 OSS。若 existing 那条 OSS 文件已被删，新上传会复用指向已删 key → 下载 NoSuchKey。后续可加"秒传前校验 OSS 对象是否真存在"。

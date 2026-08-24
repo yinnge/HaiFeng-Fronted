@@ -52,6 +52,12 @@ const formatSize = (bytes: number) => {
             <span v-else class="dim-text">-</span>
           </template>
         </el-table-column>
+        <el-table-column prop="tag" label="标签" width="120" align="center">
+          <template #default="{ row }">
+            <span v-if="row.tag" class="tag-pill tag-pill-custom">{{ row.tag }}</span>
+            <span v-else class="dim-text">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="fileType" label="类型" width="90" align="center">
           <template #default="{ row }">
             <span v-if="row.fileType" class="type-pill">{{ row.fileType.toUpperCase() }}</span>
@@ -176,6 +182,13 @@ const formatSize = (bytes: number) => {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(96, 165, 250, 0.12));
   color: #1d4ed8;
   border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* 标签药丸 */
+.tag-pill-custom {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(244, 114, 182, 0.12));
+  color: #be185d;
+  border-color: rgba(236, 72, 153, 0.2);
 }
 
 /* 类型药丸 */

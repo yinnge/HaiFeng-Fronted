@@ -3,10 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Motion } from 'motion-v'
-import { getFileLoadList, getFileLoadDetail } from '@/api/fileload'
-import type { FileLoadListVO, FileLoadDetailVO, FileLoadQueryDTO, FileLoadAudience } from '@/types/fileload'
+import {
+  getFileLoadList,
+  getFileLoadStages,
+  getFileLoadSubjects,
+  getFileLoadTags,
+} from '@/api/fileload'
+import type { FileLoadListVO, FileLoadQueryDTO, FileLoadAudience } from '@/types/fileload'
 import { useUserStore } from '@/store'
-import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
 const props = defineProps<{
   /** 后端接口受众：middle=初中 / high=高中 */
@@ -15,7 +19,6 @@ const props = defineProps<{
   title?: string
 }>()
 
-const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -25,11 +28,14 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-/* ---------------- 详情弹框 ---------------- */
-const detailVisible = ref(false)
-const detailLoading = ref(false)
-const detail = ref<FileLoadDetailVO | null>(null)
-const actionLoading = ref(false)
+/* ---------------- 筛选状态（AND 关系） ---------------- */
+const stageFilter = ref('')
+const subjectFilter = ref('')
+const tagFilter = ref('')
+
+const stageOptions = ref<string[]>([])
+const subjectOptions = ref<string[]>([])
+const tagOptions = ref<string[]>([])
 
 const bannerTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : '高中专栏'))
 const bannerDesc = computed(() =>
@@ -38,10 +44,34 @@ const bannerDesc = computed(() =>
     : '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
 )
 
+const hasActiveFilter = computed(() => !!(stageFilter.value || subjectFilter.value || tagFilter.value))
+
+/** 拉取三个字段的去重值（用于按钮/下拉），失败不阻塞列表 */
+async function fetchOptions() {
+  try {
+    const [s, sub, t] = await Promise.all([
+      getFileLoadStages(props.audience),
+      getFileLoadSubjects(props.audience),
+      getFileLoadTags(props.audience),
+    ])
+    stageOptions.value = s.data.data || []
+    subjectOptions.value = sub.data.data || []
+    tagOptions.value = t.data.data || []
+  } catch {
+    /* 选项加载失败忽略，列表仍可展示 */
+  }
+}
+
 async function fetchList() {
   loading.value = true
   try {
-    const params: FileLoadQueryDTO = { page: currentPage.value, size: pageSize.value }
+    const params: FileLoadQueryDTO = {
+      page: currentPage.value,
+      size: pageSize.value,
+      subject: subjectFilter.value || undefined,
+      applicableStage: stageFilter.value || undefined,
+      tag: tagFilter.value || undefined,
+    }
     const res = await getFileLoadList(props.audience, params)
     list.value = res.data.data.records
     total.value = res.data.data.total
@@ -52,7 +82,27 @@ async function fetchList() {
   }
 }
 
-/** 点击卡片（无单独详情按钮）→ 调详情接口 → 弹框展示 */
+/** 筛选变化 → 回到第一页并重新查询 */
+function onFilterChange() {
+  currentPage.value = 1
+  fetchList()
+}
+
+/** 点击适用阶段按钮（再次点击取消选中） */
+function toggleStage(s: string) {
+  stageFilter.value = stageFilter.value === s ? '' : s
+  onFilterChange()
+}
+
+function resetFilters() {
+  stageFilter.value = ''
+  subjectFilter.value = ''
+  tagFilter.value = ''
+  onFilterChange()
+}
+
+/** 点击卡片（无单独详情按钮）→ 列表免登录，但详情需 VIP：
+ *  未登录先引导登录；已登录直接跳详情页，VIP 校验由详情页 onMounted 按 1005 业务码引导开通 */
 async function openDetail(item: FileLoadListVO) {
   if (!userStore.isLoggedIn()) {
     userStore.setRedirectPath(router.currentRoute.value.fullPath)
@@ -66,59 +116,7 @@ async function openDetail(item: FileLoadListVO) {
     } catch { /* 用户取消 */ }
     return
   }
-
-  detailLoading.value = true
-  try {
-    const res = await getFileLoadDetail(props.audience, item.id)
-    detail.value = res.data.data
-    detailVisible.value = true
-  } catch (e: any) {
-    const msg = e?.message || '获取文件详情失败'
-    // VIP 权限不足（业务码 1005「权限不足（需要旗舰版）」）：引导开通
-    if (msg.includes('旗舰版') || msg.includes('VIP')) {
-      try {
-        await ElMessageBox.confirm('查看文件详情与下载需要旗舰版（VIP）会员，是否前往开通？', '提示', {
-          confirmButtonText: '去开通',
-          cancelButtonText: '取消',
-          type: 'warning',
-        })
-        recharge.open()
-      } catch { /* 用户取消 */ }
-      return
-    }
-    ElMessage.error(msg)
-  } finally {
-    detailLoading.value = false
-  }
-}
-
-/* ---------------- 预览 / 下载 ---------------- */
-function handlePreview() {
-  const url = detail.value?.previewUrl
-  if (!url) {
-    ElMessage.warning('该文件类型暂不支持在线预览')
-    return
-  }
-  window.open(url, '_blank', 'noopener')
-}
-
-function handleDownload() {
-  const url = detail.value?.downloadUrl
-  if (!url) {
-    ElMessage.error('暂未生成下载链接，请稍后再试')
-    return
-  }
-  actionLoading.value = true
-  // 动态 a 标签触发下载（避免异步 window.open 被浏览器拦截）
-  const a = document.createElement('a')
-  a.href = url
-  a.target = '_blank'
-  a.rel = 'noopener'
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  actionLoading.value = false
+  router.push(`/${props.audience}/${item.id}`)
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -164,12 +162,18 @@ function onSizeChange(size: number) {
   fetchList()
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchOptions()
+  fetchList()
+})
 
 // 路由复用同一组件时（middle ↔ high）切换受众需重新拉取
 watch(() => props.audience, () => {
+  stageFilter.value = ''
+  subjectFilter.value = ''
+  tagFilter.value = ''
   currentPage.value = 1
-  detailVisible.value = false
+  fetchOptions()
   fetchList()
 })
 </script>
@@ -196,6 +200,65 @@ watch(() => props.audience, () => {
           </div>
         </div>
       </Motion>
+
+      <!-- 筛选栏 -->
+      <section class="mb-6 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v6a1 1 0 01-.293.707L14 15.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 018 17v-1.586L3.293 10.707A1 1 0 013 10V4z" />
+            </svg>
+            筛选
+          </div>
+          <button v-if="hasActiveFilter" class="text-xs text-orange-500 hover:underline" @click="resetFilters">
+            重置筛选
+          </button>
+        </div>
+
+        <!-- 适用阶段：按钮（数据有几个就几个，点击切换） -->
+        <div v-if="stageOptions.length" class="flex flex-wrap items-center gap-2">
+          <span class="text-sm text-gray-400 mr-1 shrink-0">适用阶段</span>
+          <button
+            v-for="s in stageOptions"
+            :key="s"
+            class="rounded-full border px-4 py-1.5 text-sm transition-all"
+            :class="stageFilter === s
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md shadow-orange-200'
+              : 'bg-white text-orange-600 border-orange-200 hover:bg-orange-50'"
+            @click="toggleStage(s)"
+          >
+            {{ s }}
+          </button>
+        </div>
+
+        <!-- 学科 / 标签：下拉框 -->
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-400 shrink-0">学科</span>
+            <el-select
+              v-model="subjectFilter"
+              placeholder="全部学科"
+              clearable
+              style="width: 160px"
+              @change="onFilterChange"
+            >
+              <el-option v-for="o in subjectOptions" :key="o" :label="o" :value="o" />
+            </el-select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-400 shrink-0">标签</span>
+            <el-select
+              v-model="tagFilter"
+              placeholder="全部标签"
+              clearable
+              style="width: 160px"
+              @change="onFilterChange"
+            >
+              <el-option v-for="o in tagOptions" :key="o" :label="o" :value="o" />
+            </el-select>
+          </div>
+        </div>
+      </section>
 
       <!-- 文件列表 -->
       <section class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
@@ -241,6 +304,9 @@ watch(() => props.audience, () => {
                   <span v-if="item.applicableStage" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-600 border border-amber-100">
                     {{ item.applicableStage }}
                   </span>
+                  <span v-if="item.tag" class="rounded-full bg-rose-50 px-2 py-0.5 text-xs text-rose-600 border border-rose-100">
+                    {{ item.tag }}
+                  </span>
                 </div>
                 <div class="mt-3 flex items-center justify-between text-xs text-gray-400">
                   <span>{{ formatSize(item.fileSize) }}</span>
@@ -266,82 +332,5 @@ watch(() => props.audience, () => {
         </div>
       </section>
     </main>
-
-    <!-- 详情弹框：预览 + 下载 -->
-    <ElDialog
-      v-model="detailVisible"
-      :title="`${bannerTitle} · 文件详情`"
-      width="520px"
-      :close-on-click-modal="false"
-    >
-      <div v-if="detail" v-loading="detailLoading" class="space-y-4">
-        <!-- 文件头部 -->
-        <div class="flex items-center gap-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 border border-orange-100">
-          <div class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md shadow-orange-200"
-            :class="fileTypeMeta(detail.fileType).iconBg">
-            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z" />
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-lg font-bold text-gray-800 break-all">{{ detail.fileName }}</h3>
-            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-              <span class="rounded-full px-2 py-0.5 bg-white border border-orange-200 text-orange-600 font-semibold">
-                {{ fileTypeMeta(detail.fileType).label }}
-              </span>
-              <span>{{ formatSize(detail.fileSize) }}</span>
-              <span v-if="detail.subject">· {{ detail.subject }}</span>
-              <span v-if="detail.applicableStage">· {{ detail.applicableStage }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 元信息 -->
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-lg bg-gray-50 px-3 py-2">
-            <div class="text-xs text-gray-400">上传时间</div>
-            <div class="mt-0.5 font-medium text-gray-700">{{ formatDate(detail.createTime) }}</div>
-          </div>
-          <div class="rounded-lg bg-gray-50 px-3 py-2">
-            <div class="text-xs text-gray-400">文件大小</div>
-            <div class="mt-0.5 font-medium text-gray-700">{{ formatSize(detail.fileSize) }}</div>
-          </div>
-        </div>
-
-        <p class="text-xs text-gray-400 leading-relaxed">
-          提示：预览支持 PDF、Word、Excel、PPT 及常见图片格式；下载链接由系统临时生成，请尽快使用。
-        </p>
-      </div>
-
-      <template #footer>
-        <div class="flex gap-3">
-          <button
-            class="flex-1 rounded-full border border-orange-300 bg-white px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-all"
-            :disabled="!detail?.previewUrl"
-            @click="handlePreview"
-          >
-            <span class="inline-flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              在线预览
-            </span>
-          </button>
-          <button
-            class="flex-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50"
-            :disabled="!detail?.downloadUrl || actionLoading"
-            @click="handleDownload"
-          >
-            <span class="inline-flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              下载文件
-            </span>
-          </button>
-        </div>
-      </template>
-    </ElDialog>
   </div>
 </template>

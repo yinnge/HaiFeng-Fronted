@@ -25,6 +25,8 @@ export interface FileLoadListVO {
   fileSize: number
   subject: string
   applicableStage: string | null
+  description?: string | null
+  tag?: string | null
   createBy: string | null
   createTime: string
 }
@@ -44,6 +46,8 @@ export interface FileLoadDetailVO {
   targetAudience: string
   applicableStage: string | null
   subject: string
+  description?: string | null
+  tag?: string | null
   version: number
   createBy: string | null
   createTime: string
@@ -56,6 +60,8 @@ export interface FileLoadQueryDTO {
   fileName?: string
   subject?: string
   applicableStage?: string
+  /** 标签精准匹配 */
+  tag?: string
   page: number
   size: number
 }
@@ -65,6 +71,10 @@ export interface FileLoadUploadDTO {
   targetAudience: string
   subject: string
   applicableStage?: string
+  /** 文档简介 */
+  description?: string
+  /** 标签（备考指南/就业辅导等） */
+  tag?: string
   /** 乐观锁版本号，修改时必传 */
   version?: number
 }
