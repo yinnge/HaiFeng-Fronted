@@ -214,6 +214,8 @@ const handleSubmit = async (data: { file?: File; subject: string; applicableStag
     }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  } finally {
+    formLoading.value = false
   }
 }
 

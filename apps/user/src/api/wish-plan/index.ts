@@ -58,6 +58,7 @@ export interface WishPlanGroupVO {
   province: string
   batch: string
   subjects: string[]
+  requirementType: string
   constraintsDescription: string[]
   description: string
   majorCount: number
@@ -81,6 +82,8 @@ export interface WishPlanMajorVO {
   duration: string
   tuition: string
   description: string
+  educationLevel: string
+  constraints: string[]
   admissionCount: number
   safetyLevel: number
   levelShort: string

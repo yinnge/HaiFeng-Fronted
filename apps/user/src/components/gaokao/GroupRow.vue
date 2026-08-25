@@ -100,13 +100,13 @@ const cardClass = computed(() => {
       <div class="flex-1 min-w-0 p-5">
         <div class="flex items-center gap-3 flex-wrap">
           <span
-            class="text-lg font-bold text-gray-800 truncate cursor-pointer transition-colors duration-200 hover:text-brand-orange"
+            class="text-lg font-bold text-gray-800 truncate cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2"
             @click.stop="$emit('clickUniversity', group.universityName)"
           >
             {{ group.universityName }}
           </span>
           <span
-            class="inline-flex items-center text-sm text-gray-500 cursor-pointer transition-colors duration-200 hover:text-brand-orange"
+            class="inline-flex items-center text-sm text-gray-500 cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2"
             @click.stop="$emit('clickCity', group.cityName)"
           >
             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,8 +115,8 @@ const cardClass = computed(() => {
             </svg>
             {{ group.cityName }}
           </span>
-          <span class="pill pill-blue text-xs">{{ group.enrollmentCode }}</span>
-          <span class="pill pill-gold text-xs">{{ group.groupCode }}</span>
+          <span class="pill pill-blue text-xs tip" data-tip="省招代码">{{ group.enrollmentCode }}</span>
+          <span class="pill pill-gold text-xs tip" data-tip="专业组代码">{{ group.groupCode }}</span>
         </div>
 
         <div class="mt-2.5 flex items-center gap-3 text-sm text-gray-500">
@@ -124,7 +124,7 @@ const cardClass = computed(() => {
             <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            {{ group.groupName }}
+            <span class="tip" data-tip="专业组名称">{{ group.groupName }}</span>
           </span>
           <span class="text-gray-300">·</span>
           <span>{{ group.majorCount }}个专业</span>
@@ -234,4 +234,28 @@ const cardClass = computed(() => {
 </template>
 
 <style scoped>
+.tip {
+  position: relative;
+}
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+}
+.tip:hover::after {
+  opacity: 1;
+}
 </style>

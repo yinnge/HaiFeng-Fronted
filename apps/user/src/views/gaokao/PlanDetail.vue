@@ -20,6 +20,8 @@ import {
 } from '@/api/wish-plan'
 import PdfGenerateDialog from '@/components/pdf/PdfGenerateDialog.vue'
 import PdfProfileDialog from '@/components/pdf/PdfProfileDialog.vue'
+import BriefInfoDrawer from '@/components/gaokao/BriefInfoDrawer.vue'
+import type { BriefDrawerData } from '@/types/gaokao/brief'
 
 const router = useRouter()
 const route = useRoute()
@@ -47,6 +49,50 @@ const showConfirmDialog = ref(false)
 const exportContexts = ref<ExportGroupContextVO[]>([])
 const confirmLoading = ref(false)
 const totalExportableMajors = ref(0)
+
+// 简要信息抽屉
+const drawerVisible = ref(false)
+const drawerData = ref<BriefDrawerData | null>(null)
+
+function openUniversityDrawer(name: string) {
+  drawerData.value = { type: 'university', name }
+  drawerVisible.value = true
+}
+
+function openCityDrawer(name: string) {
+  drawerData.value = { type: 'city', name }
+  drawerVisible.value = true
+}
+
+function openMajorDrawer(name: string) {
+  drawerData.value = { type: 'major', name }
+  drawerVisible.value = true
+}
+
+/** 选科类型组合文案：必选1 → 必选【科目】；必选2/3 → 【A】和【B】必选；2选1/3选1 → 【A】和【B】选一；不限 → 不限 */
+function formatRequirementText(group: WishPlanGroupVO): string {
+  const type = group.requirementType || ''
+  const list = group.subjects || []
+  if (!type || type === '不限') return '不限'
+  const wrap = (s: string) => `【${s}】`
+  const must = type.match(/^必选(\d+)$/)
+  if (must) {
+    const n = parseInt(must[1], 10)
+    const picked = list.slice(0, n)
+    if (picked.length === 0) return type
+    return n <= 1 ? `必选${wrap(picked[0])}` : `${picked.map(wrap).join('和')}必选`
+  }
+  const pick = type.match(/^(\d+)选(\d+)$/)
+  if (pick) {
+    const m = parseInt(pick[1], 10)
+    const n = parseInt(pick[2], 10)
+    const picked = list.slice(0, m)
+    if (picked.length === 0) return type
+    const cn = ['零', '一', '二', '三', '四', '五', '六'][n] || String(n)
+    return `${picked.map(wrap).join('和')}选${cn}`
+  }
+  return type
+}
 
 const safetyColorMap: Record<string, string> = {
   '搏': '#ef4444',
@@ -429,7 +475,7 @@ function goToPdfHistory() {
           <div
             v-for="(group, gIndex) in planGroups"
             :key="group.id"
-            class="group relative rounded-2xl border border-gray-100/80 bg-white overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300"
+            class="group relative rounded-2xl border border-gray-100/80 bg-white shadow-card hover:shadow-card-hover transition-all duration-300"
             draggable="true"
             @mousedown="dragHandleActive = false"
             @dragstart="onDragStart($event, 'group', gIndex)"
@@ -485,31 +531,39 @@ function goToPdfHistory() {
               <!-- 中：院校信息 -->
               <div class="flex-1 min-w-0 p-4">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-lg font-bold text-gray-800 truncate">{{ group.universityName }}</span>
-                  <span class="inline-flex items-center text-sm text-gray-500">
+                  <span class="text-lg font-bold text-gray-800 truncate cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2" @click="openUniversityDrawer(group.universityName)">{{ group.universityName }}</span>
+                  <span class="inline-flex items-center text-sm text-gray-500 cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2" @click="openCityDrawer(group.cityName)">
                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     {{ group.cityName }}
                   </span>
-                  <span class="pill pill-blue text-xs">{{ group.enrollmentCode }}</span>
-                  <span class="pill pill-gold text-xs">{{ group.groupCode }}</span>
-                </div>
-                <div class="mt-2 flex items-center gap-3 text-sm text-gray-500">
-                  <span class="inline-flex items-center">
-                    <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    {{ group.groupName }}
+                   <span class="pill pill-blue text-xs tip" data-tip="省招代码">{{ group.enrollmentCode }}</span>
+                   <span class="pill pill-gold text-xs tip" data-tip="专业组代码">{{ group.groupCode }}</span>
+                 </div>
+                 <div class="mt-2 flex items-center gap-3 text-sm text-gray-500">
+                   <span class="inline-flex items-center">
+                     <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                     </svg>
+                      <span class="tip" data-tip="专业组名称">{{ group.groupName }}</span>
                   </span>
                   <span class="text-gray-300">·</span>
                   <span>{{ group.majorCount }}个专业</span>
+                  <span class="text-gray-300">·</span>
+                  <span class="inline-flex items-center">
+                    <svg class="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    选科：{{ formatRequirementText(group) }}
+                  </span>
                   <template v-if="group.tags.length">
                     <span class="text-gray-300">·</span>
                     <span v-for="tag in group.tags" :key="tag" class="pill pill-orange text-xs">{{ tag }}</span>
                   </template>
                 </div>
+                <p v-if="group.description" class="mt-2 text-sm text-gray-500 leading-relaxed">{{ group.description }}</p>
                 <div v-if="group.constraintsDescription.length > 0" class="mt-2.5 flex flex-wrap gap-1.5">
                   <span
                     v-for="c in group.constraintsDescription"
@@ -566,7 +620,7 @@ function goToPdfHistory() {
                   <div
                     v-for="(major, mIndex) in majors"
                     :key="major.id"
-                    class="flex items-stretch hover:bg-gray-50/50 transition-colors"
+                    class="group flex items-stretch hover:bg-gray-50/50 transition-colors"
                     draggable="true"
                     @mousedown="dragHandleActive = false"
                     @dragstart.stop="onDragStart($event, 'major', mIndex)"
@@ -620,10 +674,17 @@ function goToPdfHistory() {
                     <!-- 专业信息 -->
                     <div class="flex-1 min-w-0 p-3 pl-4">
                       <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-800">{{ major.majorName }}</span>
+                        <span class="text-sm font-semibold text-gray-800 cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2" @click="openMajorDrawer(major.majorName)">{{ major.majorName }}</span>
                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500">{{ major.majorCode }}</span>
                       </div>
                       <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                        <span class="inline-flex items-center">
+                          <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                          {{ major.educationLevel || '-' }}
+                        </span>
+                        <span class="text-gray-300">·</span>
                         <span>{{ major.duration }}</span>
                         <span class="text-gray-300">·</span>
                         <span class="text-brand-orange font-medium">{{ major.tuition }}</span>
@@ -632,43 +693,53 @@ function goToPdfHistory() {
                           <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          录取{{ major.admissionCount }}人
+                          录取{{ major.historyScores?.[0]?.admissionCount ?? major.admissionCount ?? '-' }}人
                         </span>
+                      </div>
+                      <p v-if="major.description" class="mt-1.5 text-xs text-gray-500 leading-relaxed">{{ major.description }}</p>
+                      <div v-if="major.constraints?.length" class="mt-1.5 text-xs text-red-500 leading-relaxed">
+                        限制：{{ major.constraints.join('，') }}
                       </div>
                     </div>
 
                     <!-- 历史分数 -->
-                    <div class="w-[26rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
+                    <div class="w-[32rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
                       <div class="overflow-hidden rounded-lg border border-gray-200/60">
                         <table class="w-full text-[11px]">
                           <thead>
                             <tr class="bg-gray-100/40">
                               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">年份</th>
-                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最低分</th>
-                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">平均分</th>
-                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最高分</th>
+                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最低分/位次</th>
+                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">平均分/位次</th>
+                              <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最高分/位次</th>
+                              <th class="text-center font-semibold text-gray-600 px-3 py-1.5">录取人数</th>
                             </tr>
                           </thead>
                           <tbody class="text-gray-600 divide-y divide-gray-100/60">
                             <tr v-for="s in major.historyScores" :key="s.year" class="hover:bg-gray-50/60 transition-colors">
                               <td class="px-3 py-1.5 font-medium tabular-nums">{{ s.year }}</td>
-                              <td class="px-3 py-1.5 tabular-nums">{{ s.minScore }}</td>
-                              <td class="px-3 py-1.5 tabular-nums">{{ s.avgScore }}</td>
-                              <td class="px-3 py-1.5 tabular-nums">{{ s.maxScore }}</td>
+                              <td class="px-3 py-1.5 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
+                              <td class="px-3 py-1.5 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
+                              <td class="px-3 py-1.5 tabular-nums">{{ s.maxScore }}/{{ s.maxRank }}</td>
+                              <td class="px-3 py-1.5 tabular-nums text-center">{{ s.admissionCount }}</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
                     </div>
 
-                    <!-- 导出开关 -->
-                    <div class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60">
+                    <!-- 导出开关：整列可点击 -->
+                    <div
+                      class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60 cursor-pointer transition-colors duration-200"
+                      :class="majorIsExported(major) ? 'bg-green-50/60 hover:bg-green-100/60' : 'hover:bg-brand-orange/5'"
+                      @click="handleToggleMajorExport(major)"
+                    >
                       <button
-                        class="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+                        type="button"
+                        class="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 pointer-events-none"
                         :class="majorIsExported(major)
                           ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/25'
-                          : 'text-gray-400 hover:text-brand-orange hover:bg-brand-orange/10 border border-transparent hover:border-brand-orange/20'"
-                        @click="handleToggleMajorExport(major)"
+                          : 'text-gray-400 group-hover:text-brand-orange'"
                       >
                         <svg v-if="majorIsExported(major)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -766,6 +837,27 @@ function goToPdfHistory() {
       v-model:visible="showProfileDialog"
       @proceed="handleProfileProceed"
     />
+
+    <BriefInfoDrawer
+      v-model:visible="drawerVisible"
+      :data="drawerData"
+    />
+
+    <!-- 悬浮小贴士 -->
+    <div class="fixed right-6 top-1/2 -translate-y-1/2 z-50 group">
+      <button
+        class="w-14 h-14 rounded-full bg-white shadow-lg border border-brand-orange/30 flex items-center justify-center text-brand-orange hover:shadow-xl hover:scale-110 transition-all duration-200"
+      >
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
+      <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 absolute right-16 top-1/2 -translate-y-1/2 w-72 p-3.5 rounded-xl bg-gray-800 text-white text-xs leading-relaxed shadow-xl pointer-events-none">
+        1.「保存志愿表」按钮会保存拖拽志愿顺序，不会保存导出状态，xlsx 导出会根据保存的顺序导出。
+        2. 专业组数据更新不会同步到已有志愿表，请新建志愿表获取最新数据。
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1.5 w-3 h-3 bg-gray-800 rotate-45"></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -804,5 +896,30 @@ function goToPdfHistory() {
 
 .drag-handle:active {
   cursor: grabbing;
+}
+
+.tip {
+  position: relative;
+}
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+}
+.tip:hover::after {
+  opacity: 1;
 }
 </style>
