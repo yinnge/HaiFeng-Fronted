@@ -51,7 +51,7 @@ const restrictionText = computed(() => {
 
 <template>
   <div
-    class="flex items-stretch rounded-xl border transition-all duration-200"
+    class="group flex items-stretch rounded-xl border transition-all duration-200"
     :class="isSelected
       ? 'border-green-200 bg-gradient-to-r from-green-50/80 to-white shadow-sm'
       : 'border-gray-100/60 bg-white/80 hover:bg-gray-50/80 hover:border-gray-200/60'"
@@ -129,13 +129,18 @@ const restrictionText = computed(() => {
       </div>
     </div>
 
-    <div v-if="canSelect" class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60">
+    <div
+      v-if="canSelect"
+      class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60 cursor-pointer transition-colors duration-200"
+      :class="isSelected ? 'bg-green-50/60 hover:bg-green-100/60' : 'hover:bg-brand-orange/5'"
+      @click="$emit('toggleSelect')"
+    >
       <button
-        class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200"
+        type="button"
+        class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 pointer-events-none"
         :class="isSelected
-          ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/30'
-          : 'text-gray-400 hover:text-brand-orange hover:bg-brand-orange/10 border border-transparent hover:border-brand-orange/20'"
-        @click="$emit('toggleSelect')"
+          ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/25'
+          : 'text-gray-400 group-hover:text-brand-orange'"
       >
         <svg v-if="isSelected" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />

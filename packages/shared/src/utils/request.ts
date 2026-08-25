@@ -52,11 +52,12 @@ function notifySessionExpired(): void {
 
 /**
  * 创建 Axios 实例
+ * timeout 默认60s，上传接口可通过 config.timeout 单独设更长（如120s）
  */
 const createRequest = (baseURL: string): AxiosInstance => {
   const instance = axios.create({
     baseURL,
-    timeout: 30000,
+    timeout: 60000,
     headers: {
       'Content-Type': 'application/json',
     },
