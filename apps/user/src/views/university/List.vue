@@ -116,6 +116,15 @@ function goGuide(id: string) {
   router.push(`/university/${id}/guide`)
 }
 
+// logo 加载失败的院校 ID 集合（回退显示名称首字占位）
+const logoErrors = ref<Set<string>>(new Set())
+
+function handleLogoError(id: string) {
+  if (!logoErrors.value.has(id)) {
+    logoErrors.value = new Set([...logoErrors.value, id])
+  }
+}
+
 onMounted(fetchList)
 </script>
 
@@ -225,27 +234,29 @@ onMounted(fetchList)
       </div>
 
       <!-- 骨架屏 -->
-      <div v-if="loading && list.length === 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-if="loading && list.length === 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div v-for="i in 6" :key="i" class="univ-card overflow-hidden">
-          <div class="aspect-[16/9] skeleton" />
-          <div class="p-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="h-5 skeleton w-32 rounded" />
-              <div class="h-5 skeleton w-14 rounded-full" />
+          <div class="p-5">
+            <div class="flex gap-5">
+              <div class="w-24 h-24 rounded-2xl skeleton shrink-0" />
+              <div class="flex-1 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="h-5 skeleton w-28 rounded" />
+                  <div class="h-5 skeleton w-12 rounded-full" />
+                </div>
+                <div class="flex gap-1.5">
+                  <div class="h-4 skeleton w-12 rounded-full" />
+                  <div class="h-4 skeleton w-14 rounded-full" />
+                </div>
+                <div class="grid grid-cols-2 gap-y-2">
+                  <div class="h-3 skeleton w-24 rounded" />
+                  <div class="h-3 skeleton w-16 rounded" />
+                </div>
+              </div>
             </div>
-            <div class="flex gap-1.5">
-              <div class="h-4 skeleton w-12 rounded-full" />
-              <div class="h-4 skeleton w-14 rounded-full" />
-            </div>
-            <div class="grid grid-cols-2 gap-y-2">
-              <div class="h-4 skeleton w-24 rounded" />
-              <div class="h-4 skeleton w-16 rounded" />
-              <div class="h-4 skeleton w-20 rounded" />
-              <div class="h-4 skeleton w-18 rounded" />
-            </div>
-            <div class="flex gap-3 pt-1">
-              <div class="h-10 skeleton flex-1 rounded-full" />
-              <div class="h-10 skeleton flex-1 rounded-full" />
+            <div class="flex gap-3 mt-5 pt-4 border-t border-gray-100">
+              <div class="h-9 skeleton flex-1 rounded-full" />
+              <div class="h-9 skeleton flex-1 rounded-full" />
             </div>
           </div>
         </div>
@@ -253,7 +264,7 @@ onMounted(fetchList)
 
       <!-- 列表 -->
       <div v-else>
-        <div v-if="list.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-if="list.length" class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TransitionGroup name="list">
             <div
               v-for="(item, index) in list"
@@ -261,52 +272,40 @@ onMounted(fetchList)
               class="group univ-card univ-card-hover overflow-hidden"
               :style="{ animationDelay: `${index * 80}ms` }"
             >
-              <div class="aspect-[16/9] overflow-hidden bg-gray-50">
-                <img
-                  :src="item.imageUrl || ''"
-                  :alt="item.name"
-                  class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  @error="($event.target as HTMLImageElement).src = ''"
-                />
-              </div>
               <div class="p-5">
-                <div class="flex items-start justify-between mb-2">
-                  <h3 class="text-lg font-bold text-gray-800 truncate">{{ item.name }}</h3>
-                  <span class="shrink-0 pill-new text-xs ml-2">{{ item.nature }}</span>
+                <div class="flex gap-5">
+                  <!-- 院校 logo：白底浅边，有图 contain 完整展示，无图/加载失败灰色首字占位 -->
+                  <div
+                    class="w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-white border border-gray-200 flex items-center justify-center"
+                  >
+                    <img
+                      v-if="item.imageUrl && !logoErrors.has(item.id)"
+                      :src="item.imageUrl"
+                      :alt="item.name"
+                      class="h-full w-full object-contain"
+                      @error="handleLogoError(item.id)"
+                    />
+                    <span v-else class="text-gray-300 text-4xl font-bold">{{ item.name.charAt(0) }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                      <h3 class="text-lg font-bold text-gray-800 truncate">{{ item.name }}</h3>
+                      <span class="shrink-0 pill-new text-xs">{{ item.nature }}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                      <span v-for="tag in item.tags" :key="tag" class="pill-new text-xs">
+                        {{ tag }}
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-y-1.5 mt-3 text-sm text-gray-500">
+                      <span>{{ item.provinceName }} · {{ item.cityName }}</span>
+                      <span>{{ item.category }}</span>
+                      <span>{{ item.educationLevel }}</span>
+                      <span>{{ item.majorCount }} 个专业</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex flex-wrap gap-1.5 mb-3">
-                  <span v-for="tag in item.tags" :key="tag" class="pill-new text-xs">
-                    {{ tag }}
-                  </span>
-                </div>
-                <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-500 mb-4">
-                  <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-brand-orange shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {{ item.provinceName }} · {{ item.cityName }}
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-brand-blue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    {{ item.category }}
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-brand-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    {{ item.educationLevel }}
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    {{ item.majorCount }} 个专业
-                  </span>
-                </div>
-                <div class="flex gap-3">
+                <div class="flex gap-3 mt-5 pt-4 border-t border-orange-100/60">
                   <button
                     class="flex-1 btn-brand py-2 text-sm"
                     @click="goDetail(item.id)"
