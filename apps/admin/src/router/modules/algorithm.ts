@@ -49,12 +49,6 @@ const algorithmRoutes: RouteRecordRaw = {
           component: () => import('@/views/algorithm/constraint/dict/index.vue'),
           meta: { title: '约束字典', moduleCode: 'algo_constraint_dict' },
         },
-        {
-          path: 'major',
-          name: 'AlgorithmConstraintMajor',
-          component: () => import('@/views/algorithm/constraint/major/index.vue'),
-          meta: { title: '专业约束关联', moduleCode: 'algo_constraint_mjr' },
-        },
       ],
     },
     // === 安全系数管理 ===

@@ -337,13 +337,6 @@ onMounted(fetchDetail)
               <span v-if="detail.requirementType" class="rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-600">{{ detail.requirementType }}</span>
             </div>
           </div>
-          <div class="mb-3 flex flex-wrap items-start gap-2">
-            <span class="ad-row-label">约束条件</span>
-            <div class="flex flex-wrap gap-2">
-              <span v-if="detail.constraints?.length" v-for="c in detail.constraints" :key="c" class="rounded-full bg-amber-50 px-3 py-1 text-sm text-amber-700">{{ c }}</span>
-              <span v-else class="text-sm text-gray-300">-</span>
-            </div>
-          </div>
           <p v-if="detail.description" class="mt-4 border-t border-gray-100 pt-4 text-base leading-relaxed text-gray-600">{{ detail.description }}</p>
         </section>
 

@@ -34,7 +34,6 @@ export interface AdmissionGroupDetailVO {
   subjects: string[]
   requirementType: string
   description: string | null
-  constraints: string[]
   majorCount: number
   categoryCount: number
   admissionCount: number | null
@@ -83,7 +82,6 @@ export interface AdmissionGroupAddDTO {
   subjects?: string[]
   requirementType?: string
   description?: string
-  constraints?: string[]
 }
 
 export interface AdmissionGroupUpdateDTO extends AdmissionGroupAddDTO {}

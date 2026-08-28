@@ -477,7 +477,13 @@ onMounted(() => {
           <!-- 仅选科匹配：独立成列，随 items-end 与输入框底边对齐 -->
           <div class="flex items-center gap-2.5">
             <el-switch v-model="searchForm.subjectFilter" />
-            <span class="text-sm font-medium text-gray-600">仅选科匹配</span>
+            <el-tooltip
+              content="取消「仅选科匹配」后，查询可能会查到与之不相符的专业"
+              :show-after="300"
+              placement="top"
+            >
+              <span class="text-sm font-medium text-gray-600 cursor-help underline decoration-dotted underline-offset-4 decoration-gray-300">仅选科匹配</span>
+            </el-tooltip>
           </div>
           <!-- 查询按钮：shrink-0 禁止被压缩 -->
           <button
@@ -756,9 +762,6 @@ onMounted(() => {
           </div>
           <p class="text-sm leading-relaxed text-gray-600">
             选择志愿专业，创建志愿表导出 xlsx 与生成 AI 智能分析报告
-          </p>
-          <p class="mt-2 text-xs leading-relaxed text-gray-400">
-            取消「仅选科匹配」后，查询可能会查到与之不相符的专业
           </p>
         </div>
       </Transition>

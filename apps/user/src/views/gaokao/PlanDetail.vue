@@ -35,7 +35,6 @@ const planGroups = ref<WishPlanGroupVO[]>([])
 const expandedGroupId = ref<string | null>(null)
 const majors = ref<WishPlanMajorVO[]>([])
 const majorLoading = ref(false)
-const saving = ref(false)
 const exporting = ref(false)
 
 // AI 智能分析
@@ -159,6 +158,7 @@ function moveGroupUp(index: number) {
   const arr = [...planGroups.value]
   ;[arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]
   planGroups.value = arr
+  persistGroupOrder()
 }
 
 function moveGroupDown(index: number) {
@@ -166,6 +166,7 @@ function moveGroupDown(index: number) {
   const arr = [...planGroups.value]
   ;[arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]
   planGroups.value = arr
+  persistGroupOrder()
 }
 
 function moveMajorUp(index: number) {
@@ -173,6 +174,7 @@ function moveMajorUp(index: number) {
   const arr = [...majors.value]
   ;[arr[index - 1], arr[index]] = [arr[index], arr[index - 1]]
   majors.value = arr
+  persistMajorOrder()
 }
 
 function moveMajorDown(index: number) {
@@ -180,6 +182,7 @@ function moveMajorDown(index: number) {
   const arr = [...majors.value]
   ;[arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]
   majors.value = arr
+  persistMajorOrder()
 }
 
 // ========== 拖拽排序 ==========
@@ -219,6 +222,7 @@ function onDropGroup(e: DragEvent, targetIndex: number) {
   const [moved] = arr.splice(dragState.startIndex, 1)
   arr.splice(targetIndex, 0, moved)
   planGroups.value = arr
+  persistGroupOrder()
 }
 
 function onDropMajor(e: DragEvent, targetIndex: number) {
@@ -228,6 +232,7 @@ function onDropMajor(e: DragEvent, targetIndex: number) {
   const [moved] = arr.splice(dragState.startIndex, 1)
   arr.splice(targetIndex, 0, moved)
   majors.value = arr
+  persistMajorOrder()
 }
 
 // ========== 导出 ==========
@@ -264,26 +269,39 @@ async function handleToggleGroupExportAll(group: WishPlanGroupVO) {
   }
 }
 
-// ========== 保存排序 ==========
+// ========== 排序持久化（拖拽 / ↑↓ 即写库，无需保存按钮） ==========
 
-async function handleSave() {
-  saving.value = true
+async function persistGroupOrder() {
   try {
-    // 保存专业组排序
     const groupItems = planGroups.value.map((g, i) => ({ groupId: g.id, sortOrder: i + 1 }))
     await sortPlanGroups(planId, groupItems)
-
-    // 保存展开的专业排序
-    if (expandedGroupId.value && majors.value.length > 0) {
-      const majorItems = majors.value.map((m, i) => ({ majorId: m.id, sortOrder: i + 1 }))
-      await sortPlanGroupMajors(planId, String(expandedGroupId.value), majorItems)
-    }
-
-    ElMessage.success('保存成功')
   } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+    ElMessage.error(e?.message || '专业组排序保存失败')
+    loadGroups()
+  }
+}
+
+async function refreshMajors() {
+  if (!expandedGroupId.value) return
+  majorLoading.value = true
+  try {
+    const res = await getPlanGroupMajors(planId, String(expandedGroupId.value), { page: 1, size: 100 })
+    majors.value = res.data.data.records
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载专业明细失败')
   } finally {
-    saving.value = false
+    majorLoading.value = false
+  }
+}
+
+async function persistMajorOrder() {
+  if (!expandedGroupId.value) return
+  try {
+    const majorItems = majors.value.map((m, i) => ({ majorId: m.id, sortOrder: i + 1 }))
+    await sortPlanGroupMajors(planId, String(expandedGroupId.value), majorItems)
+  } catch (e: any) {
+    ElMessage.error(e?.message || '专业明细排序保存失败')
+    refreshMajors()
   }
 }
 
@@ -381,59 +399,58 @@ function goToPdfHistory() {
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
-      <!-- 返回 + 标题 + 操作按钮 -->
+      <!-- 标题 + 操作按钮 -->
       <div class="mb-6">
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:text-brand-orange hover:border-brand-orange/30 hover:bg-orange-50/50 transition-all shadow-sm"
-          @click="router.push('/gaokao/plans')"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5 5-5M18 12H6" />
-          </svg>
-          返回志愿表列表
-        </button>
         <div class="flex justify-between items-center mt-3">
           <div>
             <h1 class="text-2xl font-bold text-gray-800">志愿表详情</h1>
             <p class="text-sm text-gray-500 mt-1">拖拽调整志愿顺序，导出你的志愿方案</p>
           </div>
           <div class="flex items-center gap-3">
-          <button class="btn-secondary px-4 py-2 text-sm" @click="handleAiAnalysis">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            AI智能分析
-          </button>
-          <button class="btn-secondary px-4 py-2 text-sm" @click="goToPdfHistory">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            查看AI报告
-          </button>
-          <button
-            class="btn-brand px-5 py-2 text-sm"
-            :class="saving ? 'opacity-60 cursor-not-allowed' : ''"
-            :disabled="saving"
-            @click="handleSave"
-          >
-            <svg v-if="!saving" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            {{ saving ? '保存中...' : '保存志愿表' }}
-          </button>
-          <button
-            class="inline-flex items-center px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 bg-gradient-to-r from-brand-blue to-brand-blue-light text-white hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-            :class="exporting ? 'opacity-60 cursor-not-allowed' : ''"
-            :disabled="exporting"
-            @click="handleExport"
-          >
-            <svg v-if="!exporting" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {{ exporting ? '导出中...' : '导出xlsx' }}
-          </button>
+            <!-- 返回志愿表列表：移至 AI 智能分析左侧，白色背景 -->
+            <button
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:text-brand-orange hover:border-brand-orange/30 hover:bg-orange-50/50 transition-all shadow-sm"
+              @click="router.push('/gaokao/plans')"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5 5-5M18 12H6" />
+              </svg>
+              返回志愿表列表
+            </button>
+            <!-- AI 智能分析：红色实心按钮，加宽 -->
+            <button
+              class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded-lg bg-red-500 hover:bg-red-600 text-white shadow-sm transition-all whitespace-nowrap"
+              @click="handleAiAnalysis"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              AI智能分析
+            </button>
+            <!-- 查看 AI 报告：橙色实心按钮，加宽（不换行） -->
+            <button
+              class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded-lg bg-brand-orange hover:bg-brand-orange/90 text-white shadow-sm transition-all whitespace-nowrap"
+              @click="goToPdfHistory"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              查看AI报告
+            </button>
+            <!-- 导出 xlsx -->
+            <button
+              class="inline-flex items-center px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 bg-gradient-to-r from-brand-blue to-brand-blue-light text-white hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+              :class="exporting ? 'opacity-60 cursor-not-allowed' : ''"
+              :disabled="exporting"
+              @click="handleExport"
+            >
+              <svg v-if="!exporting" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {{ exporting ? '导出中...' : '导出xlsx' }}
+            </button>
+          </div>
         </div>
-      </div>
       </div>
 
       <!-- 骨架屏加载 -->
@@ -564,18 +581,6 @@ function goToPdfHistory() {
                   </template>
                 </div>
                 <p v-if="group.description" class="mt-2 text-sm text-gray-500 leading-relaxed">{{ group.description }}</p>
-                <div v-if="group.constraintsDescription.length > 0" class="mt-2.5 flex flex-wrap gap-1.5">
-                  <span
-                    v-for="c in group.constraintsDescription"
-                    :key="c"
-                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-100"
-                  >
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    {{ c }}
-                  </span>
-                </div>
               </div>
 
               <!-- 右：操作 -->
@@ -842,22 +847,6 @@ function goToPdfHistory() {
       v-model:visible="drawerVisible"
       :data="drawerData"
     />
-
-    <!-- 悬浮小贴士 -->
-    <div class="fixed right-6 top-1/2 -translate-y-1/2 z-50 group">
-      <button
-        class="w-14 h-14 rounded-full bg-white shadow-lg border border-brand-orange/30 flex items-center justify-center text-brand-orange hover:shadow-xl hover:scale-110 transition-all duration-200"
-      >
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
-      <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 absolute right-16 top-1/2 -translate-y-1/2 w-72 p-3.5 rounded-xl bg-gray-800 text-white text-xs leading-relaxed shadow-xl pointer-events-none">
-        1.「保存志愿表」按钮会保存拖拽志愿顺序，不会保存导出状态，xlsx 导出会根据保存的顺序导出。
-        2. 专业组数据更新不会同步到已有志愿表，请新建志愿表获取最新数据。
-        <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1.5 w-3 h-3 bg-gray-800 rotate-45"></div>
-      </div>
-    </div>
   </div>
 </template>
 
