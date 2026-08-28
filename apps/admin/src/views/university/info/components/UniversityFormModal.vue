@@ -233,7 +233,17 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
               <el-input v-model="formData.famousUnion" placeholder="如：C9、华东五校" maxlength="50" />
             </el-form-item>
             <el-form-item label="院校图片">
-              <el-input v-model="formData.imageUrl" placeholder="图片URL地址" maxlength="500" />
+              <div class="image-url-row">
+                <el-input v-model="formData.imageUrl" placeholder="图片URL地址" maxlength="500" class="image-url-input" />
+                <el-image
+                  v-if="formData.imageUrl"
+                  :src="formData.imageUrl"
+                  fit="cover"
+                  :preview-src-list="[formData.imageUrl]"
+                  preview-teleported
+                  class="image-url-thumb"
+                />
+              </div>
             </el-form-item>
             <el-form-item label="院校简介">
               <el-input v-model="formData.introduction" type="textarea" :rows="3" maxlength="5000" show-word-limit />
@@ -409,4 +419,11 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
 .carousel-image-row { display: flex; align-items: center; gap: 8px; }
 .carousel-image-input { flex: 1; }
 .carousel-image-thumb { width: 64px; height: 64px; border-radius: 6px; border: 1px solid #e5e7eb; flex-shrink: 0; }
+.image-url-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.image-url-input { flex: 1; }
+.image-url-thumb {
+  width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0; cursor: pointer;
+  border: 1px solid rgba(249, 115, 22, 0.15); transition: all 0.2s ease;
+}
+.image-url-thumb:hover { border-color: #F97316; }
 </style>

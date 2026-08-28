@@ -69,7 +69,7 @@ watch(detail, (d) => {
             </svg>
             返回
           </button>
-          <div class="relative z-10 px-6 sm:px-8 py-9 sm:py-12">
+          <div class="relative z-10 px-6 sm:px-8 pt-16 pb-9 sm:pb-12">
             <h1 class="lab-title">{{ detail.labType }}</h1>
             <div class="lab-chips">
               <span v-if="detail.universityName" class="lab-chip">所属院校：{{ detail.universityName }}</span>
@@ -260,7 +260,7 @@ watch(detail, (d) => {
   position: absolute;
   top: 16px;
   left: 20px;
-  z-index: 10;
+  z-index: 30;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;

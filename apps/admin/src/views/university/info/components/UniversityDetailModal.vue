@@ -37,6 +37,19 @@ const handleClose = () => {
             <el-descriptions :column="2" border>
               <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
               <el-descriptions-item label="院校名称">{{ detailData.name }}</el-descriptions-item>
+              <el-descriptions-item label="院校Logo" :span="2">
+                <template v-if="detailData.imageUrl">
+                  <el-image
+                    :src="detailData.imageUrl"
+                    fit="cover"
+                    class="logo-thumb"
+                    :preview-src-list="[detailData.imageUrl]"
+                    preview-teleported
+                  />
+                  <span class="logo-url">{{ detailData.imageUrl }}</span>
+                </template>
+                <span v-else class="dim-text">-</span>
+              </el-descriptions-item>
               <el-descriptions-item label="英文名称">{{ detailData.nameEn }}</el-descriptions-item>
               <el-descriptions-item label="省份">{{ detailData.provinceName }}</el-descriptions-item>
               <el-descriptions-item label="城市">{{ detailData.cityName }}</el-descriptions-item>
@@ -165,6 +178,17 @@ const handleClose = () => {
 .detail-content :deep(.el-descriptions__body) { border-radius: 8px; overflow: hidden; }
 
 .dim-text { font-size: 13px; color: #9ca3af; }
+.logo-thumb {
+  width: 56px; height: 56px; border-radius: 10px; cursor: pointer;
+  border: 1px solid rgba(249, 115, 22, 0.15); object-fit: cover;
+  vertical-align: middle; transition: all 0.2s ease;
+}
+.logo-thumb:hover { border-color: #F97316; transform: scale(1.03); }
+.logo-url {
+  display: inline-block; max-width: 520px; margin-left: 12px;
+  font-size: 13px; color: #9ca3af; vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .value-highlight { font-size: 15px; font-weight: 700; color: #F97316; }
 .value-true { color: #059669; font-weight: 600; }
 .value-false { color: #9ca3af; }

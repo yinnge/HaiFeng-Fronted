@@ -201,9 +201,6 @@ const onTouchEnd = (e: TouchEvent) => {
           </h4>
         </div>
       </div>
-
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent"></div>
-      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent"></div>
     </div>
     <div v-else class="flex items-center justify-center py-12 text-sm text-gray-400" :style="{ width: `${cardWidth}px` }">
       暂无公告
