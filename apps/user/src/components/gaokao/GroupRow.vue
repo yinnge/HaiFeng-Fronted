@@ -66,12 +66,6 @@ const requirementText = computed(() => {
   return type
 })
 
-/** 条件限制文本：constraints 逗号隔开；为空则不展示 */
-const restrictionText = computed(() => {
-  const list = props.group.constraints || []
-  return list.join('，')
-})
-
 const cardClass = computed(() => {
   const base = 'group relative rounded-2xl border transition-all duration-300 ease-out'
   if (props.isMasked) return `${base} opacity-60`
@@ -138,11 +132,6 @@ const cardClass = computed(() => {
         </div>
 
         <p class="mt-3 text-sm text-gray-500 leading-relaxed break-words">{{ group.description }}</p>
-
-        <!-- 条件限制：红色字体贴底，有才展示 -->
-        <div v-if="restrictionText" class="mt-2.5 text-xs text-red-500 leading-relaxed">
-          限制：{{ restrictionText }}
-        </div>
 
         <div v-if="hasHardConflict" class="mt-3 text-sm text-red-600 bg-red-50 rounded-xl p-3 border border-red-100">
           <div class="flex items-center mb-1.5">

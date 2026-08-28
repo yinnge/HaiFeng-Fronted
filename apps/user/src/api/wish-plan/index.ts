@@ -59,7 +59,6 @@ export interface WishPlanGroupVO {
   batch: string
   subjects: string[]
   requirementType: string
-  constraintsDescription: string[]
   description: string
   majorCount: number
   tags: string[]

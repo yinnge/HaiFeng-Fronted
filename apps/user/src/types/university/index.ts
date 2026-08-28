@@ -126,7 +126,6 @@ export interface AdmissionGroupDetailVO {
   subjects: string[]
   requirementType: string
   description: string
-  constraints: string[]
   majorCount: number
   categoryCount: number
   admissionCount: number

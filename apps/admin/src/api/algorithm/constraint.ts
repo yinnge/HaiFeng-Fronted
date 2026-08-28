@@ -5,10 +5,6 @@ import type {
   ConstraintDictDetailVO,
   ConstraintDictAddDTO,
   ConstraintDictUpdateDTO,
-  MajorConstraintListVO,
-  MajorConstraintDetailVO,
-  MajorConstraintQueryDTO,
-  MajorConstraintAddDTO,
   SafetyLevelListVO,
   SafetyLevelDetailVO,
   SafetyLevelAddDTO,
@@ -39,35 +35,6 @@ export const deleteDict = (code: string): Promise<AxiosResponse<R<void>>> =>
 
 export const batchDeleteDict = (codes: string[]): Promise<AxiosResponse<R<void>>> =>
   request.post(`${DICT_PREFIX}/batch-delete`, { codes })
-
-// ========== 专业约束关联 ==========
-const MAJOR_PREFIX = '/api/v1/admin/algorithm/constraint/major'
-
-export const getMajorPage = (params: MajorConstraintQueryDTO): Promise<AxiosResponse<R<PageResult<MajorConstraintListVO>>>> =>
-  request.get(`${MAJOR_PREFIX}/page`, { params })
-
-export const getMajorDetail = (id: string): Promise<AxiosResponse<R<MajorConstraintDetailVO>>> =>
-  request.get(`${MAJOR_PREFIX}/${id}`)
-
-export const addMajor = (data: MajorConstraintAddDTO): Promise<AxiosResponse<R<string>>> =>
-  request.post(MAJOR_PREFIX, data)
-
-export const deleteMajor = (id: string): Promise<AxiosResponse<R<void>>> =>
-  request.delete(`${MAJOR_PREFIX}/${id}`)
-
-export const batchDeleteMajor = (ids: string[]): Promise<AxiosResponse<R<void>>> =>
-  request.post(`${MAJOR_PREFIX}/batch-delete`, { ids })
-
-export const toggleMajorStatus = (id: string): Promise<AxiosResponse<R<void>>> =>
-  request.put(`${MAJOR_PREFIX}/${id}/toggle`)
-
-export const importMajorExcel = (file: File): Promise<AxiosResponse<R<number>>> => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.post(`${MAJOR_PREFIX}/import`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-}
 
 // ========== 安全系数 ==========
 const SAFETY_PREFIX = '/api/v1/admin/algorithm/constraint/safety-level'

@@ -56,7 +56,6 @@ export interface AdmissionGroupVO {
   description: string
   majorCount: number
   categoryCount: number
-  constraints: string[]
   subjectMatch: boolean
   subjectMatchReason: string | null
   historyScores: YearScoreVO[]

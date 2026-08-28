@@ -14,7 +14,6 @@ import {
   recalcAllGroups,
 } from '@/api/algorithm/admission/group'
 import { getUniversityPage } from '@/api/university/info'
-import { getDictPage } from '@/api/algorithm/constraint'
 import type {
   AdmissionGroupListVO,
   AdmissionGroupDetailVO,
@@ -28,24 +27,6 @@ const loading = ref(false)
 const tableData = ref<AdmissionGroupListVO[]>([])
 const total = ref(0)
 const selectedIds = ref<string[]>([])
-
-/* ===== 约束字典（约束条件下拉：label=约束名称 name，value=约束 code） ===== */
-const constraintOptions = ref<{ label: string; value: string }[]>([])
-
-const fetchConstraintOptions = async () => {
-  try {
-    const res = await getDictPage({ page: 1, size: 100 })
-    if (res.data.code === 200) {
-      constraintOptions.value = res.data.data.records
-        .filter((d) => d.isActive)
-        .map((d) => ({ label: d.name, value: d.code }))
-    } else {
-      constraintOptions.value = []
-    }
-  } catch {
-    constraintOptions.value = []
-  }
-}
 
 const provinceOptions = [
   '北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏',
@@ -87,7 +68,6 @@ const formData = reactive<AdmissionGroupAddDTO>({
   subjects: [],
   requirementType: '',
   description: '',
-  constraints: [],
 })
 
 /* ===== 大学名称远程搜索（外键关联，后端按名称精确反查，仅启用中的院校） ===== */
@@ -209,7 +189,6 @@ const resetFormData = () => {
   formData.subjects = []
   formData.requirementType = ''
   formData.description = ''
-  formData.constraints = []
 }
 
 const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
@@ -240,7 +219,6 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
           formData.subjects = d.subjects || []
           formData.requirementType = d.requirementType
           formData.description = d.description || ''
-          formData.constraints = d.constraints || []
           // 用当前院校名预搜索，并兜底把当前值塞进选项，避免下拉显示空白
           universityOptions.value = []
           await fetchUniversityOptions(d.universityName || undefined)
@@ -276,7 +254,6 @@ const handleSubmit = async () => {
         subjects: formData.subjects && formData.subjects.length > 0 ? formData.subjects : undefined,
         requirementType: formData.requirementType || undefined,
         description: formData.description || undefined,
-        constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
       })
     } else if (dialogMode.value === 'edit' && currentId.value) {
       res = await updateGroup(currentId.value, {
@@ -286,7 +263,6 @@ const handleSubmit = async () => {
         subjects: formData.subjects && formData.subjects.length > 0 ? formData.subjects : undefined,
         requirementType: formData.requirementType || undefined,
         description: formData.description || undefined,
-        constraints: formData.constraints && formData.constraints.length > 0 ? formData.constraints : undefined,
       })
     } else {
       return
@@ -294,10 +270,7 @@ const handleSubmit = async () => {
 
     if (res.data.code === 200) {
       if (dialogMode.value === 'edit') {
-        const updatedCount = res.data.data || 0
-        ElMessage.success(updatedCount > 0
-          ? `修改成功，对应 ${updatedCount} 条专业明细已更新并添加了限制`
-          : '修改成功')
+        ElMessage.success('修改成功')
       } else {
         ElMessage.success('新增成功')
       }
@@ -436,7 +409,6 @@ const formatSubjects = (subjects: string[], requirementType: string) => {
 
 onMounted(() => {
   fetchData()
-  fetchConstraintOptions()
 })
 </script>
 
@@ -629,12 +601,6 @@ onMounted(() => {
                 <el-descriptions-item label="选科要求" :span="2">
                   {{ formatSubjects(detailData.subjects, detailData.requirementType) }}
                 </el-descriptions-item>
-                <el-descriptions-item label="约束条件" :span="2">
-                  <template v-if="detailData.constraints && detailData.constraints.length > 0">
-                    <el-tag v-for="c in detailData.constraints" :key="c" size="small" style="margin-right: 4px">{{ c }}</el-tag>
-                  </template>
-                  <span v-else>-</span>
-                </el-descriptions-item>
                 <el-descriptions-item label="状态">
                   <span :class="['status-pill', detailData.isDeleted ? 'status-disabled' : 'status-enabled']">
                     {{ detailData.isDeleted ? '禁用' : '启用' }}
@@ -782,18 +748,6 @@ onMounted(() => {
                 <el-option label="地理" value="地理" />
                 <el-option label="政治" value="政治" />
               </el-select>
-            </el-form-item>
-            <el-form-item label="约束条件" class="dialog-form-item">
-              <el-select
-                v-model="formData.constraints"
-                multiple
-                filterable
-                placeholder="请选择约束条件"
-                style="width: 100%;"
-              >
-                <el-option v-for="c in constraintOptions" :key="c.value" :label="c.label" :value="c.value" />
-              </el-select>
-              <div class="form-tip">仅可选择约束字典中已启用的约束项</div>
             </el-form-item>
             <el-form-item label="专业组简介" class="dialog-form-item">
               <el-input v-model="formData.description" type="textarea" :rows="3" maxlength="2000" show-word-limit />

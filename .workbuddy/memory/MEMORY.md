@@ -39,9 +39,15 @@
 
 ## ★ NEW：tokenVersion 致会话失效 / VIP 不实时（2026-08-25）
 - **机制**：`JwtAuthenticationFilter.isTokenVersionValid()` 拿 token 内 `tokenVersion` 与 **Redis** `haifeng:token:version:{userType}:{id}` 比对；Redis 无该 key 直接放行（本地无 Redis 故本地不触发），生产有值则版本不符→`AuthUser` 不写入 SecurityContext→`getCurrentMemberId()` 返回 null→`selectById(null)` 抛「用户不存在」。刷新 token 不校验 tokenVersion（只校验 refresh 串），故版本不符只让 access token 失效。
-- **触发点（生产 bug）**：`MemberServiceImpl.upgradeMember` 与 `MemberOrderServiceImpl`（订单确认/撤销）在**会员类型变更**时 `setTokenVersion(+1)` 并写 Redis → 用户旧会话立即失效→点按钮报「用户不存在」、须重登。本地无 Redis 故无感 = 用户说的「本地没事、生产报错」。
+- **触发点（曾误诊为生产 bug）**：最初怀疑 `MemberServiceImpl.upgradeMember` 与 `MemberOrderServiceImpl`（订单确认/撤销）在会员类型变更时 `setTokenVersion(+1)` 并写 Redis → 用户旧会话失效。但经完整读码确认：当前代码全链路已无 member 的 tokenVersion bump（grep `setTokenVersion` 仅剩 admin 安全事件与注释），且 tokenVersion bump 无法解释「admin 403 无权限」「通知列表空」等身份错位症状。**用户实际的「用户不存在/403」生产 bug 是前端 token key 撞车（见下方新坑），与后端无关。** 去掉 bump 仍是有价值的 secondary 改进（避免另一种会话失效），但不是该生产 bug 的根因。
 - **修复（2026-08-25 已实施）**：会员升级/订单确认/撤销**不再 bump tokenVersion**（仅密码修改、账号禁用等安全事件才 bump）。VIP 实时性改为 `AuthAspect.checkVip` 回退 DB 查 `member.isVipActive()`（注入 `MemberMapper`），admin 升级后 VIP 立即生效、无需重登/等刷新。前端 `apps/user/src/main.ts` 增加 `focus`/`visibilitychange` 时 `fetchUserInfo()` 同步 VIP 徽标。
 - **教训**：token 版本号只用于「强制重登」类安全事件；会员权益授予/变更不得 bump，否则生产 Redis 直接废掉用户会话。
 
 ## 问题2（admin 端 token 过期显示横杠 -）根因
 admin `main.ts` 已注册 `setSessionExpiredHandler`（非可关闭弹窗+重定向 `/admin/login`），逻辑与 user 端一致；admin 刷新 token 不校验 version。生产仍显示「-」通常是**旧生产包未含 handler**（dev HMR 有、prod 需重新 `pnpm --filter @haifeng/admin|user build`）。重新构建部署即修复。
+
+## ★ 已知坑：前端多端共享 localStorage token key 撞车（2026-08-25 真因）
+- **症状**：admin 升级/撤销用户会员后，user 端报「用户不存在」、admin 端撤销报 `403 无权限`、通知列表空（重登后恢复）、**本地正常生产炸**。
+- **根因**：`packages/shared/src/utils/auth.ts` 的 access/refresh token key 是**写死的同一个** `haifeng_access_token`/`haifeng_refresh_token`，admin 与 user 两端共用。生产**同源**部署时两应用读写同一 key 互相覆盖：user 拿到 admin token（isMember=false→getCurrentMemberId null→「用户不存在」）、admin 拿到 member token（!isAdmin→`FORBIDDEN(403,"无权限")`）、通知按错误 userId 查询→空。dev 端口不同源（:3000/:3001）各自独立 localStorage → 不触发 = 用户说的「本地没事」。
+- **修复**：token key 按各端 `import.meta.env.BASE_URL` 派生命名空间——admin('/admin/')→`haifeng_admin_access_token`，user('/')→`haifeng_access_token`（保持兼容，不丢 user 现有会话）。改 shared 一处 + `pnpm --filter @haifeng/shared build` + 重建两 app。部署后 admin 需重登一次（新 key 为空）。
+- **诊断铁律**：出现「用户不存在 / 403 无权限 + 重登即好 + 本地正常生产炸 + 通知列表空」这类**身份错位**信号时，第一怀疑**同源多应用共享 localStorage key**，而不是后端 tokenVersion/会话失效。改 shared 后必须 `pnpm --filter @haifeng/shared build`。

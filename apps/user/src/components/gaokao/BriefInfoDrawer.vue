@@ -20,6 +20,8 @@ const loading = ref(false)
 const cityData = ref<CityBriefVO | null>(null)
 const universityData = ref<UniversityBriefVO | null>(null)
 const majorData = ref<MajorBriefVO | null>(null)
+// 院校 logo 加载失败（url 有值但图片挂了）时回退到首字头像
+const universityImgError = ref(false)
 
 const drawerVisible = computed({
   get: () => props.visible,
@@ -37,6 +39,7 @@ watch(
     cityData.value = null
     universityData.value = null
     majorData.value = null
+    universityImgError.value = false
     try {
       if (data.type === 'city') {
         const res = await getCityBriefByName(data.name)
@@ -114,15 +117,8 @@ function handleClose() {
       <div v-else-if="currentType === 'city' && cityData" class="flex-1 overflow-y-auto">
         <div class="p-6">
           <div class="mb-6">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold shrink-0">
-                {{ cityData.cityName.charAt(0) }}
-              </div>
-              <div>
-                <h2 class="text-xl font-bold text-gray-800">{{ cityData.cityName }}</h2>
-                <p class="text-sm text-gray-500">{{ cityData.province }} · {{ cityData.region }}</p>
-              </div>
-            </div>
+            <h2 class="text-xl font-bold text-gray-800 mb-1">{{ cityData.cityName }}</h2>
+            <p class="text-sm text-gray-500">{{ cityData.province }} · {{ cityData.region }}</p>
           </div>
 
           <div class="mb-6">
@@ -143,10 +139,15 @@ function handleClose() {
           <div class="mb-6">
             <div class="flex items-center gap-3 mb-2">
               <div
-                v-if="universityData.imageUrl"
+                v-if="universityData.imageUrl && !universityImgError"
                 class="w-14 h-14 rounded-full bg-gray-100 shrink-0 overflow-hidden"
               >
-                <img :src="universityData.imageUrl" :alt="universityData.name" class="w-full h-full object-cover" />
+                <img
+                  :src="universityData.imageUrl"
+                  :alt="universityData.name"
+                  class="w-full h-full object-cover"
+                  @error="universityImgError = true"
+                />
               </div>
               <div
                 v-else
@@ -209,15 +210,8 @@ function handleClose() {
       <div v-else-if="currentType === 'major' && majorData" class="flex-1 overflow-y-auto">
         <div class="p-6">
           <div class="mb-6">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xl font-bold shrink-0">
-                {{ majorData.majorName.charAt(0) }}
-              </div>
-              <div>
-                <h2 class="text-xl font-bold text-gray-800">{{ majorData.majorName }}</h2>
-                <p class="text-sm text-gray-500 font-mono">代码：{{ majorData.majorCode }}</p>
-              </div>
-            </div>
+            <h2 class="text-xl font-bold text-gray-800">{{ majorData.majorName }}</h2>
+            <p class="text-sm text-gray-500 font-mono mt-1">代码：{{ majorData.majorCode }}</p>
           </div>
 
           <div v-if="majorData.majorTags" class="mb-6">
