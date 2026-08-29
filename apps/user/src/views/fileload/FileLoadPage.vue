@@ -13,7 +13,7 @@ import type { FileLoadListVO, FileLoadQueryDTO, FileLoadAudience } from '@/types
 import { useUserStore } from '@/store'
 
 const props = defineProps<{
-  /** 后端接口受众：middle=初中 / high=高中 */
+  /** 后端接口受众：middle=初中 / high=高中 / college=大学 */
   audience: FileLoadAudience
   /** 页面标题（路由 meta.title 亦可，此处用于 Banner 展示） */
   title?: string
@@ -37,12 +37,13 @@ const stageOptions = ref<string[]>([])
 const subjectOptions = ref<string[]>([])
 const tagOptions = ref<string[]>([])
 
-const bannerTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : '高中专栏'))
-const bannerDesc = computed(() =>
-  props.audience === 'middle'
-    ? '初中阶段精选学习资料、升学政策与备考指南，持续更新中。'
-    : '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
-)
+const bannerTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : '大学专栏'))
+const audienceDescMap: Record<FileLoadAudience, string> = {
+  middle: '初中阶段精选学习资料、升学政策与备考指南，持续更新中。',
+  high: '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
+  college: '大学阶段精选学习资料、考研就业与学业规划指南，持续更新中。',
+}
+const bannerDesc = computed(() => audienceDescMap[props.audience] || audienceDescMap.middle)
 
 const hasActiveFilter = computed(() => !!(stageFilter.value || subjectFilter.value || tagFilter.value))
 

@@ -14,6 +14,7 @@ export const navItems: NavItem[] = [
   { id: 'home', label: '首 页', route: '/' },
   { id: 'middle', label: '初中专栏', route: '/middle' },
   { id: 'high', label: '高中专栏', route: '/high' },
+  { id: 'college', label: '大学专栏', route: '/college' },
   {
     id: 'gaokao',
     label: '志愿填报',
@@ -64,7 +65,6 @@ export const navItems: NavItem[] = [
       { label: '行业查询', route: '/industry' },
     ],
   },
-  { id: 'resource', label: '资料档案', route: '/resource' },
   {
     id: 'competition',
     label: '竞赛证书',

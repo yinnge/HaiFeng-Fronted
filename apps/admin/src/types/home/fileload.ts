@@ -6,7 +6,7 @@
  */
 
 /** 面向人群 */
-export type FileTargetAudience = 'middle_school' | 'high_school'
+export type FileTargetAudience = 'middle_school' | 'high_school' | 'college'
 
 /** 学科固定选项 */
 export const SUBJECT_OPTIONS = ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理', '其他']
@@ -16,6 +16,9 @@ export const MIDDLE_STAGE_OPTIONS = ['初一', '初二', '初三']
 
 /** 高中适合人群 */
 export const HIGH_STAGE_OPTIONS = ['高一', '高二', '高三']
+
+/** 大学适合人群（如有调整请告诉我） */
+export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四']
 
 /** 列表 VO */
 export interface FileLoadListVO {

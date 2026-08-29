@@ -60,7 +60,7 @@ interface ModuleItem {
   developing?: boolean
 }
 
-// 研究生核心模块（英语四六级 → 开发中；学术资料 → /resource；高层次就业 → /employment/civil）
+// 研究生核心模块（英语四六级 → 开发中；高层次就业 → /employment/civil）
 const modules: ModuleItem[] = [
   {
     emoji: '🗣️',
@@ -69,14 +69,6 @@ const modules: ModuleItem[] = [
     features: ['英语四六级高效备考方案', '学术英语写作指导', '国际会议演讲技巧', '学术论文英文润色'],
     btn: '进入英语四六级专区',
     developing: true,
-  },
-  {
-    emoji: '📄',
-    title: '学术资料',
-    desc: '汇集各学科核心学术资源、研究方法和论文写作指南，为您的学术研究提供强大支持。',
-    features: ['各学科核心文献库', '研究方法与工具指南', '学术论文写作模板', '期刊投稿与发表指导'],
-    btn: '进入学习资料库',
-    route: '/resource',
   },
   {
     emoji: '💼',
