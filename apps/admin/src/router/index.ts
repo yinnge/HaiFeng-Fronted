@@ -10,7 +10,6 @@ import universityRoutes from './modules/university'
 import majorRoutes from './modules/major'
 import cityRoutes from './modules/city'
 import industryRoutes from './modules/industry'
-import resourceRoutes from './modules/resource'
 import certificateRoutes from './modules/certificate'
 import algorithmRoutes from './modules/algorithm'
 import specialRoutes from './modules/special'
@@ -62,7 +61,6 @@ export const asyncRoutes: RouteRecordRaw[] = [
       majorRoutes,
       cityRoutes,
       industryRoutes,
-      resourceRoutes,
       certificateRoutes,
       algorithmRoutes,
       specialRoutes,

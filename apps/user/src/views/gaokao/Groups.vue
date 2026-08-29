@@ -361,8 +361,6 @@ onMounted(() => {
           </button>
           <button
             class="btn-brand flex items-center gap-2"
-            :class="selectionStore.totalCount === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-            :disabled="selectionStore.totalCount === 0"
             @click="goPlans"
           >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -669,9 +667,7 @@ onMounted(() => {
       </button>
       <!-- 志愿表 -->
       <button
-        class="group relative w-12 h-auto py-3 rounded-xl shadow-brand flex flex-col items-center gap-1.5 transition-all bg-gradient-to-br from-brand-orange to-brand-orange-light text-white"
-        :class="selectionStore.totalCount === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'"
-        :disabled="selectionStore.totalCount === 0"
+        class="group relative w-12 h-auto py-3 rounded-xl shadow-brand flex flex-col items-center gap-1.5 transition-all bg-gradient-to-br from-brand-orange to-brand-orange-light text-white hover:shadow-lg"
         @click="goPlans"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -687,20 +683,49 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- 左侧固定小贴士（不随滚动，垂直居中） -->
-    <div class="fixed left-4 top-1/2 -translate-y-1/2 z-40 w-[230px] rounded-2xl bg-white shadow-card border border-gray-100/70 px-4 py-3.5">
-      <span class="absolute -top-3 right-4 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 shadow-sm">
-        <svg class="w-3.5 h-3.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        小贴士
-      </span>
-      <p class="mt-1 text-sm leading-relaxed text-gray-600">
-        选择志愿专业，创建志愿表导出 xlsx 与生成 AI 智能分析报告
-      </p>
-      <p class="mt-2 text-xs leading-relaxed text-gray-400">
-        取消「仅选科匹配」后，查询可能会查到与之不相符的专业
-      </p>
+    <!-- 左侧小贴士：常驻切换按钮 + 点击展开的左侧面板 -->
+    <button
+      class="fixed left-2 top-1/2 -translate-y-1/2 z-50 group w-11 h-auto py-3 rounded-xl shadow-card border border-gray-100 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-brand hover:border-brand-orange"
+      :title="tipsVisible ? '收起小贴士' : '查看小贴士'"
+      @click="tipsVisible = !tipsVisible"
+    >
+      <svg class="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="vertical-text text-xs font-medium text-gray-600 group-hover:text-brand-orange">小贴士</span>
+    </button>
+
+    <!-- 小贴士面板（左中，点击按钮展开/收起） -->
+    <div class="fixed left-14 top-0 bottom-0 z-40 flex items-center pointer-events-none">
+      <Transition name="tips">
+        <div
+          v-if="tipsVisible"
+          class="pointer-events-auto w-[240px] max-w-[78vw] rounded-2xl bg-white shadow-card border border-gray-100/70 px-4 py-4"
+        >
+          <div class="flex items-center gap-2 mb-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-orange/10 text-brand-orange">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <h4 class="text-sm font-semibold text-gray-800">小贴士</h4>
+            <button
+              class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-orange hover:bg-brand-orange/10 transition-colors"
+              @click="tipsVisible = false"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p class="text-sm leading-relaxed text-gray-600">
+            选择志愿专业，创建志愿表导出 xlsx 与生成 AI 智能分析报告
+          </p>
+          <p class="mt-2 text-xs leading-relaxed text-gray-400">
+            取消「仅选科匹配」后，查询可能会查到与之不相符的专业
+          </p>
+        </div>
+      </Transition>
     </div>
 
     <BriefInfoDrawer
@@ -749,5 +774,15 @@ onMounted(() => {
 }
 .list-move {
   transition: transform 0.3s ease;
+}
+
+.tips-enter-active,
+.tips-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tips-enter-from,
+.tips-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
 }
 </style>

@@ -18,6 +18,12 @@ const fileloadRoutes: RouteRecordRaw = {
       component: () => import('@/views/home/highSchool/index.vue'),
       meta: { title: '高中资源', moduleCode: 'fileload_high' },
     },
+    {
+      path: 'college',
+      name: 'FileLoadCollege',
+      component: () => import('@/views/home/college/index.vue'),
+      meta: { title: '大学资源', moduleCode: 'fileload_college' },
+    },
   ],
 }
 

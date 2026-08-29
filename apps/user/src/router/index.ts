@@ -39,6 +39,20 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '高中文件详情', requiresAuth: true },
   },
   {
+    path: '/college',
+    name: 'CollegeFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    props: { audience: 'college', title: '大学专栏' },
+    meta: { title: '大学专栏' },
+  },
+  {
+    path: '/college/:id',
+    name: 'CollegeFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'college', title: '大学专栏' },
+    meta: { title: '大学文件详情', requiresAuth: true },
+  },
+  {
     path: '/gaokao',
     name: 'GaokaoEntry',
     component: () => import('@/views/gaokao/index.vue'),
@@ -199,12 +213,6 @@ const routes: RouteRecordRaw[] = [
     name: 'IndustryDetail',
     component: () => import('@/views/industry/Detail.vue'),
     meta: { title: '行业详情', requiresAuth: true },
-  },
-  {
-    path: '/resource',
-    name: 'ResourceList',
-    component: () => import('@/views/resource/List.vue'),
-    meta: { title: '资源下载' },
   },
   {
     path: '/certificate',
