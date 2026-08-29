@@ -110,7 +110,10 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
         <el-form-item label="学科" required>
           <el-select
             v-model="formData.subject"
-            placeholder="请选择学科"
+            placeholder="请选择或输入学科"
+            filterable
+            allow-create
+            default-first-option
             style="width: 260px"
           >
             <el-option v-for="item in SUBJECT_OPTIONS" :key="item" :label="item" :value="item" />
