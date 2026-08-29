@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { SUBJECT_OPTIONS, COLLEGE_STAGE_OPTIONS } from '@/types/home/fileload'
+import { COLLEGE_STAGE_OPTIONS } from '@/types/home/fileload'
 import type { FileLoadUploadDTO } from '@/types/home/fileload'
 
 const props = defineProps<{
@@ -108,13 +108,12 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
           </el-upload>
         </el-form-item>
         <el-form-item label="学科" required>
-          <el-select
+          <el-input
             v-model="formData.subject"
-            placeholder="请选择学科"
+            placeholder="请输入学科（如：高等数学 / 计算机科学）"
+            clearable
             style="width: 260px"
-          >
-            <el-option v-for="item in SUBJECT_OPTIONS" :key="item" :label="item" :value="item" />
-          </el-select>
+          />
         </el-form-item>
         <el-form-item label="适合人群">
           <el-select

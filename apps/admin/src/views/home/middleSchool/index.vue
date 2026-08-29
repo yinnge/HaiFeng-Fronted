@@ -172,7 +172,7 @@ const handleEdit = async (id: string) => {
 // 提交上传/修改
 const handleSubmit = async (data: { file?: File; subject: string; applicableStage: string; description?: string; tag?: string }) => {
   if (!data.subject) {
-    ElMessage.warning('请选择学科')
+    ElMessage.warning('请选择或输入学科')
     return
   }
 
