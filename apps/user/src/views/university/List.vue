@@ -4,9 +4,57 @@ import { useRouter } from 'vue-router'
 import { getUniversityList } from '@/api/university'
 import type { UniversityListVO, UniversityQueryDTO } from '@/types/university'
 import { ProvinceOptions } from '@haifeng/shared'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
+
+// 会话级状态持久化：保存/恢复查询条件与页码，从详情页返回时继续上次浏览位置
+const STATE_KEY = 'hf_university_list_state'
+
+interface ListState {
+  query: UniversityQueryDTO
+  currentPage: number
+  pageSize: number
+}
+
+function saveState() {
+  try {
+    const state: ListState = {
+      query: { ...query },
+      currentPage: currentPage.value,
+      pageSize: pageSize.value,
+    }
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(state))
+  } catch {
+    // 存储异常（如隐私模式）静默忽略，不影响列表功能
+  }
+}
+
+function restoreState() {
+  try {
+    const raw = sessionStorage.getItem(STATE_KEY)
+    if (!raw) return
+    const state = JSON.parse(raw) as Partial<ListState>
+    if (state.query) {
+      query.name = state.query.name ?? ''
+      query.provinceName = state.query.provinceName ?? ''
+      query.nature = state.query.nature ?? ''
+      query.category = state.query.category ?? ''
+      query.department = state.query.department ?? ''
+      query.educationLevel = state.query.educationLevel ?? ''
+      hasDoctorate.value = state.query.hasDoctorate === undefined ? '' : String(state.query.hasDoctorate)
+      hasMaster.value = state.query.hasMaster === undefined ? '' : String(state.query.hasMaster)
+    }
+    if (typeof state.currentPage === 'number' && state.currentPage >= 1) {
+      currentPage.value = state.currentPage
+    }
+    if (typeof state.pageSize === 'number' && state.pageSize >= 1) {
+      pageSize.value = state.pageSize
+    }
+  } catch {
+    sessionStorage.removeItem(STATE_KEY)
+  }
+}
 
 const loading = ref(false)
 const list = ref<UniversityListVO[]>([])
@@ -71,6 +119,7 @@ async function fetchList() {
     const res = await getUniversityList(params)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    saveState()
   } catch (e: any) {
     ElMessage.error(e?.message || '获取院校列表失败')
   } finally {
@@ -125,7 +174,10 @@ function handleLogoError(id: string) {
   }
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  restoreState()
+  fetchList()
+})
 </script>
 
 <template>
@@ -140,7 +192,7 @@ onMounted(fetchList)
         <div class="flex items-center gap-3">
           <button
             class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5"
-            @click="router.push('/favorites')"
+            @click="ElMessageBox.alert('功能正在开发中，敬请期待', '温馨提示', { confirmButtonText: '确定' })"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -151,7 +203,7 @@ onMounted(fetchList)
       </div>
 
       <!-- 搜索栏 -->
-      <div class="univ-card mb-6 p-6">
+      <div class="univ-card univ-search-card mb-6 p-6">
         <div class="flex items-end gap-4 flex-wrap">
           <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">院校名称</label>
@@ -305,7 +357,7 @@ onMounted(fetchList)
                     </div>
                   </div>
                 </div>
-                <div class="flex gap-3 mt-5 pt-4 border-t border-orange-100/60">
+                <div class="flex gap-3 mt-5 pt-4 border-t border-gray-100">
                   <button
                     class="flex-1 btn-brand py-2 text-sm"
                     @click="goDetail(item.id)"
@@ -395,25 +447,27 @@ onMounted(fetchList)
 </template>
 
 <style scoped>
-/* ===== 新规范卡片：纯白底 + 橙描边 + 渐变顶边 ===== */
+/* ===== 新规范卡片：淡灰底 + 白框 + 圆角 + 中性阴影 ===== */
 .univ-card {
   /* !important 覆盖 .app-shell main > * 的透底规则（卡片是 main 直接子） */
-  background: #ffffff !important;
+  background: #f8f9fa !important;
   background-image: none !important;
-  border-radius: 1rem;
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
-  border-top-width: 3px;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+  border-radius: 1.25rem;
+  border: 1px solid #ffffff;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
   transition: all 0.25s ease;
 }
 
-/* 可点击卡片 hover：上浮 + 橙阴影增强（列表卡专用） */
+/* 搜索栏专用：更强投影，增强立体感 */
+.univ-search-card {
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+/* 可点击卡片 hover：上浮 + 中性阴影增强（列表卡专用） */
 .univ-card-hover:hover {
   transform: translateY(-6px);
-  box-shadow: 0 14px 34px rgba(249, 115, 22, 0.14);
-  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+  border-color: #ffffff;
 }
 
 /* ===== 橙系药丸标签：浅橙渐变底 + 深橙字 + 橙描边 ===== */
