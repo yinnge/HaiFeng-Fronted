@@ -35,5 +35,5 @@ export interface FileLoadDetailVO extends FileLoadListVO {
   downloadUrl?: string
 }
 
-/** 专栏受众：初中 / 高中（对应后端 /fileload/middle 与 /fileload/high） */
-export type FileLoadAudience = 'middle' | 'high'
+/** 专栏受众：初中 / 高中 / 大学（对应后端 /fileload/middle 与 /fileload/high 与 /fileload/college） */
+export type FileLoadAudience = 'middle' | 'high' | 'college'

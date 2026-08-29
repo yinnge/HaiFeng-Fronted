@@ -282,30 +282,6 @@ function goPlans() {
   router.push('/gaokao/plans')
 }
 
-// 清除志愿表（清除本地暂存的全部已选专业，纯前端，无需后端）
-async function handleClearSelection() {
-  if (selectionStore.totalCount === 0) {
-    ElMessage.info('当前还没有已选专业')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      `确定要清除全部已选专业吗？共 ${selectionStore.totalCount} 个，此操作不可撤销。`,
-      '清除志愿表',
-      {
-        confirmButtonText: '清除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger',
-      }
-    )
-    selectionStore.clearSelection()
-    ElMessage.success('已清除所选专业')
-  } catch {
-    // 用户取消，不做处理
-  }
-}
-
 // 查看 AI 智能分析记录：非 VIP 引导升级；VIP 无志愿表则提示先添加；有则跳最新志愿表的记录页
 async function goAiHistory() {
   const mt = userStore.userInfo?.memberType || 'normal'
@@ -477,13 +453,7 @@ onMounted(() => {
           <!-- 仅选科匹配：独立成列，随 items-end 与输入框底边对齐 -->
           <div class="flex items-center gap-2.5">
             <el-switch v-model="searchForm.subjectFilter" />
-            <el-tooltip
-              content="取消「仅选科匹配」后，查询可能会查到与之不相符的专业"
-              :show-after="300"
-              placement="top"
-            >
-              <span class="text-sm font-medium text-gray-600 cursor-help underline decoration-dotted underline-offset-4 decoration-gray-300">仅选科匹配</span>
-            </el-tooltip>
+            <span class="text-sm font-medium text-gray-600">仅选科匹配</span>
           </div>
           <!-- 查询按钮：shrink-0 禁止被压缩 -->
           <button
@@ -711,18 +681,6 @@ onMounted(() => {
           {{ selectionStore.totalCount }}
         </span>
       </button>
-      <!-- 清除志愿表 -->
-      <button
-        class="group w-12 h-auto py-3 rounded-xl shadow-card border border-red-200 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-red-200 hover:border-red-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-card disabled:hover:border-red-200"
-        :disabled="selectionStore.totalCount === 0"
-        :title="selectionStore.totalCount === 0 ? '暂无可清除的专业' : '清除全部已选专业'"
-        @click="handleClearSelection"
-      >
-        <svg class="w-5 h-5 text-red-500 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-        <span class="vertical-text text-xs font-medium text-red-500 group-hover:text-red-600">清除</span>
-      </button>
     </div>
 
     <!-- 左侧小贴士：常驻切换按钮 + 点击展开的左侧面板 -->
@@ -762,6 +720,9 @@ onMounted(() => {
           </div>
           <p class="text-sm leading-relaxed text-gray-600">
             选择志愿专业，创建志愿表导出 xlsx 与生成 AI 智能分析报告
+          </p>
+          <p class="mt-2 text-xs leading-relaxed text-gray-400">
+            取消「仅选科匹配」后，查询可能会查到与之不相符的专业
           </p>
         </div>
       </Transition>

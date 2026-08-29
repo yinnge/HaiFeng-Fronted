@@ -8,7 +8,7 @@ import { useUserStore } from '@/store'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
 const props = defineProps<{
-  /** 后端接口受众：middle=初中 / high=高中 */
+  /** 后端接口受众：middle=初中 / high=高中 / college=大学 */
   audience: FileLoadAudience
   /** 页面标题（路由 meta.title 亦可，此处用于返回按钮展示） */
   title?: string
@@ -23,8 +23,13 @@ const loading = ref(false)
 const detail = ref<FileLoadDetailVO | null>(null)
 const vipBlocked = ref(false)
 
-const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : '高中专栏'))
-const audienceLabel = computed(() => (props.audience === 'middle' ? '初中专栏' : '高中专栏'))
+const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : '大学专栏'))
+const audienceLabelMap: Record<FileLoadAudience, string> = {
+  middle: '初中专栏',
+  high: '高中专栏',
+  college: '大学专栏',
+}
+const audienceLabel = computed(() => audienceLabelMap[props.audience] || '初中专栏')
 
 async function load() {
   const id = route.params.id
