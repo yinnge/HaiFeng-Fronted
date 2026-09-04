@@ -153,7 +153,11 @@ function handleImageTypeChange(type: string) {
   fetchGallery()
 }
 
-onMounted(fetchOverview)
+onMounted(async () => {
+  await fetchOverview()
+  // 默认展示「基础生存类」（categories[0].key === 'survival'，requiresPro=false 不会被拦）
+  handleCategoryClick(categories[0])
+})
 </script>
 
 <template>
@@ -298,7 +302,9 @@ onMounted(fetchOverview)
   position: relative;
   overflow: hidden;
   border-radius: 16px;
-  background: linear-gradient(135deg, #c2410c 0%, #e8722a 100%);
+  /* 局部提权抢回深橙渐变：index.css 的 .app-shell main > * { background: transparent !important } 会洗白 main 直接子节点的背景，
+     scoped 普通声明权重不够，必须 !important 才能恢复品牌橙色 Hero。*/
+  background: linear-gradient(135deg, #c2410c 0%, #e8722a 100%) !important;
   animation: fadeInUp 0.5s ease both;
 }
 .guide-hero-mask {
