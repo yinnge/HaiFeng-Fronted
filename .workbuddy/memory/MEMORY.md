@@ -14,8 +14,9 @@
 ## 已知坑：弹窗锁滚动抖动（2026-08-22 根治）
 旧 `index.css` 写 `html{scrollbar-gutter:stable}`（overflow 默认 visible 不生效）+ `body.el-popup-parent--hidden{width:100%!important}` 顶掉 EP 默认补偿 → 弹窗开/关页面左移 6px。**修复**：滚动容器挪到 `body{overflow-y:scroll;scrollbar-gutter:stable}`，删掉所有自定义 `el-popup-parent--hidden` 规则。以后勿加 scrollbar-gutter/width:100%!important 干预锁滚动。
 
-## 详情页暖橙底（2026-08-17）
+## 详情页暖橙底（2026-08-17 · 同源坑实例持续追加）
 `index.css` 全局 `.app-shell main > *, #app > *{background:transparent!important;background-image:none!important}` 强制透出 html 暖橙画布（`#fff7ed`）。要实心白卡/橙 Hero 必须在其 `<style scoped>` 加 `background:#fff!important` / `linear-gradient(...)!important`。根 div 不写背景。
+**已知实例**：① RechargeDialog.vue（teleport 到 body 的 `.el-dialog`，scoped `:deep()` 失效，需提权/非 scoped）。② `views/university/Guide.vue` 的 `.guide-hero`（2026-09-03）：是 `<main>` 直接子节点被覆盖，scoped 加 `background:linear-gradient(...)!important` 一行修复。两者根因相同、修复路径不同。
 
 ## 后端已知坑（权威，节选）
 - **@TableLogic+@Version+updateById 静默失效**（影响行数0不抛异常）：fileload 已改 `LambdaUpdateWrapper` 显式 SET + `setSql("version=version+1")`，影响行数0抛 409。带逻辑删除/乐观锁实体的写操作禁止 `updateById` 做局部更新/逻辑删除。
