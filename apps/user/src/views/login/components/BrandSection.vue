@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import logoImage from '@/assets/images/logo-main.png'
+import AnimatedLogo from '@/components/AnimatedLogo.vue'
 </script>
 
 <template>
@@ -7,11 +7,7 @@ import logoImage from '@/assets/images/logo-main.png'
     <div class="relative mb-4">
       <div class="absolute inset-0 scale-[2] logo-glow rounded-full blur-3xl" />
       <div class="logo-wrapper relative">
-        <img
-          :src="logoImage"
-          alt="海枫未来规划院"
-          class="logo-image w-full h-full object-contain"
-        />
+        <AnimatedLogo class="login-animated-logo" />
       </div>
     </div>
 
@@ -47,6 +43,11 @@ import logoImage from '@/assets/images/logo-main.png'
   position: relative;
   width: clamp(280px, 25vw, 450px);
   height: clamp(280px, 25vw, 450px);
+}
+
+.login-animated-logo {
+  width: 100%;
+  height: 100%;
 }
 
 .logo-glow {

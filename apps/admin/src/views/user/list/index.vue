@@ -26,7 +26,6 @@ const showDetailModal = ref(false)
 const showUpgradeModal = ref(false)
 const currentUser = ref<MemberListVO | null>(null)
 
-const proPrice = ref(199)
 const vipPrice = ref(599)
 
 const fetchData = async () => {
@@ -48,7 +47,6 @@ const fetchPrices = async () => {
   try {
     const res = await getSystemSettings()
     if (res.data.code === 200) {
-      proPrice.value = res.data.data.proPrice || 199
       vipPrice.value = res.data.data.vipPrice || 599
     }
   } catch (error) {
@@ -145,7 +143,6 @@ onMounted(() => {
     <UserUpgradeModal
       v-model:visible="showUpgradeModal"
       :user="currentUser"
-      :pro-price="proPrice"
       :vip-price="vipPrice"
       @success="handleUpgradeSuccess"
     />

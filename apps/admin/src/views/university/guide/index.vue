@@ -318,7 +318,16 @@ const handleImport = async () => {
     const file = input.files?.[0]; if (!file) return
     try {
       const res = await importGuide(file)
-      if (res.data.code === 200) { ElMessage.success('导入成功'); fetchData() }
+      if (res.data.code === 200) {
+        const d = res.data.data
+        if (d && d.total > 0) {
+          ElMessage.success(`导入成功：共${d.total}行，新增${d.total - d.updated}条、补齐${d.updated}条`)
+        } else {
+          // total=0：后端没读到主表数据行。通常是 Sheet 名/表头不匹配，或后端导入代码未编译重启
+          ElMessage.warning('导入完成，但主表 Sheet 中没有读到任何数据行，未导入任何数据。请检查 Sheet 名与表头，或确认后端已更新并重启')
+        }
+        fetchData()
+      }
       else ElMessage.error(res.data.msg || '导入失败')
     } catch (err: any) {
       ElMessage.error(err.response?.data?.msg || err.message || '导入失败')

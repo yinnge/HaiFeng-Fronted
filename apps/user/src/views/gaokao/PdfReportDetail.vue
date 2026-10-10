@@ -8,7 +8,9 @@ import {
   downloadPdf,
   deletePdfRecord,
   savePdfFile,
+  getPdfSectionPages,
   type PdfRecordDetailVO,
+  type PdfSectionPageVO,
   type MapResultItem,
   type ReduceResult,
   type PlanSnapshot,
@@ -32,6 +34,29 @@ const record = ref<PdfRecordDetailVO | null>(null)
 const activeTab = ref<'analysis' | 'pdf'>('analysis')
 const pdfObjectUrl = ref('')
 const pdfError = ref('')
+
+// ===== PDF 预览（后端自托管 pdf.js viewer + 左侧目录跳页，与 PDF 直链同源） =====
+// 目录数据（后端用 PDFBox 扫描 PDF 文本定位章节起始页）
+const tocSections = ref<PdfSectionPageVO[]>([])
+const tocLoading = ref(false)
+const tocLoaded = ref(false)
+// pdf.js viewer 的 iframe 地址（点击目录以 #page=N 重建）
+const viewerSrc = ref('')
+// 当前选中章节（目录高亮）
+const activeSection = ref('')
+
+/** 自托管 pdf.js viewer 地址：固定为【同源相对路径】。
+ *  必须是相对路径——pdf.js 的 validateFileURL 校验「file 的 origin 必须等于 viewer 的 origin」，
+ *  而 dev 下 /pdfjs 由 Vite proxy 转发到 app、prod 下由 nginx 反代 /pdfjs/ 到 app，
+ *  两者对浏览器都是同源；同时不再从 directPdfUrl 推导 origin，
+ *  彻底避免 base-url 写成 localhost / 127.0.0.1 / Docker 内网名时
+ *  「接口 200 但 iframe 报 localhost 连接失败」（跨设备/局域网/线上域名必挂）。 */
+const PDF_VIEWER_PATH = '/pdfjs/web/viewer.html'
+
+/** 是否有可用的同源 viewer + 签名直链（无则兜底走 /downloadPdf 的 blob 预览） */
+const pdfViewerBase = computed(() => (record.value?.directPdfUrl ? PDF_VIEWER_PATH : ''))
+
+const viewerMode = computed(() => !!pdfViewerBase.value)
 
 // 重新生成弹窗
 const showGenerateDialog = ref(false)
@@ -108,7 +133,54 @@ async function loadPdf() {
 
 function switchTab(tab: 'analysis' | 'pdf') {
   activeTab.value = tab
-  if (tab === 'pdf') loadPdf()
+  if (tab === 'pdf') {
+    loadToc()
+    if (viewerMode.value) {
+      // pdf.js viewer 模式：打开第 1 页
+      viewerSrc.value = buildViewerUrl(1)
+    } else {
+      // 兜底：浏览器 blob 预览（后端未返回直链 / kk 服务地址不可用时）
+      loadPdf()
+    }
+  }
+}
+
+/** 加载章节目录（一次即可） */
+async function loadToc() {
+  if (tocLoaded.value || tocLoading.value) return
+  tocLoading.value = true
+  try {
+    const res = await getPdfSectionPages(recordId)
+    tocSections.value = res.data.data || []
+    tocLoaded.value = true
+  } catch (e: any) {
+    ElMessage.error(e?.message || '目录加载失败')
+  } finally {
+    tocLoading.value = false
+  }
+}
+
+/** 构建 pdf.js viewer 地址（#page=N 跳页；_t 强制重载确保跳转生效） */
+function buildViewerUrl(page: number) {
+  const file = encodeURIComponent(record.value!.directPdfUrl!)
+  return `${pdfViewerBase.value}?file=${file}&_t=${Date.now()}#page=${page}`
+}
+
+/** 点击目录项 → 跳转到章节起始页 */
+function jumpToSection(section: PdfSectionPageVO) {
+  if (!section.page || !viewerMode.value) return
+  activeSection.value = section.num
+  viewerSrc.value = buildViewerUrl(section.page)
+}
+
+/** 新窗口打开预览：直接复用 pdf.js viewer 地址（浏览器侧拉取签名直链）。
+ *  viewer 与 PDF 直链同源（后端 18080），无需 kkFileView 参与。 */
+function openKkPreview() {
+  if (!viewerMode.value) {
+    ElMessage.warning('暂不可用预览服务')
+    return
+  }
+  window.open(buildViewerUrl(1), '_blank', 'noopener')
 }
 
 function retryLoadPdf() {
@@ -202,6 +274,18 @@ function renderMd(md: string | null | undefined) {
       </div>
 
       <div class="flex justify-end gap-3 mb-4">
+        <button
+          class="rounded-lg border border-gray-200 px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+          @click="router.push('/gaokao/pdf-history')"
+        >
+          查看历史记录
+        </button>
+        <button
+          class="rounded-lg border border-gray-200 px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+          @click="router.push('/gaokao/plans')"
+        >
+          返回志愿列表
+        </button>
         <button
           class="rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-600 transition-all shadow-md disabled:opacity-50"
           :disabled="record?.status !== 1"
@@ -392,26 +476,94 @@ function renderMd(md: string | null | undefined) {
             </div>
           </div>
 
-          <!-- PDF 预览 Tab -->
-          <div v-if="activeTab === 'pdf'" class="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div v-if="pdfError" class="flex flex-col items-center justify-center py-20 gap-4">
-              <p class="text-sm text-red-500">{{ pdfError }}</p>
-              <button
-                class="px-6 py-2 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-600 transition-colors"
-                @click="retryLoadPdf"
-              >
-                重试
-              </button>
+          <!-- PDF 预览 Tab：左侧目录 + 右侧 pdf.js viewer（后端同源托管） -->
+          <div v-if="activeTab === 'pdf'" class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-5 shadow-lg">
+            <div class="flex flex-col lg:flex-row gap-5">
+              <!-- 左：目录栏（与报告 PDF 目录页一致，点击跳页） -->
+              <aside class="w-full lg:w-[300px] shrink-0 flex flex-col gap-4">
+                <div class="rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-4">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h8" />
+                    </svg>
+                    <h3 class="text-base font-bold text-gray-800">报告目录</h3>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">与报告 PDF 目录页一致，点击跳转到对应页</p>
+                </div>
+
+                <div
+                  v-loading="tocLoading"
+                  class="rounded-xl bg-white border border-gray-100 p-2 flex-1 overflow-y-auto max-h-[320px] lg:max-h-[720px]"
+                >
+                  <button
+                    v-for="s in tocSections"
+                    :key="s.num"
+                    :disabled="!s.page"
+                    class="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm transition-all text-left disabled:cursor-not-allowed disabled:opacity-40"
+                    :class="activeSection === s.num
+                      ? 'bg-orange-50 text-orange-600 font-semibold'
+                      : 'text-gray-600 hover:bg-orange-50/60'"
+                    @click="jumpToSection(s)"
+                  >
+                    <span class="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white text-xs font-bold flex items-center justify-center">{{ s.num }}</span>
+                    <span class="flex-1 leading-snug">{{ s.title }}</span>
+                    <span class="shrink-0 text-xs text-gray-400">{{ s.page ? `第${s.page}页` : '—' }}</span>
+                  </button>
+                  <div v-if="!tocLoading && tocSections.length === 0" class="py-8 text-center text-sm text-gray-400">目录暂不可用</div>
+                </div>
+
+                <button
+                  class="rounded-full border border-orange-300 bg-white px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-all"
+                  @click="openKkPreview"
+                >
+                  <span class="inline-flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    新窗口打开预览
+                  </span>
+                </button>
+              </aside>
+
+              <!-- 右：预览区 -->
+              <div class="flex-1 min-w-0 rounded-xl border border-orange-100 overflow-hidden bg-white">
+                <!-- pdf.js viewer 模式 -->
+                <template v-if="viewerMode">
+                  <iframe
+                    v-if="viewerSrc"
+                    :src="viewerSrc"
+                    class="w-full h-full min-h-[700px] lg:min-h-[860px]"
+                    frameborder="0"
+                    title="报告预览"
+                  />
+                  <div v-else class="flex justify-center py-20">
+                    <el-icon class="is-loading text-4xl text-orange-400"><Loading /></el-icon>
+                  </div>
+                </template>
+
+                <!-- 兜底：浏览器 blob 预览（无 kk 服务地址 / 直链时） -->
+                <template v-else>
+                  <div v-if="pdfError" class="flex flex-col items-center justify-center py-20 gap-4">
+                    <p class="text-sm text-red-500">{{ pdfError }}</p>
+                    <button
+                      class="px-6 py-2 text-sm font-medium text-white bg-orange-500 rounded-full hover:bg-orange-600 transition-colors"
+                      @click="retryLoadPdf"
+                    >
+                      重试
+                    </button>
+                  </div>
+                  <div v-else-if="!pdfObjectUrl" class="flex justify-center py-20">
+                    <el-icon class="is-loading text-4xl text-orange-400"><Loading /></el-icon>
+                  </div>
+                  <iframe
+                    v-else
+                    :src="pdfObjectUrl"
+                    class="w-full border-0"
+                    style="min-height: 80vh"
+                  />
+                </template>
+              </div>
             </div>
-            <div v-else-if="!pdfObjectUrl" class="flex justify-center py-20">
-              <el-icon class="is-loading text-4xl text-violet-500"><Loading /></el-icon>
-            </div>
-            <iframe
-              v-else
-              :src="pdfObjectUrl"
-              class="w-full border-0"
-              style="min-height: 80vh"
-            />
           </div>
         </template>
       </template>

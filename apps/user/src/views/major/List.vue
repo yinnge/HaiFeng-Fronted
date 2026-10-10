@@ -33,7 +33,7 @@ const query = reactive<MajorQueryDTO>({
   majorType: '本科',
 })
 
-const isPro = computed(() => userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP)
+const isPro = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
 
 const rankingQuery = reactive<MajorRankingQueryDTO>({
   page: 1,
@@ -400,7 +400,7 @@ onMounted(() => {
         <template v-else>
           <div class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 text-center border border-orange-100">
             <div class="text-4xl mb-3">🔒</div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看完整薪资就业排行</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">开通VIP会员，查看完整薪资就业排行</h3>
             <p class="text-gray-500 mb-4">包含各专业薪资水平、就业率排名等深度数据</p>
             <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
               @click="recharge.open()"

@@ -18,7 +18,6 @@ export interface SiteInfoVO {
   siteDescription: string
   contactUrl: ContactUrl
   basicMessage: BasicMessage
-  proPrice?: number
   vipPrice?: number
 }
 

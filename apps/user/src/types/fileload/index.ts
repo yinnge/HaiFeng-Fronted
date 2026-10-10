@@ -15,6 +15,10 @@ export interface FileLoadListVO {
   /** Long 序列化为字符串，防精度丢失 */
   id: string
   fileName: string
+  /** 存储方式：OSS-对象存储 / BAIDU-百度网盘 */
+  storageType?: 'OSS' | 'BAIDU'
+  /** 封面图URL（BAIDU 网盘资源可空，为空前端渲染默认网盘封面） */
+  coverUrl?: string
   fileType: string
   /** 字节数 */
   fileSize: number
@@ -29,10 +33,18 @@ export interface FileLoadListVO {
 
 /** 文件详情 VO（对应后端 FileLoadDetailVO，含预览/下载 URL） */
 export interface FileLoadDetailVO extends FileLoadListVO {
-  /** KKFileView 在线预览地址（仅可预览类型返回） */
+  /** KKFileView 在线预览地址（仅可预览类型返回；BAIDU 行恒为空） */
   previewUrl?: string
-  /** OSS 预签名下载地址 */
+  /** OSS 预签名下载地址（BAIDU 行恒为空） */
   downloadUrl?: string
+}
+
+/** 百度网盘取码信息（对应后端 NetdiskInfoVO，仅 VIP 可获取） */
+export interface NetdiskInfoVO {
+  /** 百度网盘分享链接 */
+  netdiskUrl: string
+  /** 提取码（可空，无提取码时前端不展示） */
+  accessCode?: string | null
 }
 
 /** 专栏受众：初中 / 高中 / 大学（对应后端 /fileload/middle 与 /fileload/high 与 /fileload/college） */

@@ -102,8 +102,9 @@ function resetFilters() {
   onFilterChange()
 }
 
-/** 点击卡片（无单独详情按钮）→ 列表免登录，但详情需 VIP：
- *  未登录先引导登录；已登录直接跳详情页，VIP 校验由详情页 onMounted 按 1005 业务码引导开通 */
+/** 点击卡片（无单独详情按钮）→ 详情需登录/VIP：
+ *  middle/high 列表公开，未登录先引导登录；college 列表页整页 requiresAuth，进到此处必已登录。
+ *  已登录直接跳详情页，VIP 校验由详情页 onMounted 按 1005 业务码引导开通 */
 async function openDetail(item: FileLoadListVO) {
   if (!userStore.isLoggedIn()) {
     userStore.setRedirectPath(router.currentRoute.value.fullPath)
@@ -279,19 +280,31 @@ watch(() => props.audience, () => {
             >
               <!-- 文件图标区 -->
               <div class="relative h-32 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="item.storageType === 'BAIDU' && item.coverUrl"
+                  :src="item.coverUrl"
+                  alt=""
+                  class="absolute inset-0 w-full h-full object-cover"
+                />
                 <div
-                  class="w-16 h-16 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center shadow-lg shadow-orange-100 transition-transform duration-300 group-hover:scale-110"
-                  :class="fileTypeMeta(item.fileType).iconBg"
+                  v-else
+                  class="w-16 h-16 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110"
+                  :class="item.storageType === 'BAIDU' ? 'from-blue-500 to-sky-400 shadow-blue-100' : fileTypeMeta(item.fileType).iconBg"
                 >
-                  <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="item.storageType === 'BAIDU'" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+                  </svg>
+                  <svg v-else class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z" />
                   </svg>
                 </div>
                 <span
                   class="absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-xs font-bold"
-                  :class="fileTypeMeta(item.fileType).badge"
+                  :class="item.storageType === 'BAIDU'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : fileTypeMeta(item.fileType).badge"
                 >
-                  {{ fileTypeMeta(item.fileType).label }}
+                  {{ item.storageType === 'BAIDU' ? '网盘' : fileTypeMeta(item.fileType).label }}
                 </span>
               </div>
 
@@ -310,7 +323,7 @@ watch(() => props.audience, () => {
                   </span>
                 </div>
                 <div class="mt-3 flex items-center justify-between text-xs text-gray-400">
-                  <span>{{ formatSize(item.fileSize) }}</span>
+                  <span>{{ item.storageType === 'BAIDU' ? '百度网盘' : formatSize(item.fileSize) }}</span>
                   <span>{{ formatDate(item.createTime) }}</span>
                 </div>
               </div>

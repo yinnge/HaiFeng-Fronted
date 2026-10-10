@@ -5,7 +5,7 @@ export interface MemberListVO {
   id: string
   username: string
   phone: string
-  memberType: 'normal' | 'pro' | 'vip'
+  memberType: 'normal' | 'vip'
   wechatId: string
   status: 'active' | 'disabled'
   lastLoginAt: string
@@ -29,7 +29,7 @@ export interface MemberDetailVO extends MemberListVO {
 /** 用户查询 DTO */
 export interface MemberQueryDTO extends BasePageQuery {
   phone?: string
-  memberType?: 'normal' | 'pro' | 'vip'
+  memberType?: 'normal' | 'vip'
   wechatId?: string
   status?: 'active' | 'disabled'
   inviteCode?: string
@@ -42,7 +42,7 @@ export interface MemberStatusDTO {
 
 /** 会员升级 DTO */
 export interface MemberUpgradeDTO {
-  targetType: 'pro' | 'vip'
+  targetType: 'vip'
   durationMonths: number
   amount?: number
   remark?: string

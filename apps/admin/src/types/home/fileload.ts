@@ -8,6 +8,9 @@
 /** 面向人群 */
 export type FileTargetAudience = 'middle_school' | 'high_school' | 'college'
 
+/** 存储方式：OSS-上传文件 / BAIDU-百度网盘链接 */
+export type FileStorageType = 'OSS' | 'BAIDU'
+
 /** 学科固定选项 */
 export const SUBJECT_OPTIONS = ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理', '其他']
 
@@ -24,6 +27,10 @@ export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四']
 export interface FileLoadListVO {
   id: string
   fileName: string
+  /** 存储方式：OSS-对象存储 / BAIDU-百度网盘 */
+  storageType?: FileStorageType | null
+  /** 封面图URL（BAIDU 网盘资源可空） */
+  coverUrl?: string | null
   fileType: string | null
   fileSize: number
   subject: string
@@ -38,10 +45,18 @@ export interface FileLoadListVO {
 export interface FileLoadDetailVO {
   id: string
   fileName: string
-  /** 预签名下载 URL（动态生成） */
-  fileUrl: string
-  /** KKFileView 预览地址（可空） */
+  /** 预签名下载 URL（动态生成，BAIDU 行恒为空） */
+  fileUrl: string | null
+  /** KKFileView 预览地址（BAIDU 行恒为空） */
   filePreviewUrl: string | null
+  /** 存储方式：OSS-对象存储 / BAIDU-百度网盘 */
+  storageType?: FileStorageType | null
+  /** 百度网盘分享链接（BAIDU 行；管理端可见/可编辑） */
+  netdiskUrl?: string | null
+  /** 百度网盘提取码（BAIDU 行） */
+  accessCode?: string | null
+  /** 封面图URL（BAIDU 网盘资源可空） */
+  coverUrl?: string | null
   fileType: string | null
   fileSize: number
   fileMd5: string | null
@@ -72,6 +87,16 @@ export interface FileLoadQueryDTO {
 /** 上传 / 修改 DTO（后端 FileLoadUploadDTO） */
 export interface FileLoadUploadDTO {
   targetAudience: string
+  /** 存储方式：OSS-上传文件（默认） / BAIDU-百度网盘链接；BAIDU 新增时必传 */
+  storageType?: FileStorageType
+  /** 资源名称：BAIDU 录入/改名时使用；OSS 上传时不传（取文件名） */
+  fileName?: string
+  /** 百度网盘分享链接（BAIDU 时必填） */
+  netdiskUrl?: string
+  /** 百度网盘提取码（BAIDU 时可空） */
+  accessCode?: string
+  /** 封面图URL（可空，默认封面由前端渲染） */
+  coverUrl?: string
   subject: string
   applicableStage?: string
   /** 文档简介 */

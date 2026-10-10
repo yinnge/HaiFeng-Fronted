@@ -13,6 +13,9 @@
 
 html {
   height: 100%;
+  /* 视口级滚动条占位：固定定位元素（右侧悬浮导航）锚定视口，
+     必须在此保留 stable gutter，弹窗锁滚动时视口宽度不变 → 不抖动。 */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -69,8 +72,17 @@ html {
    1) 给 body 加 .el-popup-parent--hidden（class 内置 overflow:hidden 锁滚动）
    2) 内联 body.style.width = calc(100% - 滚动条宽) 补偿位移
    配合上方 body { overflow-y: scroll; scrollbar-gutter: stable }，
-   滚动条槽位永久保留，弹窗开/关无宽度变化，无需也不应再写自定义 el-popup-parent 规则干预
-   （旧版本曾加 body { width:100%!important } 把默认补偿顶掉导致左移抖动，已彻底移除）。*/
+   滚动条槽位永久保留，弹窗开/关本应无宽度变化。
+
+   但本文件 body 已设 scrollbar-gutter:stable（滚动槽永久保留），
+   若不抵消第 2 步的内联 width 补偿，body 内容区会被再收窄一个滚动条宽，
+   导致右侧固定导航（锚定路由 <transition> 变换容器，非视口）随之抖动。
+   故用 !important 覆盖该内联补偿（内联无 !important，可被样式表 !important 覆盖），
+   配合 body 的 stable gutter，锁滚动前后 body 内容区宽度恒定 → 零抖动。
+   注意：早期版本在「gutter 错放在 html」时写此规则导致左移 6px；现 gutter 已正确放在 body，故安全。 */
+body.el-popup-parent--hidden {
+  width: 100% !important;
+}
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
@@ -342,6 +354,82 @@ html {
 
 
 
+/* ============ Scroll Reveal 动画（IntersectionObserver 驱动） ============ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(6px);
+  transition: opacity 0.8s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.8s cubic-bezier(0.32, 0.72, 0, 1),
+              filter 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, opacity, filter;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* Staggered delays for children */
+.reveal-delay-1 { transition-delay: 0.08s; }
+.reveal-delay-2 { transition-delay: 0.16s; }
+.reveal-delay-3 { transition-delay: 0.24s; }
+.reveal-delay-4 { transition-delay: 0.32s; }
+.reveal-delay-5 { transition-delay: 0.40s; }
+.reveal-delay-6 { transition-delay: 0.48s; }
+.reveal-delay-7 { transition-delay: 0.56s; }
+.reveal-delay-8 { transition-delay: 0.64s; }
+
+/* ============ Double-Bezel 卡片架构（high-end-visual-design 核心） ============ */
+.double-bezel {
+  position: relative;
+  padding: 6px;
+  border-radius: calc(1rem + 6px);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(251, 146, 60, 0.04));
+  border: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+.double-bezel-inner {
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+/* ============ Spring Physics 过渡（替代所有 linear/ease-in-out） ============ */
+.spring-transition {
+  transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.spring-fast {
+  transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ============ 磁吸按钮物理 ============ */
+.magnetic-btn {
+  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.magnetic-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+.magnetic-btn:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* ============ 微纹理覆盖层（Grain Overlay） ============ */
+.grain-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
 /* 骨架屏动画 */
 @layer utilities {
   .skeleton {
@@ -368,30 +456,38 @@ html {
 /* 卡片悬停效果 */
 @layer components {
   .card-hover {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-all duration-300;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .card-hover:hover {
-    @apply shadow-card-hover -translate-y-0.5;
+    @apply shadow-card-hover;
+    transform: translateY(-6px);
   }
 
   .card-active:active {
-    @apply shadow-card-active translate-y-0;
+    @apply shadow-card-active;
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.1s;
   }
 
-  /* 品牌按钮 */
+  /* 品牌按钮（spring physics） */
   .btn-brand {
     @apply relative overflow-hidden bg-gradient-to-r from-brand-orange to-brand-orange-light 
            text-white font-semibold px-6 py-2.5 rounded-full 
-           transition-all duration-200 ease-out
-           hover:-translate-y-0.5
-           active:translate-y-0
            focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
     box-shadow: 0 4px 14px 0 rgba(232, 114, 42, 0.25);
+    transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .btn-brand:hover {
-    box-shadow: 0 6px 20px 0 rgba(232, 114, 42, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(232, 114, 42, 0.4);
+  }
+
+  .btn-brand:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.1s;
   }
 
   .btn-brand::before {
@@ -404,18 +500,24 @@ html {
     @apply opacity-100;
   }
 
-  /* 次要按钮 */
+  /* 次要按钮（spring physics） */
   .btn-secondary {
     @apply relative overflow-hidden bg-white border border-gray-200 
            text-gray-700 font-medium px-6 py-2.5 rounded-full 
-           transition-all duration-200 ease-out
            hover:border-brand-orange hover:text-brand-orange
            active:shadow-none
            focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
+    transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .btn-secondary:hover {
+    transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(232, 114, 42, 0.15);
+  }
+
+  .btn-secondary:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.1s;
   }
 
   /* 药丸标签 */

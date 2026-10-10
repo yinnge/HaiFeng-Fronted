@@ -22,7 +22,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const activeDegree = ref('')
 
-const isPro = computed(() => userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP)
+const isPro = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
 
 const degreeOptions = [
   { value: '', label: '全部' },
@@ -120,7 +120,7 @@ onMounted(() => {
         <svg class="inline-block w-10 h-10 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9.364-7.364A9 9 0 1112 3a9 9 0 017.364 4.636z" />
         </svg>
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看该校考研专业</h3>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">开通VIP会员，查看该校考研专业</h3>
         <p class="text-gray-500 mb-4">包含学术学位与专业学位硕士研究生招生专业信息</p>
         <button
           class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"

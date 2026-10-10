@@ -319,7 +319,7 @@ const jsonbSections = [
                 <div v-else class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
                   <p class="text-sm text-gray-600">
                     🔒 升级
-                    <span class="text-orange-500 font-semibold hover:underline cursor-pointer" @click="recharge.open()">专业版</span>
+                    <span class="text-orange-500 font-semibold hover:underline cursor-pointer" @click="recharge.open()">VIP会员</span>
                     可查看关联企业信息
                   </p>
                 </div>

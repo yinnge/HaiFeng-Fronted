@@ -35,27 +35,6 @@ const expireAtFormatted = computed(() => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 })
 
-/** 是否有待恢复的会员（VIP活跃 + 有挂起的Pro） */
-const hasPendingRestore = computed(() => {
-  return props.memberInfo?.suspendedMemberType && props.memberInfo?.suspendedExpireAt
-})
-
-/** 待恢复的会员类型标签 */
-const pendingRestoreLabel = computed(() => {
-  if (!props.memberInfo?.suspendedMemberType) return ''
-  const typeMap: Record<string, string> = { pro: '专业版', vip: 'VIP会员' }
-  return typeMap[props.memberInfo.suspendedMemberType] || props.memberInfo.suspendedMemberType
-})
-
-/** 恢复日期：VIP到期日 +1天 */
-const pendingRestoreDate = computed(() => {
-  if (!props.memberInfo?.suspendedExpireAt) return ''
-  const vipExpiry = new Date(props.memberInfo.suspendedExpireAt)
-  // VIP到期日 +1天 = Pro恢复日期
-  vipExpiry.setDate(vipExpiry.getDate() + 1)
-  return `${vipExpiry.getFullYear()}-${String(vipExpiry.getMonth() + 1).padStart(2, '0')}-${String(vipExpiry.getDate()).padStart(2, '0')}`
-})
-
 function handleAvatarClick() {
   emit('update-avatar')
 }
@@ -106,10 +85,6 @@ function handleAvatarClick() {
           <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
         </svg>
         会员到期：{{ expireAtFormatted }}
-      </div>
-      <div v-if="hasPendingRestore" class="user-pending-restore">
-        <span class="pending-label">待恢复{{ pendingRestoreLabel }}</span>
-        <span class="pending-date">{{ pendingRestoreDate }} 恢复</span>
       </div>
     </div>
 
@@ -314,35 +289,6 @@ function handleAvatarClick() {
 .expire-icon {
   width: 0.875rem;
   height: 0.875rem;
-}
-
-/* 待恢复会员 */
-.user-pending-restore {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(251, 146, 60, 0.08));
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-radius: 9999px;
-}
-
-.pending-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #ea580c;
-}
-
-.pending-date {
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-@media (max-width: 640px) {
-  .user-pending-restore {
-    justify-content: center;
-  }
 }
 
 /* 统计区域 */

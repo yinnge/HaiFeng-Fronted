@@ -60,11 +60,36 @@ const handleClose = () => {
         <el-descriptions :column="1" border>
           <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
           <el-descriptions-item label="文件名">{{ detailData.fileName }}</el-descriptions-item>
+          <el-descriptions-item label="存储方式">
+            <span v-if="detailData.storageType === 'BAIDU'" class="store-pill store-netdisk">百度网盘</span>
+            <span v-else class="store-pill store-oss">服务器存储（OSS）</span>
+          </el-descriptions-item>
+          <template v-if="detailData.storageType === 'BAIDU'">
+            <el-descriptions-item label="网盘链接">
+              <a
+                v-if="detailData.netdiskUrl"
+                :href="detailData.netdiskUrl"
+                target="_blank"
+                rel="noopener"
+                class="link-text"
+              >
+                {{ detailData.netdiskUrl }}
+              </a>
+              <span v-else class="dim-text">-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="提取码">
+              <span v-if="detailData.accessCode" class="code-text">{{ detailData.accessCode }}</span>
+              <span v-else class="dim-text">无</span>
+            </el-descriptions-item>
+          </template>
           <el-descriptions-item label="类型">
             <span v-if="detailData.fileType" class="type-pill">{{ detailData.fileType.toUpperCase() }}</span>
             <span v-else class="dim-text">-</span>
           </el-descriptions-item>
-          <el-descriptions-item label="大小">{{ formatSize(detailData.fileSize) }}</el-descriptions-item>
+          <el-descriptions-item label="大小">
+            <span v-if="detailData.storageType === 'BAIDU'">网盘大文件</span>
+            <template v-else>{{ formatSize(detailData.fileSize) }}</template>
+          </el-descriptions-item>
           <el-descriptions-item label="学科">
             <span v-if="detailData.subject" class="tag-pill">{{ detailData.subject }}</span>
             <span v-else class="dim-text">-</span>
@@ -92,16 +117,30 @@ const handleClose = () => {
           </el-descriptions-item>
           <el-descriptions-item label="操作">
             <div class="file-actions">
-              <button type="button" class="dl-btn" @click="handleDownload">下载文件</button>
-              <button
-                v-if="detailData.filePreviewUrl"
-                type="button"
-                class="pv-btn"
-                @click="handlePreview"
-              >
-                在线预览
-              </button>
-              <span v-else class="dim-text">该格式暂不支持在线预览</span>
+              <template v-if="detailData.storageType === 'BAIDU'">
+                <a
+                  v-if="detailData.netdiskUrl"
+                  :href="detailData.netdiskUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="dl-btn nd-link"
+                >
+                  打开网盘链接
+                </a>
+                <span v-else class="dim-text">网盘链接为空</span>
+              </template>
+              <template v-else>
+                <button type="button" class="dl-btn" @click="handleDownload">下载文件</button>
+                <button
+                  v-if="detailData.filePreviewUrl"
+                  type="button"
+                  class="pv-btn"
+                  @click="handlePreview"
+                >
+                  在线预览
+                </button>
+                <span v-else class="dim-text">该格式暂不支持在线预览</span>
+              </template>
             </div>
           </el-descriptions-item>
         </el-descriptions>
@@ -277,5 +316,52 @@ const handleClose = () => {
 
 .close-btn:active {
   transform: translateY(0);
+}
+
+/* 存储方式药丸 */
+.store-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.store-oss {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.store-netdisk {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(96, 165, 250, 0.16));
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+/* 链接/提取码文本 */
+.link-text {
+  color: #2563eb;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.link-text:hover {
+  text-decoration: underline;
+}
+
+.code-text {
+  font-family: Consolas, Monaco, monospace;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+.nd-link {
+  text-decoration: none;
 }
 </style>

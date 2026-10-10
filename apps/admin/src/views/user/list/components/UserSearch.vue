@@ -68,7 +68,6 @@ const handleReset = () => {
             style="width: 120px"
           >
             <el-option label="普通用户" value="normal" />
-            <el-option label="专业版" value="pro" />
             <el-option label="VIP会员" value="vip" />
           </el-select>
         </el-form-item>

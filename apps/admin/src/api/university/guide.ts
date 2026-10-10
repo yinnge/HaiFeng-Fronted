@@ -54,7 +54,15 @@ export const batchHardDeleteGuide = (
 ): Promise<AxiosResponse<R<void>>> =>
   request.post(`${PREFIX}/batch-hard-delete`, { ids })
 
-export const importGuide = (file: File): Promise<AxiosResponse<R<void>>> => {
+export interface ImportResultVO {
+  total: number
+  success: number
+  failed: number
+  updated: number
+  errors: string[]
+}
+
+export const importGuide = (file: File): Promise<AxiosResponse<R<ImportResultVO>>> => {
   const formData = new FormData()
   formData.append('file', file)
   return request.post(`${PREFIX}/import`, formData, {

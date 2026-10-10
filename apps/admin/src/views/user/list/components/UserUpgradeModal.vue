@@ -9,7 +9,6 @@ import type { OrderCreateDTO } from '@/types/user/order'
 const props = defineProps<{
   visible: boolean
   user: MemberListVO | null
-  proPrice: number
   vipPrice: number
 }>()
 
@@ -20,12 +19,12 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const form = ref<{
-  targetType: 'pro' | 'vip'
+  targetType: 'vip'
   durationMonths: number
   amount?: number
   remark: string
 }>({
-  targetType: 'pro',
+  targetType: 'vip',
   durationMonths: 12,
   amount: undefined,
   remark: '',
@@ -35,8 +34,7 @@ const amountMode = ref<'auto' | 'manual'>('auto')
 const durationOptions = [1, 3, 6, 12, 24, 36]
 
 const autoAmount = computed(() => {
-  const yearPrice = form.value.targetType === 'pro' ? props.proPrice : props.vipPrice
-  return ((yearPrice / 12) * form.value.durationMonths).toFixed(2)
+  return ((props.vipPrice / 12) * form.value.durationMonths).toFixed(2)
 })
 
 watch(
@@ -44,7 +42,7 @@ watch(
   (val) => {
     if (val) {
       form.value = {
-        targetType: 'pro',
+        targetType: 'vip',
         durationMonths: 12,
         amount: undefined,
         remark: '',
@@ -108,11 +106,8 @@ const handleClose = () => {
       </div>
 
       <el-form :model="form" label-width="100px">
-        <el-form-item label="目标类型" required>
-          <el-select v-model="form.targetType" class="form-select">
-            <el-option label="专业版 (Pro)" value="pro" />
-            <el-option label="VIP会员" value="vip" />
-          </el-select>
+        <el-form-item label="目标类型">
+          <span class="target-type-value">VIP会员（Pro 已并入 VIP）</span>
         </el-form-item>
         <el-form-item label="开通时长" required>
           <el-select v-model="form.durationMonths" class="form-select">
@@ -264,6 +259,12 @@ const handleClose = () => {
   font-size: 14px;
   font-weight: 600;
   color: #F97316;
+}
+
+.target-type-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
 }
 
 .amount-section {

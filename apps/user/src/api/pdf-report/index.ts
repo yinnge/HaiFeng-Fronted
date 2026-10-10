@@ -24,6 +24,18 @@ export interface PdfRecordDetailVO {
   planSnapshot: string | null
   failReason: string | null
   createdAt: string
+  /** kkFileView onlinePreview 预览地址（新窗口打开整页预览用） */
+  previewUrl?: string | null
+  /** 后端公开预览直链（带签名，多用途）——供 kkFileView 内置 pdf.js viewer 的 file 参数使用 */
+  directPdfUrl?: string | null
+}
+
+/** 报告章节目录项（与报告 PDF 目录页一致） */
+export interface PdfSectionPageVO {
+  num: string
+  title: string
+  /** 章节起始页码（1-based，未定位到为 null） */
+  page: number | null
 }
 
 export interface PdfRecordListResult {
@@ -155,6 +167,13 @@ export function getPdfProfile() {
  */
 export function savePdfProfile(data: PdfProfileVO) {
   return request.post<R<null>>(`${PREFIX}/profile`, data)
+}
+
+/**
+ * 获取报告章节目录（含各章节起始页码，目录栏点击跳页用）
+ */
+export function getPdfSectionPages(recordId: string) {
+  return request.get<R<PdfSectionPageVO[]>>(`${PREFIX}/records/${recordId}/section-pages`)
 }
 
 /**

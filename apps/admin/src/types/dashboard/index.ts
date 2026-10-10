@@ -1,7 +1,6 @@
 /** 用户统计 */
 export interface MemberStats {
   totalMembers: number
-  proMembers: number
   vipMembers: number
 }
 

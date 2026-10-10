@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { SUBJECT_OPTIONS, HIGH_STAGE_OPTIONS } from '@/types/home/fileload'
-import type { FileLoadUploadDTO } from '@/types/home/fileload'
+import type { FileLoadUploadDTO, FileStorageType } from '@/types/home/fileload'
 
 const props = defineProps<{
   visible: boolean
@@ -12,12 +13,51 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
-  (e: 'submit', data: { file?: File; subject: string; applicableStage: string; description?: string; tag?: string }): void
+  (e: 'submit', data: {
+    file?: File
+    storageType: FileStorageType
+    fileName?: string
+    netdiskUrl?: string
+    accessCode?: string
+    subject: string
+    applicableStage: string
+    description?: string
+    tag?: string
+  }): void
 }>()
 
 const file = ref<File | null>(null)
 const uploadRef = ref<any>(null)
-const formData = ref<{ subject: string; applicableStage: string; description: string; tag: string }>({
+const formData = ref<{
+  storageType: FileStorageType
+  fileName: string
+  netdiskUrl: string
+  accessCode: string
+  subject: string
+  applicableStage: string
+  description: string
+  tag: string
+}>({
+  storageType: 'OSS',
+  fileName: '',
+  netdiskUrl: '',
+  accessCode: '',
+  subject: '',
+  applicableStage: '',
+  description: '',
+  tag: '',
+})
+
+/** 当前是否为百度网盘录入 */
+const isNetdisk = computed(() => formData.value.storageType === 'BAIDU')
+/** 上传模式可切换存储方式；编辑态锁定（不允许跨类型转换） */
+const switchable = computed(() => props.mode === 'upload')
+
+const defaultForm = () => ({
+  storageType: 'OSS' as FileStorageType,
+  fileName: '',
+  netdiskUrl: '',
+  accessCode: '',
   subject: '',
   applicableStage: '',
   description: '',
@@ -40,13 +80,17 @@ watch(
       resetUploader()
       if (mode === 'edit' && initial) {
         formData.value = {
+          storageType: initial.storageType === 'BAIDU' ? 'BAIDU' : 'OSS',
+          fileName: initial.fileName || '',
+          netdiskUrl: initial.netdiskUrl || '',
+          accessCode: initial.accessCode || '',
           subject: initial.subject || '',
           applicableStage: initial.applicableStage || '',
           description: initial.description || '',
           tag: initial.tag || '',
         }
       } else {
-        formData.value = { subject: '', applicableStage: '', description: '', tag: '' }
+        formData.value = defaultForm()
       }
     }
   },
@@ -59,10 +103,38 @@ const handleFileChange = (uploadFile: any) => {
   return false
 }
 
+/** 切换存储方式时清空已选文件 */
+const handleStorageChange = () => {
+  resetUploader()
+}
+
 const handleSubmit = () => {
+  if (!formData.value.subject.trim()) {
+    ElMessage.warning('请选择或输入学科')
+    return
+  }
+  if (formData.value.storageType === 'OSS') {
+    if (props.mode === 'upload' && !file.value) {
+      ElMessage.warning('请选择要上传的文件')
+      return
+    }
+  } else {
+    if (!formData.value.fileName.trim()) {
+      ElMessage.warning('请输入资源名称')
+      return
+    }
+    if (!formData.value.netdiskUrl.trim()) {
+      ElMessage.warning('请输入百度网盘分享链接')
+      return
+    }
+  }
   emit('submit', {
-    file: file.value || undefined,
-    subject: formData.value.subject,
+    file: formData.value.storageType === 'OSS' ? file.value || undefined : undefined,
+    storageType: formData.value.storageType,
+    fileName: isNetdisk.value ? formData.value.fileName.trim() : undefined,
+    netdiskUrl: isNetdisk.value ? formData.value.netdiskUrl.trim() : undefined,
+    accessCode: isNetdisk.value && formData.value.accessCode.trim() ? formData.value.accessCode.trim() : undefined,
+    subject: formData.value.subject.trim(),
     applicableStage: formData.value.applicableStage,
     description: formData.value.description || undefined,
     tag: formData.value.tag || undefined,
@@ -88,25 +160,82 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
   >
     <div v-loading="formLoading" class="form-content">
       <el-form :model="formData" label-width="90px" class="file-form">
-        <el-form-item v-if="mode === 'upload'" label="文件" required>
-          <el-upload
-            ref="uploadRef"
-            drag
-            :auto-upload="false"
-            :show-file-list="true"
-            :limit="1"
-            :on-change="handleFileChange"
-            class="file-uploader"
-          >
-            <div class="upload-area">
-              <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-              </svg>
-              <div class="upload-text">将文件拖到此处，或<em>点击上传</em></div>
-              <div class="upload-hint">支持 PDF / Word / Excel / PPT / 图片 / 文本等格式</div>
-            </div>
-          </el-upload>
+        <!-- 存储方式：仅新增时可切换；编辑态锁定当前方式（不允许跨类型转换） -->
+        <el-form-item v-if="switchable" label="存储方式" required>
+          <el-radio-group v-model="formData.storageType" @change="handleStorageChange">
+            <el-radio value="OSS">上传文件（OSS）</el-radio>
+            <el-radio value="BAIDU">百度网盘链接</el-radio>
+          </el-radio-group>
         </el-form-item>
+
+        <!-- OSS：上传文件（新增）/ 只读资源名（编辑） -->
+        <template v-if="!isNetdisk">
+          <el-form-item v-if="mode === 'upload'" label="文件" required>
+            <el-upload
+              ref="uploadRef"
+              drag
+              :auto-upload="false"
+              :show-file-list="true"
+              :limit="1"
+              :on-change="handleFileChange"
+              class="file-uploader"
+            >
+              <div class="upload-area">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                </svg>
+                <div class="upload-text">将文件拖到此处，或<em>点击上传</em></div>
+                <div class="upload-hint">支持 PDF / Word / Excel / PPT / 图片 / 文本等格式</div>
+              </div>
+            </el-upload>
+          </el-form-item>
+          <el-form-item v-else label="资源名称">
+            <span class="dim-text">{{ formData.fileName || '-' }}</span>
+            <span class="storage-badge">OSS 文件</span>
+          </el-form-item>
+        </template>
+
+        <!-- 百度网盘：填分享链接 + 提取码，不传文件 -->
+        <template v-else>
+          <el-form-item label="资源名称" required>
+            <el-input
+              v-model="formData.fileName"
+              placeholder="请输入资源名称（如：2026考研数学真题.rar）"
+              clearable
+              style="width: 360px"
+            />
+          </el-form-item>
+          <el-form-item label="网盘链接" required>
+            <el-input
+              v-model="formData.netdiskUrl"
+              placeholder="粘贴百度网盘分享链接 https://pan.baidu.com/s/..."
+              clearable
+              style="width: 360px"
+            />
+          </el-form-item>
+          <el-form-item label="提取码">
+            <el-input
+              v-model="formData.accessCode"
+              placeholder="如：abcd（选填）"
+              clearable
+              maxlength="20"
+              style="width: 160px"
+            />
+          </el-form-item>
+          <el-form-item label="封面">
+            <div class="cover-preview">
+              <div class="cover-img netdisk-cover">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+                  <path d="M12 14v-4m0 0l-2 2m2-2l2 2" />
+                </svg>
+                <span>百度网盘</span>
+              </div>
+              <div class="cover-tip">C 端默认展示该网盘封面；如需自定义封面，后续可补充封面图上传</div>
+            </div>
+          </el-form-item>
+        </template>
+
         <el-form-item label="学科" required>
           <el-select
             v-model="formData.subject"
@@ -304,5 +433,62 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
 
 .submit-btn:active {
   transform: translateY(0);
+}
+
+/* 存储方式角标 */
+.storage-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 2px 10px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(96, 165, 250, 0.14));
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dim-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 封面预览 */
+.cover-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cover-img {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 120px;
+  height: 84px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cover-img svg {
+  width: 26px;
+  height: 26px;
+}
+
+.netdisk-cover {
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.cover-tip {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.6;
 }
 </style>

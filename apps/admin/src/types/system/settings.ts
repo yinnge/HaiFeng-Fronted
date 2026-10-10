@@ -35,9 +35,7 @@ export interface SystemSettingsVO {
   floorCount: number
   providerName: string
   modelName: string
-  proPrice: number
   vipPrice: number
-  proCommissionRate: number
   vipCommissionRate: number
   seoTitle: string
   seoKeywords: string
@@ -59,9 +57,7 @@ export interface SystemSettingsUpdateDTO {
   matchCount?: number
   safeCount?: number
   floorCount?: number
-  proPrice?: number
   vipPrice?: number
-  proCommissionRate?: number
   vipCommissionRate?: number
   seoTitle?: string
   seoKeywords?: string
