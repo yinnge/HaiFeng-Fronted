@@ -14,9 +14,7 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const form = ref({
-  proPrice: 199,
   vipPrice: 599,
-  proCommissionRate: 10,
   vipCommissionRate: 15,
 })
 
@@ -25,9 +23,7 @@ watch(
   (val) => {
     if (val) {
       form.value = {
-        proPrice: val.proPrice || 199,
         vipPrice: val.vipPrice || 599,
-        proCommissionRate: val.proCommissionRate || 10,
         vipCommissionRate: val.vipCommissionRate || 15,
       }
     }
@@ -66,17 +62,9 @@ const handleSave = async () => {
       会员价格
     </div>
     <el-form :model="form" label-width="120px" class="settings-form">
-      <el-form-item label="Pro 会员价格">
-        <el-input-number v-model="form.proPrice" :min="0" :precision="0" />
-        <span class="field-suffix">元/年</span>
-      </el-form-item>
       <el-form-item label="VIP 会员价格">
         <el-input-number v-model="form.vipPrice" :min="0" :precision="0" />
         <span class="field-suffix">元/年</span>
-      </el-form-item>
-      <el-form-item label="Pro 佣金比例">
-        <el-input-number v-model="form.proCommissionRate" :min="0" :max="100" :precision="0" />
-        <span class="field-suffix">%</span>
       </el-form-item>
       <el-form-item label="VIP 佣金比例">
         <el-input-number v-model="form.vipCommissionRate" :min="0" :max="100" :precision="0" />

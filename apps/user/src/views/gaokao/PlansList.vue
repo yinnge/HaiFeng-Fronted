@@ -66,7 +66,7 @@ async function handleCreate() {
   await selectionStore.pruneInvalidSelections()
 
   if (plans.value.length >= maxPlans) {
-    const typeName = userStore.userInfo?.memberType === 'vip' ? 'VIP' : userStore.userInfo?.memberType === 'pro' ? 'Pro' : '普通'
+    const typeName = userStore.userInfo?.memberType === 'vip' ? 'VIP' : '普通'
     ElMessageBox.confirm(
       `当前${typeName}会员最多允许 ${maxPlans} 个志愿表，请删除旧方案或升级会员`,
       '已达上限',
@@ -179,7 +179,7 @@ function goBack() {
           <h1 class="text-2xl font-bold text-gray-800">我的志愿表</h1>
           <p class="text-sm text-gray-500 mt-1">管理你的志愿方案，一键导出</p>
           <div class="mt-3 inline-flex items-center gap-2 text-sm">
-            <span class="text-gray-500">升级会员可提升创建志愿表的次数上限（普通 2 / Pro 10 / VIP 20）</span>
+            <span class="text-gray-500">升级会员可提升创建志愿表的次数上限（普通 2 / VIP 20）</span>
             <button
               class="text-brand-orange font-medium hover:underline whitespace-nowrap"
               @click="recharge.open()"

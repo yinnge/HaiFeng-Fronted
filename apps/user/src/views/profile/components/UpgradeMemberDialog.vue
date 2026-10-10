@@ -18,14 +18,14 @@ const emit = defineEmits<{
 
 const router = useRouter()
 
-/** 升级类型 */
-type UpgradeType = 'pro' | 'vip' | 'renew_pro' | 'renew_vip'
+/** 升级类型（Pro 已并入 VIP，仅剩开通/续费两态） */
+type UpgradeType = 'vip' | 'renew_vip'
 
 /** 步骤: 1=选择类型, 2=选择时长, 3=确认 */
 const step = ref<1 | 2 | 3>(1)
 
-/** 用户选择的目标类型 */
-const targetType = ref<'pro' | 'vip'>('pro')
+/** 用户选择的目标类型（恒为 vip） */
+const targetType = ref<'vip'>('vip')
 
 /** 是否为续费操作 */
 const isRenewal = ref(false)
@@ -37,14 +37,11 @@ const selectedMonths = ref(12)
 /** 当前会员类型 */
 const currentType = computed(() => props.memberInfo?.memberType || MemberType.NORMAL)
 
-/** 是否为 Pro→VIP 升级（需要暂存 Pro 时间） */
-const isProToVipUpgrade = computed(() => currentType.value === MemberType.PRO && targetType.value === 'vip' && !isRenewal.value)
-
 /** 根据当前会员类型计算可用的升级选项 */
 const upgradeOptions = computed(() => {
   const options: Array<{
     type: UpgradeType
-    targetType: 'pro' | 'vip'
+    targetType: 'vip'
     isRenewal: boolean
     label: string
     desc: string
@@ -53,34 +50,11 @@ const upgradeOptions = computed(() => {
   switch (currentType.value) {
     case MemberType.NORMAL:
       options.push({
-        type: 'pro',
-        targetType: 'pro',
-        isRenewal: false,
-        label: '升级专业版',
-        desc: '解锁专业功能',
-      })
-      options.push({
         type: 'vip',
         targetType: 'vip',
         isRenewal: false,
-        label: '升级VIP会员',
-        desc: '享全部尊享权益',
-      })
-      break
-    case MemberType.PRO:
-      options.push({
-        type: 'vip',
-        targetType: 'vip',
-        isRenewal: false,
-        label: '升级VIP会员',
-        desc: '享全部尊享权益',
-      })
-      options.push({
-        type: 'renew_pro',
-        targetType: 'pro',
-        isRenewal: true,
-        label: '续费专业版',
-        desc: '延长会员有效期',
+        label: '开通VIP会员',
+        desc: '解锁全部会员权益',
       })
       break
     case MemberType.VIP:
@@ -99,7 +73,7 @@ const upgradeOptions = computed(() => {
 /** 年价格 */
 const yearPrice = computed(() => {
   if (!props.siteInfo) return 0
-  return targetType.value === 'pro' ? (props.siteInfo.proPrice ?? 0) : (props.siteInfo.vipPrice ?? 0)
+  return props.siteInfo.vipPrice ?? 0
 })
 
 /** 计算金额 */
@@ -148,7 +122,7 @@ function goToAccountSecurity() {
 /** 重置状态 */
 function resetState() {
   step.value = 1
-  targetType.value = 'pro'
+  targetType.value = 'vip'
   isRenewal.value = false
   selectedMonths.value = 12
 }
@@ -208,11 +182,8 @@ watch(
             class="upgrade-option"
             @click="handleSelectOption(option)"
           >
-            <div class="option-icon" :class="option.targetType">
-              <svg v-if="option.targetType === 'pro'" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="currentColor">
+            <div class="option-icon vip">
+              <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20 21V19C20 16.79 18.21 15 16 15H8C5.79 15 4 16.79 4 19V21H20ZM12 3C8.69 3 6 5.69 6 9C6 12.31 8.69 15 12 15C15.31 15 18 12.31 18 9C18 5.69 15.31 3 12 3Z" />
               </svg>
             </div>
@@ -239,7 +210,7 @@ watch(
           </svg>
         </button>
         <div class="header-title">
-          {{ isRenewal ? '续费' : '升级' }}{{ targetType === 'pro' ? '专业版' : 'VIP会员' }}
+          {{ isRenewal ? '续费' : '开通' }}VIP会员
         </div>
       </div>
 
@@ -275,20 +246,6 @@ watch(
         </div>
       </div>
 
-      <!-- Pro→VIP 升级说明 -->
-      <div v-if="isProToVipUpgrade" class="upgrade-notice">
-        <div class="notice-header">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="notice-icon">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-          </svg>
-          <span class="notice-title">升级说明</span>
-        </div>
-        <div class="notice-content">
-          <p>升级VIP后，您的<strong>专业版剩余时间将被暂时保存</strong>。</p>
-          <p>VIP到期后会<strong>自动恢复专业版</strong>，届时专业版有效期将顺延。</p>
-        </div>
-      </div>
-
       <button class="btn-primary" @click="handleConfirm">确认选择</button>
     </template>
 
@@ -306,8 +263,8 @@ watch(
 
       <div class="order-summary">
         <div class="order-row">
-          <span class="order-label">升级类型</span>
-          <span class="order-value">{{ isRenewal ? '续费' : '升级' }}{{ targetType === 'pro' ? '专业版' : 'VIP会员' }}</span>
+          <span class="order-label">会员类型</span>
+          <span class="order-value">{{ isRenewal ? '续费' : '开通' }}VIP会员</span>
         </div>
         <div class="order-row">
           <span class="order-label">时长</span>
@@ -316,20 +273,6 @@ watch(
         <div class="order-row">
           <span class="order-label">金额</span>
           <span class="order-value price">¥{{ calculatedAmount }}</span>
-        </div>
-      </div>
-
-      <!-- Pro→VIP 升级说明 -->
-      <div v-if="isProToVipUpgrade" class="upgrade-notice">
-        <div class="notice-header">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="notice-icon">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-          </svg>
-          <span class="notice-title">升级说明</span>
-        </div>
-        <div class="notice-content">
-          <p>升级VIP后，您的<strong>专业版剩余时间将被暂时保存</strong>。</p>
-          <p>VIP到期后会<strong>自动恢复专业版</strong>，届时专业版有效期将顺延。</p>
         </div>
       </div>
 
@@ -479,11 +422,6 @@ watch(
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.option-icon.pro {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: white;
 }
 
 .option-icon.vip {
@@ -709,48 +647,5 @@ watch(
   color: #f59e0b;
   margin-top: 0.75rem;
   font-weight: 500;
-}
-
-/* Pro→VIP 升级说明 */
-.upgrade-notice {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(251, 146, 60, 0.06));
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.notice-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.notice-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  color: #f97316;
-}
-
-.notice-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.notice-content {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  line-height: 1.6;
-}
-
-.notice-content p {
-  margin: 0;
-}
-
-.notice-content strong {
-  color: #ea580c;
-  font-weight: 600;
 }
 </style>

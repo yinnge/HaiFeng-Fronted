@@ -236,8 +236,9 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <!-- 更多：固定收纳项（英语四六级/规划工具）+ 放不下的菜单自动收进来 -->
+        <!-- 更多：仅当存在「固定收纳项 + 溢出项」时才显示，避免空菜单 -->
         <div
+          v-if="morePanelItems.length > 0"
           class="nav-dropdown-wrapper more-wrapper"
           @mouseenter="openDropdown('more')"
           @mouseleave="scheduleClose"

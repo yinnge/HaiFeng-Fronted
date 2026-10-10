@@ -21,64 +21,37 @@ const router = useRouter()
 // ── 步骤：1=三列对比  2=微信二维码 ──
 const step = ref<1 | 2>(1)
 
-// ── 用户选择 ──
-const targetType = ref<'pro' | 'vip'>('pro')
+// ── 用户选择（Pro 已并入 VIP，目标恒为 vip） ──
+const targetType = ref<'vip'>('vip')
 const isRenewal = ref(false)
 
 // ── 当前会员信息 ──
 const currentType = computed(() => props.memberInfo?.memberType || MemberType.NORMAL)
 
-// ── 三列按钮状态 ──
-const proBtn = computed(() => {
-  switch (currentType.value) {
-    case MemberType.NORMAL: return { text: '升级到 Pro', disabled: false }
-    case MemberType.PRO: return { text: '续费', disabled: false }
-    case MemberType.VIP: return { text: '已是更高等级', disabled: true }
-    default: return { text: '升级到 Pro', disabled: false }
-  }
-})
-
+// ── VIP 按钮状态 ──
 const vipBtn = computed(() => {
   switch (currentType.value) {
-    case MemberType.NORMAL: return { text: '升级到 VIP', disabled: false }
-    case MemberType.PRO: return { text: '升级到 VIP', disabled: false }
+    case MemberType.NORMAL: return { text: '开通 VIP', disabled: false }
     case MemberType.VIP: return { text: '续费', disabled: false }
-    default: return { text: '升级到 VIP', disabled: false }
+    default: return { text: '开通 VIP', disabled: false }
   }
 })
 
 // ── 等级激活 / 徽章 ──
 const isFreeActive = computed(() => currentType.value === MemberType.NORMAL)
-const isProActive = computed(() => currentType.value === MemberType.PRO)
 const isVipActive = computed(() => currentType.value === MemberType.VIP)
-
-const proBadge = computed(() => {
-  if (isVipActive.value) return '已包含'
-  if (isProActive.value) return '当前'
-  return '推荐'
-})
 
 const vipBadge = computed(() => {
   if (isVipActive.value) return '当前'
   return '尊享'
 })
 
-const isProColumnDisabled = computed(() => currentType.value === MemberType.VIP)
-
 // ── 价格 ──
-const proPrice = computed(() => props.siteInfo?.proPrice ?? 0)
 const vipPrice = computed(() => props.siteInfo?.vipPrice ?? 0)
 
 const wechatQr = computed(() => props.siteInfo?.contactUrl?.wechat || '')
 
 // ── 事件处理 ──
-function handleProClick() {
-  if (isProColumnDisabled.value) return
-  targetType.value = 'pro'
-  isRenewal.value = currentType.value === MemberType.PRO
-  step.value = 2
-}
-
 function handleVipClick() {
   targetType.value = 'vip'
   isRenewal.value = currentType.value === MemberType.VIP
@@ -102,7 +75,7 @@ function goToAccountSecurity() {
 
 function resetState() {
   step.value = 1
-  targetType.value = 'pro'
+  targetType.value = 'vip'
   isRenewal.value = false
 }
 
@@ -118,7 +91,7 @@ watch(
   <el-dialog
     :model-value="visible"
     @update:model-value="emit('update:visible', $event)"
-    width="960px"
+    width="720px"
     :show-close="false"
     center
     class="recharge-dialog"
@@ -181,55 +154,7 @@ watch(
             </ul>
           </div>
 
-          <!-- 列2：Pro -->
-          <div
-            class="plan-col plan-pro"
-            :class="{ active: isProActive, disabled: isProColumnDisabled }"
-          >
-            <div class="col-accent-bar pro-bar"></div>
-            <div class="col-badge pro-badge">{{ proBadge }}</div>
-
-            <div class="col-header">
-              <div class="col-icon pro-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
-              </div>
-              <div class="col-title-group">
-                <div class="col-title">专业版</div>
-                <div class="col-subtitle">Pro · 解锁更多</div>
-              </div>
-            </div>
-
-            <div class="col-price-section">
-              <div class="col-price-row">
-                <span class="col-price">¥{{ proPrice || '—' }}</span>
-                <span class="col-price-unit">/ 年</span>
-              </div>
-              <div class="col-price-monthly" v-if="proPrice > 0">
-                约 ¥{{ (proPrice / 12).toFixed(2) }} / 月
-              </div>
-              <div class="col-price-divider"></div>
-            </div>
-
-            <button
-              class="col-btn"
-              :class="{ 'col-btn-active': !proBtn.disabled, 'col-btn-disabled': proBtn.disabled }"
-              :disabled="proBtn.disabled"
-              @click="handleProClick"
-            >
-              {{ proBtn.text }}
-            </button>
-
-            <ul class="col-permissions">
-              <li>志愿表一键导出（Word / Excel）</li>
-              <li>AI 志愿分析报告查看与下载</li>
-              <li>院校学术深度指南</li>
-              <li>专业薪资排行 · 考研方向 · 竞赛推荐</li>
-              <li>考研专业开设院校 & 本研衔接分析</li>
-              <li>行业关联企业 · 企业分类筛选</li>
-            </ul>
-          </div>
-
-          <!-- 列3：VIP -->
+          <!-- 列2：VIP（Pro 已并入，权益合并展示） -->
           <div class="plan-col plan-vip" :class="{ active: isVipActive }">
             <div class="col-accent-bar vip-bar"></div>
             <div class="col-badge vip-badge">{{ vipBadge }}</div>
@@ -265,10 +190,14 @@ watch(
             </button>
 
             <ul class="col-permissions">
-              <li>AI 智能生成专属志愿分析报告</li>
+              <li>志愿表一键导出（Word / Excel）</li>
+              <li>AI 智能生成专属志愿分析报告 + 下载</li>
+              <li>院校学术深度指南</li>
               <li>录取专业组分数线与详情查询</li>
-              <li>资源文件直接下载</li>
-              <li>初中资源、高中资源</li>
+              <li>专业薪资排行 · 考研方向 · 竞赛推荐</li>
+              <li>考研专业开设院校 & 本研衔接分析</li>
+              <li>行业关联企业 · 企业分类筛选</li>
+              <li>资源文件直接下载（初中 / 高中资源）</li>
             </ul>
           </div>
         </div>
@@ -285,7 +214,7 @@ watch(
           </svg>
         </button>
         <div class="header-title step-title">
-          {{ isRenewal ? '续费' : '升级' }}{{ targetType === 'pro' ? '专业版' : 'VIP会员' }}
+          {{ isRenewal ? '续费' : '开通' }}VIP会员
         </div>
       </div>
 
@@ -323,8 +252,9 @@ watch(
 .el-dialog.recharge-dialog {
   background: transparent !important;
   box-shadow: none !important;
-  border-radius: 24px;
+  border-radius: 24px !important;
   overflow: visible;
+  border: none !important;
 }
 
 /* header / body 也必须全局化：scoped :deep 在 teleport 后选不中，
@@ -515,43 +445,8 @@ watch(
 }
 
 /* ── Pro 列 ── */
-.plan-pro {
-  border: 2px solid #fdba74;
-}
-.plan-pro.active {
-  border-color: #f97316;
-}
-.plan-pro.disabled {
-  border-color: #e5e7eb;
-  background: #fafafa;
-  box-shadow: none;
-}
-.plan-pro.disabled .col-title,
-.plan-pro.disabled .col-title-group .col-title {
-  color: #9ca3af;
-}
-.plan-pro.disabled .col-subtitle {
-  color: #b0b7c3;
-}
-.plan-pro.disabled .col-price {
-  color: #9ca3af;
-}
-.plan-pro.disabled .col-price-monthly {
-  color: #b0b7c3;
-}
-.plan-pro.disabled .col-permissions li {
-  color: #b0b7c3;
-}
-.pro-bar { background: linear-gradient(90deg, #f97316, #fb923c); }
-.pro-badge { background: linear-gradient(135deg, #f97316, #fb923c); }
 
 /* Pro 列禁用态覆盖徽章 */
-.plan-pro.disabled .pro-bar { background: #d1d5db; }
-.plan-pro.disabled .pro-badge { background: #9ca3af; }
-.plan-pro.disabled .pro-icon {
-  background: #e5e7eb;
-  color: #9ca3af;
-}
 
 /* ── VIP 列 ── */
 .plan-vip {
@@ -569,18 +464,9 @@ watch(
   border-color: #9ca3af;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
 }
-.plan-pro:hover {
-  border-color: #f97316;
-  box-shadow: 0 14px 30px rgba(249, 115, 22, 0.3);
-}
 .plan-vip:hover {
   border-color: #d97706;
   box-shadow: 0 14px 30px rgba(245, 158, 11, 0.3);
-}
-.plan-pro.disabled:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: #e5e7eb;
 }
 .vip-bar { background: linear-gradient(90deg, #f59e0b, #fb923c); }
 .vip-badge { background: linear-gradient(135deg, #f59e0b, #d97706); }
@@ -609,10 +495,6 @@ watch(
   height: 24px;
 }
 
-.pro-icon {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #ffffff;
-}
 
 .vip-icon {
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -630,9 +512,6 @@ watch(
   line-height: 1.3;
 }
 
-.plan-pro .col-title {
-  color: #e8722a;
-}
 
 .plan-vip .col-title {
   color: #b45309;
@@ -644,9 +523,6 @@ watch(
   margin-top: 1px;
 }
 
-.plan-pro .col-subtitle {
-  color: #fb923c;
-}
 
 .plan-vip .col-subtitle {
   color: #d97706;
@@ -669,9 +545,6 @@ watch(
   color: #6b7280;
 }
 
-.plan-pro .col-price {
-  color: #ea580c;
-}
 
 .plan-vip .col-price {
   color: #d97706;
@@ -698,9 +571,6 @@ watch(
   margin-top: 10px;
 }
 
-.plan-pro .col-price-divider {
-  background: #fed7aa;
-}
 
 .plan-vip .col-price-divider {
   background: #fde68a;
@@ -772,9 +642,6 @@ watch(
   background: #d1d5db;
 }
 
-.plan-pro .col-permissions li::before {
-  background: #fb923c;
-}
 
 .plan-vip .col-permissions li::before {
   background: #f59e0b;
@@ -876,47 +743,12 @@ watch(
 }
 
 /* ── 升级说明 ── */
-.upgrade-notice {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(251, 146, 60, 0.06));
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
 
-.notice-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
 
-.notice-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  color: #f97316;
-}
 
-.notice-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1f2937;
-}
 
-.notice-content {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  line-height: 1.6;
-}
 
-.notice-content p {
-  margin: 0;
-}
 
-.notice-content strong {
-  color: #ea580c;
-  font-weight: 600;
-}
 
 /* ── 品牌按钮 ── */
 .btn-brand {

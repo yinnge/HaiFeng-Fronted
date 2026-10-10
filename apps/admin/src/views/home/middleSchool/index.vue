@@ -155,6 +155,10 @@ const handleEdit = async (id: string) => {
       const d = res.data.data
       initialFormData.value = {
         targetAudience: d.targetAudience,
+        storageType: d.storageType === 'BAIDU' ? 'BAIDU' : 'OSS',
+        fileName: d.fileName || '',
+        netdiskUrl: d.netdiskUrl || '',
+        accessCode: d.accessCode || '',
         subject: d.subject,
         applicableStage: d.applicableStage || '',
         version: d.version,
@@ -170,7 +174,17 @@ const handleEdit = async (id: string) => {
 }
 
 // 提交上传/修改
-const handleSubmit = async (data: { file?: File; subject: string; applicableStage: string; description?: string; tag?: string }) => {
+const handleSubmit = async (data: {
+  file?: File
+  storageType: 'OSS' | 'BAIDU'
+  fileName?: string
+  netdiskUrl?: string
+  accessCode?: string
+  subject: string
+  applicableStage: string
+  description?: string
+  tag?: string
+}) => {
   if (!data.subject) {
     ElMessage.warning('请选择或输入学科')
     return
@@ -179,22 +193,38 @@ const handleSubmit = async (data: { file?: File; subject: string; applicableStag
   try {
     let res: any
     if (formMode.value === 'upload') {
-      if (!data.file) {
-        ElMessage.warning('请选择要上传的文件')
-        return
-      }
       const formData = new FormData()
-      formData.append('file', data.file)
       formData.append('targetAudience', AUDIENCE)
+      formData.append('storageType', data.storageType)
       formData.append('subject', data.subject)
       if (data.applicableStage) formData.append('applicableStage', data.applicableStage)
       if (data.description) formData.append('description', data.description)
       if (data.tag) formData.append('tag', data.tag)
+      if (data.storageType === 'BAIDU') {
+        // 网盘录入：无文件，携带资源名称 + 分享链接 + 提取码
+        if (!data.fileName || !data.netdiskUrl) {
+          ElMessage.warning('请填写资源名称与百度网盘分享链接')
+          return
+        }
+        formData.append('fileName', data.fileName)
+        formData.append('netdiskUrl', data.netdiskUrl)
+        if (data.accessCode) formData.append('accessCode', data.accessCode)
+      } else {
+        if (!data.file) {
+          ElMessage.warning('请选择要上传的文件')
+          return
+        }
+        formData.append('file', data.file)
+      }
       res = await uploadFileLoad(AUDIENCE, formData)
     } else if (formMode.value === 'edit' && currentId.value) {
       const payload: FileLoadUploadDTO = {
         targetAudience: AUDIENCE,
+        storageType: data.storageType,
         subject: data.subject,
+        fileName: data.storageType === 'BAIDU' ? data.fileName : undefined,
+        netdiskUrl: data.storageType === 'BAIDU' ? data.netdiskUrl : undefined,
+        accessCode: data.storageType === 'BAIDU' && data.accessCode ? data.accessCode : undefined,
         applicableStage: data.applicableStage || undefined,
         description: data.description || undefined,
         tag: data.tag || undefined,

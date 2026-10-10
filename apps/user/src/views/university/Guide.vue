@@ -23,7 +23,7 @@ const galleryTypes = ref<string[]>([])
 const selectedImageType = ref('')
 
 const isPro = computed(() => {
-  return userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP
+  return userStore.userInfo?.memberType === MemberType.VIP
 })
 
 // JSONB 字段中文映射（与 admin 院校适应指南管理中的 JSONB_FIELDS 保持一致）
@@ -76,7 +76,7 @@ async function fetchOverview() {
 
 async function handleCategoryClick(cat: typeof categories[0]) {
   if (cat.requiresPro && !isPro.value) {
-    ElMessageBox.alert('该内容需要专业版及以上会员才能查看', '权限不足', {
+    ElMessageBox.alert('该内容需要VIP会员才能查看', '权限不足', {
       confirmButtonText: '知道了',
       type: 'warning',
     })

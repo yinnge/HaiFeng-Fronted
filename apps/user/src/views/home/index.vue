@@ -12,42 +12,41 @@ import CircularGallery from './components/CircularGallery.vue'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import AnnouncementWheel from './components/AnnouncementWheel.vue'
 import AnnouncementDetailPanel from './components/AnnouncementDetailPanel.vue'
+import ServiceNavigator from './components/ServiceNavigator.vue'
+import TreasureBox from './components/TreasureBox.vue'
+import FloatingTreasure from './components/FloatingTreasure.vue'
+import AnimatedLogo from '@/components/AnimatedLogo.vue'
 
+// ===== Stats =====
 interface StatConfig {
   label: string
   target: number
   display: (v: number) => string
-  color: string
 }
 
 const stats: StatConfig[] = [
-  { label: '服务学生', target: 10, display: v => `${v}W+`, color: '#e8722a' },
-  { label: '院校库', target: 2800, display: v => `${v}+`, color: '#f5a54a' },
-  { label: '满意度', target: 986, display: v => `${(v / 10).toFixed(1)}%`, color: '#fbbf24' },
-  { label: '专业顾问', target: 500, display: v => `${v}+`, color: '#e8722a' },
+  { label: '服务学生', target: 10, display: v => `${v}W+` },
+  { label: '院校库', target: 2800, display: v => `${v}+` },
+  { label: '满意度', target: 986, display: v => `${(v / 10).toFixed(1)}%` },
+  { label: '专业顾问', target: 500, display: v => `${v}+` },
 ]
 
 const currentValues = ref<number[]>(stats.map(() => 0))
 const hasAnimated = ref(false)
-
 let animationFrameId: number | null = null
 
 const animateStats = () => {
   if (hasAnimated.value) return
   hasAnimated.value = true
-
   const startTime = performance.now()
   const duration = 1800
-
   const step = (timestamp: number) => {
     const elapsed = timestamp - startTime
     const progress = Math.min(elapsed / duration, 1)
     const eased = 1 - (1 - progress) * (1 - progress)
-
     stats.forEach((stat, i) => {
       currentValues.value[i] = Math.round(eased * stat.target)
     })
-
     if (progress < 1) {
       animationFrameId = requestAnimationFrame(step)
     } else {
@@ -56,36 +55,17 @@ const animateStats = () => {
       })
     }
   }
-
   animationFrameId = requestAnimationFrame(step)
 }
 
-let observer: IntersectionObserver | null = null
+let statsObserver: IntersectionObserver | null = null
 
+// ===== Core =====
 const recharge = useRechargeDialog()
 const router = useRouter()
 const userStore = useUserStore()
 
-// ===== 快速入口 =====
-interface EntryItem {
-  tag: string
-  emoji: string
-  title: string
-  desc: string
-  btn: string
-  to?: string
-  expert?: boolean
-}
-
-const entryItems: EntryItem[] = [
-  { tag: 'AI智能', emoji: '✨', title: '高考报志愿', desc: '基于AI算法与大数据分析，科学评估成绩与兴趣，一键生成个性化志愿方案，精准定位理想院校。', btn: '开始志愿填报', to: '/gaokao' },
-  { tag: '一对一', emoji: '👨‍🎓', title: '专家指导', desc: '资深规划师一对一深度咨询，量身定制升学与职业路径，全程陪伴、随时答疑。', btn: '立即咨询专家', expert: true },
-  { tag: '择校导航', emoji: '🏫', title: '院校', desc: '海量院校权威数据，招生计划、历年分数、专业设置一网打尽，科学选择心仪院校。', btn: '进入院校专区', to: '/university' },
-  { tag: '专业库', emoji: '📖', title: '专业', desc: '全面解读专业内涵与就业方向，结合个人兴趣特长，精准匹配最适合你的专业。', btn: '进入专业专区', to: '/major' },
-  { tag: '就业规划', emoji: '💼', title: '就业专栏', desc: '汇聚公务员、事业单位、名企等最新就业资讯，把握就业趋势，提前规划职业未来。', btn: '进入就业专栏', to: '/employment/civil' },
-]
-
-// ===== 专家指导 =====
+// ===== Expert =====
 const expertDialogVisible = ref(false)
 const siteInfo = ref<SiteInfoVO | null>(null)
 const siteInfoLoading = ref(false)
@@ -112,17 +92,15 @@ const openExpertDialog = async () => {
     return
   }
   const memberType = userStore.userInfo?.memberType
-  if (memberType !== MemberType.PRO && memberType !== MemberType.VIP) {
+  if (memberType !== MemberType.VIP) {
     try {
-      await ElMessageBox.confirm('专家指导联系方式为专业版/VIP会员专享，是否前往开通？', '提示', {
+      await ElMessageBox.confirm('专家指导联系方式为VIP会员专享，是否前往开通？', '提示', {
         confirmButtonText: '前往开通',
         cancelButtonText: '取消',
         type: 'warning',
       })
       recharge.open()
-    } catch {
-      // 取消开通
-    }
+    } catch { /* cancel */ }
     return
   }
   await fetchSiteInfo()
@@ -161,10 +139,6 @@ const displayAnnouncementTotal = computed(() =>
   announcementTag.value.trim() ? filteredAnnouncements.value.length : announcementTotal.value
 )
 
-const searchAnnouncement = () => {
-  announcementTag.value = announcementTag.value.trim()
-}
-
 // ===== Announcement Detail =====
 const announcementDetailLoading = ref(false)
 const announcementDetail = ref<AnnouncementDetailVO | null>(null)
@@ -194,11 +168,8 @@ const selectAnnouncement = async (id: string) => {
 }
 
 watch(filteredAnnouncements, (list) => {
-  if (list.length) {
-    selectAnnouncement(list[0].id)
-  } else {
-    announcementDetail.value = null
-  }
+  if (list.length) selectAnnouncement(list[0].id)
+  else announcementDetail.value = null
 })
 
 // ===== Planner =====
@@ -207,8 +178,9 @@ const plannerRegion = ref('')
 const plannerPageIndex = ref(0)
 const waveOffsets = [-10, 8, -14, 8, -10]
 const isSmallScreen = ref(false)
-
 const viewportWidth = ref(0)
+const touchStartX = ref(0)
+const touchStartY = ref(0)
 
 const updateViewport = () => {
   viewportWidth.value = window.innerWidth
@@ -218,11 +190,7 @@ const updateViewport = () => {
 const plannersPerPage = computed(() => (isSmallScreen.value ? 3 : 5))
 
 const fetchPlanners = async () => {
-  const res = await getPlanners({
-    page: 1,
-    size: 100,
-    region: plannerRegion.value || undefined,
-  })
+  const res = await getPlanners({ page: 1, size: 100, region: plannerRegion.value || undefined })
   planners.value = res.data.data.records
   plannerPageIndex.value = 0
 }
@@ -242,35 +210,19 @@ watch(plannerPages, (pages) => {
 })
 
 const currentPlannerPage = computed(() => plannerPages.value[plannerPageIndex.value] || [])
-
-const prevPlannerPage = () => {
-  if (plannerPageIndex.value > 0) plannerPageIndex.value--
-}
-
-const nextPlannerPage = () => {
-  if (plannerPageIndex.value < plannerPages.value.length - 1) plannerPageIndex.value++
-}
-
-const searchPlanner = () => {
-  fetchPlanners()
-}
-
-let touchStartX = 0
-let touchStartY = 0
+const prevPlannerPage = () => { if (plannerPageIndex.value > 0) plannerPageIndex.value-- }
+const nextPlannerPage = () => { if (plannerPageIndex.value < plannerPages.value.length - 1) plannerPageIndex.value++ }
 
 const onPlannerTouchStart = (e: TouchEvent) => {
-  touchStartX = e.touches[0].clientX
-  touchStartY = e.touches[0].clientY
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
 }
 
 const onPlannerTouchEnd = (e: TouchEvent) => {
-  const dx = e.changedTouches[0].clientX - touchStartX
-  const dy = e.changedTouches[0].clientY - touchStartY
-  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
-  if (dx < 0) {
-    nextPlannerPage()
-  } else {
-    prevPlannerPage()
+  const dx = e.changedTouches[0].clientX - touchStartX.value
+  const dy = e.changedTouches[0].clientY - touchStartY.value
+  if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy)) {
+    dx < 0 ? nextPlannerPage() : prevPlannerPage()
   }
 }
 
@@ -282,11 +234,7 @@ const institutionType = ref('')
 
 const fetchInstitutions = async () => {
   try {
-    const res = await getInstitutions({
-      page: 1,
-      size: 100,
-      name: institutionName.value || undefined,
-    })
+    const res = await getInstitutions({ page: 1, size: 100, name: institutionName.value || undefined })
     institutions.value = res.data.data.records
     institutionTotal.value = res.data.data.total
   } catch (e: any) {
@@ -296,9 +244,7 @@ const fetchInstitutions = async () => {
 
 const institutionTypes = computed(() => {
   const types = new Set<string>()
-  institutions.value.forEach(inst => {
-    if (inst.type) types.add(inst.type)
-  })
+  institutions.value.forEach(inst => { if (inst.type) types.add(inst.type) })
   return Array.from(types)
 })
 
@@ -307,363 +253,511 @@ const filteredInstitutions = computed(() => {
   return institutions.value.filter(inst => inst.type === institutionType.value)
 })
 
-const searchInstitution = () => {
-  fetchInstitutions()
-}
-
-const onMoreInstitutions = () => {
-  ElMessage.info('机构列表页开发中，敬请期待')
-}
-
-const goInstitutionDetail = (id: string) => {
-  router.push(`/home/institution/${id}`)
-}
-
-// ===== Institution Gallery =====
 const institutionGalleryItems = computed(() =>
-  filteredInstitutions.value.map(inst => ({
-    image: inst.images?.[0] || '',
-    text: inst.name,
-  }))
+  filteredInstitutions.value.map(inst => ({ image: inst.images?.[0] || '', text: inst.name }))
 )
 
 const onInstitutionSelect = (index: number) => {
   const inst = filteredInstitutions.value[index]
-  if (inst) goInstitutionDetail(inst.id)
+  if (inst) router.push(`/home/institution/${inst.id}`)
 }
 
+const onMoreInstitutions = () => { ElMessage.info('机构列表页开发中，敬请期待') }
+
+// ===== Scroll Reveal =====
+let revealObserver: IntersectionObserver | null = null
+
+const initScrollReveal = () => {
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed')
+      }
+    })
+  }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' })
+
+  const elements = document.querySelectorAll('.reveal, .reveal-left')
+  elements.forEach(el => {
+    // 对已在视口内的元素立即 reveal，避免 observer 未触发导致永久模糊
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      el.classList.add('revealed')
+    } else {
+      revealObserver!.observe(el)
+    }
+  })
+}
+
+// ===== Lifecycle =====
 onMounted(() => {
   fetchAnnouncements()
   fetchPlanners()
   fetchInstitutions()
-
   updateViewport()
   window.addEventListener('resize', updateViewport)
 
-  observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        animateStats()
-      }
-    })
+  statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) animateStats() })
   }, { threshold: 0.3 })
+  const el = document.querySelector('.stats-card')
+  if (el) statsObserver.observe(el)
 
-  const el = document.querySelector('.stats-section')
-  if (el) observer.observe(el)
+  initScrollReveal()
 })
 
 onUnmounted(() => {
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
-  if (observer) observer.disconnect()
+  if (statsObserver) statsObserver.disconnect()
+  if (revealObserver) revealObserver.disconnect()
   window.removeEventListener('resize', updateViewport)
 })
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
-    <main class="flex-1">
-      <div class="container mx-auto px-6 py-20 text-center">
-        <div class="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm text-orange-600">
-          <span class="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
-          专业 · 科学 · 个性化
+  <div class="home-page">
+    <!-- ==================== Hero（不对称布局） ==================== -->
+    <section class="hero-section grain-overlay">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            专业 · 科学 · 个性化
+          </div>
+          <h1 class="hero-title">
+            <AnimatedLogo class="hero-logo" />
+            海枫<span class="hero-title-gradient">未来规划院</span>
+          </h1>
+          <p class="hero-desc">
+            依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
+          </p>
+          <div class="hero-actions">
+            <router-link to="/gaokao" class="hero-btn-primary magnetic-btn">
+              开始志愿填报
+              <svg class="hero-btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L11.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.04-1.08l3.158-2.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+            </router-link>
+            <router-link to="/university" class="hero-btn-secondary magnetic-btn">
+              探索院校
+            </router-link>
+          </div>
         </div>
-        <h2 class="mb-6 text-4xl font-bold text-gray-800 md:text-5xl lg:text-6xl leading-tight">
-          海枫<span class="bg-gradient-to-r from-brand-orange to-brand-orange-light bg-clip-text text-transparent">未来规划院</span>
-        </h2>
-        <p class="mx-auto max-w-2xl text-lg text-gray-500 leading-relaxed">
-          依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
-        </p>
-      </div>
 
-      <div class="stats-section">
-        <div class="stats-container">
-          <div
-            v-for="(stat, index) in stats"
-            :key="stat.label"
-            class="stat-item"
-          >
+        <div class="hero-visual">
+          <div class="stats-card glass-card">
             <div
-              class="stat-value"
-              :style="{ color: stat.color }"
+              v-for="(stat, index) in stats"
+              :key="stat.label"
+              class="stat-item"
             >
-              {{ stat.display(currentValues[index]) }}
+              <div class="stat-value">{{ stat.display(currentValues[index]) }}</div>
+              <div class="stat-label">{{ stat.label }}</div>
             </div>
-            <div class="stat-label">{{ stat.label }}</div>
+            <div class="stats-card-glow"></div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- ===== 核心服务导航（参考研究生阶段导航样式） ===== -->
-      <section class="container mx-auto px-6 py-16">
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-gray-800">核心服务导航</h2>
-          <p class="mt-1 text-sm text-gray-500">从择校到就业，全程规划你的升学与职业发展</p>
+    <!-- ==================== 核心服务导航（跑马灯大卡 + 弹层目录） ==================== -->
+    <section class="section-wrapper">
+      <div class="section-container reveal">
+        <div class="section-head reveal-left">
+          <h2 class="section-title">核心服务导航</h2>
+          <p class="section-sub">从初中到就业，十大模块覆盖升学全程 · 点击卡片查看二级目录</p>
         </div>
 
-        <div class="entry-grid">
-          <component
-            :is="item.expert ? 'div' : 'router-link'"
-            v-for="item in entryItems"
-            :key="item.title"
-            :to="item.expert ? undefined : item.to"
-            class="entry-card"
-            @click="item.expert && openExpertDialog()"
-          >
-            <span class="entry-tag">{{ item.tag }}</span>
-            <div class="entry-emoji">{{ item.emoji }}</div>
-            <h3 class="entry-title">{{ item.title }}</h3>
-            <p class="entry-desc">{{ item.desc }}</p>
-            <span class="entry-btn">
-              {{ item.btn }}
-              <svg class="entry-btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </component>
+        <ServiceNavigator @expert="openExpertDialog" />
+      </div>
+    </section>
+
+    <!-- ==================== 百宝箱（与核心服务导航同级别的工具导航） ==================== -->
+    <section class="section-wrapper">
+      <div class="section-container reveal">
+        <div class="section-head reveal-left">
+          <h2 class="section-title">百宝箱</h2>
+          <p class="section-sub">查询工具合集 · 院校、专业、城市、企业行业与竞赛证书一箱搞定</p>
         </div>
-      </section>
 
-      <!-- ===== Announcement Section ===== -->
-      <section class="bg-white py-16">
-        <div class="container mx-auto px-6">
-          <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">公告信息</h2>
+        <TreasureBox />
+      </div>
+    </section>
 
-          <div v-if="announcementLoading" class="mx-auto flex max-w-5xl justify-center py-16">
-            <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-          </div>
-          <div v-else class="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[340px_1fr] lg:gap-12">
-            <AnnouncementWheel
-              :announcements="filteredAnnouncements"
-              @select="selectAnnouncement"
-            />
-            <AnnouncementDetailPanel
-              :detail="announcementDetail"
-              :loading="announcementDetailLoading"
-            />
-          </div>
-
-          <p class="mt-6 text-center text-sm text-gray-400">共 {{ displayAnnouncementTotal }} 条</p>
+    <!-- ==================== 公告信息 ==================== -->
+    <section class="section-wrapper section-alt grain-overlay">
+      <div class="section-container reveal">
+        <div class="section-head">
+          <h2 class="section-title">公告信息</h2>
+          <p class="section-sub">最新动态与重要通知</p>
         </div>
-      </section>
 
-      <!-- ===== Planner Section ===== -->
-      <section class="bg-gradient-to-b from-slate-50 to-white py-16">
-        <div class="container mx-auto px-6">
-          <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">专业规划师</h2>
-
-          <div v-if="plannerPages.length" class="flex items-center justify-center">
-            <button
-              class="z-10 mr-1 md:mr-3 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="plannerPageIndex === 0"
-              @click="prevPlannerPage"
-            >
-              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <div
-              class="flex items-center justify-center gap-0"
-              @touchstart="onPlannerTouchStart"
-              @touchend="onPlannerTouchEnd"
-            >
-              <PlannerCard
-                v-for="(planner, i) in currentPlannerPage"
-                :key="planner.id"
-                :planner="planner"
-                :offset="waveOffsets[i % waveOffsets.length]"
-                :align="i === currentPlannerPage.length - 1 ? 'left' : 'right'"
-              />
-            </div>
-
-            <button
-              class="z-10 ml-1 md:ml-3 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-orange-500 hover:shadow-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              :disabled="plannerPageIndex >= plannerPages.length - 1"
-              @click="nextPlannerPage"
-            >
-              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-          <div v-else class="py-12 text-center text-gray-400">
-            暂无规划师
-          </div>
-
-          <div class="mt-6 flex justify-center gap-2">
-            <span
-              v-for="(_, i) in plannerPages"
-              :key="i"
-              class="inline-block h-2 w-2 rounded-full transition-colors cursor-pointer"
-              :class="i === plannerPageIndex ? 'bg-orange-500' : 'bg-gray-300'"
-              @click="plannerPageIndex = i"
-            ></span>
-          </div>
+        <div v-if="announcementLoading" class="flex justify-center py-16">
+          <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
         </div>
-      </section>
-
-      <!-- ===== Institution Section ===== -->
-      <section class="bg-white py-16">
-        <div class="container mx-auto px-6">
-          <h2 class="mb-8 text-3xl font-bold text-center text-gray-800">培训机构</h2>
-
-          <div class="mx-auto mb-6 flex max-w-xl items-center gap-3">
-            <input
-              v-model="institutionName"
-              type="text"
-              placeholder="输入机构名称搜索"
-              class="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-              @keyup.enter="searchInstitution"
-            />
-            <button
-              class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all"
-              @click="searchInstitution"
-            >
-              搜索
-            </button>
-          </div>
-
-          <div v-if="institutionTypes.length" class="mb-8 flex flex-wrap justify-center gap-2">
-            <button
-              class="rounded-full px-4 py-1.5 text-sm transition-all"
-              :class="institutionType === '' ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'"
-              @click="institutionType = ''"
-            >
-              全部
-            </button>
-            <button
-              v-for="type in institutionTypes"
-              :key="type"
-              class="rounded-full px-4 py-1.5 text-sm transition-all"
-              :class="institutionType === type ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'"
-              @click="institutionType = type"
-            >
-              {{ type }}
-            </button>
-          </div>
-
-          <div v-if="filteredInstitutions.length" class="relative">
-            <div class="h-[440px] sm:h-[500px] md:h-[560px]">
-              <CircularGallery
-                :items="institutionGalleryItems"
-                :bend="3"
-                text-color="#1f2937"
-                @select="onInstitutionSelect"
-              />
-            </div>
-            <p class="mt-2 text-center text-xs text-gray-400">左右拖拽 / 滚动浏览 · 点击卡片查看详情</p>
-          </div>
-          <div v-else class="py-12 text-center text-gray-400">
-            暂无培训机构
-          </div>
-
-          <div class="mt-8 flex items-center justify-end">
-            <button
-              class="flex items-center gap-1 text-sm text-orange-500 hover:text-orange-600 transition-colors"
-              @click="onMoreInstitutions"
-            >
-              共 {{ institutionTotal }} 家 · 查看更多机构
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+        <div v-else class="announcement-layout">
+          <AnnouncementWheel
+            :announcements="filteredAnnouncements"
+            @select="selectAnnouncement"
+          />
+          <AnnouncementDetailPanel
+            :detail="announcementDetail"
+            :loading="announcementDetailLoading"
+          />
         </div>
-      </section>
 
-      <el-dialog
-        v-model="expertDialogVisible"
-        title="专家指导 · 联系信息"
-        width="420px"
-        :close-on-click-modal="false"
-        class="expert-dialog"
-      >
-        <div v-if="siteInfoLoading" class="flex justify-center py-10">
-          <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+        <p class="text-center text-sm text-gray-400 mt-6">共 {{ displayAnnouncementTotal }} 条</p>
+      </div>
+    </section>
+
+    <!-- ==================== 专业规划师 ==================== -->
+    <section class="section-wrapper">
+      <div class="section-container reveal">
+        <div class="section-head">
+          <h2 class="section-title">专业规划师</h2>
+          <p class="section-sub">资深团队，一对一陪伴你的每一步</p>
         </div>
-        <div v-else class="space-y-4">
-          <div class="flex items-start gap-3 rounded-xl bg-orange-50/60 p-3">
-            <span class="mt-0.5 text-lg">📍</span>
-            <div>
-              <p class="text-xs text-gray-400">公司地址</p>
-              <p class="text-sm font-medium text-gray-700">{{ siteInfo?.basicMessage?.address }}</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-orange-50/60 p-3">
-            <span class="mt-0.5 text-lg">📞</span>
-            <div>
-              <p class="text-xs text-gray-400">联系电话</p>
-              <p class="text-sm font-medium text-gray-700">{{ siteInfo?.basicMessage?.phone }}</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-orange-50/60 p-3">
-            <span class="mt-0.5 text-lg">✉️</span>
-            <div>
-              <p class="text-xs text-gray-400">联系邮箱</p>
-              <p class="text-sm font-medium text-gray-700">{{ siteInfo?.basicMessage?.email }}</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-orange-50/60 p-3">
-            <span class="mt-0.5 text-lg">🕘</span>
-            <div>
-              <p class="text-xs text-gray-400">咨询时间</p>
-              <p class="text-sm font-medium text-gray-700">{{ siteInfo?.basicMessage?.consultationTime }}</p>
-            </div>
-          </div>
-          <div class="pt-2 text-center">
-            <p class="mb-3 text-sm font-semibold text-gray-700">微信二维码</p>
-            <div class="inline-block rounded-xl border border-orange-100 bg-orange-50/40 p-2 shadow-md">
-              <img
-                v-if="siteInfo?.contactUrl?.wechat"
-                :src="siteInfo.contactUrl.wechat"
-                alt="微信二维码"
-                class="h-40 w-40 object-contain"
-              />
-              <div v-else class="flex h-40 w-40 items-center justify-center text-gray-400">
-                二维码加载中...
-              </div>
-            </div>
-            <p class="mt-2 text-sm text-gray-500">扫码添加规划师微信咨询</p>
-          </div>
-        </div>
-        <template #footer>
+
+        <div v-if="plannerPages.length" class="flex items-center justify-center">
           <button
-            class="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-semibold text-white hover:from-orange-600 hover:to-amber-600 transition-all"
-            @click="expertDialogVisible = false"
+            class="nav-arrow-btn magnetic-btn"
+            :disabled="plannerPageIndex === 0"
+            @click="prevPlannerPage"
           >
-            我知道了
+            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-        </template>
-      </el-dialog>
-    </main>
+
+          <div
+            class="flex items-center justify-center gap-0"
+            @touchstart="onPlannerTouchStart"
+            @touchend="onPlannerTouchEnd"
+          >
+            <PlannerCard
+              v-for="(planner, i) in currentPlannerPage"
+              :key="planner.id"
+              :planner="planner"
+              :offset="waveOffsets[i % waveOffsets.length]"
+              :align="i === currentPlannerPage.length - 1 ? 'left' : 'right'"
+            />
+          </div>
+
+          <button
+            class="nav-arrow-btn magnetic-btn"
+            :disabled="plannerPageIndex >= plannerPages.length - 1"
+            @click="nextPlannerPage"
+          >
+            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        <div v-else class="py-12 text-center text-gray-400">暂无规划师</div>
+
+        <div class="mt-6 flex justify-center gap-2">
+          <span
+            v-for="(_, i) in plannerPages"
+            :key="i"
+            class="page-dot"
+            :class="i === plannerPageIndex ? 'active' : ''"
+            @click="plannerPageIndex = i"
+          ></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 培训机构 ==================== -->
+    <section class="section-wrapper section-alt grain-overlay">
+      <div class="section-container reveal">
+        <div class="section-head">
+          <h2 class="section-title">培训机构</h2>
+          <p class="section-sub">优质教育资源，助力升学之路</p>
+        </div>
+
+        <div class="institution-search">
+          <input
+            v-model="institutionName"
+            type="text"
+            placeholder="输入机构名称搜索"
+            class="institution-input"
+            @keyup.enter="fetchInstitutions"
+          />
+          <button class="institution-search-btn magnetic-btn" @click="fetchInstitutions">搜索</button>
+        </div>
+
+        <div v-if="institutionTypes.length" class="institution-filters">
+          <button
+            class="filter-pill"
+            :class="institutionType === '' ? 'active' : ''"
+            @click="institutionType = ''"
+          >全部</button>
+          <button
+            v-for="type in institutionTypes"
+            :key="type"
+            class="filter-pill"
+            :class="institutionType === type ? 'active' : ''"
+            @click="institutionType = type"
+          >{{ type }}</button>
+        </div>
+
+        <div v-if="filteredInstitutions.length" class="relative">
+          <div class="h-[440px] sm:h-[500px] md:h-[560px]">
+            <CircularGallery
+              :items="institutionGalleryItems"
+              :bend="3"
+              text-color="#1f2937"
+              @select="onInstitutionSelect"
+            />
+          </div>
+          <p class="mt-2 text-center text-xs text-gray-400">左右拖拽 / 滚动浏览 · 点击卡片查看详情</p>
+        </div>
+        <div v-else class="py-12 text-center text-gray-400">暂无培训机构</div>
+
+        <div class="mt-8 flex items-center justify-end">
+          <button class="more-link magnetic-btn" @click="onMoreInstitutions">
+            共 {{ institutionTotal }} 家 · 查看更多机构
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 专家指导弹窗 ==================== -->
+    <el-dialog
+      v-model="expertDialogVisible"
+      title="专家指导 · 联系信息"
+      width="420px"
+      :close-on-click-modal="false"
+      class="expert-dialog"
+    >
+      <div v-if="siteInfoLoading" class="flex justify-center py-10">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+      </div>
+      <div v-else class="space-y-4">
+        <div class="expert-info-row">
+          <svg class="expert-info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <div>
+            <p class="expert-info-label">公司地址</p>
+            <p class="expert-info-value">{{ siteInfo?.basicMessage?.address }}</p>
+          </div>
+        </div>
+        <div class="expert-info-row">
+          <svg class="expert-info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          <div>
+            <p class="expert-info-label">联系电话</p>
+            <p class="expert-info-value">{{ siteInfo?.basicMessage?.phone }}</p>
+          </div>
+        </div>
+        <div class="expert-info-row">
+          <svg class="expert-info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <div>
+            <p class="expert-info-label">联系邮箱</p>
+            <p class="expert-info-value">{{ siteInfo?.basicMessage?.email }}</p>
+          </div>
+        </div>
+        <div class="expert-info-row">
+          <svg class="expert-info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          <div>
+            <p class="expert-info-label">咨询时间</p>
+            <p class="expert-info-value">{{ siteInfo?.basicMessage?.consultationTime }}</p>
+          </div>
+        </div>
+        <div class="pt-2 text-center">
+          <p class="mb-3 text-sm font-semibold text-gray-700">微信二维码</p>
+          <div class="inline-block rounded-xl border border-orange-100 bg-orange-50/40 p-2 shadow-md">
+            <img
+              v-if="siteInfo?.contactUrl?.wechat"
+              :src="siteInfo.contactUrl.wechat"
+              alt="微信二维码"
+              class="h-40 w-40 object-contain"
+            />
+            <div v-else class="flex h-40 w-40 items-center justify-center text-gray-400">
+              二维码加载中...
+            </div>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">扫码添加规划师微信咨询</p>
+        </div>
+      </div>
+      <template #footer>
+        <button
+          class="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-semibold text-white hover:from-orange-600 hover:to-amber-600 spring-fast"
+          @click="expertDialogVisible = false"
+        >我知道了</button>
+      </template>
+    </el-dialog>
+
+    <!-- 悬浮百宝箱：贴墙可拖动，点击弹目录 -->
+    <FloatingTreasure />
   </div>
 </template>
 
 <style scoped>
-.stats-section {
-  padding: 48px 24px 40px;
-  position: relative;
-  background: #ffffff;
-}
-
-.stats-section::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 900px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 114, 42, 0.2), rgba(251, 191, 36, 0.2), transparent);
-}
-
-.stats-container {
-  max-width: 1000px;
+/* ============ Page ============ */
+.home-page {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+/* ============ Hero（不对称布局） ============ */
+.hero-section {
+  position: relative;
+  padding: 3rem 0 2rem;
+}
+
+.hero-inner {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 32px;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e8722a;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  letter-spacing: 1px;
+}
+
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f97316;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+}
+
+.hero-title {
+  margin-top: 1.25rem;
+  font-size: clamp(2rem, 3vw, 3.2rem);
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: balance;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero-logo {
+  width: clamp(3.5rem, 5vw, 5rem);
+  height: clamp(3.5rem, 5vw, 5rem);
+  flex-shrink: 0;
+}
+
+.hero-title-gradient {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  max-width: 520px;
+  margin-top: 1rem;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  color: #6b7280;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
+  text-decoration: none;
+}
+
+.hero-btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.45);
+}
+
+.hero-btn-icon {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.hero-btn-primary:hover .hero-btn-icon {
+  transform: translateX(3px);
+}
+
+.hero-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e5e7eb;
+  text-decoration: none;
+}
+
+.hero-btn-secondary:hover {
+  color: #e8722a;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: rgba(255, 247, 237, 0.6);
+}
+
+/* Stats Glass Card */
+.hero-visual {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stats-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2rem;
+  padding: 2rem 2.5rem;
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  box-shadow: 0 8px 40px rgba(249, 115, 22, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.stats-card-glow {
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .stat-item {
@@ -671,170 +765,305 @@ onUnmounted(() => {
 }
 
 .stat-value {
-  font-size: 42px;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  letter-spacing: -0.02em;
-  transition: color 0.3s;
+  font-size: clamp(1.6rem, 2.2vw, 2.2rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 15px;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
   color: #6b7280;
   font-weight: 500;
-  letter-spacing: 0.5px;
 }
 
-@media (max-width: 1024px) {
-  .stats-container {
-    gap: 24px;
-  }
-  .stat-value {
-    font-size: 36px;
-  }
-}
-
-/* ===== 核心服务导航卡片（对齐研究生阶段导航 pg-stage-card 样式） ===== */
-.entry-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.25rem;
-}
-
-.entry-card {
+/* ============ Sections ============ */
+.section-wrapper {
+  padding: 3.5rem 0;
   position: relative;
-  width: 100%;
-  max-width: 380px;
-  padding: 2rem 1.5rem;
-  text-align: center;
+}
+
+.section-alt {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
+}
+
+.section-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.section-head {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  position: relative;
+  padding-left: 0.875rem;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 1.25rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f97316, #fb923c);
+}
+
+.section-sub {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+/* ============ Scroll Reveal（从左往右显现） ============ */
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-32px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-left {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============ Announcement ============ */
+.announcement-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ============ Planner Nav ============ */
+.nav-arrow-btn {
+  z-index: 10;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  background: #ffffff;
-  border-radius: 1rem;
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
-  transition: all 0.25s ease;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  color: #6b7280;
   cursor: pointer;
 }
 
-.entry-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #f97316, #fb923c);
-}
-
-.entry-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 14px 34px rgba(249, 115, 22, 0.14);
-  border-color: rgba(249, 115, 22, 0.35);
-}
-
-.entry-tag {
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
-  padding: 0.2rem 0.7rem;
-  border-radius: 9999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #e8722a;
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
-  border: 1px solid rgba(249, 115, 22, 0.25);
-}
-
-.entry-emoji {
-  font-size: 2.8rem;
-  line-height: 1;
-  margin-bottom: 0.75rem;
-}
-
-.entry-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  letter-spacing: 1px;
-}
-
-.entry-desc {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
-  line-height: 1.75;
-  color: #6b7280;
-  flex-grow: 1;
-}
-
-.entry-btn {
-  margin-top: 1.25rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1.5rem;
-  border-radius: 9999px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #ffffff;
-  background: linear-gradient(90deg, #f97316, #fb923c);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.28);
-  transition: all 0.2s ease;
-}
-
-.entry-card:hover .entry-btn {
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
-  transform: translateY(-2px);
-}
-
-.entry-btn-arrow {
-  width: 0.875rem;
-  height: 0.875rem;
-  transition: transform 0.2s ease;
-}
-
-.entry-card:hover .entry-btn-arrow {
-  transform: translateX(3px);
-}
-
-@media (min-width: 640px) {
-  .entry-card {
-    width: calc(50% - 0.625rem);
+@media (min-width: 768px) {
+  .nav-arrow-btn {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 
-@media (min-width: 1024px) {
-  .entry-card {
-    width: calc(33.333% - 0.875rem);
+.nav-arrow-btn:hover:not(:disabled) {
+  color: #f97316;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15);
+}
+
+.nav-arrow-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.page-dot.active {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+}
+
+/* ============ Institution ============ */
+.institution-search {
+  display: flex;
+  max-width: 32rem;
+  margin: 0 auto 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.institution-input {
+  flex: 1;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.institution-input:hover {
+  border-color: #fdba74;
+}
+
+.institution-input:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.institution-search-btn {
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+.institution-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.filter-pill {
+  border-radius: 9999px;
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  background: rgba(255, 247, 237, 0.6);
+  color: #e8722a;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.filter-pill:hover {
+  background: rgba(255, 247, 237, 1);
+}
+
+.filter-pill.active {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+.more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #f97316;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.more-link:hover {
+  color: #ea580c;
+}
+
+/* ============ Expert Dialog Info ============ */
+.expert-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 247, 237, 0.6);
+  padding: 0.75rem;
+}
+
+.expert-info-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #f97316;
+}
+
+.expert-info-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.expert-info-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .hero-visual {
+    justify-content: center;
+  }
+  .entry-bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .entry-card-wrapper:first-child {
+    grid-column: span 2;
   }
 }
 
 @media (max-width: 768px) {
-  .stats-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px 20px;
+  .home-page {
+    padding: 0 0.875rem 3rem;
   }
-  .stat-value {
-    font-size: 32px;
+  .hero-section {
+    padding: 2rem 0 1rem;
+  }
+  .hero-title {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+  .stats-card {
+    padding: 1.5rem;
+    gap: 1.25rem 1.5rem;
+  }
+  .announcement-layout {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .stats-section {
-    padding: 36px 16px 32px;
+  .entry-bento {
+    grid-template-columns: 1fr;
   }
-  .stats-container {
-    gap: 24px 16px;
+  .entry-card-wrapper:first-child {
+    grid-column: span 1;
   }
-  .stat-value {
-    font-size: 28px;
-  }
-  .stat-label {
-    font-size: 13px;
+  .section-wrapper {
+    padding: 2.5rem 0;
   }
 }
 </style>

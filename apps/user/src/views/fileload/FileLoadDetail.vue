@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getFileLoadDetail } from '@/api/fileload'
-import type { FileLoadDetailVO, FileLoadAudience } from '@/types/fileload'
+import { getFileLoadDetail, getFileLoadNetdisk } from '@/api/fileload'
+import type { FileLoadDetailVO, FileLoadAudience, NetdiskInfoVO } from '@/types/fileload'
 import { useUserStore } from '@/store'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
@@ -22,6 +22,15 @@ const userStore = useUserStore()
 const loading = ref(false)
 const detail = ref<FileLoadDetailVO | null>(null)
 const vipBlocked = ref(false)
+
+/** 是否为百度网盘资源（无预览/下载，取码接口限 VIP） */
+const isNetdisk = computed(() => detail.value?.storageType === 'BAIDU')
+
+// 网盘取码弹框
+const netdiskVisible = ref(false)
+const netdiskLoading = ref(false)
+const netdiskInfo = ref<NetdiskInfoVO | null>(null)
+const copied = ref(false)
 
 const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : '大学专栏'))
 const audienceLabelMap: Record<FileLoadAudience, string> = {
@@ -71,6 +80,58 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+/** 获取网盘链接 + 提取码（VIP 门槛由后端 /{id}/netdisk 接口控制，非 VIP 返回业务码 1005） */
+async function fetchNetdisk() {
+  const id = route.params.id
+  if (!id) {
+    ElMessage.error('文件不存在')
+    return
+  }
+  netdiskLoading.value = true
+  copied.value = false
+  try {
+    const res = await getFileLoadNetdisk(props.audience, String(id))
+    netdiskInfo.value = res.data.data
+    netdiskVisible.value = true
+  } catch (e: any) {
+    const msg = e?.message || '获取网盘链接失败'
+    if (msg.includes('旗舰版') || msg.includes('VIP')) {
+      try {
+        await ElMessageBox.confirm('查看网盘链接与提取码需要旗舰版（VIP）会员，是否前往开通？', '提示', {
+          confirmButtonText: '去开通',
+          cancelButtonText: '取消',
+          type: 'warning',
+        })
+        recharge.open()
+      } catch { /* 用户取消 */ }
+    } else {
+      ElMessage.error(msg)
+    }
+  } finally {
+    netdiskLoading.value = false
+  }
+}
+
+/** 复制提取码到剪贴板 */
+async function copyCode() {
+  const code = netdiskInfo.value?.accessCode
+  if (!code) return
+  try {
+    await navigator.clipboard.writeText(code)
+    copied.value = true
+    ElMessage.success('提取码已复制')
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    ElMessage.error('复制失败，请手动复制')
+  }
+}
+
+/** 新窗口打开百度网盘链接 */
+function openNetdisk() {
+  const url = netdiskInfo.value?.netdiskUrl
+  if (url) window.open(url, '_blank', 'noopener')
 }
 
 function goBack() {
@@ -157,22 +218,41 @@ onMounted(load)
 
       <div v-loading="loading" class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
         <div v-if="detail" class="flex flex-col lg:flex-row gap-6">
-          <!-- 左：iframe 内嵌预览 -->
-          <div class="flex-1 min-h-[520px] lg:min-h-[660px] rounded-xl border border-orange-100 overflow-hidden bg-white flex flex-col">
-            <iframe
-              v-if="detail.previewUrl"
-              :src="detail.previewUrl"
-              class="w-full h-full min-h-[520px] lg:min-h-[660px]"
-              frameborder="0"
-              title="文件预览"
-            ></iframe>
-            <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
-              <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
-              </svg>
-              <p class="text-sm">该文件类型暂不支持在线预览</p>
-              <p class="text-xs mt-1">请使用右侧「下载文件」按钮保存到本地查看</p>
-            </div>
+          <!-- 左：百度网盘资源 / iframe 内嵌预览 -->
+          <div class="flex-1 min-h-[700px] lg:min-h-[860px] rounded-xl border border-orange-100 overflow-hidden bg-white flex flex-col">
+            <template v-if="isNetdisk">
+              <div class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center shadow-xl shadow-blue-200">
+                  <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+                  </svg>
+                </div>
+                <p class="text-base font-bold text-gray-800 break-all max-w-md">{{ detail.fileName }}</p>
+                <p class="text-sm text-gray-500 leading-relaxed max-w-md">
+                  该资源为百度网盘大文件。点击右侧「获取网盘链接」，复制分享链接与提取码后，前往百度网盘保存或下载。
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
+                  <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-600 border border-blue-100">百度网盘存储</span>
+                  <span v-if="detail.applicableStage" class="rounded-full bg-amber-50 px-3 py-1 text-amber-600 border border-amber-100">{{ detail.applicableStage }}</span>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <iframe
+                v-if="detail.previewUrl"
+                :src="detail.previewUrl"
+                class="w-full h-full min-h-[700px] lg:min-h-[860px]"
+                frameborder="0"
+                title="文件预览"
+              ></iframe>
+              <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
+                <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-sm">该文件类型暂不支持在线预览</p>
+                <p class="text-xs mt-1">请使用右侧「下载文件」按钮保存到本地查看</p>
+              </div>
+            </template>
           </div>
 
           <!-- 右：元数据面板 -->
@@ -180,17 +260,23 @@ onMounted(load)
             <!-- 文件头部 -->
             <div class="flex items-center gap-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 border border-orange-100">
               <div
-                class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md shadow-orange-200"
-                :class="fileTypeMeta(detail.fileType).iconBg"
+                class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md"
+                :class="isNetdisk ? 'from-blue-500 to-sky-400 shadow-blue-200' : fileTypeMeta(detail.fileType).iconBg"
               >
-                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <svg v-if="isNetdisk" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+                </svg>
+                <svg v-else class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z" />
                 </svg>
               </div>
               <div class="min-w-0">
                 <h3 class="text-base font-bold text-gray-800 break-all leading-snug">{{ detail.fileName }}</h3>
-                <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-white border border-orange-200 text-orange-600">
-                  {{ fileTypeMeta(detail.fileType).label }}
+                <span
+                  class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-white"
+                  :class="isNetdisk ? 'border border-blue-200 text-blue-600' : 'border border-orange-200 text-orange-600'"
+                >
+                  {{ isNetdisk ? '网盘' : fileTypeMeta(detail.fileType).label }}
                 </span>
               </div>
             </div>
@@ -200,7 +286,7 @@ onMounted(load)
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">基础信息</div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-400">文件大小</span>
-                <span class="font-medium text-gray-700">{{ formatSize(detail.fileSize) }}</span>
+                <span class="font-medium text-gray-700">{{ isNetdisk ? '网盘大文件' : formatSize(detail.fileSize) }}</span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-400">上传时间</span>
@@ -243,33 +329,55 @@ onMounted(load)
               </div>
             </div>
 
+            <!-- 声明 -->
+            <div class="rounded-xl bg-orange-50/50 border border-orange-100 p-4">
+              <p class="text-xs text-gray-500 leading-relaxed">
+                声明：文件由海枫未来规划院最终解释，如有侵权，请联系管理员。
+              </p>
+            </div>
+
             <!-- 操作 -->
             <div class="flex flex-col gap-3 mt-auto">
               <button
-                class="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50"
-                :disabled="!detail.downloadUrl"
-                @click="handleDownload"
+                v-if="isNetdisk"
+                class="rounded-full bg-gradient-to-r from-blue-500 to-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-200 hover:from-blue-600 hover:to-sky-600 transition-all disabled:opacity-50"
+                :disabled="netdiskLoading"
+                @click="fetchNetdisk"
               >
                 <span class="inline-flex items-center justify-center gap-1.5">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                  下载文件
+                  {{ netdiskLoading ? '获取中…' : '获取网盘链接' }}
                 </span>
               </button>
-              <button
-                class="rounded-full border border-orange-300 bg-white px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-all disabled:opacity-50"
-                :disabled="!detail.previewUrl"
-                @click="handleOpenNew"
-              >
-                <span class="inline-flex items-center justify-center gap-1.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  新窗口打开
-                </span>
-              </button>
+              <template v-else>
+                <button
+                  class="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50"
+                  :disabled="!detail.downloadUrl"
+                  @click="handleDownload"
+                >
+                  <span class="inline-flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    下载文件
+                  </span>
+                </button>
+                <button
+                  class="rounded-full border border-orange-300 bg-white px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-all disabled:opacity-50"
+                  :disabled="!detail.previewUrl"
+                  @click="handleOpenNew"
+                >
+                  <span class="inline-flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    新窗口打开
+                  </span>
+                </button>
+              </template>
             </div>
           </aside>
         </div>
@@ -282,5 +390,67 @@ onMounted(load)
         <div v-else-if="!loading" class="py-20 text-center text-gray-400">暂无文件数据</div>
       </div>
     </main>
+
+    <!-- 百度网盘取码弹框（VIP 资源） -->
+    <el-dialog
+      v-model="netdiskVisible"
+      title="百度网盘资源"
+      width="520px"
+      align-center
+      class="nd-dialog"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="netdiskLoading" class="space-y-4">
+        <div class="flex items-center gap-3 rounded-xl bg-blue-50 border border-blue-100 p-4">
+          <div class="shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-gray-800 truncate">{{ detail?.fileName }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">文件存储在百度网盘，请复制链接与提取码后前往百度网盘保存</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-gray-400 mb-1.5">分享链接</p>
+          <div class="flex items-center gap-2">
+            <el-input :model-value="netdiskInfo?.netdiskUrl || ''" readonly class="flex-1" />
+            <button
+              class="shrink-0 rounded-full bg-blue-500 text-white text-xs font-medium px-4 py-2 hover:bg-blue-600 transition-all"
+              @click="openNetdisk"
+            >
+              打开链接
+            </button>
+          </div>
+        </div>
+
+        <div v-if="netdiskInfo?.accessCode">
+          <p class="text-xs font-semibold text-gray-400 mb-1.5">提取码</p>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 rounded-lg bg-gray-100 text-center font-mono text-lg font-bold tracking-[0.5em] text-blue-600 py-2 px-2">
+              {{ netdiskInfo.accessCode }}
+            </div>
+            <button
+              class="shrink-0 rounded-full bg-orange-500 text-white text-xs font-medium px-4 py-2 hover:bg-orange-600 transition-all"
+              @click="copyCode"
+            >
+              {{ copied ? '已复制' : '复制提取码' }}
+            </button>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-400 leading-relaxed">提示：分享链接可能因百度网盘策略失效，如遇失效请联系管理员更新。</p>
+      </div>
+      <template #footer>
+        <button
+          class="rounded-full border border-gray-200 px-5 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-all"
+          @click="netdiskVisible = false"
+        >
+          关闭
+        </button>
+      </template>
+    </el-dialog>
   </div>
 </template>

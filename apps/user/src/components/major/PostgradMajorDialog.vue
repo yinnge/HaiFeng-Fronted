@@ -33,7 +33,7 @@ const universityPage = ref(1)
 const universityPageSize = ref(10)
 const universityCategory = ref('')
 
-const isPro = computed(() => userStore.userInfo?.memberType === MemberType.PRO || userStore.userInfo?.memberType === MemberType.VIP)
+const isPro = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
 
 const categoryOptions = ['综合', '理工', '师范', '农林', '医药', '政法', '财经', '民族', '语言', '艺术', '体育']
 
@@ -277,7 +277,7 @@ watch(() => props.visible, (val) => {
           </template>
           <template v-else>
             <div class="upgrade-block p-6 text-center">
-              <p class="text-sm text-gray-600 mb-3">开通专业版，查看可报考该考研方向的本科专业</p>
+              <p class="text-sm text-gray-600 mb-3">开通VIP会员，查看可报考该考研方向的本科专业</p>
               <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
                 @click="recharge.open()"
               >立即升级</button>
@@ -337,7 +337,7 @@ watch(() => props.visible, (val) => {
           </template>
           <template v-else>
             <div class="upgrade-block p-6 text-center">
-              <p class="text-sm text-gray-600 mb-3">开通专业版，查看开设该考研专业的院校列表</p>
+              <p class="text-sm text-gray-600 mb-3">开通VIP会员，查看开设该考研专业的院校列表</p>
               <button class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2 text-sm text-white font-medium"
                 @click="recharge.open()"
               >立即升级</button>

@@ -118,13 +118,6 @@ function buildStatCards() {
       gradient: `linear-gradient(135deg, ${BRAND_BLUE}, #64b5f6)`,
     },
     {
-      title: 'Pro 会员',
-      value: memberStats.proMembers.toLocaleString(),
-      icon: 'Star',
-      color: BRAND_GOLD,
-      gradient: `linear-gradient(135deg, ${BRAND_GOLD}, #fbbf24)`,
-    },
-    {
       title: 'VIP 会员',
       value: memberStats.vipMembers.toLocaleString(),
       icon: 'Medal',

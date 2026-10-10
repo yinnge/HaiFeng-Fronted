@@ -18,6 +18,13 @@ export default defineConfig({
         target: 'http://localhost:18080',
         changeOrigin: true,
       },
+      // 后端自托管 pdf.js viewer（PDF 报告预览）。
+      // 必须与 PDF 直链(/api/v1/public/pdf/...)同源，否则 pdf.js 会拦截；
+      // 生产环境由 nginx 反代同名路径，dev 由这里转发。
+      '/pdfjs': {
+        target: 'http://localhost:18080',
+        changeOrigin: true,
+      },
     },
   },
   build: {

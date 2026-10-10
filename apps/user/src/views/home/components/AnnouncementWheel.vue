@@ -178,7 +178,7 @@ const onTouchEnd = (e: TouchEvent) => {
       <div
         v-for="c in windowCards"
         :key="c.ann.id"
-        class="absolute left-1/2 top-1/2 cursor-pointer rounded-xl bg-white p-3 shadow-lg transition-all duration-500 ease-out hover:shadow-xl"
+        class="absolute left-1/2 top-1/2 cursor-pointer rounded-xl bg-white p-3 shadow-lg hover:shadow-xl aw-card"
         :class="isCenter(c.ann) ? 'border-2 border-orange-400 shadow-orange-200' : 'border border-gray-100'"
         :style="cardStyle(c.offset, c.z)"
         @click="handleCardClick(c.ann)"
@@ -218,3 +218,9 @@ const onTouchEnd = (e: TouchEvent) => {
     </button>
   </div>
 </template>
+
+<style scoped>
+.aw-card {
+  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+</style>

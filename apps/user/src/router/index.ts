@@ -43,7 +43,8 @@ const routes: RouteRecordRaw[] = [
     name: 'CollegeFiles',
     component: () => import('@/views/fileload/FileLoadPage.vue'),
     props: { audience: 'college', title: '大学专栏' },
-    meta: { title: '大学专栏' },
+    // 列表/筛选接口后端需登录：路由层先行引导，避免未登录请求 401 触发"登录已过期"弹窗
+    meta: { title: '大学专栏', requiresAuth: true },
   },
   {
     path: '/college/:id',

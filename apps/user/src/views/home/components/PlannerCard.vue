@@ -42,9 +42,9 @@ const goDetail = () => {
   >
     <div class="relative">
       <div
-        class="overflow-hidden cursor-pointer border-2 shadow-md transition-all duration-300"
+        class="overflow-hidden cursor-pointer border-2 shadow-md"
         :class="isActive ? 'border-orange-400 shadow-orange-200' : 'border-orange-100 hover:border-orange-400'"
-        style="transform: skewX(-8deg)"
+        style="transform: skewX(-8deg); transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
         @click="goDetail"
       >
         <img
@@ -58,7 +58,7 @@ const goDetail = () => {
         v-show="isActive"
         class="absolute top-0 h-full z-30 w-40 sm:w-44 md:w-48 lg:w-52 xl:w-72 2xl:w-80 bg-white rounded-lg shadow-xl border border-orange-100"
         :class="align === 'left' ? 'right-full' : 'left-full'"
-        style="transform: skewX(-8deg)"
+        style="transform: skewX(-8deg); transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
       >
         <div class="flex h-full w-full flex-col justify-center px-4" style="transform: skewX(8deg)">
           <div class="min-w-0">

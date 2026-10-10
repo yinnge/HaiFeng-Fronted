@@ -7,8 +7,8 @@ export interface OrderListVO {
   phone: string
   wechatId: string
   orderType: 'new' | 'renewal'
-  beforeType: 'normal' | 'pro' | 'vip'
-  afterType: 'normal' | 'pro' | 'vip'
+  beforeType: 'normal' | 'vip'
+  afterType: 'normal' | 'vip'
   durationMonths: number
   amount: number
   status: 'pending' | 'completed' | 'cancelled' | 'revoked'
@@ -36,7 +36,7 @@ export interface OrderQueryDTO extends BasePageQuery {
 
 export interface OrderCreateDTO {
   memberId: string
-  targetType: 'pro' | 'vip'
+  targetType: 'vip'
   durationMonths: number
   amount?: number
   remark?: string

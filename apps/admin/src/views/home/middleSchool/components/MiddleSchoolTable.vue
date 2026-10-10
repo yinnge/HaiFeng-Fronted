@@ -39,6 +39,12 @@ const formatSize = (bytes: number) => {
   <div class="table-card">
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
+        <el-table-column label="存储" width="86" align="center">
+          <template #default="{ row }">
+            <span v-if="row.storageType === 'BAIDU'" class="store-pill store-netdisk">网盘</span>
+            <span v-else class="store-pill store-oss">OSS</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="fileName" label="文件名" min-width="240" show-overflow-tooltip />
         <el-table-column prop="subject" label="学科" width="100" align="center">
           <template #default="{ row }">
@@ -79,7 +85,14 @@ const formatSize = (bytes: number) => {
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row.id)">详情</button>
               <button type="button" class="action-btn action-edit" @click="emit('edit', row.id)">修改</button>
-              <button type="button" class="action-btn action-download" @click="emit('download', row.id)">下载</button>
+              <button
+                v-if="row.storageType !== 'BAIDU'"
+                type="button"
+                class="action-btn action-download"
+                @click="emit('download', row.id)"
+              >
+                下载
+              </button>
               <button type="button" class="action-btn action-delete" @click="emit('delete', row.id)">删除</button>
             </div>
           </template>
@@ -203,6 +216,28 @@ const formatSize = (bytes: number) => {
   font-size: 12px;
   font-weight: 500;
   font-family: Consolas, Monaco, monospace;
+}
+
+/* 存储方式药丸 */
+.store-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.store-oss {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.store-netdisk {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(96, 165, 250, 0.16));
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 /* 操作按钮组 */

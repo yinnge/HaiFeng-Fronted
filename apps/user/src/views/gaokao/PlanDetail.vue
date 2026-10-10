@@ -342,7 +342,7 @@ async function handleExport() {
 
 function handleAiAnalysis() {
   const mt = userStore.userInfo?.memberType || 'normal'
-  if (mt !== 'pro' && mt !== 'vip') {
+  if (mt !== 'vip') {
     ElMessageBox.confirm(
       'AI智能分析需要Pro或VIP会员，是否前往开通？',
       '功能受限',

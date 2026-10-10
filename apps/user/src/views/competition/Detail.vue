@@ -26,7 +26,7 @@ const majorsLoading = ref(false)
 
 const isPro = computed(() => {
   const mt = userStore.userInfo?.memberType
-  return mt === 'pro' || mt === 'vip'
+  return mt === 'vip'
 })
 
 async function fetchDetail() {
@@ -233,7 +233,7 @@ onMounted(() => {
                 <template v-else>
                   <div class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 text-center border border-orange-100">
                     <div class="text-4xl mb-3">🔒</div>
-                    <h4 class="text-lg font-semibold text-gray-800 mb-2">开通专业版，查看关联专业</h4>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">开通VIP会员，查看关联专业</h4>
                     <p class="text-gray-500 mb-4">了解该竞赛适合哪些本科专业报考</p>
                     <button
                       class="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-2.5 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
