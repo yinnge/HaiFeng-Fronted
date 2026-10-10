@@ -14,6 +14,7 @@ import AnnouncementWheel from './components/AnnouncementWheel.vue'
 import AnnouncementDetailPanel from './components/AnnouncementDetailPanel.vue'
 import ServiceNavigator from './components/ServiceNavigator.vue'
 import TreasureBox from './components/TreasureBox.vue'
+import FloatingTreasure from './components/FloatingTreasure.vue'
 import AnimatedLogo from '@/components/AnimatedLogo.vue'
 
 // ===== Stats =====
@@ -584,6 +585,9 @@ onUnmounted(() => {
         >我知道了</button>
       </template>
     </el-dialog>
+
+    <!-- 悬浮百宝箱：贴墙可拖动，点击弹目录 -->
+    <FloatingTreasure />
   </div>
 </template>
 

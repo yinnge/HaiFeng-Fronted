@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { navItems } from '@/config/navigation'
@@ -7,9 +7,14 @@ import { pushNavItem } from '@/utils/navAnchor'
 
 /**
  * 核心服务导航（改造版）：
- * - 10 张大卡（图标 + 名称 + 中文描述）组成跑马灯，从右往左匀速滚动，hover 暂停
- * - 点击卡片弹出无边框面板：卡片平滑滑向左侧，右侧二级目录自上而下级联浮现（垂直居中）
- * - 目录数据与导航栏同源（@/config/navigation），后续新增模块只改 navigation.ts + descMap/iconMap
+ * - 10 张大卡（图标 + 名称 + 中文描述）组成跑马灯，JS rAF 驱动从右往左滚动
+ * - hover 暂停；支持按住鼠标左右拖拽滑动（拖拽后抑制误触点击）
+ * - 弹层：背景全透明（仅弹层本体 + 关闭按钮），动画时序：
+ *   1) 空白弹层 → 左卡内容逐行显现（图标→标题→说明→提示，每行间隔 100ms）
+ *   2) 卡片从中央平滑移到左侧（1s），到位后立即触发箭头（无额外等待）
+ *   3) 金色思维导航线从卡片右缘中部延伸到每个目录块（同时出发、同时到达）
+ *   4) 箭头到达瞬间，目录条目从左往右同速率显现（无上下错峰等待）
+ * - 左右为两个独立圆角矩形 div；左卡内容仅弹层内居中（跑马灯内保持左对齐）
  */
 
 interface DirItem {
@@ -55,7 +60,7 @@ const descMap: Record<string, string> = {
   employment: '体制内 · 基层 · 行业专项招聘信息',
 }
 
-// 与导航栏同源：排除「首页」，其余 10 个模块即核心服务
+// 与导航栏同源：排除「首页」，其余 10 个模块即核心服务（不再注入「进入栏目主页」）
 const modules: SvcModule[] = navItems
   .filter(n => n.id !== 'home')
   .map(n => ({
@@ -65,7 +70,6 @@ const modules: SvcModule[] = navItems
     icon: iconMap[n.id] ?? iconMap.book,
     desc: descMap[n.id] ?? '',
     subItems: [
-      ...(n.route ? [{ label: '进入栏目主页', route: n.route }] : []),
       ...(n.subItems ?? []).map(s => ({ label: s.label, route: s.route })),
       ...(n.id === 'gaokao' ? [{ label: '专家指导（一对一）', expert: true }] : []),
     ],
@@ -74,16 +78,93 @@ const modules: SvcModule[] = navItems
 const router = useRouter()
 const route = useRoute()
 
+// ==================== 弹层分阶段动画 ====================
+// intro：空白弹层 → 逐行显现（CSS delay 驱动）
+// moved：内容完毕，卡片 1s 从中央移到左侧
+// arrows：卡片到位立即触发——玻璃目录浮现 + 金色箭头同时延伸（450ms，同时到达）
+// items：箭头到达瞬间，目录条目从左往右同速率显现（无错峰）
+type Stage = 'intro' | 'moved' | 'arrows' | 'items'
 const activeId = ref<string | null>(null)
+const stage = ref<Stage>('intro')
 const open = computed(() => activeId.value !== null)
 const activeModule = computed(() => modules.find(m => m.id === activeId.value) ?? null)
 
+const MOVED_AT = 800 // 最后一行提示 400ms 开始 + 0.4s 完成 ≈ 800ms
+const ARROWS_AT = 1800 // 800 + 1000ms 位移（比上一版的 2s 快 2 倍），到位即触发
+const ARROW_MS = 450 // 箭头延伸时长
+let timers: number[] = []
+
+function clearTimers() {
+  timers.forEach(t => window.clearTimeout(t))
+  timers = []
+}
+
+// ==================== 金色思维导航线（SVG 贝塞尔扇出） ====================
+interface ArrowPath {
+  d: string
+  tx: number
+  ty: number
+  angle: number
+}
+const panelEl = ref<HTMLElement | null>(null)
+const slotEl = ref<HTMLElement | null>(null)
+const panelCardEl = ref<HTMLElement | null>(null)
+const arrows = ref<ArrowPath[]>([])
+const svgSize = ref({ w: 0, h: 0 })
+const ARROW_HEAD = 'M -8 -5.5 L 1.5 0 L -8 5.5'
+
+function buildArrows() {
+  const panel = panelEl.value
+  const card = panelCardEl.value
+  if (!panel || !card || window.innerWidth <= 860) {
+    arrows.value = []
+    return
+  }
+  const pr = panel.getBoundingClientRect()
+  // 起点：直接取左白卡（.svc-panel-card）此刻的真实右缘垂直中点。
+  // 不能用槽位（.svc-slot）——面板 justify-content:center 会让槽位与卡片
+  // 落点错开，箭头就会悬在半空。箭头阶段卡片位移已完成，坐标稳定。
+  const cr = card.getBoundingClientRect()
+  const ox = cr.right - pr.left
+  const oy = cr.top + cr.height / 2 - pr.top
+  const list: ArrowPath[] = []
+  panel.querySelectorAll<HTMLElement>('.svc-dir-item').forEach(el => {
+    const r = el.getBoundingClientRect()
+    const tx = r.left - pr.left - 2
+    const ty = r.top + r.height / 2 - pr.top
+    const dx = tx - ox
+    const bend = Math.max(26, dx * 0.42)
+    const c1x = ox + bend
+    const c1y = oy
+    const c2x = tx - bend
+    const c2y = ty
+    const d = `M ${ox.toFixed(1)} ${oy.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${tx.toFixed(1)} ${ty.toFixed(1)}`
+    const angle = (Math.atan2(ty - c2y, tx - c2x) * 180) / Math.PI
+    list.push({ d, tx, ty, angle })
+  })
+  svgSize.value = { w: Math.round(pr.width), h: Math.round(pr.height) }
+  arrows.value = list
+}
+
 function openDetail(id: string) {
+  if (suppressClick) return
+  clearTimers()
   activeId.value = id
+  stage.value = 'intro'
+  arrows.value = []
+  timers.push(window.setTimeout(() => { stage.value = 'moved' }, MOVED_AT))
+  timers.push(window.setTimeout(() => {
+    stage.value = 'arrows'
+    void nextTick(() => requestAnimationFrame(buildArrows))
+  }, ARROWS_AT))
+  timers.push(window.setTimeout(() => { stage.value = 'items' }, ARROWS_AT + ARROW_MS))
 }
 
 function closeDetail() {
+  clearTimers()
   activeId.value = null
+  stage.value = 'intro'
+  arrows.value = []
 }
 
 function go(item: DirItem) {
@@ -108,14 +189,116 @@ watch(open, v => {
   else window.removeEventListener('keydown', onKeydown)
 })
 
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+// ==================== 跑马灯：rAF 驱动 + 拖拽 ====================
+const SPEED = 45 // px/s 自动滚动速度
+const marqueeEl = ref<HTMLElement | null>(null)
+const trackEl = ref<HTMLElement | null>(null)
+const dragging = ref(false)
+const hoverPaused = ref(false)
+let pos = 0 // 已滚动像素（正数 = 向左）
+let groupW = 0 // 单组卡片总宽（循环周期）
+let raf = 0
+let last = 0
+let startX = 0
+let startPos = 0
+let dragMoved = false
+let suppressClick = false
+const reducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+function normPos() {
+  if (groupW <= 0) return
+  pos = ((pos % groupW) + groupW) % groupW
+}
+
+function measure() {
+  const t = trackEl.value
+  if (!t) return
+  const first = t.firstElementChild as HTMLElement | null
+  groupW = first ? first.offsetWidth : 0
+  normPos()
+}
+
+function frame(ts: number) {
+  if (!last) last = ts
+  const dt = Math.min((ts - last) / 1000, 0.05)
+  last = ts
+  if (!dragging.value && !hoverPaused.value && !open.value && !reducedMotion && groupW > 0) {
+    pos += SPEED * dt
+    normPos()
+  }
+  if (trackEl.value) trackEl.value.style.transform = `translateX(${-pos}px)`
+  raf = requestAnimationFrame(frame)
+}
+
+function onDragStart(e: PointerEvent) {
+  if (open.value) return
+  dragging.value = true
+  dragMoved = false
+  startX = e.clientX
+  startPos = pos
+  // 注意：不能在 pointerdown 时立即 setPointerCapture —— capture 会把 click
+  // 重定向到 marquee 容器，卡片的 @click 永远收不到（点击失效的根因）。
+  // 只在 pointermove 超过阈值后才 capture。
+}
+
+function onDragMove(e: PointerEvent) {
+  if (!dragging.value) return
+  const dx = e.clientX - startX
+  if (!dragMoved && Math.abs(dx) > 6) {
+    dragMoved = true
+    try { marqueeEl.value?.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+  }
+  if (!dragMoved) return
+  pos = startPos - dx // 向右拖 → 内容右移
+  normPos()
+}
+
+function onDragEnd() {
+  if (!dragging.value) return
+  dragging.value = false
+  if (dragMoved) {
+    // 拖拽后短暂抑制 click，避免松手误触打开弹层
+    suppressClick = true
+    window.setTimeout(() => { suppressClick = false }, 80)
+  }
+}
+
+function onResize() {
+  measure()
+  if (open.value && (stage.value === 'arrows' || stage.value === 'items')) buildArrows()
+}
+
+onMounted(() => {
+  measure()
+  raf = requestAnimationFrame(frame)
+  window.addEventListener('resize', onResize)
+})
+
+onUnmounted(() => {
+  cancelAnimationFrame(raf)
+  window.removeEventListener('resize', onResize)
+  window.removeEventListener('keydown', onKeydown)
+  clearTimers()
+})
 </script>
 
 <template>
   <div class="svc-navigator">
-    <!-- 跑马灯：两组相同卡片循环滚动，hover/弹层打开时暂停 -->
-    <div class="svc-marquee" :class="{ paused: open }">
-      <div class="svc-track">
+    <!-- 跑马灯：两组相同卡片循环滚动；hover 暂停；按住可左右拖拽 -->
+    <div
+      ref="marqueeEl"
+      class="svc-marquee"
+      :class="{ paused: open, dragging }"
+      @pointerdown="onDragStart"
+      @pointermove="onDragMove"
+      @pointerup="onDragEnd"
+      @pointercancel="onDragEnd"
+      @mouseenter="hoverPaused = true"
+      @mouseleave="hoverPaused = false"
+    >
+      <div ref="trackEl" class="svc-track">
         <div v-for="g in 2" :key="g" class="svc-track-group" :aria-hidden="g === 2">
           <button
             v-for="m in modules"
@@ -138,40 +321,79 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       </div>
     </div>
 
-    <!-- 点击展开：无边框面板，卡片左移 + 目录级联 -->
+    <!-- 点击展开：背景全透明，仅弹层本体（左白卡 + 金色导航线 + 右玻璃目录） -->
     <Teleport to="body">
       <Transition name="svc-fade">
         <div v-if="open && activeModule" class="svc-backdrop" @click.self="closeDetail">
-          <div class="svc-panel" role="dialog" aria-modal="true">
+          <div
+            ref="panelEl"
+            class="svc-panel"
+            :class="{
+              'is-moved': stage !== 'intro',
+              'is-arrows': stage === 'arrows' || stage === 'items',
+              'is-items': stage === 'items',
+            }"
+            role="dialog"
+            aria-modal="true"
+          >
             <button type="button" class="svc-close" aria-label="关闭" @click="closeDetail">
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
             </button>
 
-            <div class="svc-panel-card">
-              <span class="svc-panel-icon" v-html="activeModule.icon"></span>
-              <h3 class="svc-panel-title">{{ activeModule.label }}</h3>
-              <p class="svc-panel-desc">{{ activeModule.desc }}</p>
-              <p class="svc-panel-hint">点击右侧目录直达对应功能</p>
+            <!-- 左侧占位（保留布局空间，卡片绝对定位动画；也是导航线起点锚） -->
+            <div ref="slotEl" class="svc-slot" aria-hidden="true"></div>
+
+            <!-- 左卡：先空白，逐行显现，再从中央移到左侧；内容居中 -->
+            <div ref="panelCardEl" class="svc-panel-card">
+              <span class="svc-panel-icon svc-line" v-html="activeModule.icon"></span>
+              <h3 class="svc-panel-title svc-line">{{ activeModule.label }}</h3>
+              <p class="svc-panel-desc svc-line">{{ activeModule.desc }}</p>
+              <p class="svc-panel-hint svc-line">点击右侧目录直达对应功能</p>
             </div>
 
-            <div class="svc-dir">
-              <button
-                v-for="(item, i) in activeModule.subItems"
-                :key="item.label"
-                type="button"
-                class="svc-dir-item"
-                :style="{ '--i': i }"
-                @click="go(item)"
-              >
-                <span class="svc-dir-dot"></span>
-                <span class="svc-dir-label">{{ item.label }}</span>
-                <svg class="svc-dir-arrow" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M7.293 4.707a1 1 0 011.414 0L13 8.586l-4.293 4.293a1 1 0 01-1.414-1.414L10.586 10l-3.293-3.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              <p v-if="!activeModule.subItems.length" class="svc-dir-empty">功能规划中，敬请期待</p>
+            <!-- 金色思维导航线：从卡片右缘中部扇出到每个目录块 -->
+            <svg
+              v-if="arrows.length"
+              class="svc-arrows"
+              :viewBox="`0 0 ${svgSize.w} ${svgSize.h}`"
+              aria-hidden="true"
+            >
+              <path
+                v-for="(a, i) in arrows"
+                :key="`p${i}`"
+                class="svc-arrow-path"
+                pathLength="1"
+                :d="a.d"
+              />
+              <path
+                v-for="(a, i) in arrows"
+                :key="`h${i}`"
+                class="svc-arrow-head"
+                :d="ARROW_HEAD"
+                :transform="`translate(${a.tx} ${a.ty}) rotate(${a.angle})`"
+              />
+            </svg>
+
+            <!-- 右侧玻璃目录：独立圆角矩形，高度随目录数量自适应 -->
+            <div class="svc-dir" :class="{ 'is-empty': !activeModule.subItems.length }">
+              <template v-if="activeModule.subItems.length">
+                <button
+                  v-for="item in activeModule.subItems"
+                  :key="item.label"
+                  type="button"
+                  class="svc-dir-item"
+                  @click="go(item)"
+                >
+                  <span class="svc-dir-dot"></span>
+                  <span class="svc-dir-label">{{ item.label }}</span>
+                  <svg class="svc-dir-arrow" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.293 4.707a1 1 0 011.414 0L13 8.586l-4.293 4.293a1 1 0 01-1.414-1.414L10.586 10l-3.293-3.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </template>
+              <p v-else class="svc-dir-empty">功能规划中，敬请期待</p>
             </div>
           </div>
         </div>
@@ -181,30 +403,30 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </template>
 
 <style scoped>
-/* ============ 跑马灯 ============ */
+/* ============ 跑马灯（rAF 驱动 + 拖拽） ============ */
 .svc-marquee {
   overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
   padding: 0.75rem 0 1.25rem;
 }
 
+.svc-marquee.dragging {
+  cursor: grabbing;
+}
+
+.svc-marquee.dragging .svc-card {
+  transition: none;
+}
+
 .svc-track {
   display: flex;
   width: max-content;
-  animation: svc-scroll 48s linear infinite;
   will-change: transform;
-}
-
-.svc-marquee:hover .svc-track,
-.svc-marquee.paused .svc-track {
-  animation-play-state: paused;
-}
-
-@keyframes svc-scroll {
-  to {
-    transform: translateX(-50%);
-  }
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .svc-track-group {
@@ -213,6 +435,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   padding-right: 1.25rem;
 }
 
+/* 卡片：上下各加高 10px（整体 +20px），图标文字靠上、查看目录靠下 */
 .svc-card {
   width: 232px;
   flex-shrink: 0;
@@ -220,7 +443,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  padding: 1.5rem 1.35rem;
+  padding: calc(1.5rem + 10px) 1.35rem;
   border-radius: 16px;
   background: #ffffff;
   border: none;
@@ -273,8 +496,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   min-height: 2.56rem;
 }
 
+/* 查看目录下移：中间空白伸长 */
 .svc-card-more {
-  margin-top: 0.9rem;
+  margin-top: calc(0.9rem + 10px);
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -293,7 +517,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   transform: translateX(3px);
 }
 
-/* ============ 弹出面板（无边框） ============ */
+/* ============ 弹出面板（背景全透明） ============ */
 .svc-backdrop {
   position: fixed;
   inset: 0;
@@ -302,24 +526,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(31, 26, 20, 0.45);
-  backdrop-filter: blur(4px);
+  /* 背景全透明：不遮页面，仅保留弹层本体与关闭按钮 */
+  background: transparent;
 }
 
 .svc-panel {
   position: relative;
-  width: min(860px, 94vw);
-  min-height: 360px;
+  width: min(880px, 94vw);
+  min-height: 420px;
   max-height: 86vh;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   gap: 3rem;
   padding: 3rem;
   border-radius: 24px;
+  /* 实心白底（不透明、不透视）：比右侧玻璃目录更亮，形成前后层次 */
   background: #ffffff;
-  /* 无边框，按需求去掉描边 */
   border: none;
-  box-shadow: 0 30px 80px rgba(194, 65, 12, 0.2);
+  box-shadow: 0 30px 80px rgba(194, 65, 12, 0.18);
   overflow: hidden;
 }
 
@@ -335,7 +560,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   border-radius: 10px;
   color: #9ca3af;
   transition: all 0.2s ease;
-  z-index: 1;
+  z-index: 3;
 }
 
 .svc-close:hover {
@@ -348,20 +573,63 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   height: 1.25rem;
 }
 
-/* 左侧卡片：平滑滑入（模拟「卡片往左移动」） */
-.svc-panel-card {
+/* 左侧布局占位：卡片停靠槽位 + 导航线起点锚 */
+.svc-slot {
   flex-shrink: 0;
-  width: 264px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  animation: svc-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  width: 280px;
+  min-height: 300px;
 }
 
-@keyframes svc-card-in {
+/* 左卡：初始居中（绝对定位），.is-moved 后 1s 平滑移到左侧槽位；内容居中 */
+.svc-panel-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: calc(2.25rem + 10px) 1.75rem;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(194, 65, 12, 0.14);
+  transition: left 1s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+
+.svc-panel.is-moved .svc-panel-card {
+  /* 3rem 面板内边距 + 140px 槽位半宽 = 槽位中心 */
+  left: calc(3rem + 140px);
+}
+
+/* 逐行显现：空白背景 → 图标 → 标题 → 说明 → 提示，每行间隔 100ms */
+.svc-line {
+  opacity: 0;
+  animation: svc-line-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.svc-panel-icon.svc-line {
+  animation-delay: 0.1s;
+}
+
+.svc-panel-title.svc-line {
+  animation-delay: 0.2s;
+}
+
+.svc-panel-desc.svc-line {
+  animation-delay: 0.3s;
+}
+
+.svc-panel-hint.svc-line {
+  animation-delay: 0.4s;
+}
+
+@keyframes svc-line-in {
   from {
     opacity: 0;
-    transform: translateX(90px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -400,19 +668,96 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .svc-panel-hint {
-  margin-top: 1.25rem;
+  margin-top: calc(1.25rem + 10px);
   font-size: 0.8rem;
   color: #9ca3af;
 }
 
-/* 右侧目录：垂直居中 + 级联浮现 */
+/* ============ 金色思维导航线 ============ */
+.svc-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.svc-arrow-path {
+  fill: none;
+  stroke: #d4a85a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+/* 所有箭头同时出发、同时到达（统一时长 + pathLength 归一化） */
+.svc-panel.is-arrows .svc-arrow-path {
+  animation: svc-arrow-draw 0.45s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+}
+
+@keyframes svc-arrow-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.svc-arrow-head {
+  fill: none;
+  stroke: #d4a85a;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.svc-panel.is-arrows .svc-arrow-head {
+  animation: svc-head-in 0.18s ease-out 0.45s forwards;
+}
+
+@keyframes svc-head-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 右侧玻璃目录：独立圆角矩形，半透明 + 模糊；高度随目录数量自适应 */
 .svc-dir {
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  width: 360px;
+  max-height: calc(86vh - 4rem);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.75rem;
+  padding: 1.75rem 1.5rem;
+  border-radius: 20px;
+  /* 略带冷灰的磨砂层：与左侧纯白面板形成前后层次 */
+  background: rgba(244, 245, 247, 0.55);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 2px 10px rgba(120, 130, 140, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* 箭头开始延伸时玻璃层同步浮现 */
+.svc-panel.is-arrows .svc-dir {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 无目录：恒定尺寸，只显示文字 */
+.svc-dir.is-empty {
+  width: 320px;
+  height: 200px;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
 .svc-dir-item {
@@ -422,19 +767,23 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   width: 100%;
   padding: 0.85rem 1.15rem;
   border-radius: 14px;
-  background: #faf9f5;
+  background: rgba(255, 255, 255, 0.72);
   border: none;
   text-align: left;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-  animation: svc-item-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(140ms + var(--i) * 60ms);
+  opacity: 0;
 }
 
-@keyframes svc-item-in {
+/* 箭头到达后：目录从左往右同速率显现（无上下错峰等待） */
+.svc-panel.is-items .svc-dir-item {
+  animation: svc-item-left 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes svc-item-left {
   from {
     opacity: 0;
-    transform: translateY(-14px);
+    transform: translateX(-26px);
   }
   to {
     opacity: 1;
@@ -481,8 +830,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .svc-dir-empty {
   text-align: center;
   font-size: 0.9rem;
+  line-height: 1.8;
   color: #9ca3af;
-  padding: 2rem 0;
 }
 
 /* 弹层过渡 */
@@ -505,12 +854,37 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     overflow-y: auto;
   }
 
+  .svc-slot {
+    display: none;
+  }
+
+  /* 小屏取消绝对定位动画与导航线，卡片自然置顶 */
   .svc-panel-card {
+    position: static;
+    transform: none;
     width: 100%;
+    transition: none;
+  }
+
+  .svc-panel.is-moved .svc-panel-card {
+    left: auto;
+  }
+
+  .svc-arrows {
+    display: none;
+  }
+
+  /* 小屏：玻璃层出现时目录直接显现 */
+  .svc-panel.is-arrows .svc-dir-item {
+    animation: svc-item-left 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .svc-dir {
-    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .svc-dir.is-empty {
+    width: 100%;
   }
 
   .svc-card {
@@ -520,13 +894,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 /* 减弱动效偏好 */
 @media (prefers-reduced-motion: reduce) {
-  .svc-track {
-    animation: none;
+  .svc-line,
+  .svc-panel.is-arrows .svc-arrow-path,
+  .svc-panel.is-arrows .svc-arrow-head,
+  .svc-panel.is-items .svc-dir-item {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
   }
 
-  .svc-panel-card,
-  .svc-dir-item {
-    animation: none;
+  .svc-panel-card {
+    transition: none;
+  }
+
+  .svc-dir {
+    transition: none;
   }
 
   .svc-card,
