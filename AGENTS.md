@@ -14,6 +14,9 @@
   2) 不写任何 `html:has(body.el-popup-parent--hidden)` 或 `body.el-popup-parent--hidden { width:100%!important }` 自定义规则，让 Element Plus 默认补偿 + 第 1 步的 stable gutter 共同工作。
   3) 短页面（内容不溢出）也会显示一条 6px 灰色细滚动条（已用 `::-webkit-scrollbar { width:6px }` 样式做得很不显眼），弹窗零抖动。
 - 早期错误版本：曾加 `body.el-popup-parent--hidden { width:100%!important }` 把 Element Plus 的 `calc(100% - 滚动条宽)` 补偿顶掉 → 滚动条消失 + 宽度不补偿 = 左移 6px；或加在 `html` 上的 `scrollbar-gutter:stable` 在 `overflow:visible` 默认下不生效。两种 bug 都已彻底移除。
+- **2026-09-09 修正（关键，防止误删）**：第 13 行「只放 body」的改法并未完全根治——`position:fixed` 悬浮导航锚定**视口(html)**，而页面真正滚动容器就是 html（body 高度 auto 不真正滚动，仅预留空槽），所以视口滚动条出现/消失时右侧 fixed 导航仍会位移（滚动条消失→导航右移约 6px）。正确补丁：
+  1) **`html { scrollbar-gutter: stable; }`**（根元素 scrollbar-gutter 控制视口滚动槽，此场景下生效）——视口级保留滚动槽，fixed 元素零位移。这一条才是关键，之前误以为「html 上不生效」是错的。
+  2) **重新加回 `body.el-popup-parent--hidden { width: 100% !important; }`**——用 `!important` 覆盖 Element Plus 内联的 `width: calc(100% - 滚动条宽)` 补偿（内联无 !important，可被样式表 !important 覆盖），配合 body 的 stable gutter，锁滚动前后 body 内容区宽度恒定 → 整页不抖。**此规则现在安全**：早期左移是因为当时 gutter 错放在 html（body 无 gutter），现 gutter 已在 body，故 `width:100%` + 稳定 gutter = 内容区宽度前后一致，不再左移。请勿以「早期错误版本」为由删除这两条。
 - 验证：浏览器实测打开各类弹窗（ElMessageBox.confirm / alert / prompt、el-dialog、el-drawer、el-image 预览）—— 右侧滚动条位置恒定，页面零位移。CSS 改动 Vite HMR 即时生效。
 - 影响面：全局（user/admin 所有弹层），改 `index.css` 一处即可。
 

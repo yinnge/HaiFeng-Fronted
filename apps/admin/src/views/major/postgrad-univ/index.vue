@@ -284,15 +284,17 @@ onMounted(() => { fetchData() })
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
-            <template v-if="row.status === 1">
-              <span class="action-link" @click="handleDelete(row.id)">禁用</span>
-            </template>
-            <template v-else>
-              <span class="action-link" @click="handleRestore(row.id)">启用</span>
-            </template>
-            <span class="action-link action-danger" @click="handleHardDelete(row.id)">删除</span>
+            <div class="action-group">
+              <span
+                class="action-btn action-status"
+                @click="row.status === 1 ? handleDelete(row.id) : handleRestore(row.id)"
+              >
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </span>
+              <span class="action-btn action-delete" @click="handleHardDelete(row.id)">删除</span>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -553,21 +555,56 @@ onMounted(() => { fetchData() })
   color: #6B7280;
 }
 
-.action-link {
-  color: #F97316;
+.action-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 13px;
-  margin: 0 6px;
-  transition: color 0.2s;
+  transition: all .2s ease;
+  white-space: nowrap;
 }
-.action-link:hover {
-  color: #FB923C;
+.action-detail {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
 }
-.action-danger {
-  color: #DC2626;
+.action-detail:hover {
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
+  transform: translateY(-1px);
 }
-.action-danger:hover {
-  color: #EF4444;
+.action-edit {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+}
+.action-edit:hover {
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+  transform: translateY(-1px);
+}
+.action-status {
+  background: #fff;
+  color: #d97706;
+  border: 1px solid #fbbf24;
+}
+.action-status:hover {
+  background: #fffbeb;
+}
+.action-delete {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+}
+.action-delete:hover {
+  box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+  transform: translateY(-1px);
 }
 
 .custom-pagination {
