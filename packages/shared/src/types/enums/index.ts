@@ -1,21 +1,18 @@
 /**
- * 会员类型枚举
+ * 会员类型枚举（Pro 已并入 VIP）
  */
 export enum MemberType {
   NORMAL = 'normal',
-  PRO = 'pro',
   VIP = 'vip',
 }
 
 export const MemberTypeLabel: Record<MemberType, string> = {
   [MemberType.NORMAL]: '普通用户',
-  [MemberType.PRO]: '专业版',
   [MemberType.VIP]: 'VIP会员',
 }
 
 export const MemberTypeTag: Record<MemberType, 'info' | 'warning' | 'success'> = {
   [MemberType.NORMAL]: 'info',
-  [MemberType.PRO]: 'warning',
   [MemberType.VIP]: 'success',
 }
 

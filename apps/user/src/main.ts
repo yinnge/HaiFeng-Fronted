@@ -29,7 +29,11 @@ setSessionExpiredHandler(() => {
     closeOnClickModal: false,
     closeOnPressEscape: false,
   }).finally(() => {
-    window.location.href = `${import.meta.env.BASE_URL}login`
+    // 改用 SPA 内跳转（router.push）替代 window.location.href 整页刷新，
+    // 避免「长时间 idle 后点路由 → 整个页面白屏刷新」的突兀感；
+    // 带上 redirect 让重新登录后平滑回到触发失效前的那个路由。
+    const redirect = router.currentRoute.value.fullPath
+    router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
   })
 })
 
