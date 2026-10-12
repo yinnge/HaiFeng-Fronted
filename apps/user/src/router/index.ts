@@ -54,6 +54,51 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '大学文件详情', requiresAuth: true },
   },
   {
+    path: '/civil-service',
+    name: 'CivilServiceFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    // 面向人群由路由 props 写死唯一固定值（考公人）；列表/筛选接口后端需登录
+    props: { audience: 'civil-service', title: '考公专栏', stage: '考公人' },
+    meta: { title: '考公专栏', requiresAuth: true },
+  },
+  {
+    path: '/civil-service/:id',
+    name: 'CivilServiceFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'civil-service', title: '考公专栏' },
+    meta: { title: '考公文件详情', requiresAuth: true },
+  },
+  {
+    path: '/postgrad-exam',
+    name: 'PostgradExamFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    // 面向人群由路由 props 写死唯一固定值（考研人）；列表/筛选接口后端需登录
+    props: { audience: 'postgrad-exam', title: '考研专栏', stage: '考研人' },
+    meta: { title: '考研专栏', requiresAuth: true },
+  },
+  {
+    path: '/postgrad-exam/:id',
+    name: 'PostgradExamFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'postgrad-exam', title: '考研专栏' },
+    meta: { title: '考研文件详情', requiresAuth: true },
+  },
+  {
+    path: '/graduate',
+    name: 'GraduateFiles',
+    component: () => import('@/views/fileload/FileLoadPage.vue'),
+    // 面向人群由路由 props 写死唯一固定值（研究生）；列表/筛选接口后端需登录
+    props: { audience: 'graduate', title: '研究生专栏', stage: '研究生' },
+    meta: { title: '研究生专栏', requiresAuth: true },
+  },
+  {
+    path: '/graduate/:id',
+    name: 'GraduateFileDetail',
+    component: () => import('@/views/fileload/FileLoadDetail.vue'),
+    props: { audience: 'graduate', title: '研究生专栏' },
+    meta: { title: '研究生文件详情', requiresAuth: true },
+  },
+  {
     path: '/gaokao',
     name: 'GaokaoEntry',
     component: () => import('@/views/gaokao/index.vue'),

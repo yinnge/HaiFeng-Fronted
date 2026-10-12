@@ -17,12 +17,14 @@ export const navItems: NavItem[] = [
   {
     id: 'middle',
     label: '初中专栏',
-    route: '/middle', // 点击顶层仍进入已有的初中资料库；子项均为新页面（待开发）
+    route: '/middle', // 点击顶层进入初中资料库（不固定阶段，页内自选）；子项固定面向人群跳转
     subItems: [
-      { label: '中考信息资料' },
-      { label: '初一资料' },
-      { label: '初二资料' },
-      { label: '初三资料' },
+      // 复用 /middle 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
+      // 与 admin 端适合人群选项一致：中考资料/初一/初二/初三
+      { label: '中考信息资料', route: '/middle?stage=中考资料' },
+      { label: '初一资料', route: '/middle?stage=初一' },
+      { label: '初二资料', route: '/middle?stage=初二' },
+      { label: '初三资料', route: '/middle?stage=初三' },
       { label: '练题系统' },
     ],
   },
@@ -33,9 +35,12 @@ export const navItems: NavItem[] = [
     label: '高中专栏',
     route: '/high',
     subItems: [
-      { label: '高一资料' },
-      { label: '高二资料' },
-      { label: '高三资料' },
+      // 复用 /high 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
+      // 与 admin 端适合人群选项一致：高考资料/高一/高二/高三
+      { label: '高考信息资料', route: '/high?stage=高考资料' },
+      { label: '高一资料', route: '/high?stage=高一' },
+      { label: '高二资料', route: '/high?stage=高二' },
+      { label: '高三资料', route: '/high?stage=高三' },
       { label: '练题系统' },
     ],
   },
@@ -59,10 +64,12 @@ export const navItems: NavItem[] = [
     label: '大学专栏',
     route: '/college',
     subItems: [
-      { label: '大一资料' },
-      { label: '大二资料' },
-      { label: '大三资料' },
-      { label: '大四资料' },
+      // 复用 /college 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
+      // 与 admin 端适合人群选项一致：大一/大二/大三/大四
+      { label: '大一资料', route: '/college?stage=大一' },
+      { label: '大二资料', route: '/college?stage=大二' },
+      { label: '大三资料', route: '/college?stage=大三' },
+      { label: '大四资料', route: '/college?stage=大四' },
       { label: '大学AI规划系统' },
     ],
   },
@@ -75,7 +82,8 @@ export const navItems: NavItem[] = [
     id: 'kaoyan',
     label: '考研',
     subItems: [
-      { label: '考研资料' },
+      // 复用考研专栏列表页，面向人群由路由 props 写死（考研人）
+      { label: '考研资料', route: '/postgrad-exam' },
       { label: '考研系统' },
     ],
   },
@@ -85,7 +93,8 @@ export const navItems: NavItem[] = [
     id: 'kaogong',
     label: '考公',
     subItems: [
-      { label: '考公资料' },
+      // 复用考公专栏列表页，面向人群由路由 props 写死（考公人）
+      { label: '考公资料', route: '/civil-service' },
       { label: '考公系统' },
     ],
   },
@@ -94,10 +103,11 @@ export const navItems: NavItem[] = [
   {
     id: 'postgrad',
     label: '研究生专栏',
-    route: '/postgraduate',
+    route: '/graduate',
     subItems: [
-      // 点击「研究生专栏」或「研究生资料」都导向研究生专栏主页
-      { label: '研究生资料', route: '/postgraduate' },
+      // 「研究生资料」复用研究生专栏文件列表页（面向人群写死：研究生）；
+      // 「申博指南」仍走原有静态页
+      { label: '研究生资料', route: '/graduate' },
       { label: '申博指南', route: '/postgraduate/phd' },
     ],
   },

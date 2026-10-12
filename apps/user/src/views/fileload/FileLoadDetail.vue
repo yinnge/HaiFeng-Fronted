@@ -8,7 +8,7 @@ import { useUserStore } from '@/store'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 
 const props = defineProps<{
-  /** 后端接口受众：middle=初中 / high=高中 / college=大学 */
+  /** 后端接口受众：middle=初中 / high=高中 / college=大学 / civil-service=考公 / postgrad-exam=考研 / graduate=研究生 */
   audience: FileLoadAudience
   /** 页面标题（路由 meta.title 亦可，此处用于返回按钮展示） */
   title?: string
@@ -32,11 +32,14 @@ const netdiskLoading = ref(false)
 const netdiskInfo = ref<NetdiskInfoVO | null>(null)
 const copied = ref(false)
 
-const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : '大学专栏'))
+const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : props.audience === 'college' ? '大学专栏' : props.audience === 'civil-service' ? '考公专栏' : props.audience === 'postgrad-exam' ? '考研专栏' : '研究生专栏'))
 const audienceLabelMap: Record<FileLoadAudience, string> = {
   middle: '初中专栏',
   high: '高中专栏',
   college: '大学专栏',
+  'civil-service': '考公专栏',
+  'postgrad-exam': '考研专栏',
+  graduate: '研究生专栏',
 }
 const audienceLabel = computed(() => audienceLabelMap[props.audience] || '初中专栏')
 

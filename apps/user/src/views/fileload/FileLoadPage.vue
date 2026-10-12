@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Motion } from 'motion-v'
 import {
   getFileLoadList,
-  getFileLoadStages,
   getFileLoadSubjects,
   getFileLoadTags,
 } from '@/api/fileload'
@@ -13,13 +12,19 @@ import type { FileLoadListVO, FileLoadQueryDTO, FileLoadAudience } from '@/types
 import { useUserStore } from '@/store'
 
 const props = defineProps<{
-  /** 后端接口受众：middle=初中 / high=高中 / college=大学 */
+  /** 后端接口受众：middle=初中 / high=高中 / college=大学 / civil-service=考公 / postgrad-exam=考研 / graduate=研究生 */
   audience: FileLoadAudience
   /** 页面标题（路由 meta.title 亦可，此处用于 Banner 展示） */
   title?: string
+  /**
+   * 写死的面向人群（仅考公/考研/研究生三个单一人群的专栏由路由 props 传入，如 '考公人'）。
+   * 初中/高中/大学专栏不传，由导航 query.stage 或页内行为决定。
+   */
+  stage?: string
 }>()
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 const loading = ref(false)
@@ -29,33 +34,47 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 
 /* ---------------- 筛选状态（AND 关系） ---------------- */
-const stageFilter = ref('')
 const subjectFilter = ref('')
 const tagFilter = ref('')
 
-const stageOptions = ref<string[]>([])
+/**
+ * 固定面向人群：优先取路由 props.stage（考公/考研/研究生单一人群专栏，路由层写死），
+ * 其次 route.query.stage（初中/高中/大学专栏子项，如 /high?stage=高一）。
+ * 接口的 applicableStage 直接写死该值（精准查询由导航入口决定，页内不提供筛选）。
+ */
+const fixedStage = computed(() => props.stage || (route.query.stage as string) || '')
+
 const subjectOptions = ref<string[]>([])
 const tagOptions = ref<string[]>([])
 
-const bannerTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : '大学专栏'))
+const bannerTitleMap: Record<FileLoadAudience, string> = {
+  middle: '初中专栏',
+  high: '高中专栏',
+  college: '大学专栏',
+  'civil-service': '考公专栏',
+  'postgrad-exam': '考研专栏',
+  graduate: '研究生专栏',
+}
+const bannerTitle = computed(() => props.title || bannerTitleMap[props.audience])
 const audienceDescMap: Record<FileLoadAudience, string> = {
   middle: '初中阶段精选学习资料、升学政策与备考指南，持续更新中。',
   high: '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
   college: '大学阶段精选学习资料、考研就业与学业规划指南，持续更新中。',
+  'civil-service': '考公阶段精选备考资料、真题解析与政策解读，持续更新中。',
+  'postgrad-exam': '考研阶段精选备考资料、真题解析与复习规划，持续更新中。',
+  graduate: '研究生阶段精选学习资料、科研工具与学术发展指南，持续更新中。',
 }
 const bannerDesc = computed(() => audienceDescMap[props.audience] || audienceDescMap.middle)
 
-const hasActiveFilter = computed(() => !!(stageFilter.value || subjectFilter.value || tagFilter.value))
+const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value))
 
-/** 拉取三个字段的去重值（用于按钮/下拉），失败不阻塞列表 */
+/** 拉取学科/标签的去重值（用于下拉），失败不阻塞列表 */
 async function fetchOptions() {
   try {
-    const [s, sub, t] = await Promise.all([
-      getFileLoadStages(props.audience),
+    const [sub, t] = await Promise.all([
       getFileLoadSubjects(props.audience),
       getFileLoadTags(props.audience),
     ])
-    stageOptions.value = s.data.data || []
     subjectOptions.value = sub.data.data || []
     tagOptions.value = t.data.data || []
   } catch {
@@ -70,7 +89,8 @@ async function fetchList() {
       page: currentPage.value,
       size: pageSize.value,
       subject: subjectFilter.value || undefined,
-      applicableStage: stageFilter.value || undefined,
+      // 面向人群由导航入口写死（fixedStage）；无固定值时不传，展示该专栏全部资料
+      applicableStage: fixedStage.value || undefined,
       tag: tagFilter.value || undefined,
     }
     const res = await getFileLoadList(props.audience, params)
@@ -89,14 +109,7 @@ function onFilterChange() {
   fetchList()
 }
 
-/** 点击适用阶段按钮（再次点击取消选中） */
-function toggleStage(s: string) {
-  stageFilter.value = stageFilter.value === s ? '' : s
-  onFilterChange()
-}
-
 function resetFilters() {
-  stageFilter.value = ''
   subjectFilter.value = ''
   tagFilter.value = ''
   onFilterChange()
@@ -171,11 +184,16 @@ onMounted(() => {
 
 // 路由复用同一组件时（middle ↔ high）切换受众需重新拉取
 watch(() => props.audience, () => {
-  stageFilter.value = ''
   subjectFilter.value = ''
   tagFilter.value = ''
   currentPage.value = 1
   fetchOptions()
+  fetchList()
+})
+
+// 固定阶段变化（如 /high?stage=高一 → /high?stage=高二）需重新拉取
+watch(fixedStage, () => {
+  currentPage.value = 1
   fetchList()
 })
 </script>
@@ -217,23 +235,7 @@ watch(() => props.audience, () => {
           </button>
         </div>
 
-        <!-- 适用阶段：按钮（数据有几个就几个，点击切换） -->
-        <div v-if="stageOptions.length" class="flex flex-wrap items-center gap-2">
-          <span class="text-sm text-gray-400 mr-1 shrink-0">适用阶段</span>
-          <button
-            v-for="s in stageOptions"
-            :key="s"
-            class="rounded-full border px-4 py-1.5 text-sm transition-all"
-            :class="stageFilter === s
-              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-md shadow-orange-200'
-              : 'bg-white text-orange-600 border-orange-200 hover:bg-orange-50'"
-            @click="toggleStage(s)"
-          >
-            {{ s }}
-          </button>
-        </div>
-
-        <!-- 学科 / 标签：下拉框 -->
+        <!-- 学科 / 标签：下拉框（面向人群已由导航入口写死，页内不再提供筛选） -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-2">
             <span class="text-sm text-gray-400 shrink-0">学科</span>

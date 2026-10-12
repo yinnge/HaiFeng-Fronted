@@ -6,7 +6,16 @@
  */
 
 /** 面向人群 */
-export type FileTargetAudience = 'middle_school' | 'high_school' | 'college'
+export type FileTargetAudience = 'middle_school' | 'high_school' | 'college' | 'civil_service' | 'postgrad_exam' | 'graduate'
+
+/** 考公资源固定适合人群（V69 预置枚举，面向人群唯一固定值） */
+export const CIVIL_SERVICE_STAGE = '考公人'
+
+/** 考研资源固定适合人群（V69 预置枚举，面向人群唯一固定值） */
+export const POSTGRAD_EXAM_STAGE = '考研人'
+
+/** 研究生资源固定适合人群（V69 预置枚举，面向人群唯一固定值） */
+export const GRADUATE_STAGE = '研究生'
 
 /** 存储方式：OSS-上传文件 / BAIDU-百度网盘链接 */
 export type FileStorageType = 'OSS' | 'BAIDU'
@@ -15,10 +24,10 @@ export type FileStorageType = 'OSS' | 'BAIDU'
 export const SUBJECT_OPTIONS = ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理', '其他']
 
 /** 初中适合人群 */
-export const MIDDLE_STAGE_OPTIONS = ['初一', '初二', '初三']
+export const MIDDLE_STAGE_OPTIONS = ['初一', '初二', '初三', '中考资料']
 
 /** 高中适合人群 */
-export const HIGH_STAGE_OPTIONS = ['高一', '高二', '高三']
+export const HIGH_STAGE_OPTIONS = ['高考资料', '高一', '高二', '高三']
 
 /** 大学适合人群（如有调整请告诉我） */
 export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四']
