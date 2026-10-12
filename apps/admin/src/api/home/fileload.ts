@@ -8,11 +8,14 @@ import type {
   FileTargetAudience,
 } from '@/types/home/fileload'
 
-/** 初中 / 高中 / 大学 接口前缀 */
+/** 初中 / 高中 / 大学 / 考公 / 考研 / 研究生 接口前缀 */
 const PREFIX_MAP: Record<FileTargetAudience, string> = {
   middle_school: '/api/v1/admin/fileload/middle',
   high_school: '/api/v1/admin/fileload/high',
   college: '/api/v1/admin/fileload/college',
+  civil_service: '/api/v1/admin/fileload/civil-service',
+  postgrad_exam: '/api/v1/admin/fileload/postgrad-exam',
+  graduate: '/api/v1/admin/fileload/graduate',
 }
 
 /** 上传文件（multipart：file + targetAudience + subject + applicableStage） */

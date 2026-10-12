@@ -143,6 +143,7 @@ async function handleDelete(row: NotificationListVO) {
     await deleteNotification(row.id)
     ElMessage.success('已删除')
     loadData()
+    emit('refresh')
     window.dispatchEvent(new Event('notification-updated'))
   } catch {
     // cancelled

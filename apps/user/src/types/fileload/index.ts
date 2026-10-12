@@ -47,5 +47,15 @@ export interface NetdiskInfoVO {
   accessCode?: string | null
 }
 
-/** 专栏受众：初中 / 高中 / 大学（对应后端 /fileload/middle 与 /fileload/high 与 /fileload/college） */
-export type FileLoadAudience = 'middle' | 'high' | 'college'
+/**
+ * 专栏受众（值即后端接口路径前缀）：
+ * middle=初中 / high=高中 / college=大学 /
+ * civil-service=考公（固定面向人群：考公人）/ postgrad-exam=考研（固定：考研人）/ graduate=研究生（固定：研究生）
+ */
+export type FileLoadAudience =
+  | 'middle'
+  | 'high'
+  | 'college'
+  | 'civil-service'
+  | 'postgrad-exam'
+  | 'graduate'

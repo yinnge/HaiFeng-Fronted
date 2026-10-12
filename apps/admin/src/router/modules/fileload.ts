@@ -24,6 +24,24 @@ const fileloadRoutes: RouteRecordRaw = {
       component: () => import('@/views/home/college/index.vue'),
       meta: { title: '大学资源', moduleCode: 'fileload_college' },
     },
+    {
+      path: 'postgrad-exam',
+      name: 'FileLoadPostgradExam',
+      component: () => import('@/views/home/postgradExam/index.vue'),
+      meta: { title: '考研资源', moduleCode: 'fileload_postgrad_exam' },
+    },
+    {
+      path: 'civil-service',
+      name: 'FileLoadCivilService',
+      component: () => import('@/views/home/civilService/index.vue'),
+      meta: { title: '考公资源', moduleCode: 'fileload_civil_service' },
+    },
+    {
+      path: 'graduate',
+      name: 'FileLoadGraduate',
+      component: () => import('@/views/home/graduate/index.vue'),
+      meta: { title: '研究生资源', moduleCode: 'fileload_graduate' },
+    },
   ],
 }
 
