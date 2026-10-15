@@ -367,6 +367,7 @@ onMounted(() => {
     width="640px"
     top="6vh"
     class="archive-dialog"
+    append-to-body
     :close-on-click-modal="false"
     @close="emit('update:visible', false)"
   >
@@ -478,33 +479,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.archive-dialog :deep(.el-dialog) {
-  border-radius: 16px;
-}
-
-.archive-dialog :deep(.el-dialog__header) {
-  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
-  padding: 20px 24px;
-  margin: 0;
-}
-
-.archive-dialog :deep(.el-dialog__title) {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.archive-dialog :deep(.el-dialog__body) {
-  padding: 24px;
-  max-height: 62vh;
-  overflow-y: auto;
-}
-
-.archive-dialog :deep(.el-dialog__footer) {
-  border-top: 1px solid #f3f4f6;
-  padding: 16px 24px;
-}
-
+/* 注意：弹窗壳（.el-dialog）经 append-to-body 传送到 body 后，
+   scoped :deep() 对其失效（同 RechargeDialog 的坑），
+   壳样式已提至下方非 scoped 块；这里只保留表单内容样式。 */
 .archive-form {
   display: flex;
   flex-direction: column;
@@ -613,5 +590,38 @@ onMounted(() => {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+</style>
+
+<style>
+/* 弹窗壳样式：非 scoped（append-to-body 传送后 scoped :deep() 失效）。
+   .archive-dialog 仅本组件使用，全局声明无泄漏风险。 */
+/* class 可能落在 .el-dialog 本体或外层包裹（随 EP 版本），两种形态都覆盖 */
+.archive-dialog.el-dialog,
+.archive-dialog .el-dialog {
+  border-radius: 16px;
+}
+
+.archive-dialog .el-dialog__header {
+  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.archive-dialog .el-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.archive-dialog .el-dialog__body {
+  padding: 24px;
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+.archive-dialog .el-dialog__footer {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
 }
 </style>
