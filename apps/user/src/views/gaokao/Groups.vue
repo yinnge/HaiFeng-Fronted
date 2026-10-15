@@ -5,7 +5,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { useSelectionStore } from '@/store/modules/selection'
 import {
-  getArchive,
   getGroupPage,
   getMajorPage,
   checkGroupConstraint,
@@ -14,6 +13,8 @@ import {
   type ConstraintCheckResult,
   type GaokaoArchiveVO,
 } from '@/api/gaokao'
+import { loadArchiveSmart } from '@/utils/gaokaoArchive'
+import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import GroupRow from '@/components/gaokao/GroupRow.vue'
 import MajorRow from '@/components/gaokao/MajorRow.vue'
 import BriefInfoDrawer from '@/components/gaokao/BriefInfoDrawer.vue'
@@ -134,11 +135,11 @@ const paginationPages = computed(() => {
   return pages
 })
 
-// 加载档案
+// 加载档案（登录=服务端，游客=localStorage；登录且服务端无档案时游客档案自动迁移入库）
 async function loadArchive() {
   try {
-    const res = await getArchive()
-    archive.value = res.data.data
+    const { archive: a } = await loadArchiveSmart()
+    archive.value = a
     if (!archive.value) {
       await ElMessageBox.alert(
         '你还未填写高考档案，暂时无法查询专业组。请先填写档案信息后再来查询。',
@@ -151,7 +152,7 @@ async function loadArchive() {
           closeOnPressEscape: false,
         }
       )
-      router.push('/gaokao/archive')
+      router.push({ path: '/gaokao', query: { editArchive: '1' } })
       return
     }
     loadGroups()
@@ -190,8 +191,9 @@ async function loadGroups() {
   }
 }
 
-// 并行检查所有专业组约束
+// 并行检查所有专业组约束（需登录接口，游客跳过避免 401 空打）
 async function checkAllGroupConstraints() {
+  if (!isLoggedIn()) return
   const promises = groups.value
     .filter(g => !g.masked)
     .map(async (g) => {
@@ -367,7 +369,7 @@ onMounted(() => {
         <div class="flex items-center gap-3">
           <button
             class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5"
-            @click="router.push('/gaokao/archive')"
+            @click="router.push({ path: '/gaokao', query: { editArchive: '1' } })"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -682,7 +684,7 @@ onMounted(() => {
       <!-- 修改档案 -->
       <button
         class="group w-12 h-auto py-3 rounded-xl shadow-card border border-gray-100 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-brand hover:border-brand-orange"
-        @click="router.push('/gaokao/archive')"
+        @click="router.push({ path: '/gaokao', query: { editArchive: '1' } })"
       >
         <svg class="w-5 h-5 text-gray-500 group-hover:text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

@@ -4,10 +4,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Motion, useReducedMotion } from 'motion-v'
 import { getChannelList } from '@/api/special'
-import { getArchive, type GaokaoArchiveVO } from '@/api/gaokao'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
+import type { GaokaoArchiveVO, GaokaoArchiveForm } from '@/api/gaokao'
+import { loadArchiveSmart } from '@/utils/gaokaoArchive'
+import { ProvinceOptions } from '@haifeng/shared'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
+import ArchiveDialog from '@/components/gaokao/ArchiveDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -15,11 +18,24 @@ const route = useRoute()
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
 
-// 是否已建立高考档案（决定统招卡片展示「填写档案」还是「进入报志愿」）
-const hasArchive = ref(false)
+// ===== 高考档案（统一存取源：登录=服务端，游客=localStorage，刷新不丢） =====
+const displayForm = ref<GaokaoArchiveVO | null>(null)
+const hasArchive = computed(() => !!displayForm.value?.gaokaoProvince)
 
-// 高考档案摘要（纯展示用，不改动任何业务流程/接口）
-const archive = ref<GaokaoArchiveVO | null>(null)
+// 档案弹窗
+const archiveDialogVisible = ref(false)
+
+function openArchiveDialog() {
+  archiveDialogVisible.value = true
+}
+
+// 档案保存成功（模拟填报）：更新吸附条展示 + 按新省份刷新资讯 + 跳转专业组查询
+function handleArchiveSaved(form: GaokaoArchiveForm) {
+  displayForm.value = { ...(displayForm.value || ({} as GaokaoArchiveVO)), ...form }
+  archiveDialogVisible.value = false
+  void fetchNews()
+  router.push('/gaokao/groups')
+}
 
 // ===== 档案吸附条：吸在导航栏下方，滚动页面时不随之滚动 =====
 // 动态测量导航栏实际高度作为吸附偏移，避免写死（导航内容高度随断点变化）
@@ -32,12 +48,27 @@ function measureHeader() {
 
 // 三个选科（首选 / 再选1 / 再选2），老高考无再选科目时只展示首选
 const archiveSubjects = computed(() => {
-  if (!archive.value) return []
+  if (!displayForm.value) return []
   return [
-    archive.value.subjectType,
-    archive.value.secondSubjectType,
-    archive.value.thirdSubjectType,
+    displayForm.value.subjectType,
+    displayForm.value.secondSubjectType,
+    displayForm.value.thirdSubjectType,
   ].filter((s): s is string => !!s)
+})
+
+// 吸附条省份行内下拉：与档案弹窗双向联动（这里改了弹窗跟着改；弹窗保存后这里同步）
+const archiveProvince = computed({
+  get: () => displayForm.value?.gaokaoProvince || '',
+  set: (val: string) => {
+    if (!val) return
+    if (displayForm.value) {
+      displayForm.value.gaokaoProvince = val
+    } else {
+      // 尚无档案：先建一个最小展示对象（省份仅用于资讯查询，完整档案走弹窗）
+      displayForm.value = { gaokaoProvince: val, gaokaoYear: new Date().getFullYear() } as GaokaoArchiveVO
+    }
+    void fetchNews()
+  },
 })
 
 // ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
@@ -45,12 +76,12 @@ const newsLoading = ref(false)
 const newsList = ref<GaokaoArticleListVO[]>([])
 
 async function fetchNews() {
-  if (!archive.value?.gaokaoProvince) return
+  if (!displayForm.value?.gaokaoProvince) return
   newsLoading.value = true
   try {
     // 后端分页 size 下限为 10（BasePageQueryDTO 强约束），首页只展示 4 条，本地截断
     const res = await getGaokaoArticlePage({
-      province: archive.value.gaokaoProvince,
+      province: displayForm.value.gaokaoProvince,
       page: 1,
       size: 10,
     })
@@ -206,16 +237,13 @@ async function fetchChannels() {
   }
 }
 
-// 查询用户是否已填写高考档案
+// 查询档案：登录读服务端（无本地游客档案时自动迁移入库），游客读 localStorage
 async function fetchArchive() {
   try {
-    const res = await getArchive()
-    archive.value = res.data.data
-    hasArchive.value = !!res.data.data
+    const { archive: a } = await loadArchiveSmart()
+    displayForm.value = a
   } catch {
-    // 未建档或查询失败，统一按「未填写档案」处理
-    archive.value = null
-    hasArchive.value = false
+    displayForm.value = null
   }
 }
 
@@ -234,28 +262,13 @@ function goChannel(item: SpecialChannelListVO) {
   router.push(`/gaokao/channel/${item.id}`)
 }
 
-// 统招入口：未建档先填档案，已建档直接进入报志愿
-function goNormal() {
-  if (hasArchive.value) {
-    goWishPlan()
-  } else {
-    goArchive()
-  }
-}
-
-// 填写 / 修改高考档案
-function goArchive() {
-  router.push('/gaokao/archive')
-}
-
-// 进入报志愿（专业组选择）
-function goWishPlan() {
-  router.push('/gaokao/groups')
-}
-
 onMounted(() => {
   measureHeader()
   void initPage()
+  // 从其它页跳转过来（/gaokao?editArchive=1）：自动打开档案填写弹窗
+  if (route.query.editArchive) {
+    openArchiveDialog()
+  }
 })
 
 // 初始化：拉数据 → 等 Vue 把展开的卡片刷进 DOM → 再处理锚点滚动。
@@ -283,29 +296,39 @@ async function initPage() {
     <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动 -->
     <div class="archive-bar" :style="{ top: `${stickyTop}px` }">
       <div class="archive-bar-inner">
-        <div class="flex min-w-0 items-center gap-2 text-sm">
-          <svg class="h-4 w-4 shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <span class="archive-bar-label">
+          <svg class="h-3.5 w-3.5 shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          <template v-if="hasArchive && archive">
-            <span class="truncate text-gray-700">
-              <span class="font-semibold text-gray-800">{{ archive.gaokaoYear }}年</span>
-              {{ ' ' }}{{ archive.gaokaoProvince }}{{ ' ' }}
-              <span class="font-semibold text-brand-orange-dark">{{ archive.score }}分</span>
-              <template v-if="archiveSubjects.length">
-                {{ ' ' }}<span class="text-gray-600">{{ archiveSubjects.join('/') }}</span>
-              </template>
-            </span>
+          高考档案
+        </span>
+        <!-- 信息整体靠右：省份行内下拉在前，年份/分数/科目点击打开档案弹窗 -->
+        <div class="archive-bar-info">
+          <el-select
+            v-model="archiveProvince"
+            placeholder="选择省份"
+            filterable
+            size="small"
+            class="archive-province-select"
+          >
+            <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+          <template v-if="displayForm && displayForm.score">
+            <button class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
+              {{ displayForm.gaokaoYear }}年
+            </button>
+            <button class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
+              {{ displayForm.score }}分
+            </button>
+            <button v-if="archiveSubjects.length" class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
+              {{ archiveSubjects.join('/') }}
+            </button>
           </template>
-          <span v-else class="truncate text-gray-500">尚未填写高考档案，填写后开启志愿规划</span>
+          <button v-else class="archive-chip archive-chip-empty" @click="openArchiveDialog">
+            点击填写年份 / 分数 / 科目
+          </button>
         </div>
-        <button
-          class="shrink-0 rounded-full border border-brand-orange/30 bg-white/80 px-4 py-1.5 text-xs font-medium text-brand-orange transition-colors hover:bg-brand-orange/10"
-          @click="goArchive"
-        >
-          {{ hasArchive ? '修改档案' : '去填写' }}
-        </button>
       </div>
     </div>
 
@@ -328,78 +351,6 @@ async function initPage() {
             </div>
             <h2 class="mt-5 text-3xl font-bold tracking-tight text-gray-800 md:text-4xl">选对赛道，让每一分都不浪费</h2>
             <p class="mt-3 text-base text-gray-500">统招是主渠道，特殊类型招生是更多可能</p>
-          </Motion>
-
-          <!-- 统招主通道大卡：核心位置，橙渐变主视觉 + 档案状态 + 双按钮 -->
-          <Motion
-            :initial="revealInitial"
-            :while-in-view="revealIn"
-            :transition="{ duration: 0.5, delay: 0.1 }"
-            :in-view-options="{ once: true }"
-            class="mt-7"
-          >
-            <section
-              class="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-brand-orange-dark via-brand-orange to-brand-orange-light p-7 shadow-card-active transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-6px_rgba(232,114,42,0.4)] md:p-9"
-              @click="goNormal"
-            >
-              <div class="flex flex-col gap-6 md:flex-row md:items-center">
-                <!-- 左：图标 + 标题 + 描述 -->
-                <div class="flex-1">
-                  <div class="flex flex-wrap items-center gap-4">
-                    <div class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white transition-transform duration-300 group-hover:scale-105">
-                      <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path v-for="d in normalGlyph.paths" :key="d" :d="d" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div class="flex flex-wrap items-center gap-2.5">
-                        <h3 class="text-xl font-bold text-white md:text-2xl">统招 · 主通道</h3>
-                        <span class="inline-flex items-center rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white border border-white/30">
-                          志愿填报首选
-                        </span>
-                      </div>
-                      <p class="mt-1 text-[15px] font-medium text-white/90">全体考生适用，从这里开始</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 右：档案状态 + 操作按钮 -->
-                <div class="shrink-0 space-y-3 md:w-[360px]">
-                  <div class="rounded-xl bg-white/10 px-4 py-3 text-sm">
-                    <template v-if="hasArchive && archive">
-                      <div class="flex items-center gap-2 font-medium text-white">
-                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-300" />
-                        已建档
-                      </div>
-                      <div class="mt-1.5 leading-relaxed text-white/85">
-                        {{ archive.gaokaoYear ?? '-' }} · {{ archive.gaokaoProvince || '-' }} · {{ archive.subjectType || '-' }} · {{ archive.score ?? '-' }} 分 · 位次 {{ archive.rank ?? '-' }}
-                      </div>
-                    </template>
-                    <template v-else>
-                      <div class="flex items-center gap-2 font-medium text-white">
-                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-300" />
-                        尚未填写高考档案
-                      </div>
-                      <div class="mt-1.5 leading-relaxed text-white/85">填写档案后开启志愿规划 · 约 30 秒即可完成</div>
-                    </template>
-                  </div>
-                  <div class="flex flex-wrap gap-2.5">
-                    <button
-                      class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-orange-dark shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
-                    >
-                      {{ hasArchive ? '进入报志愿 →' : '填写高考档案 →' }}
-                    </button>
-                    <button
-                      v-if="hasArchive"
-                      class="rounded-full border border-white/50 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/15"
-                      @click.stop="goArchive"
-                    >
-                      修改档案
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
           </Motion>
 
           <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
@@ -471,7 +422,7 @@ async function initPage() {
           </div>
           <div v-else class="rounded-xl border border-orange-100 bg-white/70 px-5 py-4 text-sm text-gray-500">
             填写高考档案后，将按你的省份推送热点资讯 ·
-            <button class="font-medium text-brand-orange hover:underline" @click="goArchive">去填写</button>
+            <button class="font-medium text-brand-orange hover:underline" @click="openArchiveDialog">去填写</button>
           </div>
         </div>
 
@@ -511,6 +462,9 @@ async function initPage() {
         </div>
       </section>
     </main>
+
+    <!-- 高考档案填写弹窗（模拟填报 / 制定方案） -->
+    <ArchiveDialog v-model:visible="archiveDialogVisible" :initial-form="displayForm" @saved="handleArchiveSaved" />
   </div>
 </template>
 
@@ -532,7 +486,74 @@ async function initPage() {
   gap: 12px;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 8px 24px;
+  padding: 7px 24px;
+}
+
+.archive-bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+@media (max-width: 767px) {
+  .archive-bar-label {
+    display: none;
+  }
+}
+
+.archive-bar-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.archive-province-select {
+  width: 118px;
+}
+
+.archive-province-select :deep(.el-select__wrapper) {
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+  background: #fff;
+}
+
+.archive-province-select :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+
+.archive-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.archive-chip:hover {
+  border-color: #f97316;
+  color: #f97316;
+  background: #fff7ed;
+}
+
+.archive-chip-empty {
+  border-style: dashed;
+  color: #9ca3af;
+  font-weight: 400;
 }
 
 /* ===== 热点资讯 ===== */

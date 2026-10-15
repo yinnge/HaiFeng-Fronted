@@ -102,19 +102,13 @@ const routes: RouteRecordRaw[] = [
     path: '/gaokao',
     name: 'GaokaoEntry',
     component: () => import('@/views/gaokao/index.vue'),
-    meta: { title: '高考报志愿', requiresAuth: true },
-  },
-  {
-    path: '/gaokao/archive',
-    name: 'GaokaoArchive',
-    component: () => import('@/views/gaokao/Archive.vue'),
-    meta: { title: '高考档案', requiresAuth: true },
+    meta: { title: '高考报志愿' },
   },
   {
     path: '/gaokao/groups',
     name: 'GaokaoGroups',
     component: () => import('@/views/gaokao/Groups.vue'),
-    meta: { title: '专业组查询', requiresAuth: true },
+    meta: { title: '专业组查询' },
   },
   {
     path: '/gaokao/channel/:id',
@@ -126,13 +120,13 @@ const routes: RouteRecordRaw[] = [
     path: '/gaokao/articles',
     name: 'GaokaoArticles',
     component: () => import('@/views/gaokao/Articles.vue'),
-    meta: { title: '热点资讯', requiresAuth: true },
+    meta: { title: '热点资讯' },
   },
   {
     path: '/gaokao/article/:id',
     name: 'GaokaoArticleDetail',
     component: () => import('@/views/gaokao/ArticleDetail.vue'),
-    meta: { title: '资讯详情', requiresAuth: true },
+    meta: { title: '资讯详情' },
   },
   {
     path: '/gaokao/plans',

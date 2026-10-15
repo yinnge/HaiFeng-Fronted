@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { checkGroupsExist } from '@/api/gaokao'
+import { isLoggedIn } from '@haifeng/shared/utils/auth'
+import { confirmLogin } from '@/utils/loginGuide'
 
 const STORAGE_KEY = 'haifeng:selected-majors'
 
@@ -72,6 +74,11 @@ export const useSelectionStore = defineStore('selection', () => {
     groupInfo: { groupName: string; universityName: string; levelShort: string; safetyLevel: number },
     majorInfo: SelectedMajor
   ) {
+    // 添加志愿需登录：游客可查询模拟填报，落志愿表前先登录
+    if (!isLoggedIn()) {
+      void confirmLogin('登录后才能把专业加入志愿表暂存区')
+      return
+    }
     const existing = selections.value[groupId]
     if (existing) {
       const idx = existing.majors.findIndex(m => m.majorCode === majorInfo.majorCode)
@@ -116,6 +123,8 @@ export const useSelectionStore = defineStore('selection', () => {
    * 注意：只动暂存区，不动已生成的志愿表数据。接口异常时静默，不影响正常使用。
    */
   async function pruneInvalidSelections() {
+    // 需登录接口：游客无暂存志愿表，直接跳过（避免 401）
+    if (!isLoggedIn()) return
     const groupIds = Object.keys(selections.value)
     if (groupIds.length === 0) return
     try {

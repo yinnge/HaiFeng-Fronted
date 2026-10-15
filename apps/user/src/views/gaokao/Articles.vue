@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getArchive, type GaokaoArchiveVO } from '@/api/gaokao'
+import { type GaokaoArchiveVO } from '@/api/gaokao'
+import { loadArchiveSmart } from '@/utils/gaokaoArchive'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 
 const router = useRouter()
@@ -18,8 +19,8 @@ const hasArchive = computed(() => !!archive.value?.gaokaoProvince)
 
 async function fetchArchive() {
   try {
-    const res = await getArchive()
-    archive.value = res.data.data
+    const { archive: a } = await loadArchiveSmart()
+    archive.value = a
   } catch {
     archive.value = null
   }
@@ -48,7 +49,7 @@ function goDetail(id: string) {
 }
 
 function goArchive() {
-  router.push('/gaokao/archive')
+  router.push({ path: '/gaokao', query: { editArchive: '1' } })
 }
 
 function goBack() {

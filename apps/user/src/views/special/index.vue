@@ -103,7 +103,7 @@ async function fetchArchive() {
 
 // 填写 / 修改高考档案
 function goArchive() {
-  router.push('/gaokao/archive')
+  router.push({ path: '/gaokao', query: { editArchive: '1' } })
 }
 
 // 进入报志愿（专业组选择）
