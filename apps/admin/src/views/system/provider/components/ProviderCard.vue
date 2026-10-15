@@ -5,8 +5,9 @@ import {
   getModelProviderList,
   disableModelProvider,
   updateModelProviderStatus,
+  getCurrentProviderModel,
+  setCurrentProviderModel,
 } from '@/api/system/provider'
-import { updateProviderModel, getSystemSettings } from '@/api/system/settings'
 import type { ModelProviderVO, ModelProviderQueryDTO } from '@/types/system/provider'
 import { ProviderTypeLabel, ProviderTypeTag } from '@/types/system/provider'
 import ProviderEditModal from './ProviderEditModal.vue'
@@ -33,7 +34,8 @@ const currentModelName = ref('')
 
 const fetchCurrent = async () => {
   try {
-    const res = await getSystemSettings()
+    // 走 model-providers 控制器（同模块 system_provider），避免跨模块 403
+    const res = await getCurrentProviderModel()
     if (res.data.code === 200 && res.data.data) {
       currentProviderName.value = res.data.data.providerName || ''
       currentModelName.value = res.data.data.modelName || ''
@@ -151,7 +153,7 @@ const handleSetActive = async (row: ModelProviderVO) => {
       '设为当前模型',
       { type: 'warning' }
     )
-    const res = await updateProviderModel({
+    const res = await setCurrentProviderModel({
       providerName: row.providerName,
       modelName: row.modelName,
     })
