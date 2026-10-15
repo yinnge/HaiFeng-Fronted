@@ -12,6 +12,7 @@ import {
   hardDeleteDepartment,
   batchDeleteDepartment,
   batchHardDeleteDepartment,
+  importDepartmentReports,
   importDepartment,
 } from '@/api/university/department'
 import { getUniversityPage } from '@/api/university/info'
@@ -393,7 +394,8 @@ const handleBatchHardDelete = async () => {
     // cancel
   }
 }
-const handleImport = async () => {
+/** 弹出系统文件选择框并把选中的文件交给回调 */
+function pickExcelFile(onPicked: (file: File) => Promise<void>) {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.xlsx,.xls'
@@ -401,18 +403,31 @@ const handleImport = async () => {
     const file = input.files?.[0]
     if (!file) return
     try {
-      const res = await importDepartment(file)
-      if (res.data.code === 200) {
-        ElMessage.success('导入成功')
-        fetchData()
-      } else {
-        ElMessage.error(res.data.msg || '导入失败')
-      }
+      await onPicked(file)
     } catch (e: any) {
+      // shared request 拦截器 reject 的是普通 Error（无 .response），后端 msg 由 e.message 透传
       ElMessage.error(e?.response?.data?.msg || e?.message || '导入失败')
     }
   }
   input.click()
+}
+
+/** 导入院系主表（只读「院系主表」Sheet，新建院系 / 补空） */
+function handleImport() {
+  pickExcelFile(async (file) => {
+    await importDepartment(file)
+    ElMessage.success('导入成功')
+    fetchData()
+  })
+}
+
+/** 导入院系报告数据（读「院系主表」+ 11 个报告分类 Sheet，按主表院系名回填报告字段） */
+function handleImportReports() {
+  pickExcelFile(async (file) => {
+    await importDepartmentReports(file)
+    ElMessage.success('报告数据导入成功')
+    fetchData()
+  })
 }
 onMounted(() => {
   fetchData()
@@ -491,6 +506,7 @@ onMounted(() => {
     <div class="action-bar">
       <button class="btn-primary" @click="openDialog('add')">新增院系</button>
       <button class="btn-outline" @click="handleImport">导入Excel</button>
+      <button class="btn-outline" @click="handleImportReports">导入报告数据</button>
       <button class="btn-danger" :disabled="selectedIds.length === 0" @click="handleBatchHardDelete">批量永久删除</button>
       <button class="btn-outline" @click="fetchData">刷新</button>
     </div>

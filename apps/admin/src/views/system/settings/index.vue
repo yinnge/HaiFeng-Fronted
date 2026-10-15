@@ -7,7 +7,6 @@ import PricingCard from './components/PricingCard.vue'
 import SeoCard from './components/SeoCard.vue'
 import SocialCard from './components/SocialCard.vue'
 import ContactCard from './components/ContactCard.vue'
-import ProviderCard from './components/ProviderCard.vue'
 import GaokaoCoefCard from './components/GaokaoCoefCard.vue'
 
 const loading = ref(false)
@@ -59,9 +58,6 @@ onMounted(() => {
           </el-tab-pane>
           <el-tab-pane label="联系信息" name="contact">
             <ContactCard :data="settingsData" @refresh="fetchData" />
-          </el-tab-pane>
-          <el-tab-pane label="服务商与模型配置" name="provider">
-            <ProviderCard />
           </el-tab-pane>
           <el-tab-pane label="高考系数设置" name="gaokao">
             <GaokaoCoefCard :data="settingsData" @refresh="fetchData" />

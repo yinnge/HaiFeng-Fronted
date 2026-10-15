@@ -22,7 +22,7 @@ const systemRoutes: RouteRecordRaw = {
       path: 'provider',
       name: 'SystemProvider',
       component: () => import('@/views/system/provider/index.vue'),
-      meta: { title: 'AI余额查询', icon: 'Monitor', moduleCode: 'system_provider' },
+      meta: { title: '模型配置', icon: 'Monitor', moduleCode: 'system_provider' },
     },
   ],
 }

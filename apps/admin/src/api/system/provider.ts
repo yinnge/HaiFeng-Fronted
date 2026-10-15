@@ -52,3 +52,18 @@ export const updateModelProviderStatus = (
   data: ModelProviderStatusDTO
 ): Promise<AxiosResponse<R<void>>> =>
   request.put(`${PREFIX}/${id}/status`, data)
+
+/**
+ * 查询「当前生效」的服务商与模型
+ * 走 model-providers 控制器（module=system_provider），与模型配置页同权限，
+ * 避免仅有模型配置权限的角色调用 system_setting 接口被 403
+ */
+export const getCurrentProviderModel = (): Promise<
+  AxiosResponse<R<{ providerName: string | null; modelName: string | null }>>
+> => request.get(`${PREFIX}/current`)
+
+/** 将指定服务商与模型设为「当前生效」（同模块权限） */
+export const setCurrentProviderModel = (data: {
+  providerName: string
+  modelName: string
+}): Promise<AxiosResponse<R<void>>> => request.put(`${PREFIX}/current`, data)

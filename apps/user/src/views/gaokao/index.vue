@@ -4,9 +4,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Motion, useReducedMotion } from 'motion-v'
 import { getChannelList } from '@/api/special'
-import { getArchive, type GaokaoArchiveVO } from '@/api/gaokao'
+import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
+import type { GaokaoArchiveVO } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
+import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,11 +16,55 @@ const route = useRoute()
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
 
-// 是否已建立高考档案（决定统招卡片展示「填写档案」还是「进入报志愿」）
-const hasArchive = ref(false)
+// ===== 高考档案：展示/编辑统一由共享吸附条组件（ArchiveBar）负责，
+// 本页只接收事件更新展示数据并联动资讯区 =====
+const displayForm = ref<GaokaoArchiveVO | null>(null)
+const hasArchive = computed(() => !!displayForm.value?.gaokaoProvince)
 
-// 高考档案摘要（纯展示用，不改动任何业务流程/接口）
-const archive = ref<GaokaoArchiveVO | null>(null)
+const archiveBarRef = ref<InstanceType<typeof ArchiveBar> | null>(null)
+
+// 档案变化（初始加载 / 省份下拉切换 / 弹窗保存）：更新展示 + 按新省份刷新资讯
+function onArchiveChange(archive: GaokaoArchiveVO | null) {
+  displayForm.value = archive
+  void fetchNews()
+}
+
+// 档案保存成功（模拟填报）：跳转专业组查询
+function onArchiveSaved() {
+  router.push('/gaokao/groups')
+}
+
+// ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
+const newsLoading = ref(false)
+const newsList = ref<GaokaoArticleListVO[]>([])
+
+async function fetchNews() {
+  if (!displayForm.value?.gaokaoProvince) return
+  newsLoading.value = true
+  try {
+    // 后端分页 size 下限为 10（BasePageQueryDTO 强约束），首页只展示 4 条，本地截断
+    const res = await getGaokaoArticlePage({
+      province: displayForm.value.gaokaoProvince,
+      page: 1,
+      size: 10,
+    })
+    newsList.value = res.data.data.records.slice(0, 4)
+  } catch {
+    // 资讯拉取失败不打断主流程
+  } finally {
+    newsLoading.value = false
+  }
+}
+
+// 查看资讯详情
+function goNewsDetail(id: string) {
+  router.push(`/gaokao/article/${id}`)
+}
+
+// 查看更多资讯（跳转资讯列表页）
+function goArticles() {
+  router.push('/gaokao/articles')
+}
 
 // 尊重系统「减弱动态效果」设置：开启时区块直接静态呈现，不做浮现动画
 const reduceMotion = useReducedMotion()
@@ -154,19 +200,6 @@ async function fetchChannels() {
   }
 }
 
-// 查询用户是否已填写高考档案
-async function fetchArchive() {
-  try {
-    const res = await getArchive()
-    archive.value = res.data.data
-    hasArchive.value = !!res.data.data
-  } catch {
-    // 未建档或查询失败，统一按「未填写档案」处理
-    archive.value = null
-    hasArchive.value = false
-  }
-}
-
 // 通道卡「热门」标签（纯展示）
 function isHot(code: string) {
   return code === 'COMPREHENSIVE' || code === 'STRONG_BASE'
@@ -182,27 +215,12 @@ function goChannel(item: SpecialChannelListVO) {
   router.push(`/gaokao/channel/${item.id}`)
 }
 
-// 统招入口：未建档先填档案，已建档直接进入报志愿
-function goNormal() {
-  if (hasArchive.value) {
-    goWishPlan()
-  } else {
-    goArchive()
-  }
-}
-
-// 填写 / 修改高考档案
-function goArchive() {
-  router.push('/gaokao/archive')
-}
-
-// 进入报志愿（专业组选择）
-function goWishPlan() {
-  router.push('/gaokao/groups')
-}
-
 onMounted(() => {
   void initPage()
+  // 从其它页跳转过来（/gaokao?editArchive=1）：自动打开档案填写弹窗
+  if (route.query.editArchive) {
+    nextTick(() => archiveBarRef.value?.openDialog())
+  }
 })
 
 // 初始化：拉数据 → 等 Vue 把展开的卡片刷进 DOM → 再处理锚点滚动。
@@ -210,7 +228,8 @@ onMounted(() => {
 // 若不等 nextTick 就去量 #exams 的位置，此时卡片区还是 200px loading 占位，
 // 滚动目标算得太靠上，等卡片撑开后 #exams 被推到页底，滚动就到不了底部。
 async function initPage() {
-  await Promise.allSettled([fetchChannels(), fetchArchive()])
+  await Promise.allSettled([fetchChannels()])
+  // 资讯由 ArchiveBar 的 archive-change 事件驱动（档案就绪后自动拉取）
   // 等 DOM 完成刷新（卡片展开、页面高度稳定）再滚动，避免位置偏移
   await nextTick()
   await nextTick()
@@ -225,6 +244,9 @@ async function initPage() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动（共享组件，Groups 页复用） -->
+    <ArchiveBar ref="archiveBarRef" @archive-change="onArchiveChange" @saved="onArchiveSaved" />
+
     <main class="flex-1">
       <div class="container mx-auto px-6 pb-16 relative">
         <div class="max-w-5xl mx-auto min-h-[200px]">
@@ -244,78 +266,21 @@ async function initPage() {
             </div>
             <h2 class="mt-5 text-3xl font-bold tracking-tight text-gray-800 md:text-4xl">选对赛道，让每一分都不浪费</h2>
             <p class="mt-3 text-base text-gray-500">统招是主渠道，特殊类型招生是更多可能</p>
-          </Motion>
-
-          <!-- 统招主通道大卡：核心位置，橙渐变主视觉 + 档案状态 + 双按钮 -->
-          <Motion
-            :initial="revealInitial"
-            :while-in-view="revealIn"
-            :transition="{ duration: 0.5, delay: 0.1 }"
-            :in-view-options="{ once: true }"
-            class="mt-7"
-          >
-            <section
-              class="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-brand-orange-dark via-brand-orange to-brand-orange-light p-7 shadow-card-active transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-6px_rgba(232,114,42,0.4)] md:p-9"
-              @click="goNormal"
-            >
-              <div class="flex flex-col gap-6 md:flex-row md:items-center">
-                <!-- 左：图标 + 标题 + 描述 -->
-                <div class="flex-1">
-                  <div class="flex flex-wrap items-center gap-4">
-                    <div class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white transition-transform duration-300 group-hover:scale-105">
-                      <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path v-for="d in normalGlyph.paths" :key="d" :d="d" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div class="flex flex-wrap items-center gap-2.5">
-                        <h3 class="text-xl font-bold text-white md:text-2xl">统招 · 主通道</h3>
-                        <span class="inline-flex items-center rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white border border-white/30">
-                          志愿填报首选
-                        </span>
-                      </div>
-                      <p class="mt-1 text-[15px] font-medium text-white/90">全体考生适用，从这里开始</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 右：档案状态 + 操作按钮 -->
-                <div class="shrink-0 space-y-3 md:w-[360px]">
-                  <div class="rounded-xl bg-white/10 px-4 py-3 text-sm">
-                    <template v-if="hasArchive && archive">
-                      <div class="flex items-center gap-2 font-medium text-white">
-                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-300" />
-                        已建档
-                      </div>
-                      <div class="mt-1.5 leading-relaxed text-white/85">
-                        {{ archive.gaokaoYear ?? '-' }} · {{ archive.gaokaoProvince || '-' }} · {{ archive.subjectType || '-' }} · {{ archive.score ?? '-' }} 分 · 位次 {{ archive.rank ?? '-' }}
-                      </div>
-                    </template>
-                    <template v-else>
-                      <div class="flex items-center gap-2 font-medium text-white">
-                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-300" />
-                        尚未填写高考档案
-                      </div>
-                      <div class="mt-1.5 leading-relaxed text-white/85">填写档案后开启志愿规划 · 约 30 秒即可完成</div>
-                    </template>
-                  </div>
-                  <div class="flex flex-wrap gap-2.5">
-                    <button
-                      class="rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-orange-dark shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
-                    >
-                      {{ hasArchive ? '进入报志愿 →' : '填写高考档案 →' }}
-                    </button>
-                    <button
-                      v-if="hasArchive"
-                      class="rounded-full border border-white/50 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/15"
-                      @click.stop="goArchive"
-                    >
-                      修改档案
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <!-- 主 CTA：进来即可直达核心流程，不用去别处找入口 -->
+            <div class="mt-7 flex flex-wrap items-center gap-3">
+              <button class="hero-cta-primary" @click="router.push('/gaokao/groups')">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
+                </svg>
+                开始查询专业组
+              </button>
+              <button class="hero-cta-ghost" @click="goArticles">
+                看看本省资讯
+                <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6.5 3.5 11 8l-4.5 4.5" />
+                </svg>
+              </button>
+            </div>
           </Motion>
 
           <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
@@ -324,7 +289,19 @@ async function initPage() {
             <span class="hidden md:block text-sm text-gray-400">综合评价 · 强基计划 · 专项计划 · 民族班 · 全国联招</span>
           </div>
 
-          <div v-loading="loading" class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
+          <!-- 加载中：与页面卡片同构的骨架屏（替代通用转圈） -->
+          <div v-if="loading" class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
+            <div v-for="i in 6" :key="i" class="rounded-2xl bg-white p-6 shadow-card border border-gray-100/60 animate-pulse">
+              <div class="mb-4 h-12 w-12 rounded-xl bg-gray-200/80"></div>
+              <div class="h-4 w-24 rounded bg-gray-200/80"></div>
+              <div class="mt-3 mb-2 flex gap-1.5">
+                <div class="h-5 w-12 rounded-full bg-gray-100"></div>
+              </div>
+              <div class="h-3 w-full rounded bg-gray-100"></div>
+              <div class="mt-2 h-3 w-3/4 rounded bg-gray-100"></div>
+            </div>
+          </div>
+          <div v-else class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
             <Motion
               v-for="(item, i) in displayChannels"
               :key="item.channelCode"
@@ -335,7 +312,7 @@ async function initPage() {
               class="h-full"
             >
               <div
-                class="group flex h-full flex-col rounded-2xl bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white p-6 shadow-card border border-gray-100/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-blue/40 hover:shadow-card-hover cursor-pointer"
+                class="group flex h-full flex-col rounded-2xl bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white p-6 shadow-card border border-gray-100/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-blue/40 hover:shadow-card-hover active:scale-[0.98] cursor-pointer"
                 @click="goChannel(item)"
               >
                 <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors group-hover:bg-brand-blue/15">
@@ -357,6 +334,42 @@ async function initPage() {
                 </span>
               </div>
             </Motion>
+          </div>
+
+          <!-- 热点资讯：按档案省份推送，仅展示 4 条，查看更多跳资讯列表页 -->
+          <div class="mt-12 mb-5 flex items-center justify-between gap-4">
+            <h3 class="border-l-[4px] border-brand-orange pl-3 text-xl font-bold text-gray-800">热点资讯</h3>
+            <button class="news-more-btn" @click="goArticles">
+              查看更多
+              <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5 11 8l-4.5 4.5" />
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="hasArchive" v-loading="newsLoading" class="min-h-[120px]">
+            <div v-if="newsList.length" class="grid grid-cols-1 gap-x-10 gap-y-2.5 md:grid-cols-2">
+              <button
+                v-for="item in newsList"
+                :key="item.id"
+                class="news-item"
+                :title="item.summary || item.title"
+                @click="goNewsDetail(item.id)"
+              >
+                <span class="news-dot" aria-hidden="true"></span>
+                <span class="news-title">{{ item.title }}</span>
+              </button>
+            </div>
+            <p v-else-if="!newsLoading" class="py-8 text-center text-sm text-gray-400">本省暂无已发布的资讯</p>
+          </div>
+          <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-orange-100 bg-white/70 px-5 py-4 text-sm text-gray-500">
+            填写高考档案后，将按你的省份推送热点资讯
+            <button class="news-empty-btn" @click="archiveBarRef?.openDialog()">
+              去填写档案
+              <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5 11 8l-4.5 4.5" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -400,6 +413,157 @@ async function initPage() {
 </template>
 
 <style scoped>
+/* ===== 档案吸附条样式已抽取至共享组件 components/gaokao/ArchiveBar.vue ===== */
+
+/* ===== Hero 主 CTA：品牌橙渐变药丸 + 描边次按钮 ===== */
+.hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 26px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.32);
+  transition: all 0.25s ease;
+}
+
+.hero-cta-primary:hover {
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+
+.hero-cta-primary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.hero-cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 22px;
+  background: #fff;
+  color: #ea580c;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.hero-cta-ghost:hover {
+  background: #fff7ed;
+  border-color: #f97316;
+}
+
+.hero-cta-ghost:active {
+  transform: scale(0.98);
+}
+
+/* ===== 资讯空态引导按钮 ===== */
+.news-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.28);
+  transition: all 0.25s ease;
+}
+
+.news-empty-btn:hover {
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.36);
+  transform: translateY(-1px);
+}
+
+.news-empty-btn:active {
+  transform: scale(0.97);
+}
+
+/* ===== 热点资讯 ===== */
+.news-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: #fff;
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.news-more-btn:hover {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
+}
+
+.news-more-btn:active {
+  transform: scale(0.97);
+}
+
+.news-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.news-item:hover {
+  background: rgba(249, 115, 22, 0.06);
+}
+
+.news-item:hover .news-title {
+  color: #f97316;
+}
+
+.news-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+}
+
+.news-title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  flex: 1;
+  min-width: 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
 /* ===== 直通考院 ===== */
 .exams-section {
   position: relative;
@@ -512,6 +676,10 @@ async function initPage() {
 
 .exam-link:hover svg {
   transform: translate(1px, -1px);
+}
+
+.exam-link:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* 进场动画（页面加载时播放一次） */
