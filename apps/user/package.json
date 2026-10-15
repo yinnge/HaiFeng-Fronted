@@ -15,7 +15,7 @@
     "@haifeng/shared": "workspace:*",
     "axios": "^1.6.8",
     "china-area-data": "^5.0.1",
-    "dompurify": "^3.4.12",
+    "dompurify": "^3.2.4",
     "element-plus": "^2.7.3",
     "json-bigint": "^1.0.0",
     "lottie-web": "^5.13.0",

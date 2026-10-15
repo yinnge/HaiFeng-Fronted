@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { Motion, useReducedMotion } from 'motion-v'
 import { getChannelList } from '@/api/special'
 import { getArchive, type GaokaoArchiveVO } from '@/api/gaokao'
+import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
 
@@ -19,6 +20,57 @@ const hasArchive = ref(false)
 
 // 高考档案摘要（纯展示用，不改动任何业务流程/接口）
 const archive = ref<GaokaoArchiveVO | null>(null)
+
+// ===== 档案吸附条：吸在导航栏下方，滚动页面时不随之滚动 =====
+// 动态测量导航栏实际高度作为吸附偏移，避免写死（导航内容高度随断点变化）
+const stickyTop = ref(64)
+
+function measureHeader() {
+  const h = document.querySelector('.app-header')?.getBoundingClientRect().height
+  if (h && h > 0) stickyTop.value = Math.round(h)
+}
+
+// 三个选科（首选 / 再选1 / 再选2），老高考无再选科目时只展示首选
+const archiveSubjects = computed(() => {
+  if (!archive.value) return []
+  return [
+    archive.value.subjectType,
+    archive.value.secondSubjectType,
+    archive.value.thirdSubjectType,
+  ].filter((s): s is string => !!s)
+})
+
+// ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
+const newsLoading = ref(false)
+const newsList = ref<GaokaoArticleListVO[]>([])
+
+async function fetchNews() {
+  if (!archive.value?.gaokaoProvince) return
+  newsLoading.value = true
+  try {
+    // 后端分页 size 下限为 10（BasePageQueryDTO 强约束），首页只展示 4 条，本地截断
+    const res = await getGaokaoArticlePage({
+      province: archive.value.gaokaoProvince,
+      page: 1,
+      size: 10,
+    })
+    newsList.value = res.data.data.records.slice(0, 4)
+  } catch {
+    // 资讯拉取失败不打断主流程
+  } finally {
+    newsLoading.value = false
+  }
+}
+
+// 查看资讯详情
+function goNewsDetail(id: string) {
+  router.push(`/gaokao/article/${id}`)
+}
+
+// 查看更多资讯（跳转资讯列表页）
+function goArticles() {
+  router.push('/gaokao/articles')
+}
 
 // 尊重系统「减弱动态效果」设置：开启时区块直接静态呈现，不做浮现动画
 const reduceMotion = useReducedMotion()
@@ -202,6 +254,7 @@ function goWishPlan() {
 }
 
 onMounted(() => {
+  measureHeader()
   void initPage()
 })
 
@@ -211,6 +264,8 @@ onMounted(() => {
 // 滚动目标算得太靠上，等卡片撑开后 #exams 被推到页底，滚动就到不了底部。
 async function initPage() {
   await Promise.allSettled([fetchChannels(), fetchArchive()])
+  // 资讯依赖档案省份，档案就绪后再拉取
+  void fetchNews()
   // 等 DOM 完成刷新（卡片展开、页面高度稳定）再滚动，避免位置偏移
   await nextTick()
   await nextTick()
@@ -225,6 +280,35 @@ async function initPage() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动 -->
+    <div class="archive-bar" :style="{ top: `${stickyTop}px` }">
+      <div class="archive-bar-inner">
+        <div class="flex min-w-0 items-center gap-2 text-sm">
+          <svg class="h-4 w-4 shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <template v-if="hasArchive && archive">
+            <span class="truncate text-gray-700">
+              <span class="font-semibold text-gray-800">{{ archive.gaokaoYear }}年</span>
+              {{ ' ' }}{{ archive.gaokaoProvince }}{{ ' ' }}
+              <span class="font-semibold text-brand-orange-dark">{{ archive.score }}分</span>
+              <template v-if="archiveSubjects.length">
+                {{ ' ' }}<span class="text-gray-600">{{ archiveSubjects.join('/') }}</span>
+              </template>
+            </span>
+          </template>
+          <span v-else class="truncate text-gray-500">尚未填写高考档案，填写后开启志愿规划</span>
+        </div>
+        <button
+          class="shrink-0 rounded-full border border-brand-orange/30 bg-white/80 px-4 py-1.5 text-xs font-medium text-brand-orange transition-colors hover:bg-brand-orange/10"
+          @click="goArchive"
+        >
+          {{ hasArchive ? '修改档案' : '去填写' }}
+        </button>
+      </div>
+    </div>
+
     <main class="flex-1">
       <div class="container mx-auto px-6 pb-16 relative">
         <div class="max-w-5xl mx-auto min-h-[200px]">
@@ -358,6 +442,37 @@ async function initPage() {
               </div>
             </Motion>
           </div>
+
+          <!-- 热点资讯：按档案省份推送，仅展示 4 条，查看更多跳资讯列表页 -->
+          <div class="mt-12 mb-5 flex items-center justify-between gap-4">
+            <h3 class="border-l-[4px] border-brand-orange pl-3 text-xl font-bold text-gray-800">热点资讯</h3>
+            <button class="news-more-btn" @click="goArticles">
+              查看更多
+              <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5 11 8l-4.5 4.5" />
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="hasArchive" v-loading="newsLoading" class="min-h-[120px]">
+            <div v-if="newsList.length" class="grid grid-cols-1 gap-x-10 gap-y-2.5 md:grid-cols-2">
+              <button
+                v-for="item in newsList"
+                :key="item.id"
+                class="news-item"
+                :title="item.summary || item.title"
+                @click="goNewsDetail(item.id)"
+              >
+                <span class="news-dot" aria-hidden="true"></span>
+                <span class="news-title">{{ item.title }}</span>
+              </button>
+            </div>
+            <p v-else-if="!newsLoading" class="py-8 text-center text-sm text-gray-400">本省暂无已发布的资讯</p>
+          </div>
+          <div v-else class="rounded-xl border border-orange-100 bg-white/70 px-5 py-4 text-sm text-gray-500">
+            填写高考档案后，将按你的省份推送热点资讯 ·
+            <button class="font-medium text-brand-orange hover:underline" @click="goArchive">去填写</button>
+          </div>
         </div>
 
         <!-- 底部品牌橙渐变分隔条（衔接直通考院，消除硬断崖） -->
@@ -400,6 +515,94 @@ async function initPage() {
 </template>
 
 <style scoped>
+/* ===== 档案吸附条：sticky 吸在导航栏下方（top 由 JS 测量导航实际高度） ===== */
+.archive-bar {
+  position: sticky;
+  z-index: 40;
+  background: rgba(255, 251, 245, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+  box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+}
+
+.archive-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8px 24px;
+}
+
+/* ===== 热点资讯 ===== */
+.news-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: #fff;
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.news-more-btn:hover {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  transform: translateY(-1px);
+}
+
+.news-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.news-item:hover {
+  background: rgba(249, 115, 22, 0.06);
+}
+
+.news-item:hover .news-title {
+  color: #f97316;
+}
+
+.news-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+}
+
+.news-title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  flex: 1;
+  min-width: 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
 /* ===== 直通考院 ===== */
 .exams-section {
   position: relative;

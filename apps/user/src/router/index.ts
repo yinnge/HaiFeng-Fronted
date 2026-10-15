@@ -123,6 +123,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '通道大学', requiresAuth: true },
   },
   {
+    path: '/gaokao/articles',
+    name: 'GaokaoArticles',
+    component: () => import('@/views/gaokao/Articles.vue'),
+    meta: { title: '热点资讯', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/article/:id',
+    name: 'GaokaoArticleDetail',
+    component: () => import('@/views/gaokao/ArticleDetail.vue'),
+    meta: { title: '资讯详情', requiresAuth: true },
+  },
+  {
     path: '/gaokao/plans',
     name: 'GaokaoPlans',
     component: () => import('@/views/gaokao/PlansList.vue'),
