@@ -42,6 +42,12 @@ const fileloadRoutes: RouteRecordRaw = {
       component: () => import('@/views/home/graduate/index.vue'),
       meta: { title: '研究生资源', moduleCode: 'fileload_graduate' },
     },
+    {
+      path: 'article',
+      name: 'FileLoadArticle',
+      component: () => import('@/views/home/bizArticle/index.vue'),
+      meta: { title: '热点资讯', moduleCode: 'fileload_article' },
+    },
   ],
 }
 

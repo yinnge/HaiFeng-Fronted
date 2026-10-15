@@ -1,0 +1,134 @@
+/* =========================================================
+   热点资讯富文本正文统一展示样式（.article-content）
+   v-html 插入的 DOM 不受 scoped 约束，故放在全局非 scoped CSS：
+   编辑时运营只负责语义（H2/H3、表格、引用等），长什么样由这里说了算。
+   ========================================================= */
+.article-content {
+  line-height: 1.8;
+  font-size: 16px;
+  color: #333;
+  word-break: break-word;
+}
+
+.article-content h1,
+.article-content h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 24px 0 12px;
+  color: #1f2937;
+}
+
+.article-content h3 {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: #1f2937;
+}
+
+.article-content h4,
+.article-content h5 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: #374151;
+}
+
+.article-content p {
+  margin: 0 0 12px;
+}
+
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 8px auto;
+  border-radius: 8px;
+  cursor: zoom-in;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 0 0 12px;
+  padding-left: 24px;
+}
+
+.article-content ul {
+  list-style: disc;
+}
+
+.article-content ol {
+  list-style: decimal;
+}
+
+.article-content li {
+  margin-bottom: 4px;
+}
+
+.article-content blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid #f97316;
+  background: #fff7ed;
+  color: #7c2d12;
+  border-radius: 0 8px 8px 0;
+}
+
+.article-content a {
+  color: #f97316;
+  text-decoration: underline;
+}
+
+.article-content hr {
+  border: none;
+  border-top: 1px dashed #fdba74;
+  margin: 20px 0;
+}
+
+.article-content code {
+  background: #f6f8fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.article-content pre {
+  background: #f6f8fa;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.article-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* 表格：容器横向滚动 + 统一单元格样式 */
+.article-content .table-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.article-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.article-content th,
+.article-content td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 15px;
+}
+
+.article-content th {
+  background: #fff7ed;
+  font-weight: 600;
+  color: #9a3412;
+}
+
+.article-content table p {
+  margin: 0;
+}
