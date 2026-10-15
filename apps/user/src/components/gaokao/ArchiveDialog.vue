@@ -47,7 +47,18 @@ const form = reactive<GaokaoArchiveForm>({
 
 // ===== 改革模式 / 批次线 =====
 const reformModel = ref<ReformModelData | null>(null)
+const modelLoading = ref(false)
 const batchList = ref<BatchLine[]>([])
+const batchLoading = ref(false)
+
+/**
+ * 归一化改革模式：3+3 / 3+1+2 / 传统文理；null=该省份未配置（后端查不到时
+ * 会返回 reformModel=null 的 VO，若不归一化三个分支都不渲染，科目区直接空白）
+ */
+const modelType = computed(() => {
+  const m = reformModel.value?.reformModel
+  return m === '3+3' || m === '3+1+2' || m === '传统文理' ? m : null
+})
 
 // checkbox-group 绑定
 const secondSubjects = ref<string[]>([]) // 3+1+2 再选
@@ -91,6 +102,7 @@ watch(
   () => [form.gaokaoProvince, form.gaokaoYear] as const,
   async ([province, year]) => {
     if (!province || !year) return
+    modelLoading.value = true
     try {
       const res = await getReformModel({ province, year })
       reformModel.value = res.data.data
@@ -100,9 +112,15 @@ watch(
       } else {
         resetSubjects()
       }
-    } catch {
+      if (!modelType.value) {
+        ElMessage.warning(`${province}暂未配置高考改革模式，暂时无法选择科目`)
+      }
+    } catch (e: any) {
       restoringData = null
       reformModel.value = null
+      ElMessage.error(e?.message || '获取改革模式失败')
+    } finally {
+      modelLoading.value = false
     }
   },
 )
@@ -140,16 +158,20 @@ watch(
   () => [form.gaokaoProvince, form.gaokaoYear, form.subjectType] as const,
   async ([province, year, subjectType]) => {
     if (!province || !year || !subjectType) return
+    batchLoading.value = true
     try {
       const res = await getBatchLines({
         province,
         year,
         subjectType: getSubjectTypeForAPI(subjectType),
       })
-      batchList.value = res.data.data.batches
-      form.batchDataYear = res.data.data.dataYear
-    } catch {
-      // 批次线查询失败静默
+      batchList.value = res.data.data?.batches || []
+      form.batchDataYear = res.data.data?.dataYear || year
+    } catch (e: any) {
+      batchList.value = []
+      ElMessage.warning(e?.message || '批次线查询失败，请稍后重试')
+    } finally {
+      batchLoading.value = false
     }
   },
 )
@@ -333,8 +355,6 @@ function handleMakePlan() {
   ElMessage.info('「制定方案」功能即将上线，敬请期待')
 }
 
-const showSubjectPicker = computed(() => !!reformModel.value)
-
 onMounted(() => {
   void loadYears()
 })
@@ -370,16 +390,20 @@ onMounted(() => {
       <!-- 高考科目（按改革模式直接渲染，不展示模式文案） -->
       <div class="form-item">
         <label class="form-label">高考科目</label>
-        <div v-if="!showSubjectPicker" class="subject-placeholder">请先选择省份和年份</div>
+        <div v-if="!form.gaokaoProvince || !form.gaokaoYear" class="subject-placeholder">请先选择省份和年份</div>
+        <div v-else-if="modelLoading" class="subject-placeholder">正在获取科目配置…</div>
+        <div v-else-if="!modelType" class="subject-placeholder subject-placeholder-warn">
+          该省份暂未配置高考改革模式，无法选择科目
+        </div>
         <div v-else class="space-y-3">
           <!-- 传统文理 -->
-          <el-radio-group v-if="reformModel!.reformModel === '传统文理'" v-model="form.subjectType">
+          <el-radio-group v-if="modelType === '传统文理'" v-model="form.subjectType">
             <el-radio-button value="文科">文科</el-radio-button>
             <el-radio-button value="理科">理科</el-radio-button>
           </el-radio-group>
 
           <!-- 3+1+2 -->
-          <div v-else-if="reformModel!.reformModel === '3+1+2'" class="space-y-3">
+          <div v-else-if="modelType === '3+1+2'" class="space-y-3">
             <div>
               <p class="subject-sub-label">首选科目</p>
               <el-radio-group v-model="form.subjectType">
@@ -395,7 +419,7 @@ onMounted(() => {
           </div>
 
           <!-- 3+3 -->
-          <div v-else-if="reformModel!.reformModel === '3+3'">
+          <div v-else-if="modelType === '3+3'">
             <p class="subject-sub-label">选考科目（选择3个）</p>
             <el-checkbox-group v-model="firstSubjects" :max="3">
               <el-checkbox v-for="sub in reformModel!.subjects.first" :key="sub" :value="sub" :label="sub" />
@@ -428,6 +452,9 @@ onMounted(() => {
         <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="w-full">
           <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
         </el-select>
+        <p v-if="!form.subjectType" class="form-hint">选择科目后自动加载可选批次</p>
+        <p v-else-if="batchLoading" class="form-hint">正在查询批次线…</p>
+        <p v-else-if="!batchList.length" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
         <p v-if="form.batch && form.batchLineScore" class="form-hint">
           {{ form.batch }}省控线：<b class="text-brand-orange-dark">{{ form.batchLineScore }} 分</b>
           <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
@@ -517,6 +544,12 @@ onMounted(() => {
   color: #9ca3af;
   background: #f9fafb;
   border-radius: 10px;
+}
+
+.subject-placeholder-warn {
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px dashed rgba(249, 115, 22, 0.4);
 }
 
 .subject-sub-label {
