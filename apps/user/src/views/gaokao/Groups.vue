@@ -18,6 +18,7 @@ import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import GroupRow from '@/components/gaokao/GroupRow.vue'
 import MajorRow from '@/components/gaokao/MajorRow.vue'
 import BriefInfoDrawer from '@/components/gaokao/BriefInfoDrawer.vue'
+import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
 import { getLevelDict, getMyPlans, type SafetyLevelDictVO } from '@/api/wish-plan'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import type { BriefDrawerData } from '@/types/gaokao/brief'
@@ -26,6 +27,9 @@ const router = useRouter()
 const userStore = useUserStore()
 const selectionStore = useSelectionStore()
 const recharge = useRechargeDialog()
+
+// 档案吸附条（本页共享组件）：顶部/悬浮「修改档案」按钮直接调用其弹窗，不再跳转 gaokao 页
+const archiveBarRef = ref<InstanceType<typeof ArchiveBar> | null>(null)
 
 // 档案数据
 const archive = ref<GaokaoArchiveVO | null>(null)
@@ -152,13 +156,19 @@ async function loadArchive() {
           closeOnPressEscape: false,
         }
       )
-      router.push({ path: '/gaokao', query: { editArchive: '1' } })
+      // 本页弹窗填写，不再跳转 gaokao 页
+      archiveBarRef.value?.openDialog()
       return
     }
     loadGroups()
   } catch (e: any) {
     ElMessage.error(e?.message || '加载档案失败')
   }
+}
+
+// 档案保存成功（吸附条弹窗）：重新加载档案，内部会按新档案重查专业组
+function onArchiveSaved() {
+  loadArchive()
 }
 
 // 加载专业组
@@ -359,6 +369,9 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
+    <!-- 档案吸附条：与 gaokao 首页共享组件，本页「修改档案」直接调其弹窗 -->
+    <ArchiveBar ref="archiveBarRef" @saved="onArchiveSaved" />
+
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
       <!-- 顶部操作栏 -->
       <div class="flex justify-between items-center mb-6">
@@ -369,7 +382,7 @@ onMounted(() => {
         <div class="flex items-center gap-3">
           <button
             class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5"
-            @click="router.push({ path: '/gaokao', query: { editArchive: '1' } })"
+            @click="archiveBarRef?.openDialog()"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -684,7 +697,7 @@ onMounted(() => {
       <!-- 修改档案 -->
       <button
         class="group w-12 h-auto py-3 rounded-xl shadow-card border border-gray-100 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-brand hover:border-brand-orange"
-        @click="router.push({ path: '/gaokao', query: { editArchive: '1' } })"
+        @click="archiveBarRef?.openDialog()"
       >
         <svg class="w-5 h-5 text-gray-500 group-hover:text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

@@ -5,12 +5,10 @@ import { ElMessage } from 'element-plus'
 import { Motion, useReducedMotion } from 'motion-v'
 import { getChannelList } from '@/api/special'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
-import type { GaokaoArchiveVO, GaokaoArchiveForm } from '@/api/gaokao'
-import { loadArchiveSmart } from '@/utils/gaokaoArchive'
-import { ProvinceOptions } from '@haifeng/shared'
+import type { GaokaoArchiveVO } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
-import ArchiveDialog from '@/components/gaokao/ArchiveDialog.vue'
+import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,58 +16,23 @@ const route = useRoute()
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
 
-// ===== 高考档案（统一存取源：登录=服务端，游客=localStorage，刷新不丢） =====
+// ===== 高考档案：展示/编辑统一由共享吸附条组件（ArchiveBar）负责，
+// 本页只接收事件更新展示数据并联动资讯区 =====
 const displayForm = ref<GaokaoArchiveVO | null>(null)
 const hasArchive = computed(() => !!displayForm.value?.gaokaoProvince)
 
-// 档案弹窗
-const archiveDialogVisible = ref(false)
+const archiveBarRef = ref<InstanceType<typeof ArchiveBar> | null>(null)
 
-function openArchiveDialog() {
-  archiveDialogVisible.value = true
+// 档案变化（初始加载 / 省份下拉切换 / 弹窗保存）：更新展示 + 按新省份刷新资讯
+function onArchiveChange(archive: GaokaoArchiveVO | null) {
+  displayForm.value = archive
+  void fetchNews()
 }
 
-// 档案保存成功（模拟填报）：更新吸附条展示 + 按新省份刷新资讯 + 跳转专业组查询
-function handleArchiveSaved(form: GaokaoArchiveForm) {
-  displayForm.value = { ...(displayForm.value || ({} as GaokaoArchiveVO)), ...form }
-  archiveDialogVisible.value = false
-  void fetchNews()
+// 档案保存成功（模拟填报）：跳转专业组查询
+function onArchiveSaved() {
   router.push('/gaokao/groups')
 }
-
-// ===== 档案吸附条：吸在导航栏下方，滚动页面时不随之滚动 =====
-// 动态测量导航栏实际高度作为吸附偏移，避免写死（导航内容高度随断点变化）
-const stickyTop = ref(64)
-
-function measureHeader() {
-  const h = document.querySelector('.app-header')?.getBoundingClientRect().height
-  if (h && h > 0) stickyTop.value = Math.round(h)
-}
-
-// 三个选科（首选 / 再选1 / 再选2），老高考无再选科目时只展示首选
-const archiveSubjects = computed(() => {
-  if (!displayForm.value) return []
-  return [
-    displayForm.value.subjectType,
-    displayForm.value.secondSubjectType,
-    displayForm.value.thirdSubjectType,
-  ].filter((s): s is string => !!s)
-})
-
-// 吸附条省份行内下拉：与档案弹窗双向联动（这里改了弹窗跟着改；弹窗保存后这里同步）
-const archiveProvince = computed({
-  get: () => displayForm.value?.gaokaoProvince || '',
-  set: (val: string) => {
-    if (!val) return
-    if (displayForm.value) {
-      displayForm.value.gaokaoProvince = val
-    } else {
-      // 尚无档案：先建一个最小展示对象（省份仅用于资讯查询，完整档案走弹窗）
-      displayForm.value = { gaokaoProvince: val, gaokaoYear: new Date().getFullYear() } as GaokaoArchiveVO
-    }
-    void fetchNews()
-  },
-})
 
 // ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
 const newsLoading = ref(false)
@@ -237,16 +200,6 @@ async function fetchChannels() {
   }
 }
 
-// 查询档案：登录读服务端（无本地游客档案时自动迁移入库），游客读 localStorage
-async function fetchArchive() {
-  try {
-    const { archive: a } = await loadArchiveSmart()
-    displayForm.value = a
-  } catch {
-    displayForm.value = null
-  }
-}
-
 // 通道卡「热门」标签（纯展示）
 function isHot(code: string) {
   return code === 'COMPREHENSIVE' || code === 'STRONG_BASE'
@@ -263,11 +216,10 @@ function goChannel(item: SpecialChannelListVO) {
 }
 
 onMounted(() => {
-  measureHeader()
   void initPage()
   // 从其它页跳转过来（/gaokao?editArchive=1）：自动打开档案填写弹窗
   if (route.query.editArchive) {
-    openArchiveDialog()
+    nextTick(() => archiveBarRef.value?.openDialog())
   }
 })
 
@@ -276,9 +228,8 @@ onMounted(() => {
 // 若不等 nextTick 就去量 #exams 的位置，此时卡片区还是 200px loading 占位，
 // 滚动目标算得太靠上，等卡片撑开后 #exams 被推到页底，滚动就到不了底部。
 async function initPage() {
-  await Promise.allSettled([fetchChannels(), fetchArchive()])
-  // 资讯依赖档案省份，档案就绪后再拉取
-  void fetchNews()
+  await Promise.allSettled([fetchChannels()])
+  // 资讯由 ArchiveBar 的 archive-change 事件驱动（档案就绪后自动拉取）
   // 等 DOM 完成刷新（卡片展开、页面高度稳定）再滚动，避免位置偏移
   await nextTick()
   await nextTick()
@@ -293,44 +244,8 @@ async function initPage() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
-    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动 -->
-    <div class="archive-bar" :style="{ top: `${stickyTop}px` }">
-      <div class="archive-bar-inner">
-        <span class="archive-bar-label">
-          <svg class="h-3.5 w-3.5 shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          高考档案
-        </span>
-        <!-- 信息整体靠右：省份行内下拉在前，年份/分数/科目点击打开档案弹窗 -->
-        <div class="archive-bar-info">
-          <el-select
-            v-model="archiveProvince"
-            placeholder="选择省份"
-            filterable
-            size="small"
-            class="archive-province-select"
-          >
-            <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
-          <template v-if="displayForm && displayForm.score">
-            <button class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
-              {{ displayForm.gaokaoYear }}年
-            </button>
-            <button class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
-              {{ displayForm.score }}分
-            </button>
-            <button v-if="archiveSubjects.length" class="archive-chip" title="点击修改档案" @click="openArchiveDialog">
-              {{ archiveSubjects.join('/') }}
-            </button>
-          </template>
-          <button v-else class="archive-chip archive-chip-empty" @click="openArchiveDialog">
-            点击填写年份 / 分数 / 科目
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动（共享组件，Groups 页复用） -->
+    <ArchiveBar ref="archiveBarRef" @archive-change="onArchiveChange" @saved="onArchiveSaved" />
 
     <main class="flex-1">
       <div class="container mx-auto px-6 pb-16 relative">
@@ -422,7 +337,7 @@ async function initPage() {
           </div>
           <div v-else class="rounded-xl border border-orange-100 bg-white/70 px-5 py-4 text-sm text-gray-500">
             填写高考档案后，将按你的省份推送热点资讯 ·
-            <button class="font-medium text-brand-orange hover:underline" @click="openArchiveDialog">去填写</button>
+            <button class="font-medium text-brand-orange hover:underline" @click="archiveBarRef?.openDialog()">去填写</button>
           </div>
         </div>
 
@@ -462,99 +377,11 @@ async function initPage() {
         </div>
       </section>
     </main>
-
-    <!-- 高考档案填写弹窗（模拟填报 / 制定方案） -->
-    <ArchiveDialog v-model:visible="archiveDialogVisible" :initial-form="displayForm" @saved="handleArchiveSaved" />
   </div>
 </template>
 
 <style scoped>
-/* ===== 档案吸附条：sticky 吸在导航栏下方（top 由 JS 测量导航实际高度） ===== */
-.archive-bar {
-  position: sticky;
-  z-index: 40;
-  background: rgba(255, 251, 245, 0.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
-  box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
-}
-
-.archive-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 7px 24px;
-}
-
-.archive-bar-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-}
-
-@media (max-width: 767px) {
-  .archive-bar-label {
-    display: none;
-  }
-}
-
-.archive-bar-info {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-  margin-left: auto;
-}
-
-.archive-province-select {
-  width: 118px;
-}
-
-.archive-province-select :deep(.el-select__wrapper) {
-  border-radius: 16px;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
-  background: #fff;
-}
-
-.archive-province-select :deep(.el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-
-.archive-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.25);
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.archive-chip:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
-}
-
-.archive-chip-empty {
-  border-style: dashed;
-  color: #9ca3af;
-  font-weight: 400;
-}
+/* ===== 档案吸附条样式已抽取至共享组件 components/gaokao/ArchiveBar.vue ===== */
 
 /* ===== 热点资讯 ===== */
 .news-more-btn {
