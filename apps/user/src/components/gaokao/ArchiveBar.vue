@@ -1,18 +1,26 @@
 <script setup lang="ts">
 // apps/user/src/components/gaokao/ArchiveBar.vue
-// 高考档案吸附条：常驻导航栏下方（sticky），滚动页面时固定不动。
-// - 左侧「高考档案」标签；右侧信息：省份行内下拉 + 年份/分数/科目 chip
-// - 省份下拉与档案弹窗双向联动；点击年份/分数/科目打开档案弹窗
+// 高考模块吸附条：常驻导航栏下方（sticky），滚动页面时固定不动。
+// - 左侧「高考模块」标签；中部页面目录（真题占位/志愿/资讯/百宝箱）；
+//   右侧省份选择器 + 年份/分数/科目 chip
+// - 省份修改：已有完整档案 → 只改省份字段调接口持久化（saveArchiveSmart）；
+//   尚无完整档案 → 仅本地展示（游客另存 localStorage），不调接口（后端会拦半成品档案）
+// - 未选省份默认「北京」
 // - 内置 ArchiveDialog：模拟填报保存后 emit('saved')；父组件可监听刷新业务数据
-// 档案源：utils/gaokaoArchive（登录=服务端，游客=localStorage，刷新不丢）
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import type { GaokaoArchiveVO, GaokaoArchiveForm } from '@/api/gaokao'
-import { loadArchiveSmart } from '@/utils/gaokaoArchive'
-import { ProvinceOptions } from '@haifeng/shared'
+import { loadArchiveSmart, saveArchiveSmart, saveGuestArchive } from '@/utils/gaokaoArchive'
+import { isLoggedIn } from '@haifeng/shared/utils/auth'
+import ProvincePicker from './ProvincePicker.vue'
 import ArchiveDialog from './ArchiveDialog.vue'
 
+const route = useRoute()
+const router = useRouter()
+
 const emit = defineEmits<{
-  /** 档案发生变化（初始加载 / 省份下拉切换 / 弹窗保存），携带最新档案（可为 null） */
+  /** 档案发生变化（初始加载 / 省份切换 / 弹窗保存），携带最新档案（可为 null） */
   (e: 'archive-change', archive: GaokaoArchiveVO | null): void
   /** 弹窗「模拟填报」保存成功（已入库或已存本地） */
   (e: 'saved', form: GaokaoArchiveForm): void
@@ -35,6 +43,33 @@ function openDialog() {
 }
 defineExpose({ openDialog })
 
+// ===== 中部页面目录 =====
+interface BarNavItem {
+  key: string
+  label: string
+  to?: string
+  hot?: boolean
+}
+
+const navItems: BarNavItem[] = [
+  { key: 'zhenti', label: '高考真题' }, // 接口待接入，暂占位
+  { key: 'volunteer', label: '高考志愿', to: '/gaokao', hot: true },
+  { key: 'articles', label: '高考资讯', to: '/gaokao/articles' },
+  { key: 'toolkit', label: '高考百宝箱', to: '/gaokao/toolkit' },
+]
+
+function isActive(item: BarNavItem) {
+  return !!item.to && route.path === item.to
+}
+
+function onNavClick(item: BarNavItem) {
+  if (item.to) {
+    void router.push(item.to)
+  } else {
+    ElMessage.info('「高考真题」即将上线，敬请期待')
+  }
+}
+
 // 三个选科（首选 / 再选1 / 再选2），老高考无再选科目时只展示首选
 const archiveSubjects = computed(() => {
   if (!displayForm.value) return []
@@ -45,29 +80,50 @@ const archiveSubjects = computed(() => {
   ].filter((s): s is string => !!s)
 })
 
-// 省份行内下拉：与档案弹窗双向联动（这里改了弹窗跟着改；弹窗保存后这里同步）
-const archiveProvince = computed({
-  get: () => displayForm.value?.gaokaoProvince || '',
-  set: (val: string) => {
-    if (!val) return
-    if (displayForm.value) {
-      displayForm.value.gaokaoProvince = val
-    } else {
-      // 尚无档案：先建一个最小展示对象（省份仅用于按省查询，完整档案走弹窗）
-      displayForm.value = { gaokaoProvince: val, gaokaoYear: new Date().getFullYear() } as GaokaoArchiveVO
+/** 当前省份（未建档默认北京） */
+const archiveProvince = computed(() => displayForm.value?.gaokaoProvince || '北京')
+
+/**
+ * 省份切换：只改省份这一个字段并持久化。
+ * - 已有完整档案（有分数）：登录调 saveArchive 入库（仅省份不同）/ 游客写 localStorage；
+ * - 尚无完整档案：仅更新本地展示，游客另存 localStorage；登录态不调接口（半成品档案会被后端校验拦截）。
+ */
+async function onProvinceChange(val: string) {
+  const prev = displayForm.value
+  const merged = {
+    ...(prev || {}),
+    gaokaoProvince: val,
+    gaokaoYear: prev?.gaokaoYear || new Date().getFullYear(),
+  } as GaokaoArchiveVO
+  displayForm.value = merged
+  emit('archive-change', merged)
+
+  const hasFullArchive = !!prev?.score
+  if (hasFullArchive) {
+    try {
+      await saveArchiveSmart({ ...merged })
+    } catch (e: any) {
+      ElMessage.error(e?.message || '省份保存失败')
+      displayForm.value = prev
+      emit('archive-change', prev)
+      return
     }
-    emit('archive-change', displayForm.value)
-  },
-})
+  } else if (!isLoggedIn()) {
+    saveGuestArchive({ ...merged })
+  }
+}
 
 async function loadArchive() {
   try {
     const { archive } = await loadArchiveSmart()
-    displayForm.value = archive
-    emit('archive-change', archive)
+    displayForm.value = archive || {
+      gaokaoProvince: '北京',
+      gaokaoYear: new Date().getFullYear(),
+    } as GaokaoArchiveVO
+    emit('archive-change', displayForm.value)
   } catch {
-    displayForm.value = null
-    emit('archive-change', null)
+    displayForm.value = { gaokaoProvince: '北京', gaokaoYear: new Date().getFullYear() } as GaokaoArchiveVO
+    emit('archive-change', displayForm.value)
   }
 }
 
@@ -93,18 +149,33 @@ onMounted(() => {
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
           <circle cx="12" cy="10" r="3" />
         </svg>
-        高考档案
+        高考模块
       </span>
-      <!-- 信息整体靠右：省份行内下拉在前，年份/分数/科目点击打开档案弹窗 -->
-      <div class="archive-bar-info">
-        <el-select
-          v-model="archiveProvince"
-          placeholder="省份"
-          filterable
-          class="archive-province-select"
+
+      <!-- 中部页面目录 -->
+      <nav class="archive-nav">
+        <button
+          v-for="item in navItems"
+          :key="item.key"
+          type="button"
+          class="archive-nav-item"
+          :class="{ 'is-active': isActive(item) }"
+          @click="onNavClick(item)"
         >
-          <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-        </el-select>
+          {{ item.label }}
+          <!-- 火爆角标：火焰 svg -->
+          <span v-if="item.hot" class="nav-hot-badge" title="火爆">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M13.5 0.67s0.74 2.65 0.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l0.03-0.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5 0.67z" />
+              <path d="M11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-0.36 3.6-1.21 4.62-2.58 0.39 1.29 0.59 2.65 0.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" opacity="0.55" />
+            </svg>
+          </span>
+        </button>
+      </nav>
+
+      <!-- 右侧信息：省份选择器在前，年份/分数/科目点击打开档案弹窗 -->
+      <div class="archive-bar-info">
+        <ProvincePicker :model-value="archiveProvince" variant="bar" @update:model-value="onProvinceChange" />
         <template v-if="displayForm && displayForm.score">
           <button class="archive-chip" title="点击修改档案" @click="openDialog">
             {{ displayForm.gaokaoYear }}年
@@ -141,8 +212,7 @@ onMounted(() => {
 .archive-bar-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 20px;
   max-width: 1280px;
   margin: 0 auto;
   padding: 11px 24px;
@@ -169,6 +239,73 @@ onMounted(() => {
   }
 }
 
+/* ===== 中部页面目录 ===== */
+.archive-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.archive-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.archive-nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.archive-nav-item:hover {
+  color: #ea580c;
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.archive-nav-item.is-active {
+  color: #c2410c;
+  background: #ffedd5;
+  font-weight: 700;
+}
+
+.archive-nav-item:active {
+  transform: scale(0.97);
+}
+
+/* 火焰角标（右上角） */
+.nav-hot-badge {
+  position: absolute;
+  top: -6px;
+  right: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50% 50% 50% 4px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+}
+
+.nav-hot-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* ===== 右侧信息 ===== */
 .archive-bar-info {
   display: flex;
   align-items: center;
@@ -177,34 +314,6 @@ onMounted(() => {
   gap: 8px;
   min-width: 0;
   margin-left: auto;
-}
-
-/* 省份：橙红粗边框、比 chip 略大；最多三个字，宽度收窄 */
-.archive-province-select {
-  width: 86px;
-}
-
-.archive-province-select :deep(.el-select__wrapper) {
-  border-radius: 16px;
-  box-shadow: 0 0 0 1.5px #f97316 inset;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  color: #c2410c;
-  min-height: 34px;
-  padding: 2px 8px;
-}
-
-.archive-province-select :deep(.el-select__wrapper:hover) {
-  box-shadow: 0 0 0 1.5px #ea580c inset;
-}
-
-.archive-province-select :deep(.el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1.5px #ea580c inset;
-}
-
-.archive-province-select :deep(.el-select__placeholder) {
-  color: #c2410c;
 }
 
 .archive-chip {

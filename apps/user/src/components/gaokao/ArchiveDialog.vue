@@ -6,7 +6,6 @@
 // 「制定方案」= AI 生成 PDF，功能暂未上线，占位提示。
 import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ProvinceOptions } from '@haifeng/shared'
 import {
   getReformModel,
   getRank,
@@ -18,6 +17,7 @@ import {
   type GaokaoArchiveVO,
 } from '@/api/gaokao'
 import { saveArchiveSmart } from '@/utils/gaokaoArchive'
+import ProvincePicker from './ProvincePicker.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -236,6 +236,29 @@ function resetSubjects() {
   ALL_SUBJECT_FIELDS.forEach(({ field }) => (form[field] = undefined))
 }
 
+// ===== 科目按钮 toggle（自定义橙色按钮，替代 radio/checkbox 原生控件） =====
+function toggleSecondSubject(name: string) {
+  const idx = secondSubjects.value.indexOf(name)
+  if (idx >= 0) {
+    secondSubjects.value = secondSubjects.value.filter((s) => s !== name)
+  } else if (secondSubjects.value.length < 2) {
+    secondSubjects.value = [...secondSubjects.value, name]
+  } else {
+    ElMessage.warning('再选科目最多选择 2 个')
+  }
+}
+
+function toggleFirstSubject(name: string) {
+  const idx = firstSubjects.value.indexOf(name)
+  if (idx >= 0) {
+    firstSubjects.value = firstSubjects.value.filter((s) => s !== name)
+  } else if (firstSubjects.value.length < 3) {
+    firstSubjects.value = [...firstSubjects.value, name]
+  } else {
+    ElMessage.warning('选考科目最多选择 3 个')
+  }
+}
+
 // 按已有档案的分数字段推导已选科目并回填
 function restoreSubjects(data: GaokaoArchiveVO | GaokaoArchiveForm) {
   const selected = ALL_SUBJECT_FIELDS.filter((s) => data[s.field] != null).map((s) => s.name)
@@ -252,11 +275,14 @@ function restoreSubjects(data: GaokaoArchiveVO | GaokaoArchiveForm) {
 }
 
 // ===== 打开弹窗：回填 initialForm =====
+// 草稿保留：若上次已选过省份、且档案省份未变化，则保留上次的选择（含未保存的科目草稿），
+// 不再每次打开都重置（历史痛点：每次点开都要重新选科目）。
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
     const init = props.initialForm
+    if (form.gaokaoProvince && (!init || init.gaokaoProvince === form.gaokaoProvince)) return
     if (init && init.gaokaoProvince) {
       restoringData = init
       Object.assign(form, {
@@ -283,7 +309,7 @@ watch(
         gaokaoYear: yearOptions.value.length
           ? yearOptions.value[yearOptions.value.length - 1]
           : new Date().getFullYear(),
-        gaokaoProvince: '',
+        gaokaoProvince: '北京',
         score: 0,
         rank: 0,
         subjectType: '',
@@ -376,13 +402,11 @@ onMounted(() => {
       <div class="form-grid">
         <div class="form-item">
           <label class="form-label">高考省份</label>
-          <el-select v-model="form.gaokaoProvince" placeholder="选择省份" filterable class="w-full">
-            <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
+          <ProvincePicker v-model="form.gaokaoProvince" variant="form" placeholder="北京" />
         </div>
         <div class="form-item">
           <label class="form-label">高考年份</label>
-          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="w-full">
+          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="orange-select-popper">
             <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
           </el-select>
         </div>
@@ -398,33 +422,68 @@ onMounted(() => {
         </div>
         <div v-else class="space-y-3">
           <!-- 传统文理 -->
-          <el-radio-group v-if="modelType === '传统文理'" v-model="form.subjectType">
-            <el-radio-button value="文科">文科</el-radio-button>
-            <el-radio-button value="理科">理科</el-radio-button>
-          </el-radio-group>
+          <div v-if="modelType === '传统文理'" class="subject-btn-group">
+            <button
+              v-for="s in ['文科', '理科']"
+              :key="s"
+              type="button"
+              class="subject-btn"
+              :class="{ 'is-selected': form.subjectType === s }"
+              @click="form.subjectType = s"
+            >
+              {{ s }}
+            </button>
+          </div>
 
           <!-- 3+1+2 -->
           <div v-else-if="modelType === '3+1+2'" class="space-y-3">
             <div>
               <p class="subject-sub-label">首选科目</p>
-              <el-radio-group v-model="form.subjectType">
-                <el-radio-button v-for="sub in reformModel!.subjects.first" :key="sub" :value="sub">{{ sub }}</el-radio-button>
-              </el-radio-group>
+              <div class="subject-btn-group">
+                <button
+                  v-for="sub in reformModel!.subjects.first"
+                  :key="sub"
+                  type="button"
+                  class="subject-btn"
+                  :class="{ 'is-selected': form.subjectType === sub }"
+                  @click="form.subjectType = sub"
+                >
+                  {{ sub }}
+                </button>
+              </div>
             </div>
             <div>
               <p class="subject-sub-label">再选科目（选择2个）</p>
-              <el-checkbox-group v-model="secondSubjects" :max="2">
-                <el-checkbox v-for="sub in reformModel!.subjects.second" :key="sub" :value="sub" :label="sub" />
-              </el-checkbox-group>
+              <div class="subject-btn-group">
+                <button
+                  v-for="sub in reformModel!.subjects.second"
+                  :key="sub"
+                  type="button"
+                  class="subject-btn"
+                  :class="{ 'is-selected': secondSubjects.includes(sub) }"
+                  @click="toggleSecondSubject(sub)"
+                >
+                  {{ sub }}
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- 3+3 -->
           <div v-else-if="modelType === '3+3'">
             <p class="subject-sub-label">选考科目（选择3个）</p>
-            <el-checkbox-group v-model="firstSubjects" :max="3">
-              <el-checkbox v-for="sub in reformModel!.subjects.first" :key="sub" :value="sub" :label="sub" />
-            </el-checkbox-group>
+            <div class="subject-btn-group">
+              <button
+                v-for="sub in reformModel!.subjects.first"
+                :key="sub"
+                type="button"
+                class="subject-btn"
+                :class="{ 'is-selected': firstSubjects.includes(sub) }"
+                @click="toggleFirstSubject(sub)"
+              >
+                {{ sub }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -433,11 +492,11 @@ onMounted(() => {
       <div class="form-grid">
         <div class="form-item">
           <label class="form-label">预估分数</label>
-          <el-input-number v-model="form.score" :min="0" :max="750" controls-position="right" class="w-full" />
+          <el-input-number v-model="form.score" :min="0" :max="750" controls-position="right" class="form-number" />
         </div>
         <div class="form-item">
           <label class="form-label">对应位次</label>
-          <el-input-number v-model="form.rank" :min="0" controls-position="right" class="w-full" />
+          <el-input-number v-model="form.rank" :min="0" controls-position="right" class="form-number" />
         </div>
       </div>
       <p class="form-hint">
@@ -447,19 +506,21 @@ onMounted(() => {
         <template v-else>填完分数后系统自动查位次，可手动修改</template>
       </p>
 
-      <!-- 填报批次 -->
+      <!-- 填报批次：选择框变窄，右侧显示省控线 -->
       <div class="form-item">
         <label class="form-label">填报批次</label>
-        <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="w-full">
-          <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
-        </el-select>
+        <div class="batch-row">
+          <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
+            <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
+          </el-select>
+          <p v-if="form.batch && form.batchLineScore" class="batch-line">
+            {{ form.batch }}省控线：<b class="batch-line-score">{{ form.batchLineScore }} 分</b>
+            <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
+          </p>
+          <p v-else-if="batchLoading" class="batch-line batch-line-muted">正在查询批次线…</p>
+        </div>
         <p v-if="!form.subjectType" class="form-hint">选择科目后自动加载可选批次</p>
-        <p v-else-if="batchLoading" class="form-hint">正在查询批次线…</p>
-        <p v-else-if="!batchList.length" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
-        <p v-if="form.batch && form.batchLineScore" class="form-hint">
-          {{ form.batch }}省控线：<b class="text-brand-orange-dark">{{ form.batchLineScore }} 分</b>
-          <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
-        </p>
+        <p v-else-if="!batchLoading && !batchList.length" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
       </div>
     </div>
 
@@ -502,9 +563,21 @@ onMounted(() => {
 }
 
 .form-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 年份下拉：变窄（高度/配色见非 scoped 块的 EP 内部样式） */
+.form-select {
+  width: 100%;
+  max-width: 220px;
+}
+
+/* 分数/位次数字输入：变窄（高度/配色见非 scoped 块） */
+.form-number {
+  width: 100%;
+  max-width: 220px;
 }
 
 .form-hint {
@@ -530,9 +603,79 @@ onMounted(() => {
 }
 
 .subject-sub-label {
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* ===== 科目橙色按钮（替代 radio/checkbox 原生控件，无圆圈/方框） ===== */
+.subject-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.subject-btn {
+  min-width: 88px;
+  padding: 10px 20px;
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9a3412;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.subject-btn:hover {
+  border-color: #f97316;
+  background: #ffedd5;
+  transform: translateY(-1px);
+}
+
+.subject-btn:active {
+  transform: scale(0.97);
+}
+
+/* 选中：浅橙背景 + #C2410C 文字 + 橙边（与省份面板一致） */
+.subject-btn.is-selected,
+.subject-btn.is-selected:hover {
+  background: #ffedd5;
+  border-color: #f97316;
+  color: #c2410c;
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+
+/* ===== 填报批次行：选择框窄 + 右侧省控线 ===== */
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.batch-select {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.batch-line {
+  margin: 0;
+  font-size: 13px;
   color: #6b7280;
-  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.batch-line-score {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.batch-line-muted {
+  color: #9ca3af;
 }
 
 .dialog-footer {
@@ -623,5 +766,74 @@ onMounted(() => {
 .archive-dialog .el-dialog__footer {
   border-top: 1px solid #f3f4f6;
   padding: 16px 24px;
+}
+
+/* ===== 弹窗内 EP 控件统一橙色风格 =====
+   选项框：不要白框，橙色系；高度加高；去掉下拉框右侧箭头 */
+.archive-dialog .el-select__suffix,
+.archive-dialog .el-select__caret {
+  display: none;
+}
+
+.archive-dialog .el-select__wrapper {
+  min-height: 44px;
+  border-radius: 12px;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9a3412;
+  padding: 4px 12px;
+}
+
+.archive-dialog .el-select__wrapper.is-hovering,
+.archive-dialog .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1.5px #f97316 inset;
+}
+
+.archive-dialog .el-select__placeholder {
+  color: #b45309;
+}
+
+.archive-dialog .el-select__selected-item {
+  color: #9a3412;
+}
+
+/* 分数/位次数字输入：橙色系、加高 */
+.archive-dialog .el-input-number {
+  height: 44px;
+}
+
+.archive-dialog .el-input-number .el-input__wrapper {
+  border-radius: 12px;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
+  height: 44px;
+}
+
+.archive-dialog .el-input-number .el-input__wrapper.is-focus,
+.archive-dialog .el-input-number .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1.5px #f97316 inset;
+}
+
+.archive-dialog .el-input-number .el-input__inner {
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.archive-dialog .el-input-number.is-disabled .el-input__wrapper {
+  background: #f5f5f4;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+}
+
+/* 下拉面板（年份/批次）：选中项橙色而非蓝色 */
+.orange-select-popper .el-select-dropdown__item.is-selected {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.orange-select-popper .el-select-dropdown__item.is-hovering {
+  background: #fff7ed;
+  color: #ea580c;
 }
 </style>

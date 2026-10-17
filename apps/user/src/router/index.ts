@@ -129,6 +129,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '资讯详情' },
   },
   {
+    path: '/gaokao/toolkit',
+    name: 'GaokaoToolkit',
+    component: () => import('@/views/gaokao/Toolkit.vue'),
+    meta: { title: '高考百宝箱' },
+  },
+  {
     path: '/gaokao/plans',
     name: 'GaokaoPlans',
     component: () => import('@/views/gaokao/PlansList.vue'),
