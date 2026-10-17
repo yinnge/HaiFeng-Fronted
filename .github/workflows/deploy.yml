@@ -11,19 +11,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          # 必须在 setup-node 之前：setup-node@v5 会读取 packageManager 字段
+          # 并执行 pnpm 收集环境信息，若此时 pnpm 未安装会报
+          # "Unable to locate executable file: pnpm"
+          version: 10.25.0
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          # 必须显式指定版本：省略 version 时 action 靠解析 packageManager 字段安装，
-          # 该路径在部分 runner 组合下会装出 PATH 中不可用的 pnpm，
-          # 后续步骤报 "Unable to locate executable file: pnpm"
-          version: 10.25.0
-          run_install: false
+          cache: 'pnpm'
 
       - name: Install Dependencies
         run: |
