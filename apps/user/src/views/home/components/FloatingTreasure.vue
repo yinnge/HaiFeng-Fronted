@@ -136,10 +136,11 @@ onUnmounted(() => {
             </svg>
           </button>
 
-          <h3 class="ft-title ft-anim" style="--d: 0.15s">高考百宝箱</h3>
-          <p class="ft-sub ft-anim" style="--d: 0.25s">院校 · 专业 · 城市 · 企业行业 · 竞赛证书，一箱搞定</p>
+          <span class="ft-eyebrow ft-anim" style="--d: 0.1s">一站式教育与职业规划服务</span>
+          <h3 class="ft-title ft-anim" style="--d: 0.18s">高考百宝箱</h3>
+          <p class="ft-sub ft-anim" style="--d: 0.28s">院校 · 专业 · 城市 · 企业行业 · 竞赛证书，一箱搞定</p>
 
-          <div class="ft-body ft-anim" style="--d: 0.35s">
+          <div class="ft-body ft-anim" style="--d: 0.38s">
             <TreasureBox />
           </div>
         </div>
@@ -200,12 +201,12 @@ onUnmounted(() => {
 
 .ft-modal {
   position: relative;
-  width: min(900px, 94vw);
-  max-height: 86vh;
+  width: min(1040px, 95vw);
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 2.5rem 2.5rem 2.25rem;
-  border-radius: 24px;
-  background: #ffffff;
+  padding: 2.75rem 2.75rem 2.5rem;
+  border-radius: 28px;
+  background: linear-gradient(170deg, #fffdfa 0%, #fff6ec 100%);
   box-shadow: 0 30px 80px rgba(194, 65, 12, 0.2);
   animation: ft-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -263,22 +264,38 @@ onUnmounted(() => {
   }
 }
 
+.ft-eyebrow {
+  display: block;
+  width: max-content;
+  margin: 0 auto 0.85rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #b45309;
+  background: rgba(255, 237, 213, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.14);
+}
+
 .ft-title {
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: #1f2937;
+  letter-spacing: -0.015em;
+  color: #292524;
   text-align: center;
 }
 
 .ft-sub {
-  margin-top: 0.5rem;
+  margin-top: 0.55rem;
   font-size: 0.88rem;
-  color: #9ca3af;
+  color: #a8a29e;
   text-align: center;
 }
 
 .ft-body {
-  margin-top: 1.75rem;
+  margin-top: 2rem;
 }
 
 /* 弹层过渡 */

@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'size-change', size: number): void
   (e: 'detail', row: MemberListVO): void
   (e: 'upgrade', row: MemberListVO): void
+  (e: 'teacher', row: MemberListVO): void
   (e: 'refresh'): void
 }>()
 
@@ -55,7 +56,7 @@ const memberTypeStyle: Record<string, { bg: string; color: string; border: strin
     <div class="custom-table" v-loading="loading">
       <el-table :data="data" stripe>
         <el-table-column prop="username" label="用户名" min-width="100" />
-        <el-table-column prop="phone" label="手机号" min-width="120" />
+        <el-table-column prop="phone" label="手机号" width="118" show-overflow-tooltip />
         <el-table-column prop="memberType" label="会员类型" width="100" align="center">
           <template #default="{ row }">
             <span
@@ -70,9 +71,15 @@ const memberTypeStyle: Record<string, { bg: string; color: string; border: strin
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="wechatId" label="微信号" min-width="120">
+        <el-table-column prop="wechatId" label="微信号" width="110" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="dim-text">{{ row.wechatId || '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="teacher" label="老师" width="90" align="center">
+          <template #default="{ row }">
+            <span v-if="row.teacher" class="status-tag teacher-on">老师</span>
+            <span v-else class="dim-text">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" align="center">
@@ -82,11 +89,18 @@ const memberTypeStyle: Record<string, { bg: string; color: string; border: strin
           </template>
         </el-table-column>
         <el-table-column prop="lastLoginAt" label="最后登录" width="180" />
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="270" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
               <button type="button" class="action-btn action-detail" @click="emit('detail', row)">详情</button>
               <button type="button" class="action-btn action-upgrade" @click="emit('upgrade', row)">升级</button>
+              <button
+                type="button"
+                :class="['action-btn', row.teacher ? 'action-enable' : 'action-teacher']"
+                @click="emit('teacher', row)"
+              >
+                {{ row.teacher ? '撤老师' : '设老师' }}
+              </button>
               <button
                 type="button"
                 :class="['action-btn', row.status === 'active' ? 'action-disable' : 'action-enable']"
@@ -209,6 +223,11 @@ const memberTypeStyle: Record<string, { bg: string; color: string; border: strin
   border: 1px solid #e5e7eb;
 }
 
+.teacher-on {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  color: #fff;
+}
+
 /* 操作按钮组 */
 .action-group {
   display: flex;
@@ -264,6 +283,15 @@ const memberTypeStyle: Record<string, { bg: string; color: string; border: strin
 }
 .action-enable:hover {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-teacher {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  color: #fff;
+}
+.action-teacher:hover {
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
   transform: translateY(-1px);
 }
 

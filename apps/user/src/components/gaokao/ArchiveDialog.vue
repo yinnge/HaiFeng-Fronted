@@ -413,7 +413,7 @@ onMounted(() => {
 <template>
   <el-dialog
     :model-value="visible"
-    width="640px"
+    width="min(720px, calc(100vw - 24px))"
     top="6vh"
     class="archive-dialog"
     append-to-body
@@ -581,6 +581,13 @@ onMounted(() => {
               <rect x="17" y="13" width="3" height="5" />
             </svg>
             对应位次
+            <el-tooltip content="填完分数后系统自动查位次，可手动修改" placement="top" effect="dark">
+              <svg class="label-tip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="7.5" x2="12" y2="13" />
+                <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+              </svg>
+            </el-tooltip>
           </label>
           <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number">
             <template #prefix>
@@ -594,11 +601,9 @@ onMounted(() => {
           </el-input-number>
         </div>
       </div>
-      <p class="form-hint">
-        <template v-if="rankDataYear && rankDataYear !== form.gaokaoYear">
-          位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份），可手动输入
-        </template>
-        <template v-else>填完分数后系统自动查位次，可手动修改</template>
+      <!-- 位次数据回溯年份提示（自动查位次的说明已移入「对应位次」label 的 tooltip 图标） -->
+      <p v-if="rankDataYear && rankDataYear !== form.gaokaoYear" class="form-hint">
+        位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份），可手动输入
       </p>
 
       <!-- 填报批次：选择框变窄，右侧显示省控线 -->
@@ -609,6 +614,13 @@ onMounted(() => {
             <line x1="4" y1="22" x2="4" y2="15" />
           </svg>
           填报批次
+          <el-tooltip content="选择科目后自动加载可选批次" placement="top" effect="dark">
+            <svg class="label-tip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="7.5" x2="12" y2="13" />
+              <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+            </svg>
+          </el-tooltip>
         </label>
         <div class="batch-row">
           <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
@@ -626,8 +638,8 @@ onMounted(() => {
           </p>
           <p v-else-if="batchLoading" class="batch-line batch-line-muted">正在查询批次线…</p>
         </div>
-        <p v-if="!form.subjectType" class="form-hint">选择科目后自动加载可选批次</p>
-        <p v-else-if="!batchLoading && !batchList.length" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
+        <!-- 「选择科目后自动加载可选批次」的说明已移入「填报批次」label 的 tooltip 图标 -->
+        <p v-if="!batchLoading && batchList.length === 0 && form.subjectType" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
       </div>
     </div>
 
@@ -684,6 +696,20 @@ onMounted(() => {
   height: 17px;
   flex-shrink: 0;
   color: #f97316;
+}
+
+/* 标签右侧「圆圈感叹号」提示图标（hover 出 tooltip） */
+.label-tip-ico {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #fdba74;
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.label-tip-ico:hover {
+  color: #ea580c;
 }
 
 /* ===== 弹窗头部（#header 槽）：学士帽徽章 + 标题/副标题，浮于插画背景之上 ===== */
@@ -989,20 +1015,26 @@ onMounted(() => {
   color: #9a3412;
 }
 
-/* 年份 / 批次下拉：前缀图标 + 选中文字整体居中 */
-.archive-dialog .form-select .el-select__wrapper,
-.archive-dialog .batch-select .el-select__wrapper {
-  justify-content: center;
-}
-
+/* 年份 / 批次下拉：前缀图标靠左，选中文字水平居中。
+   EP 2.13 单选时「选中值/占位符」是同一个元素 .el-select__selected-item.el-select__placeholder，
+   自带 position:absolute; width:100%; z-index:-1; overflow:hidden（不占流宽，垫在底层）。
+   两个坑：
+   1) selection 若按内容收缩（flex:0 1 auto），流内无内容 → 宽度塌缩为 0 →
+      width:100% 的绝对定位文字被 overflow:hidden 裁掉 → 只显示图标；
+   2) z-index:-1 依赖 wrapper 的 stacking context（EP 用 transform 创建），
+      显式提到 z-index:1，杜绝任何层级意外吞字。 */
 .archive-dialog .form-select .el-select__selection,
 .archive-dialog .batch-select .el-select__selection {
-  flex: 0 1 auto; /* 不再撑满，让 wrapper 居中「图标+文字」整组 */
-  justify-content: center;
+  flex: 1 1 auto; /* 保持占满，为绝对定位的文字提供全宽参照 */
 }
 
 .archive-dialog .form-select .el-select__selected-item,
 .archive-dialog .batch-select .el-select__selected-item {
+  position: absolute; /* 选中值元素本就是 absolute，显式声明不依赖 EP 内部实现 */
+  left: 0;
+  right: 0;
+  z-index: 1;
+  justify-content: center;
   text-align: center;
 }
 

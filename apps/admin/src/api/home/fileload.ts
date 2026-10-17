@@ -8,7 +8,7 @@ import type {
   FileTargetAudience,
 } from '@/types/home/fileload'
 
-/** 初中 / 高中 / 大学 / 考公 / 考研 / 研究生 接口前缀 */
+/** 初中 / 高中 / 大学 / 考公 / 考研 / 研究生 / 教师专属 接口前缀 */
 const PREFIX_MAP: Record<FileTargetAudience, string> = {
   middle_school: '/api/v1/admin/fileload/middle',
   high_school: '/api/v1/admin/fileload/high',
@@ -16,6 +16,7 @@ const PREFIX_MAP: Record<FileTargetAudience, string> = {
   civil_service: '/api/v1/admin/fileload/civil-service',
   postgrad_exam: '/api/v1/admin/fileload/postgrad-exam',
   graduate: '/api/v1/admin/fileload/graduate',
+  teacher: '/api/v1/admin/fileload/teacher',
 }
 
 /** 上传文件（multipart：file + targetAudience + subject + applicableStage） */

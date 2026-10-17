@@ -13,14 +13,21 @@ import type {
   FileLoadDetailVO,
   FileLoadQueryDTO,
   FileLoadUploadDTO,
+  FileTargetAudience,
 } from '@/types/home/fileload'
 import HighSchoolSearch from './components/HighSchoolSearch.vue'
 import HighSchoolTable from './components/HighSchoolTable.vue'
 import HighSchoolFormModal from './components/HighSchoolFormModal.vue'
 import HighSchoolDetailModal from './components/HighSchoolDetailModal.vue'
 
-/** 高中资源：固定面向人群 */
-const AUDIENCE = 'high_school' as const
+/** 资源受众：可在「高中资料」与「教师专属」之间切换（后端按 targetAudience 隔离） */
+const AUDIENCE = ref<FileTargetAudience>('high_school')
+
+/** 受众下拉选项 */
+const audienceOptions: { label: string; value: FileTargetAudience }[] = [
+  { label: '高中资料', value: 'high_school' },
+  { label: '教师专属', value: 'teacher' },
+]
 
 const loading = ref(false)
 const tableData = ref<FileLoadListVO[]>([])
@@ -55,7 +62,7 @@ const fetchData = async () => {
     if (queryParams.subject) params.subject = queryParams.subject
     if (queryParams.applicableStage) params.applicableStage = queryParams.applicableStage
     if (queryParams.tag) params.tag = queryParams.tag
-    const res = await getFileLoadPage(AUDIENCE, params as FileLoadQueryDTO)
+    const res = await getFileLoadPage(AUDIENCE.value, params as FileLoadQueryDTO)
     if (res.data.code === 200) {
       tableData.value = res.data.data.records
       total.value = res.data.data.total
@@ -104,7 +111,7 @@ const handleDetail = async (id: string) => {
   detailLoading.value = true
   detailData.value = null
   try {
-    const res = await getFileLoadDetail(AUDIENCE, id)
+    const res = await getFileLoadDetail(AUDIENCE.value, id)
     if (res.data.code === 200) {
       detailData.value = res.data.data
     } else {
@@ -124,7 +131,7 @@ const handleDetailClose = () => {
 // 下载（预签名 URL 动态生成，需先取详情）
 const handleDownload = async (id: string) => {
   try {
-    const res = await getFileLoadDetail(AUDIENCE, id)
+    const res = await getFileLoadDetail(AUDIENCE.value, id)
     if (res.data.code === 200 && res.data.data.fileUrl) {
       window.open(res.data.data.fileUrl, '_blank')
     } else {
@@ -150,7 +157,7 @@ const handleEdit = async (id: string) => {
   formLoading.value = true
   formVisible.value = true
   try {
-    const res = await getFileLoadDetail(AUDIENCE, id)
+    const res = await getFileLoadDetail(AUDIENCE.value, id)
     if (res.data.code === 200) {
       const d = res.data.data
       initialFormData.value = {
@@ -194,7 +201,7 @@ const handleSubmit = async (data: {
     let res: any
     if (formMode.value === 'upload') {
       const formData = new FormData()
-      formData.append('targetAudience', AUDIENCE)
+      formData.append('targetAudience', AUDIENCE.value)
       formData.append('storageType', data.storageType)
       formData.append('subject', data.subject)
       if (data.applicableStage) formData.append('applicableStage', data.applicableStage)
@@ -216,10 +223,10 @@ const handleSubmit = async (data: {
         }
         formData.append('file', data.file)
       }
-      res = await uploadFileLoad(AUDIENCE, formData)
+      res = await uploadFileLoad(AUDIENCE.value, formData)
     } else if (formMode.value === 'edit' && currentId.value) {
       const payload: FileLoadUploadDTO = {
-        targetAudience: AUDIENCE,
+        targetAudience: AUDIENCE.value,
         storageType: data.storageType,
         subject: data.subject,
         fileName: data.storageType === 'BAIDU' ? data.fileName : undefined,
@@ -230,7 +237,7 @@ const handleSubmit = async (data: {
         tag: data.tag || undefined,
         version: initialFormData.value?.version,
       }
-      res = await updateFileLoad(AUDIENCE, currentId.value, payload)
+      res = await updateFileLoad(AUDIENCE.value, currentId.value, payload)
     } else {
       return
     }
@@ -257,7 +264,7 @@ const handleDelete = async (id: string) => {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
     })
-    const res = await deleteFileLoad(AUDIENCE, id)
+    const res = await deleteFileLoad(AUDIENCE.value, id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
       fetchData()
@@ -285,12 +292,23 @@ onMounted(() => {
     </div>
 
     <div class="page-header">
-      <div class="page-title">高中资源</div>
-      <div class="page-subtitle">管理高中学习资料文件，支持上传、下载、修改与删除</div>
+      <div class="page-title">
+        {{ AUDIENCE === 'teacher' ? '教师专属资源' : '高中资源' }}
+      </div>
+      <div class="page-subtitle">
+        {{ AUDIENCE === 'teacher' ? '管理教师专属资料文件（仅老师身份可见），支持上传、下载、修改与删除' : '管理高中学习资料文件，支持上传、下载、修改与删除' }}
+      </div>
     </div>
 
     <!-- 操作栏 -->
     <div class="action-bar">
+      <el-select
+        v-model="AUDIENCE"
+        placeholder="选择受众"
+        style="width: 150px"
+      >
+        <el-option v-for="opt in audienceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+      </el-select>
       <button type="button" class="primary-btn" @click="handleUpload">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>

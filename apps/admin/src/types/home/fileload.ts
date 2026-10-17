@@ -6,7 +6,7 @@
  */
 
 /** 面向人群 */
-export type FileTargetAudience = 'middle_school' | 'high_school' | 'college' | 'civil_service' | 'postgrad_exam' | 'graduate'
+export type FileTargetAudience = 'middle_school' | 'high_school' | 'college' | 'civil_service' | 'postgrad_exam' | 'graduate' | 'teacher'
 
 /** 考公资源固定适合人群（V69 预置枚举，面向人群唯一固定值） */
 export const CIVIL_SERVICE_STAGE = '考公人'

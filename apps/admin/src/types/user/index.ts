@@ -6,6 +6,8 @@ export interface MemberListVO {
   username: string
   phone: string
   memberType: 'normal' | 'vip'
+  /** 是否老师身份（叠加角色，独立于会员档位） */
+  teacher?: boolean
   wechatId: string
   status: 'active' | 'disabled'
   lastLoginAt: string
@@ -33,9 +35,11 @@ export interface MemberQueryDTO extends BasePageQuery {
   wechatId?: string
   status?: 'active' | 'disabled'
   inviteCode?: string
+  /** 老师身份筛选：true=仅老师 / false=仅非老师 / 不传=全部 */
+  teacher?: boolean
 }
 
-/** 用户状态修�?DTO */
+/** 用户状态修�?DTO */
 export interface MemberStatusDTO {
   status: 'active' | 'disabled'
 }

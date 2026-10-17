@@ -13,6 +13,7 @@ const searchForm = reactive<Omit<MemberQueryDTO, 'page' | 'size'>>({
   memberType: undefined,
   status: undefined,
   wechatId: '',
+  teacher: undefined,
 })
 
 const handleSearch = () => {
@@ -25,6 +26,7 @@ const handleReset = () => {
   searchForm.memberType = undefined
   searchForm.status = undefined
   searchForm.wechatId = ''
+  searchForm.teacher = undefined
   emit('reset')
 }
 </script>
@@ -80,6 +82,17 @@ const handleReset = () => {
           >
             <el-option label="正常" value="active" />
             <el-option label="禁用" value="disabled" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="老师身份">
+          <el-select
+            v-model="searchForm.teacher"
+            placeholder="全部"
+            clearable
+            style="width: 110px"
+          >
+            <el-option label="老师" :value="true" />
+            <el-option label="非老师" :value="false" />
           </el-select>
         </el-form-item>
         <el-form-item label="微信号">

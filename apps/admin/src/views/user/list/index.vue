@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getUserPage } from '@/api/user'
+import { getUserPage, setMemberTeacher } from '@/api/user'
 import { getSystemSettings } from '@/api/system/settings'
 import type { MemberListVO, MemberQueryDTO } from '@/types/user'
 import UserSearch from './components/UserSearch.vue'
@@ -20,6 +20,7 @@ const queryParams = reactive<MemberQueryDTO>({
   memberType: undefined,
   status: undefined,
   wechatId: '',
+  teacher: undefined,
 })
 
 const showDetailModal = ref(false)
@@ -60,6 +61,7 @@ const handleSearch = (params: MemberQueryDTO) => {
   queryParams.memberType = params.memberType
   queryParams.status = params.status
   queryParams.wechatId = params.wechatId
+  queryParams.teacher = params.teacher
   queryParams.page = 1
   fetchData()
 }
@@ -70,8 +72,33 @@ const handleReset = () => {
   queryParams.memberType = undefined
   queryParams.status = undefined
   queryParams.wechatId = ''
+  queryParams.teacher = undefined
   queryParams.page = 1
   fetchData()
+}
+
+/**
+ * 授予/撤销老师身份：二次确认后调用后端（后端会实时生效并向用户发送站内通知）
+ */
+const handleTeacher = async (row: MemberListVO) => {
+  const grant = !row.teacher
+  const action = grant ? '设为老师' : '撤销老师'
+  try {
+    await ElMessageBox.confirm(
+      `确定要将用户"${row.username}"${action}吗？\n${grant ? '设为老师后该用户将可访问教师专属资料，' : '撤销后该用户将不再能访问教师专属资料，'}系统会向其发送站内通知。`,
+      '提示',
+      { type: 'warning', confirmButtonText: `确定${action}`, cancelButtonText: '取消' },
+    )
+    const res = await setMemberTeacher(row.id, { teacher: grant })
+    if (res.data.code === 200) {
+      ElMessage.success(`${action}成功，已通知用户`)
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || `${action}失败`)
+    }
+  } catch {
+    // 用户取消
+  }
 }
 
 const handlePageChange = (page: number) => {
@@ -132,6 +159,7 @@ onMounted(() => {
       @size-change="handleSizeChange"
       @detail="handleDetail"
       @upgrade="handleUpgrade"
+      @teacher="handleTeacher"
       @refresh="fetchData"
     />
 

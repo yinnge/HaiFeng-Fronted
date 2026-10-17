@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import type { FileLoadQueryDTO } from '@/types/home/fileload'
 import type { FileTargetAudience } from '@/types/home/fileload'
 import { getFileLoadStages, getFileLoadSubjects, getFileLoadTags } from '@/api/home/fileload'
@@ -59,6 +59,19 @@ const handleReset = () => {
   searchForm.tag = ''
   emit('reset')
 }
+
+// 受众切换（高中资料 <-> 教师专属）：重置筛选并重新拉取选项，避免串台
+watch(() => props.audience, () => {
+  searchForm.fileName = ''
+  searchForm.subject = ''
+  searchForm.applicableStage = ''
+  searchForm.tag = ''
+  stageOptions.value = []
+  subjectOptions.value = []
+  tagOptions.value = []
+  fetchOptions()
+  emit('reset')
+})
 
 onMounted(fetchOptions)
 </script>

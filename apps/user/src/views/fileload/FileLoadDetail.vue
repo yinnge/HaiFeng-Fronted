@@ -22,6 +22,10 @@ const userStore = useUserStore()
 const loading = ref(false)
 const detail = ref<FileLoadDetailVO | null>(null)
 const vipBlocked = ref(false)
+/** 教师专属详情：从路由 query.teacher 判定，走 /high/teacher 端点 */
+const isTeacher = computed(() => route.query.teacher === '1')
+/** 非老师身份访问教师专属详情的拦截态 */
+const teacherForbidden = ref(false)
 
 /** 是否为百度网盘资源（无预览/下载，取码接口限 VIP） */
 const isNetdisk = computed(() => detail.value?.storageType === 'BAIDU')
@@ -51,11 +55,18 @@ async function load() {
   }
   loading.value = true
   try {
-    const res = await getFileLoadDetail(props.audience, String(id))
+    const res = await getFileLoadDetail(props.audience, String(id), isTeacher.value)
     detail.value = res.data.data
     vipBlocked.value = false
+    teacherForbidden.value = false
   } catch (e: any) {
     const msg = e?.message || '获取文件详情失败'
+    // 教师专属详情要求老师身份，非老师访问返回教师权限不足 → 友好拦截
+    if (isTeacher.value && (msg.includes('教师') || msg.includes('1008'))) {
+      teacherForbidden.value = true
+      vipBlocked.value = false
+      return
+    }
     // VIP 权限不足（业务码 1005「权限不足（需要旗舰版）」）：引导开通
     if (msg.includes('旗舰版') || msg.includes('VIP')) {
       vipBlocked.value = true
@@ -95,7 +106,7 @@ async function fetchNetdisk() {
   netdiskLoading.value = true
   copied.value = false
   try {
-    const res = await getFileLoadNetdisk(props.audience, String(id))
+    const res = await getFileLoadNetdisk(props.audience, String(id), isTeacher.value)
     netdiskInfo.value = res.data.data
     netdiskVisible.value = true
   } catch (e: any) {
@@ -138,7 +149,7 @@ function openNetdisk() {
 }
 
 function goBack() {
-  router.push(`/${props.audience}`)
+  router.push(isTeacher.value ? `/${props.audience}?teacher=1` : `/${props.audience}`)
 }
 
 function handleDownload() {
@@ -385,6 +396,11 @@ onMounted(load)
           </aside>
         </div>
 
+        <!-- 教师身份拦截空态 -->
+        <div v-else-if="teacherForbidden && !loading" class="py-20 text-center text-gray-400">
+          <p class="text-base font-semibold text-gray-700">您还不是教师身份</p>
+          <p class="text-sm mt-1">教师专属资料仅对老师身份开放，请联系管理员开通</p>
+        </div>
         <!-- VIP 拦截空态 -->
         <div v-else-if="vipBlocked && !loading" class="py-20 text-center text-gray-400">
           <p class="text-sm">查看文件详情需要旗舰版（VIP）会员</p>
