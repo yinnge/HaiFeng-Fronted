@@ -27,7 +27,7 @@ export const SUBJECT_OPTIONS = ['语文', '数学', '英语', '物理', '化学'
 export const MIDDLE_STAGE_OPTIONS = ['初一', '初二', '初三', '中考资料']
 
 /** 高中适合人群 */
-export const HIGH_STAGE_OPTIONS = ['高考资料', '高一', '高二', '高三']
+export const HIGH_STAGE_OPTIONS = ['高考资料', '高一', '高二', '高三', '教师']
 
 /** 大学适合人群（如有调整请告诉我） */
 export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四']
