@@ -6,7 +6,6 @@
 // 「制定方案」= AI 生成 PDF，功能暂未上线，占位提示。
 import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ProvinceOptions } from '@haifeng/shared'
 import {
   getReformModel,
   getRank,
@@ -18,6 +17,24 @@ import {
   type GaokaoArchiveVO,
 } from '@/api/gaokao'
 import { saveArchiveSmart } from '@/utils/gaokaoArchive'
+import ProvincePicker from './ProvincePicker.vue'
+import bgImg from '@/assets/img_1.png'
+
+// 弹窗背景：顶部铺暖色插画（img_1.png，1672×941 横图，100% 宽约 360px 高），
+// 向下用渐变 veil 渐隐融入暖白画布，表单区域近纯色保证可读性。
+const dialogBgStyle = computed(() => ({
+  backgroundImage: [
+    // 顶部插画从上到下渐隐的 veil（0~380px，之后全遮，露出下方渐变）
+    'linear-gradient(180deg, rgba(255,251,247,0.06) 0px, rgba(255,251,247,0.55) 140px, rgba(255,253,251,0.93) 270px, #fffdfb 380px)',
+    `url(${bgImg})`,
+    // 兜底暖色光晕（图片加载失败时也有底色）
+    'radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255,247,237,0) 58%)',
+    'linear-gradient(180deg, #ffffff 0%, #fffdfb 100%)',
+  ].join(', '),
+  backgroundSize: 'auto, 100% auto, auto, auto',
+  backgroundPosition: '0 0, center top, 0 0, 0 0',
+  backgroundRepeat: 'no-repeat, no-repeat, no-repeat, no-repeat',
+}))
 
 const props = defineProps<{
   visible: boolean
@@ -236,27 +253,60 @@ function resetSubjects() {
   ALL_SUBJECT_FIELDS.forEach(({ field }) => (form[field] = undefined))
 }
 
-// 按已有档案的分数字段推导已选科目并回填
+// ===== 科目按钮 toggle（自定义橙色按钮，替代 radio/checkbox 原生控件） =====
+function toggleSecondSubject(name: string) {
+  const idx = secondSubjects.value.indexOf(name)
+  if (idx >= 0) {
+    secondSubjects.value = secondSubjects.value.filter((s) => s !== name)
+  } else if (secondSubjects.value.length < 2) {
+    secondSubjects.value = [...secondSubjects.value, name]
+  } else {
+    ElMessage.warning('再选科目最多选择 2 个')
+  }
+}
+
+function toggleFirstSubject(name: string) {
+  const idx = firstSubjects.value.indexOf(name)
+  if (idx >= 0) {
+    firstSubjects.value = firstSubjects.value.filter((s) => s !== name)
+  } else if (firstSubjects.value.length < 3) {
+    firstSubjects.value = [...firstSubjects.value, name]
+  } else {
+    ElMessage.warning('选考科目最多选择 3 个')
+  }
+}
+
+// 按档案回填已选科目：优先用 second/thirdSubjectType 字段（当前简化表单不采集
+// 单科分数，只靠 scorePhysics 等分数字段推导会永远为空 → 再选科目回填丢失）
 function restoreSubjects(data: GaokaoArchiveVO | GaokaoArchiveForm) {
-  const selected = ALL_SUBJECT_FIELDS.filter((s) => data[s.field] != null).map((s) => s.name)
+  const byScore = ALL_SUBJECT_FIELDS.filter((s) => data[s.field] != null).map((s) => s.name)
   const model = reformModel.value?.reformModel
   if (model === '3+1+2') {
-    secondSubjects.value = selected.filter((s) => s !== form.subjectType)
+    const seconds = [data.secondSubjectType, data.thirdSubjectType].filter((s): s is string => !!s)
+    secondSubjects.value = seconds.length ? seconds : byScore.filter((s) => s !== form.subjectType)
   } else if (model === '3+3') {
-    firstSubjects.value = selected
+    const subs = [form.subjectType, data.secondSubjectType, data.thirdSubjectType].filter((s): s is string => !!s)
+    firstSubjects.value = subs.length ? subs : byScore
   } else if (form.subjectType === '物理' || form.subjectType === '历史') {
-    secondSubjects.value = selected.filter((s) => s !== form.subjectType)
-  } else if (selected.length > 0) {
-    firstSubjects.value = selected
+    secondSubjects.value = byScore.filter((s) => s !== form.subjectType)
+  } else if (byScore.length > 0) {
+    firstSubjects.value = byScore
   }
 }
 
 // ===== 打开弹窗：回填 initialForm =====
+// 草稿保留：以「档案对象引用」为基准——同一份档案对象重复打开（引用未变）时
+// 保留上次的选择（含未保存的科目草稿）；只有档案被外部更新/保存/换省份
+// （displayForm 生成新对象）时才重新回填。
+let lastInitSource: GaokaoArchiveVO | GaokaoArchiveForm | null | undefined
+
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
     const init = props.initialForm
+    if (form.gaokaoProvince && init === lastInitSource) return
+    lastInitSource = init
     if (init && init.gaokaoProvince) {
       restoringData = init
       Object.assign(form, {
@@ -283,7 +333,7 @@ watch(
         gaokaoYear: yearOptions.value.length
           ? yearOptions.value[yearOptions.value.length - 1]
           : new Date().getFullYear(),
-        gaokaoProvince: '',
+        gaokaoProvince: '北京',
         score: 0,
         rank: 0,
         subjectType: '',
@@ -363,26 +413,57 @@ onMounted(() => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="请填写您的高考信息"
-    width="640px"
+    width="min(720px, calc(100vw - 24px))"
     top="6vh"
     class="archive-dialog"
     append-to-body
     :close-on-click-modal="false"
+    :style="dialogBgStyle"
     @close="emit('update:visible', false)"
   >
+    <!-- 头部：学士帽徽章 + 标题/副标题（浮于插画背景之上，无分隔线） -->
+    <template #header>
+      <div class="dlg-head">
+        <span class="dlg-head-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3z" />
+            <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+          </svg>
+        </span>
+        <div class="dlg-head-text">
+          <p class="dlg-head-title">请填写您的<span class="dlg-head-hl">高考信息</span></p>
+          <p class="dlg-head-sub">完善信息，帮助系统为您推荐更合适的院校和专业</p>
+        </div>
+      </div>
+    </template>
     <div class="archive-form">
       <!-- 省份 / 年份 -->
       <div class="form-grid">
         <div class="form-item">
-          <label class="form-label">高考省份</label>
-          <el-select v-model="form.gaokaoProvince" placeholder="选择省份" filterable class="w-full">
-            <el-option v-for="opt in ProvinceOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            高考省份
+          </label>
+          <ProvincePicker v-model="form.gaokaoProvince" variant="form" placeholder="北京" />
         </div>
         <div class="form-item">
-          <label class="form-label">高考年份</label>
-          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="w-full">
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            高考年份
+          </label>
+          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="orange-select-popper">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </template>
             <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
           </el-select>
         </div>
@@ -390,7 +471,13 @@ onMounted(() => {
 
       <!-- 高考科目（按改革模式直接渲染，不展示模式文案） -->
       <div class="form-item">
-        <label class="form-label">高考科目</label>
+        <label class="form-label">
+          <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c3 3 9 3 12 0v-5" />
+          </svg>
+          高考科目
+        </label>
         <div v-if="!form.gaokaoProvince || !form.gaokaoYear" class="subject-placeholder">请先选择省份和年份</div>
         <div v-else-if="modelLoading" class="subject-placeholder">正在获取科目配置…</div>
         <div v-else-if="!modelType" class="subject-placeholder subject-placeholder-warn">
@@ -398,33 +485,68 @@ onMounted(() => {
         </div>
         <div v-else class="space-y-3">
           <!-- 传统文理 -->
-          <el-radio-group v-if="modelType === '传统文理'" v-model="form.subjectType">
-            <el-radio-button value="文科">文科</el-radio-button>
-            <el-radio-button value="理科">理科</el-radio-button>
-          </el-radio-group>
+          <div v-if="modelType === '传统文理'" class="subject-btn-group">
+            <button
+              v-for="s in ['文科', '理科']"
+              :key="s"
+              type="button"
+              class="subject-btn"
+              :class="{ 'is-selected': form.subjectType === s }"
+              @click="form.subjectType = s"
+            >
+              {{ s }}
+            </button>
+          </div>
 
           <!-- 3+1+2 -->
           <div v-else-if="modelType === '3+1+2'" class="space-y-3">
             <div>
               <p class="subject-sub-label">首选科目</p>
-              <el-radio-group v-model="form.subjectType">
-                <el-radio-button v-for="sub in reformModel!.subjects.first" :key="sub" :value="sub">{{ sub }}</el-radio-button>
-              </el-radio-group>
+              <div class="subject-btn-group">
+                <button
+                  v-for="sub in reformModel!.subjects.first"
+                  :key="sub"
+                  type="button"
+                  class="subject-btn"
+                  :class="{ 'is-selected': form.subjectType === sub }"
+                  @click="form.subjectType = sub"
+                >
+                  {{ sub }}
+                </button>
+              </div>
             </div>
             <div>
               <p class="subject-sub-label">再选科目（选择2个）</p>
-              <el-checkbox-group v-model="secondSubjects" :max="2">
-                <el-checkbox v-for="sub in reformModel!.subjects.second" :key="sub" :value="sub" :label="sub" />
-              </el-checkbox-group>
+              <div class="subject-btn-group">
+                <button
+                  v-for="sub in reformModel!.subjects.second"
+                  :key="sub"
+                  type="button"
+                  class="subject-btn"
+                  :class="{ 'is-selected': secondSubjects.includes(sub) }"
+                  @click="toggleSecondSubject(sub)"
+                >
+                  {{ sub }}
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- 3+3 -->
           <div v-else-if="modelType === '3+3'">
             <p class="subject-sub-label">选考科目（选择3个）</p>
-            <el-checkbox-group v-model="firstSubjects" :max="3">
-              <el-checkbox v-for="sub in reformModel!.subjects.first" :key="sub" :value="sub" :label="sub" />
-            </el-checkbox-group>
+            <div class="subject-btn-group">
+              <button
+                v-for="sub in reformModel!.subjects.first"
+                :key="sub"
+                type="button"
+                class="subject-btn"
+                :class="{ 'is-selected': firstSubjects.includes(sub) }"
+                @click="toggleFirstSubject(sub)"
+              >
+                {{ sub }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -432,34 +554,92 @@ onMounted(() => {
       <!-- 总分 / 位次 -->
       <div class="form-grid">
         <div class="form-item">
-          <label class="form-label">预估分数</label>
-          <el-input-number v-model="form.score" :min="0" :max="750" controls-position="right" class="w-full" />
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            预估分数
+          </label>
+          <el-input-number v-model="form.score" :min="0" :max="750" :controls="false" class="form-number">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+            </template>
+          </el-input-number>
         </div>
         <div class="form-item">
-          <label class="form-label">对应位次</label>
-          <el-input-number v-model="form.rank" :min="0" controls-position="right" class="w-full" />
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 3v18h18" />
+              <rect x="7" y="10" width="3" height="8" />
+              <rect x="12" y="6" width="3" height="12" />
+              <rect x="17" y="13" width="3" height="5" />
+            </svg>
+            对应位次
+            <el-tooltip content="填完分数后系统自动查位次，可手动修改" placement="top" effect="dark">
+              <svg class="label-tip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="7.5" x2="12" y2="13" />
+                <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+              </svg>
+            </el-tooltip>
+          </label>
+          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18" />
+                <rect x="7" y="10" width="3" height="8" />
+                <rect x="12" y="6" width="3" height="12" />
+                <rect x="17" y="13" width="3" height="5" />
+              </svg>
+            </template>
+          </el-input-number>
         </div>
       </div>
-      <p class="form-hint">
-        <template v-if="rankDataYear && rankDataYear !== form.gaokaoYear">
-          位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份），可手动输入
-        </template>
-        <template v-else>填完分数后系统自动查位次，可手动修改</template>
+      <!-- 位次数据回溯年份提示（自动查位次的说明已移入「对应位次」label 的 tooltip 图标） -->
+      <p v-if="rankDataYear && rankDataYear !== form.gaokaoYear" class="form-hint">
+        位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份），可手动输入
       </p>
 
-      <!-- 填报批次 -->
+      <!-- 填报批次：选择框变窄，右侧显示省控线 -->
       <div class="form-item">
-        <label class="form-label">填报批次</label>
-        <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="w-full">
-          <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
-        </el-select>
-        <p v-if="!form.subjectType" class="form-hint">选择科目后自动加载可选批次</p>
-        <p v-else-if="batchLoading" class="form-hint">正在查询批次线…</p>
-        <p v-else-if="!batchList.length" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
-        <p v-if="form.batch && form.batchLineScore" class="form-hint">
-          {{ form.batch }}省控线：<b class="text-brand-orange-dark">{{ form.batchLineScore }} 分</b>
-          <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
-        </p>
+        <label class="form-label">
+          <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
+          </svg>
+          填报批次
+          <el-tooltip content="选择科目后自动加载可选批次" placement="top" effect="dark">
+            <svg class="label-tip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="7.5" x2="12" y2="13" />
+              <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+            </svg>
+          </el-tooltip>
+        </label>
+        <div class="batch-row">
+          <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </template>
+            <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
+          </el-select>
+          <p v-if="form.batch && form.batchLineScore" class="batch-line">
+            {{ form.batch }}省控线：<b class="batch-line-score">{{ form.batchLineScore }} 分</b>
+            <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
+          </p>
+          <p v-else-if="batchLoading" class="batch-line batch-line-muted">正在查询批次线…</p>
+        </div>
+        <!-- 「选择科目后自动加载可选批次」的说明已移入「填报批次」label 的 tooltip 图标 -->
+        <p v-if="!batchLoading && batchList.length === 0 && form.subjectType" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
       </div>
     </div>
 
@@ -502,9 +682,108 @@ onMounted(() => {
 }
 
 .form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 字段标签前的线性 SVG 图标（橙色） */
+.form-label-ico {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #f97316;
+}
+
+/* 标签右侧「圆圈感叹号」提示图标（hover 出 tooltip） */
+.label-tip-ico {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #fdba74;
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.label-tip-ico:hover {
+  color: #ea580c;
+}
+
+/* ===== 弹窗头部（#header 槽）：学士帽徽章 + 标题/副标题，浮于插画背景之上 ===== */
+.dlg-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 40px; /* 给右上角关闭按钮留位 */
+}
+
+.dlg-head-badge {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), #ffedd5);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+}
+
+.dlg-head-badge svg {
+  width: 28px;
+  height: 28px;
+  color: #33507a; /* 学士帽藏青 */
+}
+
+.dlg-head-text {
+  min-width: 0;
+}
+
+.dlg-head-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #44403c;
+  line-height: 1.3;
+}
+
+/* 「高考信息」四字橙色渐变高亮 */
+.dlg-head-hl {
+  background: linear-gradient(120deg, #c2410c 0%, #f97316 60%, #fb923c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dlg-head-sub {
+  margin: 3px 0 0;
   font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  color: #a8a29e;
+  line-height: 1.5;
+}
+
+/* 选项框内前缀 SVG 图标（省份/年份/分数/位次/批次，与标签图标同款） */
+.ctl-ico {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #f97316;
+}
+
+/* 年份下拉：变窄（高度/配色见非 scoped 块的 EP 内部样式） */
+.form-select {
+  width: 100%;
+  max-width: 220px;
+}
+
+/* 分数/位次数字输入：变窄（高度/配色见非 scoped 块） */
+.form-number {
+  width: 100%;
+  max-width: 220px;
 }
 
 .form-hint {
@@ -530,9 +809,80 @@ onMounted(() => {
 }
 
 .subject-sub-label {
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* ===== 科目橙色按钮（替代 radio/checkbox 原生控件，无圆圈/方框） ===== */
+.subject-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.subject-btn {
+  min-width: 88px;
+  padding: 10px 20px;
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9a3412;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.subject-btn:hover {
+  border-color: #f97316;
+  background: #ffedd5;
+  transform: translateY(-1px);
+}
+
+.subject-btn:active {
+  transform: scale(0.97);
+}
+
+/* 选中：浅橙背景 + #C2410C 文字 + 橙边（与省份面板一致） */
+.subject-btn.is-selected,
+.subject-btn.is-selected:hover {
+  background: #ffedd5;
+  border-color: #f97316;
+  color: #c2410c;
+  box-shadow: 0 0 0 1px #f97316 inset;
+}
+
+/* ===== 填报批次行：选择框靠左，省控线推到最右对齐 ===== */
+.batch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.batch-select {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.batch-line {
+  margin: 0;
+  font-size: 13px;
   color: #6b7280;
-  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.batch-line-score {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.batch-line-muted {
+  color: #9ca3af;
 }
 
 .dialog-footer {
@@ -600,18 +950,25 @@ onMounted(() => {
 .archive-dialog.el-dialog,
 .archive-dialog .el-dialog {
   border-radius: 16px;
+  /* 去掉全局 .el-dialog 的上下 3px 突兀橙线：改为四面一致的 1px 柔和橙边 */
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: 1px solid rgba(249, 115, 22, 0.18);
+  border-right: 1px solid rgba(249, 115, 22, 0.18);
+  /* 整弹窗柔和暖色渐变底 + 顶部/右下双光晕（不再是只有头部一块橙 + 白身子） */
+  background:
+    radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255, 247, 237, 0) 58%),
+    radial-gradient(80% 50% at 100% 100%, rgba(251, 146, 60, 0.1) 0%, rgba(251, 146, 60, 0) 60%),
+    linear-gradient(180deg, #ffffff 0%, #fffdfb 100%);
+  overflow: hidden;
 }
 
+/* 头部：无分隔线、无独立橙块；内容由 #header 槽渲染（徽章+标题+副标题，见 scoped 块） */
 .archive-dialog .el-dialog__header {
-  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
-  padding: 20px 24px;
+  border-bottom: none;
+  background: transparent !important;
+  padding: 22px 24px 10px;
   margin: 0;
-}
-
-.archive-dialog .el-dialog__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
 }
 
 .archive-dialog .el-dialog__body {
@@ -623,5 +980,124 @@ onMounted(() => {
 .archive-dialog .el-dialog__footer {
   border-top: 1px solid #f3f4f6;
   padding: 16px 24px;
+}
+
+/* ===== 弹窗内 EP 控件统一橙色风格 =====
+   选项框：不要白框，橙色系；高度加高；去掉下拉框右侧箭头 */
+.archive-dialog .el-select__suffix,
+.archive-dialog .el-select__caret {
+  display: none;
+}
+
+.archive-dialog .el-select__wrapper {
+  min-height: 46px;
+  border-radius: 12px;
+  background: #fffaf3;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  font-size: 14px;
+  font-weight: 500;
+  color: #9a3412;
+  padding: 4px 14px;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.archive-dialog .el-select__wrapper.is-hovering,
+.archive-dialog .el-select__wrapper.is-focused {
+  background: #fff7ed;
+  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
+}
+
+.archive-dialog .el-select__placeholder {
+  color: #b45309;
+}
+
+.archive-dialog .el-select__selected-item {
+  color: #9a3412;
+}
+
+/* 年份 / 批次下拉：前缀图标靠左，选中文字水平居中。
+   EP 2.13 单选时「选中值/占位符」是同一个元素 .el-select__selected-item.el-select__placeholder，
+   自带 position:absolute; width:100%; z-index:-1; overflow:hidden（不占流宽，垫在底层）。
+   两个坑：
+   1) selection 若按内容收缩（flex:0 1 auto），流内无内容 → 宽度塌缩为 0 →
+      width:100% 的绝对定位文字被 overflow:hidden 裁掉 → 只显示图标；
+   2) z-index:-1 依赖 wrapper 的 stacking context（EP 用 transform 创建），
+      显式提到 z-index:1，杜绝任何层级意外吞字。 */
+.archive-dialog .form-select .el-select__selection,
+.archive-dialog .batch-select .el-select__selection {
+  flex: 1 1 auto; /* 保持占满，为绝对定位的文字提供全宽参照 */
+}
+
+.archive-dialog .form-select .el-select__selected-item,
+.archive-dialog .batch-select .el-select__selected-item {
+  position: absolute; /* 选中值元素本就是 absolute，显式声明不依赖 EP 内部实现 */
+  left: 0;
+  right: 0;
+  z-index: 1;
+  justify-content: center;
+  text-align: center;
+}
+
+.archive-dialog .el-select__prefix {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+}
+
+/* 分数/位次数字输入：橙色系、加高 */
+.archive-dialog .el-input-number {
+  height: 46px;
+}
+
+.archive-dialog .el-input-number .el-input__wrapper {
+  border-radius: 12px;
+  background: #fffaf3;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  height: 46px;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.archive-dialog .el-input-number .el-input__wrapper.is-focus,
+.archive-dialog .el-input-number .el-input__wrapper:hover {
+  background: #fff7ed;
+  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
+}
+
+.archive-dialog .el-input-number .el-input__inner {
+  color: #9a3412;
+  font-weight: 600;
+}
+
+/* 分数/位次：前缀图标 + 数字整体居中（inner 定宽，wrapper 居中整组） */
+.archive-dialog .form-number .el-input__wrapper {
+  justify-content: center;
+}
+
+.archive-dialog .form-number .el-input__inner {
+  flex: 0 0 auto;
+  width: 96px;
+  text-align: center;
+}
+
+.archive-dialog .el-input__prefix {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.archive-dialog .el-input-number.is-disabled .el-input__wrapper {
+  background: #f5f5f4;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
+}
+
+/* 下拉面板（年份/批次）：选中项橙色而非蓝色 */
+.orange-select-popper .el-select-dropdown__item.is-selected {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.orange-select-popper .el-select-dropdown__item.is-hovering {
+  background: #fff7ed;
+  color: #ea580c;
 }
 </style>

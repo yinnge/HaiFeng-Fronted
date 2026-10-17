@@ -33,6 +33,14 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+/**
+ * 教师专属模式：从路由 query.teacher 初始化（详情页返回时保持一致）；
+ * 仅在高中专栏（audience=high）提供切换按钮，走 /high/teacher 端点（仅老师身份可访问）
+ */
+const teacherMode = ref(route.query.teacher === '1')
+/** 非老师身份访问教师专属时的拦截态 */
+const teacherForbidden = ref(false)
+
 /* ---------------- 筛选状态（AND 关系） ---------------- */
 const subjectFilter = ref('')
 const tagFilter = ref('')
@@ -55,7 +63,14 @@ const bannerTitleMap: Record<FileLoadAudience, string> = {
   'postgrad-exam': '考研专栏',
   graduate: '研究生专栏',
 }
-const bannerTitle = computed(() => props.title || bannerTitleMap[props.audience])
+const bannerTitle = computed(() => {
+  if (teacherMode.value) return '教师专属资料'
+  return props.title || bannerTitleMap[props.audience]
+})
+const bannerDesc = computed(() => {
+  if (teacherMode.value) return '教师专属精选学习资料，仅老师身份可见，持续更新中。'
+  return audienceDescMap[props.audience] || audienceDescMap.middle
+})
 const audienceDescMap: Record<FileLoadAudience, string> = {
   middle: '初中阶段精选学习资料、升学政策与备考指南，持续更新中。',
   high: '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
@@ -64,7 +79,6 @@ const audienceDescMap: Record<FileLoadAudience, string> = {
   'postgrad-exam': '考研阶段精选备考资料、真题解析与复习规划，持续更新中。',
   graduate: '研究生阶段精选学习资料、科研工具与学术发展指南，持续更新中。',
 }
-const bannerDesc = computed(() => audienceDescMap[props.audience] || audienceDescMap.middle)
 
 const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value))
 
@@ -72,8 +86,8 @@ const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value
 async function fetchOptions() {
   try {
     const [sub, t] = await Promise.all([
-      getFileLoadSubjects(props.audience),
-      getFileLoadTags(props.audience),
+      getFileLoadSubjects(props.audience, teacherMode.value),
+      getFileLoadTags(props.audience, teacherMode.value),
     ])
     subjectOptions.value = sub.data.data || []
     tagOptions.value = t.data.data || []
@@ -84,6 +98,7 @@ async function fetchOptions() {
 
 async function fetchList() {
   loading.value = true
+  teacherForbidden.value = false
   try {
     const params: FileLoadQueryDTO = {
       page: currentPage.value,
@@ -93,14 +108,46 @@ async function fetchList() {
       applicableStage: fixedStage.value || undefined,
       tag: tagFilter.value || undefined,
     }
-    const res = await getFileLoadList(props.audience, params)
+    const res = await getFileLoadList(props.audience, params, teacherMode.value)
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
+    const msg = e?.message || ''
+    // 教师专属端点要求老师身份，非老师访问返回教师权限不足 → 友好拦截
+    if (teacherMode.value && (msg.includes('教师') || msg.includes('1008'))) {
+      teacherForbidden.value = true
+      list.value = []
+      total.value = 0
+      return
+    }
     ElMessage.error(e?.message || '获取文件列表失败')
   } finally {
     loading.value = false
   }
+}
+
+/** 切换「教师专属」模式：重置筛选与分页后重新拉取（进入前需登录，老师接口要求登录+老师身份） */
+async function toggleTeacher() {
+  // 仅「进入教师专属」时拦截未登录（退出无需登录）
+  if (!teacherMode.value && !userStore.isLoggedIn()) {
+    userStore.setRedirectPath(router.currentRoute.value.fullPath)
+    try {
+      await ElMessageBox.confirm('教师专属资料需登录后查看，请先登录', '提示', {
+        confirmButtonText: '前往登录',
+        cancelButtonText: '取消',
+        type: 'warning',
+      })
+      router.push('/login')
+    } catch { /* 用户取消 */ }
+    return
+  }
+  teacherMode.value = !teacherMode.value
+  subjectFilter.value = ''
+  tagFilter.value = ''
+  currentPage.value = 1
+  teacherForbidden.value = false
+  fetchOptions()
+  fetchList()
 }
 
 /** 筛选变化 → 回到第一页并重新查询 */
@@ -131,7 +178,7 @@ async function openDetail(item: FileLoadListVO) {
     } catch { /* 用户取消 */ }
     return
   }
-  router.push(`/${props.audience}/${item.id}`)
+  router.push({ path: `/${props.audience}/${item.id}`, query: teacherMode.value ? { teacher: '1' } : {} })
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -182,11 +229,12 @@ onMounted(() => {
   fetchList()
 })
 
-// 路由复用同一组件时（middle ↔ high）切换受众需重新拉取
+// 路由复用同一组件时（middle ↔ high）切换受众需重新拉取；切走时关闭教师专属模式
 watch(() => props.audience, () => {
   subjectFilter.value = ''
   tagFilter.value = ''
   currentPage.value = 1
+  teacherMode.value = false
   fetchOptions()
   fetchList()
 })
@@ -204,7 +252,8 @@ watch(fixedStage, () => {
       <!-- Intro Banner -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
         <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
-          <div class="flex items-center gap-3 mb-3">
+          <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-3">
             <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -212,6 +261,21 @@ watch(fixedStage, () => {
             </span>
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800">{{ bannerTitle }} · 精选学习资料</h1>
           </div>
+          <button
+            v-if="props.audience === 'high'"
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition-all"
+            :class="teacherMode
+              ? 'bg-white text-orange-600 border border-orange-300 hover:bg-orange-50'
+              : 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200 hover:from-sky-600 hover:to-cyan-600'"
+            @click="toggleTeacher"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+            {{ teacherMode ? '返回高中资料' : '教师专属' }}
+          </button>
+        </div>
           <p class="text-gray-600 leading-relaxed mb-4">{{ bannerDesc }}</p>
           <div class="flex flex-wrap gap-2">
             <span v-for="kw in ['学习资料', '政策解读', '备考指南', '持续更新']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
@@ -330,6 +394,22 @@ watch(fixedStage, () => {
                 </div>
               </div>
             </div>
+          </div>
+          <div v-else-if="teacherForbidden && !loading" class="py-20 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-200 mb-4">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+            </div>
+            <p class="text-base font-semibold text-gray-700">您还不是教师身份</p>
+            <p class="text-sm text-gray-400 mt-1">教师专属资料仅对老师身份开放，请联系管理员开通</p>
+            <button
+              type="button"
+              class="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all"
+              @click="toggleTeacher"
+            >
+              返回高中资料
+            </button>
           </div>
           <div v-else-if="!loading" class="py-20 text-center text-gray-400">暂无文件数据</div>
         </div>

@@ -369,8 +369,8 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
-    <!-- 档案吸附条：与 gaokao 首页共享组件，本页「修改档案」直接调其弹窗 -->
-    <ArchiveBar ref="archiveBarRef" @saved="onArchiveSaved" />
+    <!-- 档案吸附条：与 gaokao 首页共享组件；本页向下滚动时抽屉式收起，回顶展开 -->
+    <ArchiveBar ref="archiveBarRef" collapsible @saved="onArchiveSaved" />
 
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
       <!-- 顶部操作栏 -->

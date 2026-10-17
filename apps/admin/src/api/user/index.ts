@@ -34,3 +34,8 @@ export const getUserWechat = (id: string) => {
 export const upgradeUser = (id: string, data: MemberUpgradeDTO) => {
   return request.post<R<number>>(`${PREFIX}/${id}/upgrade`, data)
 }
+
+/** 授予/撤销老师身份（不付款，实时生效，后端自动发通知） */
+export const setMemberTeacher = (id: string, data: { teacher: boolean }) => {
+  return request.post<R<void>>(`${PREFIX}/${id}/teacher`, data)
+}
