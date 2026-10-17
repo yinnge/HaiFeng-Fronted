@@ -259,30 +259,37 @@ function toggleFirstSubject(name: string) {
   }
 }
 
-// 按已有档案的分数字段推导已选科目并回填
+// 按档案回填已选科目：优先用 second/thirdSubjectType 字段（当前简化表单不采集
+// 单科分数，只靠 scorePhysics 等分数字段推导会永远为空 → 再选科目回填丢失）
 function restoreSubjects(data: GaokaoArchiveVO | GaokaoArchiveForm) {
-  const selected = ALL_SUBJECT_FIELDS.filter((s) => data[s.field] != null).map((s) => s.name)
+  const byScore = ALL_SUBJECT_FIELDS.filter((s) => data[s.field] != null).map((s) => s.name)
   const model = reformModel.value?.reformModel
   if (model === '3+1+2') {
-    secondSubjects.value = selected.filter((s) => s !== form.subjectType)
+    const seconds = [data.secondSubjectType, data.thirdSubjectType].filter((s): s is string => !!s)
+    secondSubjects.value = seconds.length ? seconds : byScore.filter((s) => s !== form.subjectType)
   } else if (model === '3+3') {
-    firstSubjects.value = selected
+    const subs = [form.subjectType, data.secondSubjectType, data.thirdSubjectType].filter((s): s is string => !!s)
+    firstSubjects.value = subs.length ? subs : byScore
   } else if (form.subjectType === '物理' || form.subjectType === '历史') {
-    secondSubjects.value = selected.filter((s) => s !== form.subjectType)
-  } else if (selected.length > 0) {
-    firstSubjects.value = selected
+    secondSubjects.value = byScore.filter((s) => s !== form.subjectType)
+  } else if (byScore.length > 0) {
+    firstSubjects.value = byScore
   }
 }
 
 // ===== 打开弹窗：回填 initialForm =====
-// 草稿保留：若上次已选过省份、且档案省份未变化，则保留上次的选择（含未保存的科目草稿），
-// 不再每次打开都重置（历史痛点：每次点开都要重新选科目）。
+// 草稿保留：以「档案对象引用」为基准——同一份档案对象重复打开（引用未变）时
+// 保留上次的选择（含未保存的科目草稿）；只有档案被外部更新/保存/换省份
+// （displayForm 生成新对象）时才重新回填。
+let lastInitSource: GaokaoArchiveVO | GaokaoArchiveForm | null | undefined
+
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
     const init = props.initialForm
-    if (form.gaokaoProvince && (!init || init.gaokaoProvince === form.gaokaoProvince)) return
+    if (form.gaokaoProvince && init === lastInitSource) return
+    lastInitSource = init
     if (init && init.gaokaoProvince) {
       restoringData = init
       Object.assign(form, {
@@ -492,11 +499,11 @@ onMounted(() => {
       <div class="form-grid">
         <div class="form-item">
           <label class="form-label">预估分数</label>
-          <el-input-number v-model="form.score" :min="0" :max="750" controls-position="right" class="form-number" />
+          <el-input-number v-model="form.score" :min="0" :max="750" :controls="false" class="form-number" />
         </div>
         <div class="form-item">
           <label class="form-label">对应位次</label>
-          <el-input-number v-model="form.rank" :min="0" controls-position="right" class="form-number" />
+          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number" />
         </div>
       </div>
       <p class="form-hint">
@@ -649,10 +656,11 @@ onMounted(() => {
   box-shadow: 0 0 0 1px #f97316 inset;
 }
 
-/* ===== 填报批次行：选择框窄 + 右侧省控线 ===== */
+/* ===== 填报批次行：选择框靠左，省控线推到最右对齐 ===== */
 .batch-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
 }
@@ -743,18 +751,29 @@ onMounted(() => {
 .archive-dialog.el-dialog,
 .archive-dialog .el-dialog {
   border-radius: 16px;
+  /* 整弹窗暖色渐变底（不再是只有头部一块橙 + 白身子） */
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 46%);
+  overflow: hidden;
 }
 
+/* 头部：无分隔线、无独立橙块，标题用品牌渐变艺术字 */
 .archive-dialog .el-dialog__header {
-  border-bottom: 2px solid rgba(249, 115, 22, 0.15);
-  padding: 20px 24px;
+  border-bottom: none;
+  background: transparent !important;
+  padding: 24px 24px 10px;
   margin: 0;
+  text-align: center;
 }
 
 .archive-dialog .el-dialog__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
+  display: inline-block;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: linear-gradient(120deg, #9a3412 0%, #c2410c 30%, #f97316 62%, #fb923c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .archive-dialog .el-dialog__body {
@@ -797,6 +816,18 @@ onMounted(() => {
 
 .archive-dialog .el-select__selected-item {
   color: #9a3412;
+}
+
+/* 年份 / 批次下拉：选中文字居中 */
+.archive-dialog .form-select .el-select__selection,
+.archive-dialog .batch-select .el-select__selection {
+  justify-content: center;
+}
+
+.archive-dialog .form-select .el-select__selected-item,
+.archive-dialog .batch-select .el-select__selected-item {
+  text-align: center;
+  width: 100%;
 }
 
 /* 分数/位次数字输入：橙色系、加高 */

@@ -7,7 +7,7 @@
 //   尚无完整档案 → 仅本地展示（游客另存 localStorage），不调接口（后端会拦半成品档案）
 // - 未选省份默认「北京」
 // - 内置 ArchiveDialog：模拟填报保存后 emit('saved')；父组件可监听刷新业务数据
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { GaokaoArchiveVO, GaokaoArchiveForm } from '@/api/gaokao'
@@ -15,6 +15,13 @@ import { loadArchiveSmart, saveArchiveSmart, saveGuestArchive } from '@/utils/ga
 import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import ProvincePicker from './ProvincePicker.vue'
 import ArchiveDialog from './ArchiveDialog.vue'
+
+// collapsible=true（专业组查询页）：往下滚动时吸附条上滑收起（抽屉式），
+// 回到页面顶部才重新出现；false（高考首页）：常驻吸顶
+const props = withDefaults(
+  defineProps<{ collapsible?: boolean }>(),
+  { collapsible: false },
+ )
 
 const route = useRoute()
 const router = useRouter()
@@ -138,11 +145,27 @@ function handleSaved(form: GaokaoArchiveForm) {
 onMounted(() => {
   measureHeader()
   void loadArchive()
+  window.addEventListener('scroll', onWinScroll, { passive: true })
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onWinScroll)
+})
+
+// ===== 抽屉式收起（仅 collapsible 页面生效）：滚过顶部阈值就收起，回顶再展开 =====
+const barHidden = ref(false)
+
+function onWinScroll() {
+  if (!props.collapsible) {
+    barHidden.value = false
+    return
+  }
+  barHidden.value = window.scrollY > 60
+}
 </script>
 
 <template>
-  <div class="archive-bar" :style="{ top: `${stickyTop}px` }">
+  <div class="archive-bar" :class="{ 'is-hidden': barHidden }" :style="{ top: `${stickyTop}px` }">
     <div class="archive-bar-inner">
       <span class="archive-bar-label">
         <svg class="archive-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -207,6 +230,12 @@ onMounted(() => {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(249, 115, 22, 0.15);
   box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+  transition: transform 0.35s ease;
+}
+
+/* 抽屉式收起（collapsible 页面向下滚动时）：上滑隐藏，回顶展开 */
+.archive-bar.is-hidden {
+  transform: translateY(-110%);
 }
 
 .archive-bar-inner {
@@ -215,7 +244,7 @@ onMounted(() => {
   gap: 20px;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 11px 24px;
+  padding: 15px 24px;
 }
 
 .archive-bar-label {
@@ -239,29 +268,25 @@ onMounted(() => {
   }
 }
 
-/* ===== 中部页面目录 ===== */
+/* ===== 中部页面目录 =====
+   注意：不能用 overflow-x:auto 做横向滚动——overflow 裁剪会把火焰角标（凸出部分）切掉 */
 .archive-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.archive-nav::-webkit-scrollbar {
-  display: none;
 }
 
 .archive-nav-item {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
+  padding: 8px 16px;
   background: transparent;
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #4b5563;
   cursor: pointer;
