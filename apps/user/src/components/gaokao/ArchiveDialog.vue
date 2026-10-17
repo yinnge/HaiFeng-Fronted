@@ -18,6 +18,23 @@ import {
 } from '@/api/gaokao'
 import { saveArchiveSmart } from '@/utils/gaokaoArchive'
 import ProvincePicker from './ProvincePicker.vue'
+import bgImg from '@/assets/img_1.png'
+
+// 弹窗背景：顶部铺暖色插画（img_1.png，1672×941 横图，100% 宽约 360px 高），
+// 向下用渐变 veil 渐隐融入暖白画布，表单区域近纯色保证可读性。
+const dialogBgStyle = computed(() => ({
+  backgroundImage: [
+    // 顶部插画从上到下渐隐的 veil（0~380px，之后全遮，露出下方渐变）
+    'linear-gradient(180deg, rgba(255,251,247,0.06) 0px, rgba(255,251,247,0.55) 140px, rgba(255,253,251,0.93) 270px, #fffdfb 380px)',
+    `url(${bgImg})`,
+    // 兜底暖色光晕（图片加载失败时也有底色）
+    'radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255,247,237,0) 58%)',
+    'linear-gradient(180deg, #ffffff 0%, #fffdfb 100%)',
+  ].join(', '),
+  backgroundSize: 'auto, 100% auto, auto, auto',
+  backgroundPosition: '0 0, center top, 0 0, 0 0',
+  backgroundRepeat: 'no-repeat, no-repeat, no-repeat, no-repeat',
+}))
 
 const props = defineProps<{
   visible: boolean
@@ -396,14 +413,29 @@ onMounted(() => {
 <template>
   <el-dialog
     :model-value="visible"
-    title="请填写您的高考信息"
     width="640px"
     top="6vh"
     class="archive-dialog"
     append-to-body
     :close-on-click-modal="false"
+    :style="dialogBgStyle"
     @close="emit('update:visible', false)"
   >
+    <!-- 头部：学士帽徽章 + 标题/副标题（浮于插画背景之上，无分隔线） -->
+    <template #header>
+      <div class="dlg-head">
+        <span class="dlg-head-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3z" />
+            <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+          </svg>
+        </span>
+        <div class="dlg-head-text">
+          <p class="dlg-head-title">请填写您的<span class="dlg-head-hl">高考信息</span></p>
+          <p class="dlg-head-sub">完善信息，帮助系统为您推荐更合适的院校和专业</p>
+        </div>
+      </div>
+    </template>
     <div class="archive-form">
       <!-- 省份 / 年份 -->
       <div class="form-grid">
@@ -426,6 +458,12 @@ onMounted(() => {
             高考年份
           </label>
           <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="orange-select-popper">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </template>
             <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
           </el-select>
         </div>
@@ -524,7 +562,15 @@ onMounted(() => {
             </svg>
             预估分数
           </label>
-          <el-input-number v-model="form.score" :min="0" :max="750" :controls="false" class="form-number" />
+          <el-input-number v-model="form.score" :min="0" :max="750" :controls="false" class="form-number">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+            </template>
+          </el-input-number>
         </div>
         <div class="form-item">
           <label class="form-label">
@@ -536,7 +582,16 @@ onMounted(() => {
             </svg>
             对应位次
           </label>
-          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number" />
+          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18" />
+                <rect x="7" y="10" width="3" height="8" />
+                <rect x="12" y="6" width="3" height="12" />
+                <rect x="17" y="13" width="3" height="5" />
+              </svg>
+            </template>
+          </el-input-number>
         </div>
       </div>
       <p class="form-hint">
@@ -557,6 +612,12 @@ onMounted(() => {
         </label>
         <div class="batch-row">
           <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
+            <template #prefix>
+              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </template>
             <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
           </el-select>
           <p v-if="form.batch && form.batchLineScore" class="batch-line">
@@ -621,6 +682,68 @@ onMounted(() => {
 .form-label-ico {
   width: 17px;
   height: 17px;
+  flex-shrink: 0;
+  color: #f97316;
+}
+
+/* ===== 弹窗头部（#header 槽）：学士帽徽章 + 标题/副标题，浮于插画背景之上 ===== */
+.dlg-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 40px; /* 给右上角关闭按钮留位 */
+}
+
+.dlg-head-badge {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), #ffedd5);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+}
+
+.dlg-head-badge svg {
+  width: 28px;
+  height: 28px;
+  color: #33507a; /* 学士帽藏青 */
+}
+
+.dlg-head-text {
+  min-width: 0;
+}
+
+.dlg-head-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #44403c;
+  line-height: 1.3;
+}
+
+/* 「高考信息」四字橙色渐变高亮 */
+.dlg-head-hl {
+  background: linear-gradient(120deg, #c2410c 0%, #f97316 60%, #fb923c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dlg-head-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #a8a29e;
+  line-height: 1.5;
+}
+
+/* 选项框内前缀 SVG 图标（省份/年份/分数/位次/批次，与标签图标同款） */
+.ctl-ico {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   color: #f97316;
 }
@@ -814,24 +937,12 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 头部：无分隔线、无独立橙块，标题用品牌渐变艺术字 */
+/* 头部：无分隔线、无独立橙块；内容由 #header 槽渲染（徽章+标题+副标题，见 scoped 块） */
 .archive-dialog .el-dialog__header {
   border-bottom: none;
   background: transparent !important;
-  padding: 24px 24px 10px;
+  padding: 22px 24px 10px;
   margin: 0;
-  text-align: center;
-}
-
-.archive-dialog .el-dialog__title {
-  display: inline-block;
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  background: linear-gradient(120deg, #9a3412 0%, #c2410c 30%, #f97316 62%, #fb923c 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .archive-dialog .el-dialog__body {
@@ -878,16 +989,27 @@ onMounted(() => {
   color: #9a3412;
 }
 
-/* 年份 / 批次下拉：选中文字居中 */
+/* 年份 / 批次下拉：前缀图标 + 选中文字整体居中 */
+.archive-dialog .form-select .el-select__wrapper,
+.archive-dialog .batch-select .el-select__wrapper {
+  justify-content: center;
+}
+
 .archive-dialog .form-select .el-select__selection,
 .archive-dialog .batch-select .el-select__selection {
+  flex: 0 1 auto; /* 不再撑满，让 wrapper 居中「图标+文字」整组 */
   justify-content: center;
 }
 
 .archive-dialog .form-select .el-select__selected-item,
 .archive-dialog .batch-select .el-select__selected-item {
   text-align: center;
-  width: 100%;
+}
+
+.archive-dialog .el-select__prefix {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
 }
 
 /* 分数/位次数字输入：橙色系、加高 */
@@ -912,6 +1034,23 @@ onMounted(() => {
 .archive-dialog .el-input-number .el-input__inner {
   color: #9a3412;
   font-weight: 600;
+}
+
+/* 分数/位次：前缀图标 + 数字整体居中（inner 定宽，wrapper 居中整组） */
+.archive-dialog .form-number .el-input__wrapper {
+  justify-content: center;
+}
+
+.archive-dialog .form-number .el-input__inner {
+  flex: 0 0 auto;
+  width: 96px;
+  text-align: center;
+}
+
+.archive-dialog .el-input__prefix {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
 }
 
 .archive-dialog .el-input-number.is-disabled .el-input__wrapper {

@@ -47,6 +47,10 @@ function pick(val: string) {
         :class="variant === 'form' ? 'pp-trigger-form' : 'pp-trigger-bar'"
         :title="`当前省份：${display}`"
       >
+        <svg v-if="variant === 'form'" class="pp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
         {{ display }}
       </button>
     </template>
@@ -97,18 +101,27 @@ function pick(val: string) {
   background: #fff7ed;
 }
 
-/* 弹窗表单输入框样式：高 44px、橙色系、文字居中 */
+/* 弹窗表单输入框样式：高 44px、橙色系、图标+省份名整体居中 */
 .pp-trigger-form {
   width: 100%;
   max-width: 220px;
   height: 44px;
   padding: 0 14px;
+  gap: 6px;
   border-radius: 12px;
   background: #fff7ed;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
   font-size: 14px;
   font-weight: 600;
   color: #9a3412;
+}
+
+/* form 变体内的定位图标（与其它选项框前缀图标同款） */
+.pp-ico {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #f97316;
 }
 
 .pp-trigger-form:hover {
