@@ -104,8 +104,8 @@ async function fetchList() {
       page: currentPage.value,
       size: pageSize.value,
       subject: subjectFilter.value || undefined,
-      // 面向人群由导航入口写死（fixedStage）；无固定值时不传，展示该专栏全部资料
-      applicableStage: fixedStage.value || undefined,
+      // 面向人群由导航入口写死（fixedStage）；教师专属为独立数据集，不按阶段过滤，展示全部老师文件
+      applicableStage: teacherMode.value ? undefined : (fixedStage.value || undefined),
       tag: tagFilter.value || undefined,
     }
     const res = await getFileLoadList(props.audience, params, teacherMode.value)
