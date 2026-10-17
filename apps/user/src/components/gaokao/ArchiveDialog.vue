@@ -408,11 +408,23 @@ onMounted(() => {
       <!-- 省份 / 年份 -->
       <div class="form-grid">
         <div class="form-item">
-          <label class="form-label">高考省份</label>
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            高考省份
+          </label>
           <ProvincePicker v-model="form.gaokaoProvince" variant="form" placeholder="北京" />
         </div>
         <div class="form-item">
-          <label class="form-label">高考年份</label>
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            高考年份
+          </label>
           <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="orange-select-popper">
             <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
           </el-select>
@@ -421,7 +433,13 @@ onMounted(() => {
 
       <!-- 高考科目（按改革模式直接渲染，不展示模式文案） -->
       <div class="form-item">
-        <label class="form-label">高考科目</label>
+        <label class="form-label">
+          <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c3 3 9 3 12 0v-5" />
+          </svg>
+          高考科目
+        </label>
         <div v-if="!form.gaokaoProvince || !form.gaokaoYear" class="subject-placeholder">请先选择省份和年份</div>
         <div v-else-if="modelLoading" class="subject-placeholder">正在获取科目配置…</div>
         <div v-else-if="!modelType" class="subject-placeholder subject-placeholder-warn">
@@ -498,11 +516,26 @@ onMounted(() => {
       <!-- 总分 / 位次 -->
       <div class="form-grid">
         <div class="form-item">
-          <label class="form-label">预估分数</label>
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            预估分数
+          </label>
           <el-input-number v-model="form.score" :min="0" :max="750" :controls="false" class="form-number" />
         </div>
         <div class="form-item">
-          <label class="form-label">对应位次</label>
+          <label class="form-label">
+            <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 3v18h18" />
+              <rect x="7" y="10" width="3" height="8" />
+              <rect x="12" y="6" width="3" height="12" />
+              <rect x="17" y="13" width="3" height="5" />
+            </svg>
+            对应位次
+          </label>
           <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number" />
         </div>
       </div>
@@ -515,7 +548,13 @@ onMounted(() => {
 
       <!-- 填报批次：选择框变窄，右侧显示省控线 -->
       <div class="form-item">
-        <label class="form-label">填报批次</label>
+        <label class="form-label">
+          <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
+          </svg>
+          填报批次
+        </label>
         <div class="batch-row">
           <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
             <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
@@ -570,9 +609,20 @@ onMounted(() => {
 }
 
 .form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 15px;
   font-weight: 700;
   color: #1f2937;
+}
+
+/* 字段标签前的线性 SVG 图标（橙色） */
+.form-label-ico {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #f97316;
 }
 
 /* 年份下拉：变窄（高度/配色见非 scoped 块的 EP 内部样式） */
@@ -751,8 +801,16 @@ onMounted(() => {
 .archive-dialog.el-dialog,
 .archive-dialog .el-dialog {
   border-radius: 16px;
-  /* 整弹窗暖色渐变底（不再是只有头部一块橙 + 白身子） */
-  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 46%);
+  /* 去掉全局 .el-dialog 的上下 3px 突兀橙线：改为四面一致的 1px 柔和橙边 */
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: 1px solid rgba(249, 115, 22, 0.18);
+  border-right: 1px solid rgba(249, 115, 22, 0.18);
+  /* 整弹窗柔和暖色渐变底 + 顶部/右下双光晕（不再是只有头部一块橙 + 白身子） */
+  background:
+    radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255, 247, 237, 0) 58%),
+    radial-gradient(80% 50% at 100% 100%, rgba(251, 146, 60, 0.1) 0%, rgba(251, 146, 60, 0) 60%),
+    linear-gradient(180deg, #ffffff 0%, #fffdfb 100%);
   overflow: hidden;
 }
 
@@ -795,19 +853,21 @@ onMounted(() => {
 }
 
 .archive-dialog .el-select__wrapper {
-  min-height: 44px;
+  min-height: 46px;
   border-radius: 12px;
-  background: #fff7ed;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
+  background: #fffaf3;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
   font-size: 14px;
   font-weight: 500;
   color: #9a3412;
-  padding: 4px 12px;
+  padding: 4px 14px;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .archive-dialog .el-select__wrapper.is-hovering,
 .archive-dialog .el-select__wrapper.is-focused {
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
 }
 
 .archive-dialog .el-select__placeholder {
@@ -832,19 +892,21 @@ onMounted(() => {
 
 /* 分数/位次数字输入：橙色系、加高 */
 .archive-dialog .el-input-number {
-  height: 44px;
+  height: 46px;
 }
 
 .archive-dialog .el-input-number .el-input__wrapper {
   border-radius: 12px;
-  background: #fff7ed;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
-  height: 44px;
+  background: #fffaf3;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  height: 46px;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .archive-dialog .el-input-number .el-input__wrapper.is-focus,
 .archive-dialog .el-input-number .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
 }
 
 .archive-dialog .el-input-number .el-input__inner {

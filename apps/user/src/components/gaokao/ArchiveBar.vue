@@ -145,22 +145,47 @@ function handleSaved(form: GaokaoArchiveForm) {
 onMounted(() => {
   measureHeader()
   void loadArchive()
-  window.addEventListener('scroll', onWinScroll, { passive: true })
+  // capture:true —— 某些布局下 body 是滚动容器（index.css: body{overflow-y:scroll}），
+  // 滚动事件不会冒泡到 window，非捕获阶段监听收不到；捕获阶段能截获 body 自身的滚动。
+  window.addEventListener('scroll', onWinScroll, { passive: true, capture: true })
+  // 初始同步一次（刷新时若已在页面中部，应直接收起）
+  onWinScroll()
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onWinScroll)
+  window.removeEventListener('scroll', onWinScroll, { capture: true } as EventListenerOptions)
 })
 
 // ===== 抽屉式收起（仅 collapsible 页面生效）：滚过顶部阈值就收起，回顶再展开 =====
 const barHidden = ref(false)
 
-function onWinScroll() {
+// 读取真实滚动位置：viewport 滚动读 window.scrollY / documentElement.scrollTop，
+// 若 body 本身是滚动容器则读 document.body.scrollTop；capture 阶段 event.target 即滚动元素。
+function getScrollTop(e?: Event): number {
+  const target = e?.target as (Window | Document | HTMLElement | null | undefined)
+  if (
+    target &&
+    target !== document &&
+    target !== window &&
+    typeof (target as HTMLElement).scrollTop === 'number' &&
+    (target as HTMLElement).scrollTop > 0
+  ) {
+    return (target as HTMLElement).scrollTop
+  }
+  return (
+    window.scrollY ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  )
+}
+
+function onWinScroll(e?: Event) {
   if (!props.collapsible) {
     barHidden.value = false
     return
   }
-  barHidden.value = window.scrollY > 60
+  barHidden.value = getScrollTop(e) > 60
 }
 </script>
 
