@@ -9,16 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         # 这里不指定 version，让它自动读取 package.json 中的版本
+        # （package.json 的 packageManager 字段为 pnpm@9.0.0）
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
