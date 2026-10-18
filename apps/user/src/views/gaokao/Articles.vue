@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { type GaokaoArchiveVO } from '@/api/gaokao'
 import { loadArchiveSmart } from '@/utils/gaokaoArchive'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
+import ArticleSearchBox from '@/components/gaokao/ArticleSearchBox.vue'
 
 const router = useRouter()
 
@@ -93,6 +94,9 @@ onMounted(async () => {
           </div>
           <p class="mt-2 text-sm text-gray-400">按你高考档案的省份精准推送 · 仅展示已发布资讯</p>
         </div>
+
+        <!-- 标题关键字搜索：全国范围（可选省份筛选），点击建议直达详情；与下方档案省份列表互不影响 -->
+        <ArticleSearchBox class="mb-6" @select="goDetail" />
 
         <!-- 未建档：引导填写档案（列表接口按档案省份查询） -->
         <div v-if="!hasArchive" class="rounded-2xl bg-white p-10 text-center shadow-card border border-orange-100">
