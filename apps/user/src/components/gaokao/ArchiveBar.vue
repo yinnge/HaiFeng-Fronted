@@ -16,12 +16,28 @@ import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import ProvincePicker from './ProvincePicker.vue'
 import ArchiveDialog from './ArchiveDialog.vue'
 
+// ===== 中部页面目录 =====
+interface BarNavItem {
+  key: string
+  label: string
+  to?: string
+  hot?: boolean
+}
+
 // collapsible=true（专业组查询页）：往下滚动时吸附条上滑收起（抽屉式），
 // 回到页面顶部才重新出现；false（高考首页）：常驻吸顶
+// extraItems：追加到目录最左侧的扩展项（如「高中资料」），不传则目录保持原样；
+// identityOptions/identity：右侧身份下拉（高一高二高三等），受控 + emit('identity-change')，
+// 不传 identityOptions 则不渲染该控件（Groups 等复用方行为完全不变）。
 const props = withDefaults(
-  defineProps<{ collapsible?: boolean }>(),
+  defineProps<{
+    collapsible?: boolean
+    extraItems?: BarNavItem[]
+    identityOptions?: string[]
+    identity?: string
+  }>(),
   { collapsible: false },
- )
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +47,8 @@ const emit = defineEmits<{
   (e: 'archive-change', archive: GaokaoArchiveVO | null): void
   /** 弹窗「模拟填报」保存成功（已入库或已存本地） */
   (e: 'saved', form: GaokaoArchiveForm): void
+  /** 身份切换（右侧下拉），携带新身份 */
+  (e: 'identity-change', identity: string): void
 }>()
 
 const displayForm = ref<GaokaoArchiveVO | null>(null)
@@ -51,22 +69,28 @@ function openDialog() {
 defineExpose({ openDialog })
 
 // ===== 中部页面目录 =====
-interface BarNavItem {
-  key: string
-  label: string
-  to?: string
-  hot?: boolean
-}
-
 const navItems: BarNavItem[] = [
-  { key: 'zhenti', label: '高考真题' }, // 接口待接入，暂占位
+  { key: 'zhenti', label: '高考真题', to: '/gaokao?tab=zhenti' },
   { key: 'volunteer', label: '高考志愿', to: '/gaokao', hot: true },
   { key: 'articles', label: '高考资讯', to: '/gaokao/articles' },
   { key: 'toolkit', label: '高考百宝箱', to: '/gaokao/toolkit' },
 ]
 
+/** 最终渲染的目录 = 扩展项（最左）+ 原有目录 */
+const allNavItems = computed<BarNavItem[]>(() => [...(props.extraItems || []), ...navItems])
+
+/**
+ * 高亮判定：path + query 双校验。
+ * - 高考真题 to='/gaokao?tab=zhenti'：仅当 path=/gaokao 且 tab=zhenti 时高亮；
+ * - 高考志愿 to='/gaokao'（无 query）：仅当 path=/gaokao 且无 tab 时高亮（tab=zhenti 时不亮，避免两个同时高亮）。
+ */
 function isActive(item: BarNavItem) {
-  return !!item.to && route.path === item.to
+  if (!item.to) return false
+  const [path, query] = item.to.split('?')
+  if (route.path !== path) return false
+  if (!query) return !route.query.tab
+  const target = new URLSearchParams(query).get('tab')
+  return target === (route.query.tab as string | undefined)
 }
 
 function onNavClick(item: BarNavItem) {
@@ -203,7 +227,7 @@ function onWinScroll(e?: Event) {
       <!-- 中部页面目录 -->
       <nav class="archive-nav">
         <button
-          v-for="item in navItems"
+          v-for="item in allNavItems"
           :key="item.key"
           type="button"
           class="archive-nav-item"
@@ -224,6 +248,18 @@ function onWinScroll(e?: Event) {
       <!-- 右侧信息：省份选择器在前，年份/分数/科目点击打开档案弹窗 -->
       <div class="archive-bar-info">
         <ProvincePicker :model-value="archiveProvince" variant="bar" @update:model-value="onProvinceChange" />
+        <!-- 身份切换（高一/高二/高三）：切换后由父组件联动「高中资料」列表查询 -->
+        <div v-if="identityOptions && identityOptions.length" class="archive-identity">
+          <span class="archive-identity-label">身份</span>
+          <el-select
+            :model-value="identity"
+            class="archive-identity-select"
+            popper-class="archive-identity-popper"
+            @update:model-value="(v: string) => emit('identity-change', v)"
+          >
+            <el-option v-for="opt in identityOptions" :key="opt" :label="opt" :value="opt" />
+          </el-select>
+        </div>
         <template v-if="displayForm && displayForm.score">
           <button class="archive-chip" title="点击修改档案" @click="openDialog">
             {{ displayForm.gaokaoYear }}年
@@ -391,5 +427,63 @@ function onWinScroll(e?: Event) {
   border-style: dashed;
   color: #9ca3af;
   font-weight: 400;
+}
+
+/* ===== 身份切换下拉（高一/高二/高三），紧跟省份选择器 ===== */
+.archive-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.archive-identity-label {
+  font-size: 13px;
+  color: #a8a29e;
+  white-space: nowrap;
+}
+
+.archive-identity-select {
+  width: 96px;
+}
+
+.archive-identity-select :deep(.el-select__wrapper) {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.25) inset;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.archive-identity-select :deep(.el-select__wrapper.is-hovering),
+.archive-identity-select :deep(.el-select__wrapper.is-focused) {
+  background: #fff7ed;
+  box-shadow: 0 0 0 1.5px #f97316 inset;
+}
+
+.archive-identity-select :deep(.el-select__selected-item) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c2410c;
+}
+
+@media (max-width: 767px) {
+  .archive-identity-label {
+    display: none;
+  }
+}
+</style>
+
+<style>
+/* 身份下拉面板：popper-class 传送到 body，scoped 无效，故放在非 scoped 块（类名唯一，无泄漏） */
+.archive-identity-popper .el-select-dropdown__item.is-selected {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.archive-identity-popper .el-select-dropdown__item.is-hovering {
+  background: #fff7ed;
+  color: #ea580c;
 }
 </style>

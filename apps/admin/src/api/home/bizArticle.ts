@@ -35,3 +35,8 @@ export const updateBizArticle = (id: string, data: BizArticleUpdateDTO) => {
 export const deleteBizArticle = (id: string) => {
   return request.delete<R<void>>(`${PREFIX}/${id}`)
 }
+
+/** 获取指定模块下的专栏名列表（去重），用于新增/修改时下拉选择，支持手填新专栏 */
+export const getBizArticleColumns = (moduleName: string) => {
+  return request.get<R<string[]>>(`${PREFIX}/columns`, { params: { moduleName } })
+}

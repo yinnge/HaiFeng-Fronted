@@ -9,9 +9,46 @@ import type { GaokaoArchiveVO } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
+import FileLoadPage from '@/views/fileload/FileLoadPage.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+/**
+ * 高考模块子视图切换（由 ArchiveBar 的目录项经路由 query 驱动）：
+ * - 'highfile' → 内联渲染「高中资料」FileLoadPage（audience=high + applicableStage=当前身份）；
+ * - 'zhenti'  → 内联渲染 FileLoadPage（与 /high 完全相同：audience=high + applicableStage=高考资料），不跳新页面；
+ * - 其它/缺省 → 高考志愿 landing（Hero + 特殊通道 + 资讯 + 直通考院）。
+ */
+const activeTab = computed(() => (route.query.tab as string) || 'volunteer')
+
+/** ===== 高中身份（高一/高二/高三，默认高三）：驱动内嵌「高中资料」的列表查询 =====
+ *  存 localStorage 持久化，刷新/再次进入高考模块仍保持所选年级。 */
+const HIGH_IDENTITY_KEY = 'haifeng_high_identity'
+const HIGH_IDENTITIES = ['高三', '高二', '高一']
+
+function loadHighIdentity(): string {
+  try {
+    const v = localStorage.getItem(HIGH_IDENTITY_KEY)
+    return v && HIGH_IDENTITIES.includes(v) ? v : '高三'
+  } catch {
+    return '高三'
+  }
+}
+
+const highIdentity = ref<string>(loadHighIdentity())
+
+function onHighIdentityChange(val: string) {
+  highIdentity.value = val
+  try {
+    localStorage.setItem(HIGH_IDENTITY_KEY, val)
+  } catch {
+    /* 隐私模式等场景写失败可忽略，仅本次会话生效 */
+  }
+}
+
+/** 目录最左侧的扩展项：「高中资料」（其余目录沿用 ArchiveBar 原有项） */
+const archiveExtraItems = [{ key: 'highfile', label: '高中资料', to: '/gaokao?tab=highfile' }]
 
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
@@ -244,10 +281,34 @@ async function initPage() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
-    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动（共享组件，Groups 页复用） -->
-    <ArchiveBar ref="archiveBarRef" @archive-change="onArchiveChange" @saved="onArchiveSaved" />
+    <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动（共享组件，Groups 页复用）
+         高中模块：目录最左扩展「高中资料」，右侧省份后加身份下拉（高一/高二/高三） -->
+    <ArchiveBar
+      ref="archiveBarRef"
+      :extra-items="archiveExtraItems"
+      :identity-options="HIGH_IDENTITIES"
+      :identity="highIdentity"
+      @archive-change="onArchiveChange"
+      @saved="onArchiveSaved"
+      @identity-change="onHighIdentityChange"
+    />
 
     <main class="flex-1">
+      <!-- 高中资料：按右上角身份（高一/高二/高三，默认高三）内联查询，不跳新页面 -->
+      <FileLoadPage
+        v-if="activeTab === 'highfile'"
+        audience="high"
+        :stage="highIdentity"
+        title="高中资料"
+      />
+      <!-- 高考真题：内联复用 /high 文件列表（原模原样，仅入口位置不同），不跳新页面 -->
+      <FileLoadPage
+        v-else-if="activeTab === 'zhenti'"
+        audience="high"
+        stage="高考资料"
+        title="高考真题"
+      />
+      <template v-else>
       <div class="container mx-auto px-6 pb-16 relative">
         <div class="max-w-5xl mx-auto min-h-[200px]">
           <!-- 纯白品牌 Hero：无装饰、无发光，突出文字层级 -->
@@ -408,6 +469,7 @@ async function initPage() {
           </div>
         </div>
       </section>
+      </template>
     </main>
   </div>
 </template>

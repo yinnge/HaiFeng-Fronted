@@ -104,6 +104,8 @@ const handleDetail = async (id: string) => {
 
 const handleDetailClose = () => {
   detailData.value = null
+  // 详情接口已触发浏览量 +1，关闭后刷新列表以反映最新浏览量
+  fetchData()
 }
 
 // 新增/修改
