@@ -17,15 +17,14 @@ export const navItems: NavItem[] = [
   {
     id: 'middle',
     label: '初中专栏',
-    route: '/middle', // 点击顶层进入初中资料库（不固定阶段，页内自选）；子项固定面向人群跳转
+    route: '/middle',
     subItems: [
-      // 复用 /middle 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
-      // 与 admin 端适合人群选项一致：中考资料/初一/初二/初三
-      { label: '中考信息资料', route: '/middle?stage=中考资料' },
-      { label: '初一资料', route: '/middle?stage=初一' },
-      { label: '初二资料', route: '/middle?stage=初二' },
-      { label: '初三资料', route: '/middle?stage=初三' },
+      // 原「中考信息资料/初一/初二/初三」四个入口已合并为「初中资料」：
+      // 页内导航栏提供初一/初二/初三身份切换（分段控件，默认初三），
+      // 接口 applicableStage 随身份变化；「中考真题」固定查 stage=中考资料，不随身份变。
+      { label: '初中资料', route: '/middle' },
       { label: '练题系统' },
+      { label: '初中生涯规划' },
     ],
   },
 
@@ -35,13 +34,10 @@ export const navItems: NavItem[] = [
     label: '高中专栏',
     route: '/high',
     subItems: [
-      // 复用 /high 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
-      // 与 admin 端适合人群选项一致：高考资料/高一/高二/高三
-      { label: '高考信息资料', route: '/high?stage=高考资料' },
-      { label: '高一资料', route: '/high?stage=高一' },
-      { label: '高二资料', route: '/high?stage=高二' },
-      { label: '高三资料', route: '/high?stage=高三' },
+      // 原「高考信息资料/高一/高二/高三」四个入口已合并为「高中资料」
+      { label: '高中资料', route: '/high' },
       { label: '练题系统' },
+      { label: '高中生涯规划' },
     ],
   },
 
@@ -64,13 +60,9 @@ export const navItems: NavItem[] = [
     label: '大学专栏',
     route: '/college',
     subItems: [
-      // 复用 /college 列表页，通过 query.stage 写死面向人群（接口 applicableStage），
-      // 与 admin 端适合人群选项一致：大一/大二/大三/大四
-      { label: '大一资料', route: '/college?stage=大一' },
-      { label: '大二资料', route: '/college?stage=大二' },
-      { label: '大三资料', route: '/college?stage=大三' },
-      { label: '大四资料', route: '/college?stage=大四' },
-      { label: '大学AI规划系统' },
+      // 原「大一/大二/大三/大四」四个入口已合并为「大学资料」
+      { label: '大学资料', route: '/college' },
+      { label: '大学生涯规划' },
     ],
   },
 

@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import RichTextEditor from '@/components/common/RichTextEditor.vue'
 import { ARTICLE_MODULE_OPTIONS, ARTICLE_PROVINCE_OPTIONS } from '@/types/home/bizArticle'
 import type { BizArticleDetailVO, ArticleFormPayload } from '@/types/home/bizArticle'
+import { getBizArticleColumns } from '@/api/home/bizArticle'
 
 const props = defineProps<{
   visible: boolean
@@ -21,6 +22,37 @@ const formRef = ref()
 const publishTimeDate = ref<Date | null>(null)
 const yearInput = ref('')
 
+/** 专栏名下拉选项（按所选模块动态查询，去重） */
+const columnOptions = ref<string[]>([])
+const columnLoading = ref(false)
+
+/** 查询某模块下的专栏名列表；ensureValue 用于编辑时兜底确保当前专栏名可选 */
+const fetchColumns = async (module: string, ensureValue?: string) => {
+  if (!module) {
+    columnOptions.value = []
+    return
+  }
+  columnLoading.value = true
+  try {
+    const res = await getBizArticleColumns(module)
+    let list: string[] = res.data.code === 200 ? res.data.data || [] : []
+    if (ensureValue && ensureValue.trim() && !list.includes(ensureValue)) {
+      list = [ensureValue, ...list]
+    }
+    columnOptions.value = list
+  } catch {
+    columnOptions.value = ensureValue ? [ensureValue] : []
+  } finally {
+    columnLoading.value = false
+  }
+}
+
+/** 用户切换所属模块：清空专栏名并重新拉取该模块下的专栏列表 */
+const onModuleChange = () => {
+  form.columnName = ''
+  fetchColumns(form.moduleName)
+}
+
 const form = reactive({
   moduleName: '',
   province: '',
@@ -30,11 +62,12 @@ const form = reactive({
   content: '',
   status: 0,
   sortOrder: 0,
+  viewCount: 0,
 })
 
 const rules = {
   moduleName: [{ required: true, message: '请选择所属模块', trigger: 'change' }],
-  columnName: [{ required: true, message: '请输入专栏名', trigger: 'blur' }],
+  columnName: [{ required: true, message: '请选择或输入专栏名', trigger: 'change' }],
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
 }
 
@@ -51,8 +84,11 @@ watch(
       form.content = initial.content || ''
       form.status = initial.status ?? 0
       form.sortOrder = initial.sortOrder ?? 0
+      form.viewCount = initial.viewCount ?? 0
       yearInput.value = initial.year != null ? String(initial.year) : ''
       publishTimeDate.value = initial.publishTime ? new Date(initial.publishTime) : null
+      // 拉取该模块下的专栏名下拉（兜底确保当前专栏名可选）
+      fetchColumns(initial.moduleName, initial.columnName)
     } else {
       form.moduleName = ''
       form.province = ''
@@ -62,8 +98,10 @@ watch(
       form.content = ''
       form.status = 0
       form.sortOrder = 0
+      form.viewCount = 0
       yearInput.value = ''
       publishTimeDate.value = null
+      columnOptions.value = []
     }
   },
   { immediate: true },
@@ -96,6 +134,7 @@ const handleSubmit = () => {
       content: form.content,
       status: form.status,
       sortOrder: form.sortOrder,
+      viewCount: form.viewCount,
       publishTime: publishTimeDate.value ? publishTimeDate.value.toISOString() : undefined,
     })
   })
@@ -118,7 +157,7 @@ const handleClose = () => emit('update:visible', false)
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <div class="form-row">
           <el-form-item label="所属模块" prop="moduleName">
-            <el-select v-model="form.moduleName" placeholder="请选择模块" style="width: 160px">
+            <el-select v-model="form.moduleName" placeholder="请选择模块" style="width: 160px" @change="onModuleChange">
               <el-option v-for="item in ARTICLE_MODULE_OPTIONS" :key="item" :label="item" :value="item" />
             </el-select>
           </el-form-item>
@@ -140,11 +179,29 @@ const handleClose = () => emit('update:visible', false)
 
         <div class="form-row">
           <el-form-item label="专栏名" prop="columnName">
-            <el-input v-model="form.columnName" placeholder="请输入专栏名" maxlength="64" show-word-limit style="width: 240px" />
+            <el-select
+              v-model="form.columnName"
+              placeholder="先选模块，再选/填专栏名"
+              filterable
+              allow-create
+              default-first-option
+              clearable
+              :loading="columnLoading"
+              style="width: 240px"
+            >
+              <el-option v-for="c in columnOptions" :key="c" :label="c" :value="c" />
+            </el-select>
           </el-form-item>
           <el-form-item label="排序权重">
             <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 140px" />
             <span class="field-tip">越大越靠前</span>
+          </el-form-item>
+        </div>
+
+        <div class="form-row">
+          <el-form-item label="浏览量">
+            <el-input-number v-model="form.viewCount" :min="0" :max="99999999" controls-position="right" style="width: 160px" />
+            <span class="field-tip">允许手动设置 / 修改</span>
           </el-form-item>
         </div>
 

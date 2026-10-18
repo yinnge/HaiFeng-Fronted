@@ -105,6 +105,8 @@ export interface BizArticleAddDTO {
   status?: number
   /** 排序权重（越大越靠前） */
   sortOrder?: number
+  /** 浏览量（允许 admin 自行设置初始浏览值；空则默认 0） */
+  viewCount?: number
   /** 发布时间；空则由后端指定 */
   publishTime?: string
 }
@@ -120,6 +122,8 @@ export interface BizArticleUpdateDTO {
   content: string
   status?: number
   sortOrder?: number
+  /** 浏览量（允许 admin 手动修改；空表示不改动原值） */
+  viewCount?: number
   publishTime?: string
 }
 
@@ -143,5 +147,7 @@ export interface ArticleFormPayload {
   content: string
   status: number
   sortOrder?: number
+  /** 浏览量（允许 admin 自行设置/修改） */
+  viewCount?: number
   publishTime?: string
 }

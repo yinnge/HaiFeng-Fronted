@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Motion } from 'motion-v'
@@ -46,11 +46,113 @@ const subjectFilter = ref('')
 const tagFilter = ref('')
 
 /**
- * 固定面向人群：优先取路由 props.stage（考公/考研/研究生单一人群专栏，路由层写死），
- * 其次 route.query.stage（初中/高中/大学专栏子项，如 /high?stage=高一）。
- * 接口的 applicableStage 直接写死该值（精准查询由导航入口决定，页内不提供筛选）。
+ * 页内子导航栏配置（按受众）。仅配置了的专栏才渲染导航栏，其余专栏（高中/大学/考公/考研/研究生）
+ * 沿用原「导航栏下拉 + query.stage」模式，行为不变。后续高中/大学照此加一条配置即可。
+ * - identity：跟随右侧身份切换（初中资料）
+ * - fixed：固定面向人群，不随身份变化（中考真题固定查「中考资料」）
+ * - soon：敬请期待占位
  */
-const fixedStage = computed(() => props.stage || (route.query.stage as string) || '')
+interface StageNavSection {
+  key: string
+  label: string
+  mode: 'identity' | 'fixed' | 'soon'
+  stage?: string
+}
+
+interface StageNavConfig {
+  /** 模块标题，如「初中模块」 */
+  label: string
+  /** 身份切换选项（分段控件），从左到右 */
+  identities: string[]
+  /** 默认身份（必须是 identities 之一） */
+  defaultIdentity: string
+  sections: StageNavSection[]
+}
+
+const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
+  middle: {
+    label: '初中模块',
+    identities: ['初三', '初二', '初一'],
+    defaultIdentity: '初三',
+    sections: [
+      { key: 'files', label: '初中资料', mode: 'identity' },
+      // 中考真题固定查「中考资料」，与右侧身份无关（身份控件仍展示可切换，只是查询不受影响）
+      { key: 'zhenti', label: '中考真题', mode: 'fixed', stage: '中考资料' },
+      { key: 'news', label: '初中资讯', mode: 'soon' },
+      { key: 'quiz', label: '在线练题', mode: 'soon' },
+      { key: 'career', label: '初中生涯规划', mode: 'soon' },
+    ],
+  },
+  college: {
+    label: '大学模块',
+    identities: ['大一', '大二', '大三', '大四'],
+    defaultIdentity: '大一',
+    sections: [
+      { key: 'files', label: '大学资料', mode: 'identity' },
+      { key: 'news', label: '大学资讯', mode: 'soon' },
+      { key: 'career', label: '大学生涯规划', mode: 'soon' },
+    ],
+  },
+}
+
+const stageNav = computed(() => STAGE_NAV_CONFIG[props.audience] || null)
+
+/** 当前激活的目录项 key */
+const activeSection = ref('files')
+/** 当前身份（初一/初二/初三） */
+const identity = ref(STAGE_NAV_CONFIG.middle?.defaultIdentity || '')
+
+/**
+ * 生效的面向人群（接口 applicableStage）：
+ * - 有页内导航栏：由当前目录项决定 —— identity 跟随身份 / fixed 固定人群 / soon 不带筛选；
+ * - 无页内导航栏：路由 props.stage（考公/考研/研究生单一人群专栏）优先，其次 query.stage。
+ */
+const effectiveStage = computed(() => {
+  const nav = stageNav.value
+  if (!nav) return props.stage || (route.query.stage as string) || ''
+  const sec = nav.sections.find((s) => s.key === activeSection.value)
+  if (!sec) return ''
+  if (sec.mode === 'identity') return identity.value
+  if (sec.mode === 'fixed') return sec.stage || ''
+  return ''
+})
+
+/** 目录项点击：占位项只弹提示，其余切目录（列表由 watch(effectiveStage) 统一触发重拉） */
+function onSectionClick(sec: StageNavSection) {
+  if (sec.mode === 'soon') {
+    ElMessage.info(`「${sec.label}」敬请期待`)
+    return
+  }
+  activeSection.value = sec.key
+}
+
+/**
+ * 身份切换（下拉框）：
+ * - 停留在「初中资料」时，身份直接决定查询人群（effectiveStage 变化 → watch 自动重拉）；
+ * - 停留在「中考真题」等固定人群目录时，查询不变，仍按产品要求强制重发一次接口；
+ * - 不重置当前目录，用户不会因为切身份被弹回「初中资料」。
+ * 同时把身份同步到 URL（刷新/分享可保持）。
+ */
+function onIdentityChange(val: string) {
+  identity.value = val
+  currentPage.value = 1
+  void router.replace({ path: route.path, query: { ...route.query, stage: val } })
+  fetchList(true)
+}
+
+/** 进入页面/切换受众时按 URL 回填目录与身份（兼容旧链接 /middle?stage=中考资料） */
+function syncFromQuery() {
+  const nav = stageNav.value
+  if (!nav) return
+  const s = route.query.stage as string
+  const fixedHit = nav.sections.find((x) => x.mode === 'fixed' && x.stage === s)
+  if (fixedHit) {
+    activeSection.value = fixedHit.key
+    return
+  }
+  activeSection.value = 'files'
+  identity.value = s && nav.identities.includes(s) ? s : nav.defaultIdentity
+}
 
 const subjectOptions = ref<string[]>([])
 const tagOptions = ref<string[]>([])
@@ -65,6 +167,12 @@ const bannerTitleMap: Record<FileLoadAudience, string> = {
 }
 const bannerTitle = computed(() => {
   if (teacherMode.value) return '教师专属资料'
+  // 页内导航栏切到固定人群目录（如「中考真题」）时，标题跟随目录名，避免仍显示专栏名造成误解
+  const nav = stageNav.value
+  if (nav && activeSection.value !== 'files') {
+    const sec = nav.sections.find((s) => s.key === activeSection.value)
+    if (sec && sec.mode !== 'soon') return sec.label
+  }
   return props.title || bannerTitleMap[props.audience]
 })
 const bannerDesc = computed(() => {
@@ -96,7 +204,25 @@ async function fetchOptions() {
   }
 }
 
-async function fetchList() {
+/**
+ * 上一次请求的指纹：目录切换 / 身份切换 / URL 回填 / onMounted 会先后触发同一次查询，
+ * 用指纹去重避免同一条件连打两次接口；请求失败时清空，允许重试。
+ */
+let lastQueryKey = ''
+
+/**
+ * 拉取列表。force=true 时跳过指纹去重：
+ * 「中考真题」目录查询固定为「中考资料」，但按产品要求切换身份时仍要重新调一次接口
+ * （保持交互一致性），此时查询条件与上一次完全相同。
+ */
+async function fetchList(force = false) {
+  const queryKey = [
+    props.audience, teacherMode.value, effectiveStage.value,
+    subjectFilter.value, tagFilter.value, currentPage.value, pageSize.value,
+  ].join('|')
+  if (!force && queryKey === lastQueryKey) return
+  lastQueryKey = queryKey
+
   loading.value = true
   teacherForbidden.value = false
   try {
@@ -104,14 +230,15 @@ async function fetchList() {
       page: currentPage.value,
       size: pageSize.value,
       subject: subjectFilter.value || undefined,
-      // 面向人群由导航入口写死（fixedStage）；教师专属为独立数据集，不按阶段过滤，展示全部老师文件
-      applicableStage: teacherMode.value ? undefined : (fixedStage.value || undefined),
+      // 面向人群由页内导航栏的目录/身份决定（无导航栏的专栏沿用路由 stage）；教师专属为独立数据集，不按阶段过滤
+      applicableStage: teacherMode.value ? undefined : (effectiveStage.value || undefined),
       tag: tagFilter.value || undefined,
     }
     const res = await getFileLoadList(props.audience, params, teacherMode.value)
     list.value = res.data.data.records
     total.value = res.data.data.total
   } catch (e: any) {
+    lastQueryKey = '' // 失败允许重试
     const msg = e?.message || ''
     // 教师专属端点要求老师身份，非老师访问返回教师权限不足 → 友好拦截
     if (teacherMode.value && (msg.includes('教师') || msg.includes('1008'))) {
@@ -224,23 +351,44 @@ function onSizeChange(size: number) {
   fetchList()
 }
 
+/* ---------------- 吸附条偏移：动态测量导航栏高度，避免写死 ---------------- */
+const stickyTop = ref(64)
+
+function measureHeader() {
+  const h = document.querySelector('.app-header')?.getBoundingClientRect().height
+  if (h && h > 0) stickyTop.value = Math.round(h)
+}
+
 onMounted(() => {
+  measureHeader()
+  window.addEventListener('resize', measureHeader)
+  syncFromQuery()
   fetchOptions()
   fetchList()
 })
 
-// 路由复用同一组件时（middle ↔ high）切换受众需重新拉取；切走时关闭教师专属模式
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measureHeader)
+})
+
+// 路由复用同一组件时（middle ↔ high）切换受众需重新拉取；切走时关闭教师专属模式并按 URL 回填导航栏状态
 watch(() => props.audience, () => {
   subjectFilter.value = ''
   tagFilter.value = ''
   currentPage.value = 1
   teacherMode.value = false
+  syncFromQuery()
   fetchOptions()
   fetchList()
 })
 
-// 固定阶段变化（如 /high?stage=高一 → /high?stage=高二）需重新拉取
-watch(fixedStage, () => {
+// URL stage 变化（外部带参跳转 / 浏览器前进后退）→ 回填导航栏目录与身份
+watch(() => route.query.stage, () => {
+  syncFromQuery()
+})
+
+// 生效人群变化（导航栏目录切换 / 身份切换 / 路由 query.stage 变化）需重新拉取
+watch(effectiveStage, () => {
   currentPage.value = 1
   fetchList()
 })
@@ -248,6 +396,46 @@ watch(fixedStage, () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col">
+    <!-- 页内子导航栏（仅配置了 STAGE_NAV_CONFIG 的专栏渲染，当前为初中专栏）
+         样式参照高考模块 ArchiveBar：左侧模块标题 + 中部目录 + 右侧身份切换（分段控件） -->
+    <nav v-if="stageNav" class="stage-nav" :style="{ top: `${stickyTop}px` }">
+      <div class="stage-nav-inner">
+        <span class="stage-nav-label">
+          <svg class="stage-nav-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          {{ stageNav.label }}
+        </span>
+
+        <div class="stage-nav-menu">
+          <button
+            v-for="sec in stageNav.sections"
+            :key="sec.key"
+            type="button"
+            class="stage-nav-item"
+            :class="{ 'is-active': activeSection === sec.key, 'is-soon': sec.mode === 'soon' }"
+            @click="onSectionClick(sec)"
+          >
+            {{ sec.label }}
+          </button>
+        </div>
+
+        <!-- 右侧身份切换（下拉框）：资料目录按身份查；固定人群目录（如中考真题）也可切换，查询保持不变 -->
+        <div class="stage-identity">
+          <span class="stage-identity-label">当前身份</span>
+          <el-select
+            :model-value="identity"
+            class="stage-identity-select"
+            popper-class="stage-identity-popper"
+            @update:model-value="onIdentityChange"
+          >
+            <el-option v-for="opt in stageNav.identities" :key="opt" :label="opt" :value="opt" />
+          </el-select>
+        </div>
+      </div>
+    </nav>
+
     <main class="container mx-auto px-6 py-8 flex-1">
       <!-- Intro Banner -->
       <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
@@ -430,3 +618,154 @@ watch(fixedStage, () => {
     </main>
   </div>
 </template>
+
+<style scoped>
+/* ===== 页内子导航栏：样式参照高考模块 ArchiveBar（components/gaokao/ArchiveBar.vue） ===== */
+.stage-nav {
+  position: sticky;
+  z-index: 40;
+  background: rgba(255, 251, 245, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+  box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+}
+
+.stage-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 24px;
+}
+
+.stage-nav-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stage-nav-label-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* 目录区：不用 overflow-x:auto（会裁掉 hover 阴影），靠 flex-wrap 换行 */
+.stage-nav-menu {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.stage-nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.stage-nav-item:hover {
+  color: #ea580c;
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.stage-nav-item.is-active {
+  color: #c2410c;
+  background: #ffedd5;
+  font-weight: 700;
+}
+
+.stage-nav-item:active {
+  transform: scale(0.97);
+}
+
+/* 占位目录（资讯/练题/生涯规划）：灰色，点击弹「敬请期待」 */
+.stage-nav-item.is-soon {
+  color: #9ca3af;
+}
+
+.stage-nav-item.is-soon:hover {
+  color: #ea580c;
+}
+
+/* ===== 右侧身份切换：下拉框（初三/初二/初一、大一~大四） ===== */
+.stage-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.stage-identity-label {
+  font-size: 13px;
+  color: #a8a29e;
+  white-space: nowrap;
+}
+
+/* el-select 内部结构在子组件里，scoped 下必须 :deep() */
+.stage-identity-select {
+  width: 104px;
+}
+
+.stage-identity-select :deep(.el-select__wrapper) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35) inset;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.stage-identity-select :deep(.el-select__wrapper.is-hovering),
+.stage-identity-select :deep(.el-select__wrapper.is-focused) {
+  background: #ffedd5;
+  box-shadow: 0 0 0 1.5px #f97316 inset;
+}
+
+.stage-identity-select :deep(.el-select__selected-item) {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c2410c;
+}
+
+@media (max-width: 767px) {
+  .stage-nav-inner {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .stage-nav-label,
+  .stage-identity-label {
+    display: none;
+  }
+}
+</style>
+
+<style>
+/* 身份下拉面板：popper-class 传送到 body，scoped 无效，故放在非 scoped 块（类名唯一，无泄漏） */
+.stage-identity-popper .el-select-dropdown__item.is-selected {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.stage-identity-popper .el-select-dropdown__item.is-hovering {
+  background: #fff7ed;
+  color: #ea580c;
+}
+</style>
