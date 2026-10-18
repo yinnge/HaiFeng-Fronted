@@ -6,6 +6,7 @@ import { type GaokaoArchiveVO } from '@/api/gaokao'
 import { loadArchiveSmart } from '@/utils/gaokaoArchive'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 import ArticleSearchBox from '@/components/gaokao/ArticleSearchBox.vue'
+import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
 
 const router = useRouter()
 
@@ -70,6 +71,8 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+    <!-- 档案吸附条：与 /gaokao、/gaokao/groups 共享的模块导航，「高考资讯」按路由精确高亮 -->
+    <ArchiveBar />
     <main class="flex-1">
       <div class="mx-auto max-w-5xl px-6 py-8">
         <!-- 返回 + 页头 -->
