@@ -12,8 +12,10 @@ const props = withDefaults(
     modelValue: string
     variant?: 'bar' | 'form'
     placeholder?: string
+    /** 面板最前面是否加「全国」格（值为空串）；搜索框场景用 */
+    national?: boolean
   }>(),
-  { variant: 'bar', placeholder: '北京' },
+  { variant: 'bar', placeholder: '北京', national: false },
 )
 
 const emit = defineEmits<{
@@ -23,6 +25,11 @@ const emit = defineEmits<{
 const popoverRef = ref()
 
 const display = computed(() => props.modelValue || props.placeholder)
+
+/** 面板格子：national 时最前面插入「全国」（value=''，选中后 modelValue 为空串） */
+const cells = computed(() =>
+  props.national ? [{ value: '', label: '全国' }, ...ProvinceOptions] : ProvinceOptions,
+)
 
 function pick(val: string) {
   emit('update:modelValue', val)
@@ -56,7 +63,7 @@ function pick(val: string) {
     </template>
     <div class="pp-grid">
       <button
-        v-for="p in ProvinceOptions"
+        v-for="p in cells"
         :key="p.value"
         type="button"
         class="pp-cell"
