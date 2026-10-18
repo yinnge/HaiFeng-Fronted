@@ -28,6 +28,7 @@ function scheduleSearch() {
 }
 
 async function doSearch() {
+  const seq = ++requestSeq
   const kw = keyword.value.trim()
   if (!kw) {
     suggestions.value = []
@@ -35,7 +36,6 @@ async function doSearch() {
     loading.value = false
     return
   }
-  const seq = ++requestSeq
   loading.value = true
   try {
     const res = await searchGaokaoArticles({
@@ -68,6 +68,12 @@ function onPick(item: GaokaoArticleSearchItemVO) {
 
 function onEnter() {
   if (suggestions.value.length) onPick(suggestions.value[0])
+}
+
+/** 输入法组字确认的 Enter 不触发选中 */
+function onKeyEnter(e: KeyboardEvent) {
+  if (e.isComposing || e.keyCode === 229) return
+  onEnter()
 }
 
 /** 按高亮区间把标题切段；游标推进兜底重叠/倒序区间 */
@@ -110,7 +116,7 @@ onBeforeUnmount(() => {
           type="text"
           class="asb-input"
           placeholder="搜索资讯标题，如：山西高考2026分数线"
-          @keydown.enter.prevent="onEnter"
+          @keydown.enter.prevent="onKeyEnter"
         />
       </div>
       <div v-if="open" class="asb-panel">
