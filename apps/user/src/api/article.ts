@@ -38,3 +38,19 @@ export const getGaokaoArticlePage = (params: { province: string; page: number; s
 /** 高考热点资讯详情（含富文本正文，免登录） */
 export const getGaokaoArticleDetail = (id: string) =>
   request.get<R<GaokaoArticleDetailVO>>(`${PREFIX}/${id}`)
+
+/** C 端标题搜索建议 VO（highlight 为标题命中区间 [start,end)，与后端 UTF-16 下标一致） */
+export interface GaokaoArticleSearchItemVO {
+  id: string
+  columnName: string
+  province: string | null
+  title: string
+  highlight: { start: number; end: number }[]
+}
+
+/**
+ * 标题关键字搜索（免登录，去噪对齐匹配，最多10条）
+ * province 缺省/「全国」不传 = 不限省份
+ */
+export const searchGaokaoArticles = (params: { keyword: string; province?: string; limit?: number }) =>
+  request.get<R<GaokaoArticleSearchItemVO[]>>(`${PREFIX}/search`, { params })
