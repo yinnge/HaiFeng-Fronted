@@ -1,0 +1,421 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "海枫未来规划院" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "海枫未来规划院" [ref=e7]
+      - navigation [ref=e8]:
+        - button "首 页" [ref=e9] [cursor=pointer]
+        - button "初中专栏" [ref=e11] [cursor=pointer]:
+          - text: 初中专栏
+          - img [ref=e12]
+        - button "高中专栏" [ref=e15] [cursor=pointer]:
+          - text: 高中专栏
+          - img [ref=e16]
+        - button "高考志愿填报" [ref=e19] [cursor=pointer]:
+          - text: 高考志愿填报
+          - img [ref=e20]
+        - button "大学专栏" [ref=e23] [cursor=pointer]:
+          - text: 大学专栏
+          - img [ref=e24]
+        - button "英语四六级" [ref=e27] [cursor=pointer]:
+          - text: 英语四六级
+          - img [ref=e28]
+        - button "考研" [ref=e31] [cursor=pointer]:
+          - text: 考研
+          - img [ref=e32]
+        - button "考公" [ref=e35] [cursor=pointer]:
+          - text: 考公
+          - img [ref=e36]
+        - button "研究生专栏" [ref=e39] [cursor=pointer]:
+          - text: 研究生专栏
+          - img [ref=e40]
+        - button "更多" [ref=e43] [cursor=pointer]:
+          - text: 更多
+          - img [ref=e44]
+      - button "登录" [ref=e47] [cursor=pointer]
+  - main [ref=e49]:
+    - generic [ref=e50]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]: 专业 · 科学 · 个性化
+          - heading "海枫 未来规划院" [level=1] [ref=e56]:
+            - generic [ref=e57] [cursor=pointer]:
+              - img
+            - text: 海枫
+            - generic [ref=e58]: 未来规划院
+          - paragraph [ref=e59]: 依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
+          - generic [ref=e60]:
+            - link "开始志愿填报" [ref=e61] [cursor=pointer]:
+              - /url: /gaokao
+              - text: 开始志愿填报
+              - img [ref=e62]
+            - link "探索院校" [ref=e64] [cursor=pointer]:
+              - /url: /university
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - generic [ref=e68]: 5W+
+            - generic [ref=e69]: 服务学生
+          - generic [ref=e70]:
+            - generic [ref=e71]: 1300+
+            - generic [ref=e72]: 院校库
+          - generic [ref=e73]:
+            - generic [ref=e74]: 45.8%
+            - generic [ref=e75]: 满意度
+          - generic [ref=e76]:
+            - generic [ref=e77]: 232+
+            - generic [ref=e78]: 专业顾问
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - heading "核心服务导航" [level=2] [ref=e82]
+          - paragraph [ref=e83]: 从初中到就业，十大模块覆盖升学全程 · 点击卡片查看二级目录
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - button "初中专栏 中考资讯与初一至初三同步学习资料 查看目录" [ref=e88] [cursor=pointer]:
+              - img [ref=e90]
+              - heading "初中专栏" [level=3] [ref=e93]
+              - paragraph [ref=e94]: 中考资讯与初一至初三同步学习资料
+              - generic [ref=e95]:
+                - text: 查看目录
+                - img [ref=e96]
+            - button "高中专栏 高一至高三资料与练题系统 查看目录" [ref=e98] [cursor=pointer]:
+              - img [ref=e100]
+              - heading "高中专栏" [level=3] [ref=e103]
+              - paragraph [ref=e104]: 高一至高三资料与练题系统
+              - generic [ref=e105]:
+                - text: 查看目录
+                - img [ref=e106]
+            - button "高考志愿填报 AI 智能填报 · 志愿表 · 特殊通道一站直达 查看目录" [ref=e108] [cursor=pointer]:
+              - img [ref=e110]
+              - heading "高考志愿填报" [level=3] [ref=e113]
+              - paragraph [ref=e114]: AI 智能填报 · 志愿表 · 特殊通道一站直达
+              - generic [ref=e115]:
+                - text: 查看目录
+                - img [ref=e116]
+            - button "大学专栏 大一到大四资料与大学 AI 规划系统 查看目录" [ref=e118] [cursor=pointer]:
+              - img [ref=e120]
+              - heading "大学专栏" [level=3] [ref=e123]
+              - paragraph [ref=e124]: 大一到大四资料与大学 AI 规划系统
+              - generic [ref=e125]:
+                - text: 查看目录
+                - img [ref=e126]
+            - button "英语四六级 四级六级备考资料与考试资讯 查看目录" [ref=e128] [cursor=pointer]:
+              - img [ref=e130]
+              - heading "英语四六级" [level=3] [ref=e133]
+              - paragraph [ref=e134]: 四级六级备考资料与考试资讯
+              - generic [ref=e135]:
+                - text: 查看目录
+                - img [ref=e136]
+            - button "考研 考研资料与考研系统，备考一步到位 查看目录" [ref=e138] [cursor=pointer]:
+              - img [ref=e140]
+              - heading "考研" [level=3] [ref=e143]
+              - paragraph [ref=e144]: 考研资料与考研系统，备考一步到位
+              - generic [ref=e145]:
+                - text: 查看目录
+                - img [ref=e146]
+            - button "考公 考公资料与考公系统，上岸快人一步 查看目录" [ref=e148] [cursor=pointer]:
+              - img [ref=e150]
+              - heading "考公" [level=3] [ref=e154]
+              - paragraph [ref=e155]: 考公资料与考公系统，上岸快人一步
+              - generic [ref=e156]:
+                - text: 查看目录
+                - img [ref=e157]
+            - button "研究生专栏 研究生资料与申博指南 查看目录" [ref=e159] [cursor=pointer]:
+              - img [ref=e161]
+              - heading "研究生专栏" [level=3] [ref=e163]
+              - paragraph [ref=e164]: 研究生资料与申博指南
+              - generic [ref=e165]:
+                - text: 查看目录
+                - img [ref=e166]
+            - button "博士专栏 博一博二博三阶段资料与规划 查看目录" [ref=e168] [cursor=pointer]:
+              - img [ref=e170]
+              - heading "博士专栏" [level=3] [ref=e173]
+              - paragraph [ref=e174]: 博一博二博三阶段资料与规划
+              - generic [ref=e175]:
+                - text: 查看目录
+                - img [ref=e176]
+            - button "就业信息专栏 体制内 · 基层 · 行业专项招聘信息 查看目录" [ref=e178] [cursor=pointer]:
+              - img [ref=e180]
+              - heading "就业信息专栏" [level=3] [ref=e183]
+              - paragraph [ref=e184]: 体制内 · 基层 · 行业专项招聘信息
+              - generic [ref=e185]:
+                - text: 查看目录
+                - img [ref=e186]
+          - generic [ref=e188]:
+            - button [ref=e189] [cursor=pointer]:
+              - img [ref=e191]
+              - heading [level=3] [ref=e194]: 初中专栏
+              - paragraph [ref=e195]: 中考资讯与初一至初三同步学习资料
+              - generic [ref=e196]:
+                - text: 查看目录
+                - img [ref=e197]
+            - button [ref=e199] [cursor=pointer]:
+              - img [ref=e201]
+              - heading [level=3] [ref=e204]: 高中专栏
+              - paragraph [ref=e205]: 高一至高三资料与练题系统
+              - generic [ref=e206]:
+                - text: 查看目录
+                - img [ref=e207]
+            - button [ref=e209] [cursor=pointer]:
+              - img [ref=e211]
+              - heading [level=3] [ref=e214]: 高考志愿填报
+              - paragraph [ref=e215]: AI 智能填报 · 志愿表 · 特殊通道一站直达
+              - generic [ref=e216]:
+                - text: 查看目录
+                - img [ref=e217]
+            - button [ref=e219] [cursor=pointer]:
+              - img [ref=e221]
+              - heading [level=3] [ref=e224]: 大学专栏
+              - paragraph [ref=e225]: 大一到大四资料与大学 AI 规划系统
+              - generic [ref=e226]:
+                - text: 查看目录
+                - img [ref=e227]
+            - button [ref=e229] [cursor=pointer]:
+              - img [ref=e231]
+              - heading [level=3] [ref=e234]: 英语四六级
+              - paragraph [ref=e235]: 四级六级备考资料与考试资讯
+              - generic [ref=e236]:
+                - text: 查看目录
+                - img [ref=e237]
+            - button [ref=e239] [cursor=pointer]:
+              - img [ref=e241]
+              - heading [level=3] [ref=e244]: 考研
+              - paragraph [ref=e245]: 考研资料与考研系统，备考一步到位
+              - generic [ref=e246]:
+                - text: 查看目录
+                - img [ref=e247]
+            - button [ref=e249] [cursor=pointer]:
+              - img [ref=e251]
+              - heading [level=3] [ref=e255]: 考公
+              - paragraph [ref=e256]: 考公资料与考公系统，上岸快人一步
+              - generic [ref=e257]:
+                - text: 查看目录
+                - img [ref=e258]
+            - button [ref=e260] [cursor=pointer]:
+              - img [ref=e262]
+              - heading [level=3] [ref=e264]: 研究生专栏
+              - paragraph [ref=e265]: 研究生资料与申博指南
+              - generic [ref=e266]:
+                - text: 查看目录
+                - img [ref=e267]
+            - button [ref=e269] [cursor=pointer]:
+              - img [ref=e271]
+              - heading [level=3] [ref=e274]: 博士专栏
+              - paragraph [ref=e275]: 博一博二博三阶段资料与规划
+              - generic [ref=e276]:
+                - text: 查看目录
+                - img [ref=e277]
+            - button [ref=e279] [cursor=pointer]:
+              - img [ref=e281]
+              - heading [level=3] [ref=e284]: 就业信息专栏
+              - paragraph [ref=e285]: 体制内 · 基层 · 行业专项招聘信息
+              - generic [ref=e286]:
+                - text: 查看目录
+                - img [ref=e287]
+      - generic [ref=e290]:
+        - generic [ref=e291]:
+          - heading "百宝箱" [level=2] [ref=e292]
+          - paragraph [ref=e293]: 查询工具合集 · 院校、专业、城市、企业行业与竞赛证书一箱搞定
+        - generic [ref=e295]:
+          - article [ref=e296]:
+            - generic [ref=e297]:
+              - generic [ref=e298]:
+                - img [ref=e300]
+                - generic [ref=e303]: 院校库
+              - heading "院校查询" [level=3] [ref=e304]:
+                - text: 院校查询
+                - img [ref=e305]
+              - paragraph [ref=e307]: 覆盖全国高校信息、历年录取与培养画像，211、985 一网打尽。
+              - list [ref=e308]:
+                - listitem [ref=e309]:
+                  - button "院校列表 本科" [ref=e310] [cursor=pointer]:
+                    - generic [ref=e312]: 院校列表
+                    - generic [ref=e313]: 本科
+                - listitem [ref=e314]:
+                  - button "专业组查询 高考" [ref=e315] [cursor=pointer]:
+                    - generic [ref=e317]: 专业组查询
+                    - generic [ref=e318]: 高考
+                - listitem [ref=e319]:
+                  - button "特殊招生通道 强基" [ref=e320] [cursor=pointer]:
+                    - generic [ref=e322]: 特殊招生通道
+                    - generic [ref=e323]: 强基
+              - button "进入院校库" [ref=e324] [cursor=pointer]:
+                - generic [ref=e325]: 进入院校库
+                - img [ref=e327]
+          - article [ref=e329]:
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - img [ref=e333]
+                - generic [ref=e336]: 专业库
+              - heading "专业查询" [level=3] [ref=e337]:
+                - text: 专业查询
+                - img [ref=e338]
+              - paragraph [ref=e340]: 热门与冷门并行，就业薪酬、学科评估一次看清。
+              - list [ref=e341]:
+                - listitem [ref=e342]:
+                  - button "本科专业 热门" [ref=e343] [cursor=pointer]:
+                    - generic [ref=e345]: 本科专业
+                    - generic [ref=e346]: 热门
+                - listitem [ref=e347]:
+                  - button "考研专业 备考" [ref=e348] [cursor=pointer]:
+                    - generic [ref=e350]: 考研专业
+                    - generic [ref=e351]: 备考
+              - button "查专业" [ref=e352] [cursor=pointer]:
+                - generic [ref=e353]: 查专业
+                - img [ref=e355]
+          - article [ref=e357]:
+            - generic [ref=e358]:
+              - generic [ref=e359]:
+                - img [ref=e361]
+                - generic [ref=e364]: 城市库
+              - heading "城市查询" [level=3] [ref=e365]:
+                - text: 城市查询
+                - img [ref=e366]
+              - paragraph [ref=e368]: 城市发展、生活成本，就业机会与落户政策全览。
+              - list [ref=e369]:
+                - listitem [ref=e370]:
+                  - button "城市列表 完整" [ref=e371] [cursor=pointer]:
+                    - generic [ref=e373]: 城市列表
+                    - generic [ref=e374]: 完整
+              - button "看城市" [ref=e375] [cursor=pointer]:
+                - generic [ref=e376]: 看城市
+                - img [ref=e378]
+          - article [ref=e380]:
+            - generic [ref=e381]:
+              - generic [ref=e382]:
+                - img [ref=e384]
+                - generic [ref=e388]: 雇主库
+              - heading "企业行业" [level=3] [ref=e389]:
+                - text: 企业行业
+                - img [ref=e390]
+              - paragraph [ref=e392]: 行业趋势与龙头企业，薪资水平深度解析。
+              - list [ref=e393]:
+                - listitem [ref=e394]:
+                  - button "企业查询 雇主" [ref=e395] [cursor=pointer]:
+                    - generic [ref=e397]: 企业查询
+                    - generic [ref=e398]: 雇主
+                - listitem [ref=e399]:
+                  - button "行业查询 产业" [ref=e400] [cursor=pointer]:
+                    - generic [ref=e402]: 行业查询
+                    - generic [ref=e403]: 产业
+              - button "查企业" [ref=e404] [cursor=pointer]:
+                - generic [ref=e405]: 查企业
+                - img [ref=e407]
+          - article [ref=e409]:
+            - generic [ref=e410]:
+              - generic [ref=e411]:
+                - img [ref=e413]
+                - generic [ref=e417]: 赛证库
+              - heading "竞赛证书" [level=3] [ref=e418]:
+                - text: 竞赛证书
+                - img [ref=e419]
+              - paragraph [ref=e421]: 国家级、省级赛事信息与证书考取一览。
+              - list [ref=e422]:
+                - listitem [ref=e423]:
+                  - button "竞赛 赛事" [ref=e424] [cursor=pointer]:
+                    - generic [ref=e426]: 竞赛
+                    - generic [ref=e427]: 赛事
+                - listitem [ref=e428]:
+                  - button "证书 技能" [ref=e429] [cursor=pointer]:
+                    - generic [ref=e431]: 证书
+                    - generic [ref=e432]: 技能
+              - button "查竞赛" [ref=e433] [cursor=pointer]:
+                - generic [ref=e434]: 查竞赛
+                - img [ref=e436]
+      - generic [ref=e439]:
+        - generic [ref=e440]:
+          - heading "公告信息" [level=2] [ref=e441]
+          - paragraph [ref=e442]: 最新动态与重要通知
+        - generic [ref=e443]:
+          - generic [ref=e444]:
+            - button "上一则" [ref=e445] [cursor=pointer]:
+              - img [ref=e446]
+            - generic [ref=e448]:
+              - generic [ref=e450] [cursor=pointer]:
+                - generic [ref=e451]:
+                  - generic [ref=e452]: "12"
+                  - generic [ref=e453]: 2026-08-01
+                - heading "hello" [level=4] [ref=e454]
+              - generic [ref=e456] [cursor=pointer]:
+                - generic [ref=e457]:
+                  - generic [ref=e458]: "3454"
+                  - generic [ref=e459]: 2026-08-27
+                - heading "456" [level=4] [ref=e460]
+              - generic [ref=e462] [cursor=pointer]:
+                - generic [ref=e463]:
+                  - generic [ref=e464]: "12312"
+                  - generic [ref=e465]: 2026-08-27
+                - heading "need" [level=4] [ref=e466]
+            - button "下一则" [ref=e467] [cursor=pointer]:
+              - img [ref=e468]
+          - article [ref=e471]:
+            - generic [ref=e473]: "3454"
+            - heading "456" [level=3] [ref=e474]
+            - generic [ref=e476]: "4534532"
+        - paragraph [ref=e477]: 共 3 条
+      - generic [ref=e479]:
+        - generic [ref=e480]:
+          - heading "专业规划师" [level=2] [ref=e481]
+          - paragraph [ref=e482]: 资深团队，一对一陪伴你的每一步
+        - generic [ref=e483]:
+          - button [disabled] [ref=e484]:
+            - img [ref=e485]
+          - generic [ref=e488]:
+            - img "121" [ref=e491] [cursor=pointer]
+            - generic [ref=e492]: "121"
+          - button [disabled] [ref=e493]:
+            - img [ref=e494]
+      - generic [ref=e499]:
+        - generic [ref=e500]:
+          - heading "培训机构" [level=2] [ref=e501]
+          - paragraph [ref=e502]: 优质教育资源，助力升学之路
+        - generic [ref=e503]:
+          - textbox "输入机构名称搜索" [ref=e504]
+          - button "搜索" [ref=e505] [cursor=pointer]
+        - generic [ref=e506]:
+          - button "全部" [ref=e507] [cursor=pointer]
+          - button "121" [ref=e508] [cursor=pointer]
+        - paragraph [ref=e513]: 左右拖拽 / 滚动浏览 · 点击卡片查看详情
+        - button "共 1 家 · 查看更多机构" [ref=e515] [cursor=pointer]:
+          - text: 共 1 家 · 查看更多机构
+          - img [ref=e516]
+      - button "高考百宝箱" [ref=e518]:
+        - img "高考百宝箱"
+  - contentinfo [ref=e519]:
+    - generic [ref=e522]:
+      - generic [ref=e523]:
+        - generic [ref=e524]:
+          - img "海枫未来规划院" [ref=e525]
+          - heading "海枫未来规划院" [level=3] [ref=e526]
+        - paragraph [ref=e527]: 我们致力于为学生和求职者提供专业、科学、个性化的学业与职业信息服务，帮助他们在人生关键节点做出明智决策参考。
+        - paragraph [ref=e528]: 从高考志愿到职场上岸，我们全程陪伴，助力每一位用户实现人生理想。
+      - generic [ref=e530]:
+        - button "微信公众号" [ref=e531] [cursor=pointer]:
+          - img [ref=e532]
+        - button "微博" [ref=e534] [cursor=pointer]:
+          - img [ref=e535]
+        - button "知乎" [ref=e537] [cursor=pointer]:
+          - img [ref=e538]:
+            - generic [ref=e540]: 知
+        - button "抖音" [ref=e541] [cursor=pointer]:
+          - img [ref=e542]
+        - button "哔哩哔哩" [ref=e544] [cursor=pointer]:
+          - img [ref=e545]
+      - generic [ref=e547]:
+        - heading "联系我们" [level=4] [ref=e548]
+        - list [ref=e549]:
+          - listitem [ref=e550]:
+            - img [ref=e552]
+            - generic [ref=e554]: "111"
+          - listitem [ref=e555]:
+            - img [ref=e557]
+            - generic [ref=e559]: 咨询热线：11
+          - listitem [ref=e560]:
+            - img [ref=e562]
+            - generic [ref=e564]: 邮箱：11
+          - listitem [ref=e565]:
+            - img [ref=e567]
+            - generic [ref=e569]: 咨询时间：11
+    - generic [ref=e570]:
+      - paragraph [ref=e571]: ©2026 版权归海枫未来规划院所有
+      - paragraph [ref=e572]: ICP备案号：222

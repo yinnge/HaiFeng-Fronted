@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Motion, useReducedMotion } from 'motion-v'
@@ -9,7 +9,9 @@ import type { GaokaoArchiveVO } from '@/api/gaokao'
 import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
+import ArchiveQuickForm from '@/components/gaokao/ArchiveQuickForm.vue'
 import FileLoadPage from '@/views/fileload/FileLoadPage.vue'
+import { useGaokaoModuleNav } from '@/composables/useGaokaoModuleNav'
 
 const router = useRouter()
 const route = useRoute()
@@ -23,32 +25,8 @@ const route = useRoute()
 const activeTab = computed(() => (route.query.tab as string) || 'volunteer')
 
 /** ===== 高中身份（高一/高二/高三，默认高三）：驱动内嵌「高中资料」的列表查询 =====
- *  存 localStorage 持久化，刷新/再次进入高考模块仍保持所选年级。 */
-const HIGH_IDENTITY_KEY = 'haifeng_high_identity'
-const HIGH_IDENTITIES = ['高三', '高二', '高一']
-
-function loadHighIdentity(): string {
-  try {
-    const v = localStorage.getItem(HIGH_IDENTITY_KEY)
-    return v && HIGH_IDENTITIES.includes(v) ? v : '高三'
-  } catch {
-    return '高三'
-  }
-}
-
-const highIdentity = ref<string>(loadHighIdentity())
-
-function onHighIdentityChange(val: string) {
-  highIdentity.value = val
-  try {
-    localStorage.setItem(HIGH_IDENTITY_KEY, val)
-  } catch {
-    /* 隐私模式等场景写失败可忽略，仅本次会话生效 */
-  }
-}
-
-/** 目录最左侧的扩展项：「高中资料」（其余目录沿用 ArchiveBar 原有项） */
-const archiveExtraItems = [{ key: 'highfile', label: '高中资料', to: '/gaokao?tab=highfile' }]
+ *  由共享 composable 提供（模块级共享 ref，跨子页实时同步 + localStorage 持久化）。 */
+const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } = useGaokaoModuleNav()
 
 const loading = ref(false)
 const channels = ref<SpecialChannelListVO[]>([])
@@ -69,6 +47,67 @@ function onArchiveChange(archive: GaokaoArchiveVO | null) {
 // 档案保存成功（模拟填报）：跳转专业组查询
 function onArchiveSaved() {
   router.push('/gaokao/groups')
+}
+
+// 右侧测算卡片保存后：同步导航栏右侧状态（省份/年份/分数/科目），两端保持一致
+function onCardChange(archive: GaokaoArchiveVO | null) {
+  displayForm.value = archive
+  archiveBarRef.value?.applyArchive(archive)
+}
+
+// ===== 首页 Hero 轮播 =====
+interface HeroSlide {
+  img: string
+  action: 'dialog' | 'zhenti'
+  title: string
+  sub: string
+}
+const heroSlides: HeroSlide[] = [
+  {
+    img: `${import.meta.env.BASE_URL}img_1.png`,
+    action: 'dialog',
+    title: '完善高考档案',
+    sub: '一步填写，智能推荐院校与专业',
+  },
+  {
+    img: `${import.meta.env.BASE_URL}img_2.png`,
+    action: 'zhenti',
+    title: '高考真题资料',
+    sub: '历年真题与解析，备考更有底气',
+  },
+]
+const activeSlide = ref(0)
+let carouselTimer: ReturnType<typeof setInterval> | null = null
+
+function startCarousel() {
+  stopCarousel()
+  carouselTimer = setInterval(() => {
+    activeSlide.value = (activeSlide.value + 1) % heroSlides.length
+  }, 4500)
+}
+function stopCarousel() {
+  if (carouselTimer) {
+    clearInterval(carouselTimer)
+    carouselTimer = null
+  }
+}
+function pauseCarousel() {
+  stopCarousel()
+}
+function resumeCarousel() {
+  startCarousel()
+}
+function goSlide(i: number) {
+  activeSlide.value = i
+  startCarousel()
+}
+// 轮播图点击：图1 弹出档案弹窗；图2 跳转高考真题（内联 FileLoadPage）
+function onSlideClick(i: number) {
+  if (heroSlides[i].action === 'dialog') {
+    archiveBarRef.value?.openDialog()
+  } else {
+    void router.push('/gaokao?tab=zhenti')
+  }
 }
 
 // ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
@@ -93,9 +132,9 @@ async function fetchNews() {
   }
 }
 
-// 查看资讯详情
+// 查看资讯详情（从高考志愿 landing 进入，标记来源便于详情页「返回高考志愿」）
 function goNewsDetail(id: string) {
-  router.push(`/gaokao/article/${id}`)
+  router.push({ path: `/gaokao/article/${id}`, query: { from: 'gaokao' } })
 }
 
 // 查看更多资讯（跳转资讯列表页）
@@ -120,14 +159,6 @@ const channelCodes = ['COMPREHENSIVE', 'STRONG_BASE', 'SPECIAL_PROGRAM', 'ETHNIC
 // 内联手绘线稿图标（stroke-width 2，延续全站 SVG 线稿风格）
 interface ChannelGlyph {
   paths: string[]
-}
-
-const normalGlyph: ChannelGlyph = {
-  paths: [
-    'M12 4 3.5 8.5 12 13l8.5-4.5L12 4Z',
-    'M6 11.5v4.2c0 1.7 2.7 3.3 6 3.3s6-1.6 6-3.3v-4.2',
-    'M21 8.8V14',
-  ],
 }
 
 const channelIcon: Record<string, ChannelGlyph> = {
@@ -254,10 +285,15 @@ function goChannel(item: SpecialChannelListVO) {
 
 onMounted(() => {
   void initPage()
+  startCarousel()
   // 从其它页跳转过来（/gaokao?editArchive=1）：自动打开档案填写弹窗
   if (route.query.editArchive) {
     nextTick(() => archiveBarRef.value?.openDialog())
   }
+})
+
+onBeforeUnmount(() => {
+  stopCarousel()
 })
 
 // 初始化：拉数据 → 等 Vue 把展开的卡片刷进 DOM → 再处理锚点滚动。
@@ -285,7 +321,7 @@ async function initPage() {
          高中模块：目录最左扩展「高中资料」，右侧省份后加身份下拉（高一/高二/高三） -->
     <ArchiveBar
       ref="archiveBarRef"
-      :extra-items="archiveExtraItems"
+      :extra-items="gaokaoExtraItems"
       :identity-options="HIGH_IDENTITIES"
       :identity="highIdentity"
       @archive-change="onArchiveChange"
@@ -310,39 +346,49 @@ async function initPage() {
       />
       <template v-else>
       <div class="container mx-auto px-6 pb-16 relative">
-        <div class="max-w-5xl mx-auto min-h-[200px]">
-          <!-- 纯白品牌 Hero：无装饰、无发光，突出文字层级 -->
-          <Motion
-            :initial="revealInitial"
-            :while-in-view="revealIn"
-            :transition="{ duration: 0.5 }"
-            :in-view-options="{ once: true }"
-            class="pt-10 md:pt-12"
-          >
-            <div class="inline-flex items-center gap-2 rounded-full bg-brand-orange/10 px-4 py-1.5 text-sm font-medium text-brand-orange border border-brand-orange/20">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path v-for="d in normalGlyph.paths" :key="d" :d="d" />
-              </svg>
-              高考志愿填报
+          <div class="max-w-5xl mx-auto min-h-[200px]">
+          <!-- 首页 Hero：左轮播（约 58%）+ 右志愿测算卡片（约 42%），等高约 615px -->
+          <div class="hero-new">
+            <!-- 左：轮播区（圆角 16px + 微投影，点击切换/跳转） -->
+            <div
+              class="hero-carousel"
+              @mouseenter="pauseCarousel"
+              @mouseleave="resumeCarousel"
+            >
+              <div class="carousel-track" :style="{ transform: `translateX(-${activeSlide * 100}%)` }">
+                <div
+                  v-for="(slide, i) in heroSlides"
+                  :key="i"
+                  class="carousel-slide"
+                  @click="onSlideClick(i)"
+                >
+                  <!-- 双层图：底层同图放大模糊填满容器（吃掉裁剪空白），上层完整显示不裁剪 -->
+                  <img class="carousel-slide-bg" :src="slide.img" alt="" aria-hidden="true" />
+                  <img :src="slide.img" :alt="slide.title" />
+                  <div class="carousel-mask"></div>
+                  <div class="carousel-caption">
+                    <p class="carousel-caption-title">{{ slide.title }}</p>
+                    <p class="carousel-caption-sub">{{ slide.sub }}</p>
+                  </div>
+                </div>
+              </div>
+              <!-- 胶囊型指示器：激活态品牌橙，非激活态半透明白色 -->
+              <div class="carousel-indicators">
+                <button
+                  v-for="(slide, i) in heroSlides"
+                  :key="i"
+                  type="button"
+                  class="carousel-dot"
+                  :class="{ 'is-active': i === activeSlide }"
+                  :aria-label="`切换到第 ${i + 1} 张`"
+                  @click.stop="goSlide(i)"
+                ></button>
+              </div>
             </div>
-            <h2 class="mt-5 text-3xl font-bold tracking-tight text-gray-800 md:text-4xl">选对赛道，让每一分都不浪费</h2>
-            <p class="mt-3 text-base text-gray-500">统招是主渠道，特殊类型招生是更多可能</p>
-            <!-- 主 CTA：进来即可直达核心流程，不用去别处找入口 -->
-            <div class="mt-7 flex flex-wrap items-center gap-3">
-              <button class="hero-cta-primary" @click="router.push('/gaokao/groups')">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
-                </svg>
-                开始查询专业组
-              </button>
-              <button class="hero-cta-ghost" @click="goArticles">
-                看看本省资讯
-                <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M6.5 3.5 11 8l-4.5 4.5" />
-                </svg>
-              </button>
-            </div>
-          </Motion>
+
+            <!-- 右：志愿测算卡片（与导航栏右侧状态联动，数据经档案源双向同步） -->
+            <ArchiveQuickForm :archive="displayForm" @saved="onArchiveSaved" @change="onCardChange" />
+          </div>
 
           <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
           <div class="mt-12 mb-5 flex items-baseline justify-between gap-4">
@@ -476,57 +522,6 @@ async function initPage() {
 
 <style scoped>
 /* ===== 档案吸附条样式已抽取至共享组件 components/gaokao/ArchiveBar.vue ===== */
-
-/* ===== Hero 主 CTA：品牌橙渐变药丸 + 描边次按钮 ===== */
-.hero-cta-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 26px;
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.32);
-  transition: all 0.25s ease;
-}
-
-.hero-cta-primary:hover {
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
-  transform: translateY(-1px);
-}
-
-.hero-cta-primary:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
-.hero-cta-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 11px 22px;
-  background: #fff;
-  color: #ea580c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.hero-cta-ghost:hover {
-  background: #fff7ed;
-  border-color: #f97316;
-}
-
-.hero-cta-ghost:active {
-  transform: scale(0.98);
-}
 
 /* ===== 资讯空态引导按钮 ===== */
 .news-empty-btn {
@@ -758,5 +753,138 @@ async function initPage() {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ===== 首页 Hero：左轮播 + 右测算卡片（等高约 615px） ===== */
+.hero-new {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding-top: 24px;
+}
+
+@media (min-width: 1024px) {
+  .hero-new {
+    grid-template-columns: 1.4fr 1fr;
+    height: 615px;
+  }
+}
+
+/* 左侧轮播：圆角 16px + 微投影，悬停轻微缩放 */
+.hero-carousel {
+  position: relative;
+  overflow: hidden;
+  height: 475px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px -8px rgba(249, 115, 22, 0.18);
+  background: #fff7ed;
+}
+
+@media (min-width: 1024px) {
+  .hero-carousel {
+    height: 100%;
+  }
+}
+
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.carousel-slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* 底层垫图：同图 cover + 放大 + 高斯模糊，填满容器作背景，消除 contain 留白 */
+/* 双类选择器压过下方 .carousel-slide img（其 position:relative 会顶掉 absolute） */
+.carousel-slide .carousel-slide-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.15);
+  filter: blur(18px) saturate(1.1);
+  display: block;
+}
+
+/* 上层主图：contain 完整显示海报，不裁剪 */
+.carousel-slide img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.carousel-slide:hover > img:not(.carousel-slide-bg) {
+  transform: scale(1.04);
+}
+
+/* 底部暗化遮罩，保证文案可读 */
+.carousel-mask {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.38) 100%);
+  pointer-events: none;
+}
+
+.carousel-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 26px;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.carousel-caption-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.carousel-caption-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.92;
+}
+
+/* 胶囊型指示器：激活态品牌橙，非激活态半透明白色 */
+.carousel-indicators {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.carousel-dot {
+  width: 22px;
+  height: 8px;
+  border: none;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.carousel-dot.is-active {
+  width: 30px;
+  background: #f97316;
 }
 </style>

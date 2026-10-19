@@ -7,8 +7,12 @@ import { loadArchiveSmart } from '@/utils/gaokaoArchive'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 import ArticleSearchBox from '@/components/gaokao/ArticleSearchBox.vue'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
+import { useGaokaoModuleNav } from '@/composables/useGaokaoModuleNav'
 
 const router = useRouter()
+
+/** 与 /gaokao 共享同一套模块导航（高中资料 + 高一/高二/高三身份），保证各处小导航栏一致 */
+const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } = useGaokaoModuleNav()
 
 const loading = ref(false)
 const archive = ref<GaokaoArchiveVO | null>(null)
@@ -47,7 +51,7 @@ async function fetchList() {
 }
 
 function goDetail(id: string) {
-  router.push(`/gaokao/article/${id}`)
+  router.push({ path: `/gaokao/article/${id}`, query: { from: 'articles' } })
 }
 
 function goArchive() {
@@ -71,8 +75,13 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
-    <!-- 档案吸附条：与 /gaokao、/gaokao/groups 共享的模块导航，「高考资讯」按路由精确高亮 -->
-    <ArchiveBar />
+    <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 -->
+    <ArchiveBar
+      :extra-items="gaokaoExtraItems"
+      :identity-options="HIGH_IDENTITIES"
+      :identity="highIdentity"
+      @identity-change="onHighIdentityChange"
+    />
     <main class="flex-1">
       <div class="mx-auto max-w-5xl px-6 py-8">
         <!-- 返回 + 页头 -->

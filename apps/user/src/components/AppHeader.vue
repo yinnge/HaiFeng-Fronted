@@ -8,9 +8,13 @@ import NotificationBell from './NotificationBell.vue'
 import MobileNavDrawer from './MobileNavDrawer.vue'
 import { navItems, moreNavItems, type NavItem, type NavSubItem } from '@/config/navigation'
 import { pushNavItem } from '@/utils/navAnchor'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 
 const router = useRouter()
 const route = useRoute()
+
+// 导航栏滚动收起：仅主页常驻，其余页面滚动离开顶部后抽屉式收起
+const { hidden: headerHidden } = useAutoHideHeader()
 
 const openDropdownId = ref<string | null>(null)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -59,10 +63,48 @@ function handleSubClick(sub: NavSubItem) {
   }
 }
 
+/** 把 route 字符串拆成 { path, query }（忽略 #hash），用于「path + query 条件」激活判定 */
+function parseRoute(target: string): { path: string; query: Record<string, string> } {
+  const hashIdx = target.indexOf('#')
+  const clean = hashIdx === -1 ? target : target.slice(0, hashIdx)
+  const qIdx = clean.indexOf('?')
+  if (qIdx === -1) return { path: clean, query: {} }
+  const path = clean.slice(0, qIdx)
+  const query: Record<string, string> = {}
+  for (const pair of clean.slice(qIdx + 1).split('&')) {
+    if (!pair) continue
+    const eq = pair.indexOf('=')
+    if (eq === -1) {
+      query[decodeURIComponent(pair)] = ''
+    } else {
+      query[decodeURIComponent(pair.slice(0, eq))] = decodeURIComponent(pair.slice(eq + 1))
+    }
+  }
+  return { path, query }
+}
+
+/** 当前路由 query 是否全部命中 expected 中的 key=value（空对象恒为 true） */
+function queryMatches(expected: Record<string, string>): boolean {
+  return Object.entries(expected).every(([k, v]) => route.query[k] === v)
+}
+
 function isActive(item: NavItem): boolean {
   if (!item.route) return false
-  if (item.route === '/') return route.path === '/'
-  return route.path === item.route || route.path.startsWith(item.route + '/')
+  const { path, query } = parseRoute(item.route)
+  if (path === '/') {
+    if (route.path !== '/') return false
+  } else if (!(route.path === path || route.path.startsWith(path + '/'))) {
+    return false
+  }
+  // 路由自带的 query 条件（如 /gaokao?mod=high 要求 mod=high 命中才激活）
+  if (!queryMatches(query)) return false
+  // 显式排除条件（如 高考志愿填报 在 mod=high 时不激活）
+  if (item.inactiveQuery) {
+    for (const [k, v] of Object.entries(item.inactiveQuery)) {
+      if (route.query[k] === v) return false
+    }
+  }
+  return true
 }
 
 function toggleMore() {
@@ -177,12 +219,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header class="app-header">
+  <header class="app-header" :class="{ 'is-hidden': headerHidden }">
     <div class="app-header-inner">
       <!-- 左侧：Logo -->
       <router-link to="/" class="logo-link">
         <img :src="logoMain" alt="海枫未来规划院" class="logo-img" />
-        <span class="logo-text">海枫未来规划院</span>
       </router-link>
 
       <!-- 中间：桌面导航 -->
@@ -332,6 +373,13 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid #f3f4f6;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+/* 滚动收起（抽屉式上滑）：仅非主页页面滚动离开顶部后触发 */
+.app-header.is-hidden {
+  transform: translateY(-100%);
 }
 
 .app-header-inner {
@@ -371,19 +419,6 @@ onBeforeUnmount(() => {
   width: 2.5rem;
   object-fit: contain;
   flex-shrink: 0;
-}
-
-.logo-text {
-  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.125rem);
-  font-weight: 700;
-  color: #1f2937;
-  white-space: nowrap;
-}
-
-@media (max-width: 767px) {
-  .logo-text {
-    display: none;
-  }
 }
 
 /* Desktop nav */

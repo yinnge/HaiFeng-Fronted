@@ -413,7 +413,7 @@ onMounted(() => {
 <template>
   <el-dialog
     :model-value="visible"
-    width="min(720px, calc(100vw - 24px))"
+    width="min(580px, calc(100vw - 24px))"
     top="6vh"
     class="archive-dialog"
     append-to-body
@@ -498,9 +498,9 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- 3+1+2 -->
-          <div v-else-if="modelType === '3+1+2'" class="space-y-3">
-            <div>
+          <!-- 3+1+2：首选｜再选同一行，避免首选行右侧空白 -->
+          <div v-else-if="modelType === '3+1+2'" class="form-grid subject-dual">
+            <div class="subj-cell">
               <p class="subject-sub-label">首选科目</p>
               <div class="subject-btn-group">
                 <button
@@ -515,8 +515,8 @@ onMounted(() => {
                 </button>
               </div>
             </div>
-            <div>
-              <p class="subject-sub-label">再选科目（选择2个）</p>
+            <div class="subj-cell">
+              <p class="subject-sub-label">再选科目（2个）</p>
               <div class="subject-btn-group">
                 <button
                   v-for="sub in reformModel!.subjects.second"
@@ -570,6 +570,7 @@ onMounted(() => {
                 <circle cx="12" cy="12" r="2" />
               </svg>
             </template>
+            <template #suffix><span class="num-unit">分</span></template>
           </el-input-number>
         </div>
         <div class="form-item">
@@ -589,7 +590,7 @@ onMounted(() => {
               </svg>
             </el-tooltip>
           </label>
-          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number">
+          <el-input-number v-model="form.rank" :min="0" :controls="false" class="form-number rank-number">
             <template #prefix>
               <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 3v18h18" />
@@ -598,6 +599,7 @@ onMounted(() => {
                 <rect x="17" y="13" width="3" height="5" />
               </svg>
             </template>
+            <template #suffix><span class="num-unit">名</span></template>
           </el-input-number>
         </div>
       </div>
@@ -606,7 +608,7 @@ onMounted(() => {
         位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份），可手动输入
       </p>
 
-      <!-- 填报批次：选择框变窄，右侧显示省控线 -->
+      <!-- 填报批次：省控线以淡色小字显示在标签 tip 图标右侧（查到批次线数据时动态显示） -->
       <div class="form-item">
         <label class="form-label">
           <svg class="form-label-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -621,24 +623,19 @@ onMounted(() => {
               <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
             </svg>
           </el-tooltip>
+          <span v-if="form.batch && form.batchLineScore" class="batch-line-inline">
+            {{ form.batch }}省控线：<b class="batch-score">{{ form.batchLineScore }} 分</b>（{{ form.batchDataYear }}年）
+          </span>
         </label>
-        <div class="batch-row">
-          <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
-            <template #prefix>
-              <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-            </template>
-            <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
-          </el-select>
-          <p v-if="form.batch && form.batchLineScore" class="batch-line">
-            {{ form.batch }}省控线：<b class="batch-line-score">{{ form.batchLineScore }} 分</b>
-            <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
-          </p>
-          <p v-else-if="batchLoading" class="batch-line batch-line-muted">正在查询批次线…</p>
-        </div>
-        <!-- 「选择科目后自动加载可选批次」的说明已移入「填报批次」label 的 tooltip 图标 -->
+        <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
+          <template #prefix>
+            <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </template>
+          <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
+        </el-select>
         <p v-if="!batchLoading && batchList.length === 0 && form.subjectType" class="form-hint">未查到该省份/科类的批次线数据，请确认分数表是否有对应记录</p>
       </div>
     </div>
@@ -768,8 +765,8 @@ onMounted(() => {
 
 /* 选项框内前缀 SVG 图标（省份/年份/分数/位次/批次，与标签图标同款） */
 .ctl-ico {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
   color: #f97316;
 }
@@ -780,7 +777,7 @@ onMounted(() => {
   max-width: 220px;
 }
 
-/* 分数/位次数字输入：变窄（高度/配色见非 scoped 块） */
+/* 分数/位次数字输入：宽度与「省份/年份」下拉一致(220px)，上下对齐（高度/配色见非 scoped 块） */
 .form-number {
   width: 100%;
   max-width: 220px;
@@ -815,7 +812,7 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-/* ===== 科目橙色按钮（替代 radio/checkbox 原生控件，无圆圈/方框） ===== */
+/* ===== 科目按钮（替代 radio/checkbox 原生控件，无圆圈/方框） ===== */
 .subject-btn-group {
   display: flex;
   flex-wrap: wrap;
@@ -823,22 +820,27 @@ onMounted(() => {
 }
 
 .subject-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   min-width: 88px;
-  padding: 10px 20px;
-  background: #fff7ed;
-  border: 1px solid rgba(249, 115, 22, 0.35);
+  padding: 10px 18px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #9a3412;
+  color: #6b7280;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
 }
 
 .subject-btn:hover {
-  border-color: #f97316;
-  background: #ffedd5;
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #c2410c;
   transform: translateY(-1px);
 }
 
@@ -846,48 +848,53 @@ onMounted(() => {
   transform: scale(0.97);
 }
 
-/* 选中：浅橙背景 + #C2410C 文字 + 橙边（与省份面板一致） */
+/* 选中：中性灰→浅橙填充 + 橙描边 + ✓ + 加粗，对比拉满 */
 .subject-btn.is-selected,
 .subject-btn.is-selected:hover {
   background: #ffedd5;
-  border-color: #f97316;
+  border: 1.5px solid #f97316;
   color: #c2410c;
-  box-shadow: 0 0 0 1px #f97316 inset;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+  transform: none;
 }
 
-/* ===== 填报批次行：选择框靠左，省控线推到最右对齐 ===== */
-.batch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+.subject-btn.is-selected::before {
+  content: "✓";
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  color: #f97316;
+}
+
+/* ===== 填报批次网格：批次选择框占左、省控线信息卡占右（右列左缘对齐对应位次） ===== */
+.subject-dual {
+  align-items: start;
 }
 
 .batch-select {
-  width: 200px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 220px;
 }
 
-.batch-line {
-  margin: 0;
+/* 省控线淡色小字：标签 tip 图标右侧，查到批次线数据时动态显示 */
+.batch-line-inline {
   font-size: 13px;
+  font-weight: 400;
   color: #6b7280;
   white-space: nowrap;
+  margin-left: 2px;
 }
 
-.batch-line-score {
+/* 省控线数字（如 410 分）橙红色高亮 */
+.batch-line-inline .batch-score {
   color: #c2410c;
   font-weight: 700;
 }
 
-.batch-line-muted {
-  color: #9ca3af;
-}
-
 .dialog-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -897,8 +904,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 10px 28px;
-  border-radius: 14px;
+  padding: 9px 22px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -990,14 +997,17 @@ onMounted(() => {
 }
 
 .archive-dialog .el-select__wrapper {
-  min-height: 46px;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  flex-wrap: nowrap;
   border-radius: 12px;
   background: #fffaf3;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: #9a3412;
-  padding: 4px 14px;
+  padding: 0 14px;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -1015,27 +1025,37 @@ onMounted(() => {
   color: #9a3412;
 }
 
-/* 年份 / 批次下拉：前缀图标靠左，选中文字水平居中。
-   EP 2.13 单选时「选中值/占位符」是同一个元素 .el-select__selected-item.el-select__placeholder，
-   自带 position:absolute; width:100%; z-index:-1; overflow:hidden（不占流宽，垫在底层）。
-   两个坑：
-   1) selection 若按内容收缩（flex:0 1 auto），流内无内容 → 宽度塌缩为 0 →
-      width:100% 的绝对定位文字被 overflow:hidden 裁掉 → 只显示图标；
-   2) z-index:-1 依赖 wrapper 的 stacking context（EP 用 transform 创建），
-      显式提到 z-index:1，杜绝任何层级意外吞字。 */
-.archive-dialog .form-select .el-select__selection,
-.archive-dialog .batch-select .el-select__selection {
-  flex: 1 1 auto; /* 保持占满，为绝对定位的文字提供全宽参照 */
+/* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）。
+   ⚠️ 布局规则只能挂 .el-select__placeholder（选中标签/占位 div 独有双类），
+   千万别挂 .el-select__selected-item —— 该类同时命中 is-hidden 的 input-wrapper
+   （必须保持 absolute），覆盖成 static 后隐藏输入框占一行、文字标签被
+   flex-wrap 挤到第二行排到盒子外面（「文字掉出盒子」的根因） */
+.archive-dialog .form-select .el-select__wrapper,
+.archive-dialog .batch-select .el-select__wrapper {
+  justify-content: center;
+  align-items: center;
 }
 
-.archive-dialog .form-select .el-select__selected-item,
-.archive-dialog .batch-select .el-select__selected-item {
-  position: absolute; /* 选中值元素本就是 absolute，显式声明不依赖 EP 内部实现 */
-  left: 0;
-  right: 0;
-  z-index: 1;
+.archive-dialog .form-select .el-select__selection,
+.archive-dialog .batch-select .el-select__selection {
+  flex: 0 1 auto;
+  justify-content: center;
+  align-items: center;
+}
+
+.archive-dialog .form-select .el-select__placeholder,
+.archive-dialog .batch-select .el-select__placeholder {
+  position: static;
+  display: flex;
+  align-items: center;
   justify-content: center;
   text-align: center;
+  align-self: center;
+  width: auto;
+  height: auto;
+  line-height: normal;
+  transform: none;
+  overflow: visible;
 }
 
 .archive-dialog .el-select__prefix {
@@ -1046,14 +1066,14 @@ onMounted(() => {
 
 /* 分数/位次数字输入：橙色系、加高 */
 .archive-dialog .el-input-number {
-  height: 46px;
+  height: 44px;
 }
 
 .archive-dialog .el-input-number .el-input__wrapper {
   border-radius: 12px;
   background: #fffaf3;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
-  height: 46px;
+  height: 44px;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -1068,15 +1088,37 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* 分数/位次：前缀图标 + 数字整体居中（inner 定宽，wrapper 居中整组） */
-.archive-dialog .form-number .el-input__wrapper {
-  justify-content: center;
+/* 分数/位次：图标/单位钉在两端，数字居中占满中间（7 位以上位次不省略） */
+.archive-dialog .form-number .el-input__inner {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  text-align: center;
+  font-size: 16px;
 }
 
-.archive-dialog .form-number .el-input__inner {
-  flex: 0 0 auto;
-  width: 96px;
-  text-align: center;
+/* 内层宽度约束（位次框超宽的根因）：el-input-number 是 inline-flex 且
+   .el-input/.el-input__wrapper 默认按内容 sizing，input 固有宽(~20字符)
+   会把 wrapper 撑到 260px+ 溢出外层 160px 盒子 —— 必须显式限宽 */
+.archive-dialog .form-number .el-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.archive-dialog .form-number .el-input__wrapper {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* 收紧内边距：160px 框内 8 位数(50000000) 16px 字号需 ≥88px 输入区 */
+  padding: 0 10px;
+}
+
+/* 输入框内右侧单位（分 / 名） */
+.archive-dialog .el-input-number .num-unit {
+  color: #f97316;
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 2px;
 }
 
 .archive-dialog .el-input__prefix {

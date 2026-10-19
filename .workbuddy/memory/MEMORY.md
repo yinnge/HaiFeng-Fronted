@@ -35,6 +35,11 @@
 ## 导航断点
 <768 汉堡抽屉 / 768~1700 桌面+更多 / ≥1700 完整菜单 / ≥2100 封顶留白（预期）。
 
+## 吸顶导航条 UI 规范（2026-10-19）
+- **下拉触发器不显示向下箭头 svg**：导航栏/吸顶条（AppHeader 子条、ArchiveBar、EnglishBar、FileLoadPage 的 stage-nav）上的「药丸式」`el-select` 触发器统一隐藏 `.el-select__suffix`（`display:none`）。已处理：ArchiveBar 身份选择、EnglishBar 考试类型、FileLoadPage 身份选择（/college、/middle 共用）。**后续新增吸顶条上的下拉统一照此，不要向下箭头。**
+- **全局头部滚动收起**：仅主页 `/` 常驻，其余页面 `window.scrollY>8` 时抽屉式收起（translateY(-100%)）。`composables/useAutoHideHeader.ts` 为**模块级单例**，AppHeader 与所有吸顶子条共享同一 `hidden`；子条在头部收起时把 sticky `top` 收为 `0`，填补顶部空隙（否则头部收起后子条仍停在 `top:导航高` 留一段空白）。
+- 主页 `/` 永不让头部收起；非主页（含 /college、/middle、/english、/gaokao 及子路由）一律滚动收起。
+
 ## git 红线
 收尾必 commit；`git pull --rebase` 前确认 `git status` 干净。
 

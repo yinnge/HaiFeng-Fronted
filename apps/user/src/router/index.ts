@@ -459,6 +459,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '特殊招生通道' },
   },
   {
+    path: '/english',
+    name: 'EnglishCet',
+    component: () => import('@/views/english/Index.vue'),
+    meta: { title: '英语四六级' },
+  },
+  {
     path: '/special/channel/:id',
     name: 'SpecialChannelDetail',
     component: () => import('@/views/special/ChannelDetail.vue'),

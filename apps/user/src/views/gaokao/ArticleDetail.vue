@@ -5,15 +5,27 @@ import { ElMessage } from 'element-plus'
 import { getGaokaoArticleDetail, type GaokaoArticleDetailVO } from '@/api/article'
 import { sanitizeArticleHtml } from '@/utils/sanitize'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
+import { useGaokaoModuleNav } from '@/composables/useGaokaoModuleNav'
 import '@/assets/styles/article-content.css'
 
 const router = useRouter()
 const route = useRoute()
 
+/** 与 /gaokao、资讯列表 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 */
+const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } = useGaokaoModuleNav()
+
 const loading = ref(false)
 const detail = ref<GaokaoArticleDetailVO | null>(null)
 
 const articleId = computed(() => String(route.params.id || ''))
+
+/**
+ * 返回逻辑：从哪点进来就回哪（不回列表）。
+ * - from=articles（资讯列表进入）→ 回 /gaokao/articles，按钮文案「返回资讯列表」；
+ * - 其它（高考志愿 landing 等）→ 回 /gaokao，按钮文案「返回高考志愿」。
+ */
+const backFrom = computed(() => (route.query.from as string) || 'gaokao')
+const backLabel = computed(() => (backFrom.value === 'articles' ? '返回资讯列表' : '返回高考志愿'))
 
 /** 展示前前端再过一层 DOMPurify（双保险），并把 table 包上 .table-wrap */
 const safeContent = computed(() => sanitizeArticleHtml(detail.value?.content))
@@ -46,7 +58,11 @@ async function fetchDetail() {
 }
 
 function goBack() {
-  router.push('/gaokao/articles')
+  if (backFrom.value === 'articles') {
+    router.push('/gaokao/articles')
+  } else {
+    router.push('/gaokao')
+  }
 }
 
 onMounted(fetchDetail)
@@ -54,8 +70,13 @@ onMounted(fetchDetail)
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
-    <!-- 档案吸附条：与 /gaokao、/gaokao/groups 共享的模块导航，「高考资讯」按路由精确高亮 -->
-    <ArchiveBar />
+    <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 -->
+    <ArchiveBar
+      :extra-items="gaokaoExtraItems"
+      :identity-options="HIGH_IDENTITIES"
+      :identity="highIdentity"
+      @identity-change="onHighIdentityChange"
+    />
     <main class="flex-1">
       <div class="mx-auto max-w-4xl px-6 py-8">
         <!-- 返回 -->
@@ -66,7 +87,7 @@ onMounted(fetchDetail)
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          返回资讯列表
+          {{ backLabel }}
         </button>
 
         <div v-loading="loading" class="mt-5 min-h-[300px]">

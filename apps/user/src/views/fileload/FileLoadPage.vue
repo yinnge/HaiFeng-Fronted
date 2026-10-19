@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Motion } from 'motion-v'
 import {
@@ -253,20 +254,32 @@ async function fetchList(force = false) {
   }
 }
 
-/** 切换「教师专属」模式：重置筛选与分页后重新拉取（进入前需登录，老师接口要求登录+老师身份） */
+/** 切换「教师专属」模式：重置筛选与分页后重新拉取（进入前需登录且为老师身份，老师接口要求登录+老师身份） */
 async function toggleTeacher() {
-  // 仅「进入教师专属」时拦截未登录（退出无需登录）
-  if (!teacherMode.value && !userStore.isLoggedIn()) {
-    userStore.setRedirectPath(router.currentRoute.value.fullPath)
-    try {
-      await ElMessageBox.confirm('教师专属资料需登录后查看，请先登录', '提示', {
-        confirmButtonText: '前往登录',
-        cancelButtonText: '取消',
-        type: 'warning',
-      })
-      router.push('/login')
-    } catch { /* 用户取消 */ }
-    return
+  // 仅「进入教师专属」时需要校验（退出无需登录/老师身份）
+  if (!teacherMode.value) {
+    // 未登录：引导登录
+    if (!userStore.isLoggedIn()) {
+      userStore.setRedirectPath(router.currentRoute.value.fullPath)
+      try {
+        await ElMessageBox.confirm('教师专属资料需登录后查看，请先登录', '提示', {
+          confirmButtonText: '前往登录',
+          cancelButtonText: '取消',
+          type: 'warning',
+        })
+        router.push('/login')
+      } catch { /* 用户取消 */ }
+      return
+    }
+    // 已登录但前端未持有会员信息：先拉取（确保 teacher 字段可用）
+    if (!userStore.userInfo) {
+      await userStore.fetchUserInfo()
+    }
+    // 非老师身份：直接拒绝，不切换视图（停留在高中资料，banner 不变）
+    if (!userStore.userInfo?.teacher) {
+      ElMessage.warning('您还不是教师身份，请联系管理员开通')
+      return
+    }
   }
   teacherMode.value = !teacherMode.value
   subjectFilter.value = ''
@@ -359,10 +372,21 @@ function measureHeader() {
   if (h && h > 0) stickyTop.value = Math.round(h)
 }
 
-onMounted(() => {
+// 全局头部收起时，把吸顶偏移收为 0，填补顶部空隙（共享单例状态）
+const { hidden: headerHidden } = useAutoHideHeader()
+const barTop = computed(() => (headerHidden.value ? 0 : stickyTop.value))
+
+onMounted(async () => {
   measureHeader()
   window.addEventListener('resize', measureHeader)
   syncFromQuery()
+  // 防止非老师通过 URL（?teacher=1）直入教师专属而跳变：已登录但非老师则回退到高中视图
+  if (teacherMode.value && userStore.isLoggedIn()) {
+    if (!userStore.userInfo) await userStore.fetchUserInfo()
+    if (!userStore.userInfo?.teacher) {
+      teacherMode.value = false
+    }
+  }
   fetchOptions()
   fetchList()
 })
@@ -398,7 +422,7 @@ watch(effectiveStage, () => {
   <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col">
     <!-- 页内子导航栏（仅配置了 STAGE_NAV_CONFIG 的专栏渲染，当前为初中专栏）
          样式参照高考模块 ArchiveBar：左侧模块标题 + 中部目录 + 右侧身份切换（分段控件） -->
-    <nav v-if="stageNav" class="stage-nav" :style="{ top: `${stickyTop}px` }">
+    <nav v-if="stageNav" class="stage-nav" :style="{ top: `${barTop}px` }">
       <div class="stage-nav-inner">
         <span class="stage-nav-label">
           <svg class="stage-nav-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -628,6 +652,7 @@ watch(effectiveStage, () => {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(249, 115, 22, 0.15);
   box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+  transition: top 0.3s ease;
 }
 
 .stage-nav-inner {
@@ -742,6 +767,11 @@ watch(effectiveStage, () => {
   font-size: 14px;
   font-weight: 700;
   color: #c2410c;
+}
+
+/* 药丸下拉不显示向下箭头（统一规范：导航栏/吸顶条上的下拉触发器不展示 svg 箭头） */
+.stage-identity-select :deep(.el-select__suffix) {
+  display: none;
 }
 
 @media (max-width: 767px) {
