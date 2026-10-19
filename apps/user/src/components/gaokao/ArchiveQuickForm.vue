@@ -552,9 +552,11 @@ async function onMockFill() {
 }
 
 /* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一）；
-   字号 16px 与省份按钮一致。垂直居中双保险：selection 撑满高度，选中项自身
-   变 flex 容器把内层 span 在 44px 内垂直+水平居中（EP 原生 absolute 居中已被
-   position:static 取代，勿再依赖 top:50%/translateY(-50%)） */
+   字号 16px 与省份按钮一致。
+   ⚠️ 布局规则只能挂 .el-select__placeholder（选中标签/占位 div 独有双类），
+   千万别挂 .el-select__selected-item —— 该类同时命中 is-hidden 的 input-wrapper
+   （必须保持 absolute），覆盖成 static 后隐藏输入框占一行、文字标签被
+   flex-wrap 挤到第二行排到盒子外面（「文字掉出盒子」的根因） */
 .gk-quick-card .gk-select .el-select__wrapper,
 .gk-quick-card .gk-batch-select .el-select__wrapper {
   justify-content: center;
@@ -567,20 +569,21 @@ async function onMockFill() {
   flex: 0 1 auto;
   justify-content: center;
   align-items: center;
-  height: 100%;
 }
 
-.gk-quick-card .gk-select .el-select__selected-item,
-.gk-quick-card .gk-batch-select .el-select__selected-item {
+.gk-quick-card .gk-select .el-select__placeholder,
+.gk-quick-card .gk-batch-select .el-select__placeholder {
   position: static;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   align-self: center;
-  height: 100%;
+  width: auto;
+  height: auto;
   line-height: normal;
   transform: none;
+  overflow: visible;
 }
 
 .gk-quick-card .gk-number .el-input__inner {
@@ -590,6 +593,11 @@ async function onMockFill() {
 
 .gk-quick-card .gk-number .el-input__wrapper {
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* 收紧水平内边距：位次框减 60px 后仍要放下 8 位数（50000000） */
+  padding: 0 2px;
 }
 
 .gk-quick-card .gk-number .el-input__inner {
@@ -597,22 +605,32 @@ async function onMockFill() {
   min-width: 0;
   width: auto;
   text-align: center;
+  font-size: 14px;
 }
 
 .gk-quick-card .gk-number .el-input__prefix {
   display: inline-flex;
   align-items: center;
-  margin-right: 2px;
+  margin-right: 0;
 }
 
-.gk-quick-card .gk-number .el-input-number {
+/* 宽度约束（位次框超宽的根因）：.gk-number 就是 el-input-number 根本身，
+   之前写 .gk-number .el-input-number 后代选择器匹配不到任何元素；
+   且内层 .el-input 不限宽时 input 固有宽(~20字符)会把 wrapper 撑爆外层盒子 */
+.gk-quick-card .el-input-number.gk-number {
   width: 100%;
 }
 
-/* 对应位次：宽度再减 60px（文字保持居中），并整体左移 10px，
-   使与「预估分数」的中间间隙由居中后的 30px 再缩 20px → 10px */
-.gk-quick-card .gk-number.rank-number .el-input-number {
-  width: calc(100% - 60px);
+.gk-quick-card .gk-number .el-input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 对应位次：宽度减约 60px（文字保持居中），并整体左移 10px，
+   使与「预估分数」的中间间隙为 10px。（-56 而非 -60：8 位数 50000000
+   在 130px 时输入区零余量会裁字，留 4px 安全余量） */
+.gk-quick-card .el-input-number.gk-number.rank-number {
+  width: calc(100% - 56px);
   margin-left: 10px;
 }
 

@@ -1031,9 +1031,10 @@ onMounted(() => {
 }
 
 /* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）。
-   垂直居中双保险：selection 撑满高度，选中项自身变 flex 容器把内层 span
-   在 44px 内垂直+水平居中（EP 原生 absolute 居中已被 position:static 取代，
-   勿再依赖 top:50%/translateY(-50%)） */
+   ⚠️ 布局规则只能挂 .el-select__placeholder（选中标签/占位 div 独有双类），
+   千万别挂 .el-select__selected-item —— 该类同时命中 is-hidden 的 input-wrapper
+   （必须保持 absolute），覆盖成 static 后隐藏输入框占一行、文字标签被
+   flex-wrap 挤到第二行排到盒子外面（「文字掉出盒子」的根因） */
 .archive-dialog .form-select .el-select__wrapper,
 .archive-dialog .batch-select .el-select__wrapper {
   justify-content: center;
@@ -1045,21 +1046,21 @@ onMounted(() => {
   flex: 0 1 auto;
   justify-content: center;
   align-items: center;
-  height: 100%;
 }
 
-.archive-dialog .form-select .el-select__selected-item,
-.archive-dialog .batch-select .el-select__selected-item {
+.archive-dialog .form-select .el-select__placeholder,
+.archive-dialog .batch-select .el-select__placeholder {
   position: static;
-  z-index: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   align-self: center;
-  height: 100%;
+  width: auto;
+  height: auto;
   line-height: normal;
   transform: none;
+  overflow: visible;
 }
 
 .archive-dialog .el-select__prefix {
@@ -1099,6 +1100,22 @@ onMounted(() => {
   width: auto;
   text-align: center;
   font-size: 16px;
+}
+
+/* 内层宽度约束（位次框超宽的根因）：el-input-number 是 inline-flex 且
+   .el-input/.el-input__wrapper 默认按内容 sizing，input 固有宽(~20字符)
+   会把 wrapper 撑到 260px+ 溢出外层 160px 盒子 —— 必须显式限宽 */
+.archive-dialog .form-number .el-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.archive-dialog .form-number .el-input__wrapper {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* 收紧内边距：160px 框内 8 位数(50000000) 16px 字号需 ≥88px 输入区 */
+  padding: 0 10px;
 }
 
 /* 输入框内右侧单位（分 / 名） */
