@@ -552,7 +552,9 @@ async function onMockFill() {
 }
 
 /* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一）；
-   字号 16px 与省份按钮一致；垂直居中修正（position:static 后文字偏低） */
+   字号 16px 与省份按钮一致。垂直居中双保险：selection 撑满高度，选中项自身
+   变 flex 容器把内层 span 在 44px 内垂直+水平居中（EP 原生 absolute 居中已被
+   position:static 取代，勿再依赖 top:50%/translateY(-50%)） */
 .gk-quick-card .gk-select .el-select__wrapper,
 .gk-quick-card .gk-batch-select .el-select__wrapper {
   justify-content: center;
@@ -565,15 +567,20 @@ async function onMockFill() {
   flex: 0 1 auto;
   justify-content: center;
   align-items: center;
+  height: 100%;
 }
 
 .gk-quick-card .gk-select .el-select__selected-item,
 .gk-quick-card .gk-batch-select .el-select__selected-item {
   position: static;
+  display: flex;
+  align-items: center;
   justify-content: center;
   text-align: center;
   align-self: center;
-  transform: translateY(-1px);
+  height: 100%;
+  line-height: normal;
+  transform: none;
 }
 
 .gk-quick-card .gk-number .el-input__inner {

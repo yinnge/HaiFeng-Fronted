@@ -1030,8 +1030,10 @@ onMounted(() => {
   color: #9a3412;
 }
 
-/* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）；
-   垂直居中修正（position:static 后文字偏低 → 抬高） */
+/* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）。
+   垂直居中双保险：selection 撑满高度，选中项自身变 flex 容器把内层 span
+   在 44px 内垂直+水平居中（EP 原生 absolute 居中已被 position:static 取代，
+   勿再依赖 top:50%/translateY(-50%)） */
 .archive-dialog .form-select .el-select__wrapper,
 .archive-dialog .batch-select .el-select__wrapper {
   justify-content: center;
@@ -1043,16 +1045,21 @@ onMounted(() => {
   flex: 0 1 auto;
   justify-content: center;
   align-items: center;
+  height: 100%;
 }
 
 .archive-dialog .form-select .el-select__selected-item,
 .archive-dialog .batch-select .el-select__selected-item {
   position: static;
   z-index: auto;
+  display: flex;
+  align-items: center;
   justify-content: center;
   text-align: center;
   align-self: center;
-  transform: translateY(-1px);
+  height: 100%;
+  line-height: normal;
+  transform: none;
 }
 
 .archive-dialog .el-select__prefix {
