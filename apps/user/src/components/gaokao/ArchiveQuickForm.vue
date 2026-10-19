@@ -193,7 +193,7 @@ async function onMockFill() {
               </svg>
             </el-tooltip>
           </label>
-          <el-input-number v-model="form.rank" :min="0" :controls="false" class="gk-number">
+          <el-input-number v-model="form.rank" :min="0" :controls="false" class="gk-number rank-number">
             <template #prefix>
               <svg class="gk-ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 3v18h18" />
@@ -551,16 +551,20 @@ async function onMockFill() {
   color: #9a3412;
 }
 
-/* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一） */
+/* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一）；
+   字号 16px 与省份按钮一致；垂直居中修正（position:static 后文字偏低） */
 .gk-quick-card .gk-select .el-select__wrapper,
 .gk-quick-card .gk-batch-select .el-select__wrapper {
   justify-content: center;
+  align-items: center;
+  font-size: 16px;
 }
 
 .gk-quick-card .gk-select .el-select__selection,
 .gk-quick-card .gk-batch-select .el-select__selection {
   flex: 0 1 auto;
   justify-content: center;
+  align-items: center;
 }
 
 .gk-quick-card .gk-select .el-select__selected-item,
@@ -568,6 +572,8 @@ async function onMockFill() {
   position: static;
   justify-content: center;
   text-align: center;
+  align-self: center;
+  transform: translateY(-1px);
 }
 
 .gk-quick-card .gk-number .el-input__inner {
@@ -594,6 +600,13 @@ async function onMockFill() {
 
 .gk-quick-card .gk-number .el-input-number {
   width: 100%;
+}
+
+/* 对应位次：宽度再减 60px（文字保持居中），并整体左移 10px，
+   使与「预估分数」的中间间隙由居中后的 30px 再缩 20px → 10px */
+.gk-quick-card .gk-number.rank-number .el-input-number {
+  width: calc(100% - 60px);
+  margin-left: 10px;
 }
 
 .gk-quick-card .gk-select {

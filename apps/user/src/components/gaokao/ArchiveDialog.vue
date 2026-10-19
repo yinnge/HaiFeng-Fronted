@@ -624,7 +624,7 @@ onMounted(() => {
             </svg>
           </el-tooltip>
           <span v-if="form.batch && form.batchLineScore" class="batch-line-inline">
-            {{ form.batch }}省控线：{{ form.batchLineScore }} 分（{{ form.batchDataYear }}年）
+            {{ form.batch }}省控线：<b class="batch-score">{{ form.batchLineScore }} 分</b>（{{ form.batchDataYear }}年）
           </span>
         </label>
         <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
@@ -886,10 +886,15 @@ onMounted(() => {
 .batch-line-inline {
   font-size: 13px;
   font-weight: 400;
-  color: #b45309;
-  opacity: 0.55;
+  color: #6b7280;
   white-space: nowrap;
   margin-left: 2px;
+}
+
+/* 省控线数字（如 410 分）橙红色高亮 */
+.batch-line-inline .batch-score {
+  color: #c2410c;
+  font-weight: 700;
 }
 
 .dialog-footer {
@@ -1025,16 +1030,19 @@ onMounted(() => {
   color: #9a3412;
 }
 
-/* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一） */
+/* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）；
+   垂直居中修正（position:static 后文字偏低 → 抬高） */
 .archive-dialog .form-select .el-select__wrapper,
 .archive-dialog .batch-select .el-select__wrapper {
   justify-content: center;
+  align-items: center;
 }
 
 .archive-dialog .form-select .el-select__selection,
 .archive-dialog .batch-select .el-select__selection {
   flex: 0 1 auto;
   justify-content: center;
+  align-items: center;
 }
 
 .archive-dialog .form-select .el-select__selected-item,
@@ -1043,6 +1051,8 @@ onMounted(() => {
   z-index: auto;
   justify-content: center;
   text-align: center;
+  align-self: center;
+  transform: translateY(-1px);
 }
 
 .archive-dialog .el-select__prefix {
