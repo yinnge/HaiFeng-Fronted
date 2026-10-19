@@ -44,7 +44,7 @@ function pick(val: string) {
     placement="bottom-start"
     trigger="hover"
     :hide-after="120"
-    :width="440"
+    :width="476"
     popper-class="province-popper"
   >
     <template #reference>
@@ -118,15 +118,15 @@ function pick(val: string) {
   border-radius: 12px;
   background: #fff7ed;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #9a3412;
 }
 
 /* form 变体内的定位图标（与其它选项框前缀图标同款） */
 .pp-ico {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
   color: #f97316;
 }
@@ -144,7 +144,7 @@ function pick(val: string) {
 .pp-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  gap: 6px 12px; /* 行距不变、列距翻倍 */
 }
 
 .pp-cell {

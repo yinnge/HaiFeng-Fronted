@@ -2,12 +2,24 @@
 // apps/user/src/views/gaokao/Toolkit.vue
 // 高考百宝箱：占位页，功能规划中（入口来自吸附条「高考百宝箱」目录）
 import { useRouter } from 'vue-router'
+import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
+import { useGaokaoModuleNav } from '@/composables/useGaokaoModuleNav'
 
 const router = useRouter()
+
+/** 与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 */
+const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } = useGaokaoModuleNav()
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+    <!-- 档案吸附条：与 /gaokao 完全一致的模块导航，保证各处小导航栏统一 -->
+    <ArchiveBar
+      :extra-items="gaokaoExtraItems"
+      :identity-options="HIGH_IDENTITIES"
+      :identity="highIdentity"
+      @identity-change="onHighIdentityChange"
+    />
     <main class="flex-1 container mx-auto px-6 pb-16 max-w-5xl">
       <!-- 页头 -->
       <div class="pt-10 md:pt-12">

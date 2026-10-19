@@ -8,6 +8,12 @@ export interface NavItem {
   label: string
   route?: string // undefined = "正在开发中"（仅无子项时）
   subItems?: NavSubItem[]
+  /**
+   * 显式排除条件：当当前路由 query 命中其中任意一组 key=value 时，
+   * 该项「不激活」。用于解决多条顶层项共享同一 path 时的双高亮问题
+   * （如「高考志愿填报」与「高中专栏」都指向 /gaokao）。
+   */
+  inactiveQuery?: Record<string, string>
 }
 
 export const navItems: NavItem[] = [
@@ -28,15 +34,19 @@ export const navItems: NavItem[] = [
     ],
   },
 
-  /* ---------------- 高中专栏 ---------------- */
+  /* ---------------- 高中专栏（已整体并入「高考志愿填报」模块） ---------------- */
   {
     id: 'high',
     label: '高中专栏',
-    route: '/high',
+    // 顶层点击：跳转高考模块主页（/gaokao landing，即「高中模块」内联页）。
+    // 用 mod=high 作「来源标记」：带此标记时由「高中专栏」高亮，否则由「高考志愿填报」高亮，
+    // 保证同一时间只有一条橙色下划线。
+    route: '/gaokao?mod=high',
     subItems: [
-      // 原「高考信息资料/高一/高二/高三」四个入口已合并为「高中资料」
-      { label: '高中资料', route: '/high' },
+      // 二级「高中资料」：跳转 /gaokao 内联的「高中资料」视图（tab=highfile），同样带 mod=high 来源标记
+      { label: '高中资料', route: '/gaokao?tab=highfile&mod=high' },
       { label: '练题系统' },
+      // 「高中生涯规划」尚无独立页，点击提示「正在开发中」
       { label: '高中生涯规划' },
     ],
   },
@@ -46,6 +56,8 @@ export const navItems: NavItem[] = [
     id: 'gaokao',
     label: '高考志愿填报',
     route: '/gaokao',
+    // 带 mod=high（来自「高中专栏」跳转）时不视为激活，避免与「高中专栏」同时高亮
+    inactiveQuery: { mod: 'high' },
     subItems: [
       { label: '高考报志愿', route: '/gaokao' },
       { label: '特殊通道', route: '/special' },
@@ -66,8 +78,18 @@ export const navItems: NavItem[] = [
     ],
   },
 
-  /* ---------------- 英语四六级（原在「更多」，移至主菜单） ---------------- */
-  { id: 'cet', label: '英语四六级' },
+  /* ---------------- 英语四六级（移至主菜单，独立页面 /english） ---------------- */
+  {
+    id: 'cet',
+    label: '英语四六级',
+    route: '/english',
+    subItems: [
+      // 以下二级目录暂未开发页面：不写 route → 点击提示「该功能正在开发中」
+      { label: '英语真题' },
+      { label: '题型专项' },
+      { label: '英语词汇' },
+    ],
+  },
 
   /* ---------------- 考研（新增） ---------------- */
   {

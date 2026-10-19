@@ -15,6 +15,7 @@ import { loadArchiveSmart, saveArchiveSmart, saveGuestArchive } from '@/utils/ga
 import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import ProvincePicker from './ProvincePicker.vue'
 import ArchiveDialog from './ArchiveDialog.vue'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 
 // ===== 中部页面目录 =====
 interface BarNavItem {
@@ -57,6 +58,10 @@ const dialogVisible = ref(false)
 // 吸附偏移：动态测量导航栏实际高度，避免写死（导航内容高度随断点变化）
 const stickyTop = ref(64)
 
+// 全局头部收起时，把吸顶偏移收为 0，填补顶部空隙（共享单例状态）
+const { hidden: headerHidden } = useAutoHideHeader()
+const barTop = computed(() => (headerHidden.value ? 0 : stickyTop.value))
+
 function measureHeader() {
   const h = document.querySelector('.app-header')?.getBoundingClientRect().height
   if (h && h > 0) stickyTop.value = Math.round(h)
@@ -66,13 +71,21 @@ function measureHeader() {
 function openDialog() {
   dialogVisible.value = true
 }
-defineExpose({ openDialog })
+
+/** 供父组件（首页右侧测算卡片）在卡片保存后回填导航栏右侧状态，保持两端一致 */
+function applyArchive(archive: GaokaoArchiveVO | null) {
+  displayForm.value = archive
+  emit('archive-change', archive)
+}
+defineExpose({ openDialog, applyArchive })
 
 // ===== 中部页面目录 =====
 const navItems: BarNavItem[] = [
   { key: 'zhenti', label: '高考真题', to: '/gaokao?tab=zhenti' },
+  // 「高中生涯规划」尚无独立页，占位项（无 to → 点击提示敬请期待）
+  { key: 'highcareer', label: '高中生涯规划' },
   { key: 'volunteer', label: '高考志愿', to: '/gaokao', hot: true },
-  { key: 'articles', label: '高考资讯', to: '/gaokao/articles' },
+  { key: 'articles', label: '高中资讯', to: '/gaokao/articles' },
   { key: 'toolkit', label: '高考百宝箱', to: '/gaokao/toolkit' },
 ]
 
@@ -97,8 +110,13 @@ function onNavClick(item: BarNavItem) {
   if (item.to) {
     void router.push(item.to)
   } else {
-    ElMessage.info('「高考真题」即将上线，敬请期待')
+    ElMessage.info(`「${item.label}」即将上线，敬请期待`)
   }
+}
+
+/** 点击左侧「高中模块」标题：回到高考模块主页（/gaokao landing） */
+function goModuleHome() {
+  void router.push('/gaokao')
 }
 
 // 三个选科（首选 / 再选1 / 再选2），老高考无再选科目时只展示首选
@@ -214,15 +232,20 @@ function onWinScroll(e?: Event) {
 </script>
 
 <template>
-  <div class="archive-bar" :class="{ 'is-hidden': barHidden }" :style="{ top: `${stickyTop}px` }">
+  <div class="archive-bar" :class="{ 'is-hidden': barHidden }" :style="{ top: `${barTop}px` }">
     <div class="archive-bar-inner">
-      <span class="archive-bar-label">
+      <button
+        type="button"
+        class="archive-bar-label archive-bar-title"
+        title="返回高考模块主页"
+        @click="goModuleHome"
+      >
         <svg class="archive-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
           <circle cx="12" cy="10" r="3" />
         </svg>
-        高考模块
-      </span>
+        高中模块
+      </button>
 
       <!-- 中部页面目录 -->
       <nav class="archive-nav">
@@ -250,7 +273,6 @@ function onWinScroll(e?: Event) {
         <ProvincePicker :model-value="archiveProvince" variant="bar" @update:model-value="onProvinceChange" />
         <!-- 身份切换（高一/高二/高三）：切换后由父组件联动「高中资料」列表查询 -->
         <div v-if="identityOptions && identityOptions.length" class="archive-identity">
-          <span class="archive-identity-label">身份</span>
           <el-select
             :model-value="identity"
             class="archive-identity-select"
@@ -261,14 +283,13 @@ function onWinScroll(e?: Event) {
           </el-select>
         </div>
         <template v-if="displayForm && displayForm.score">
+          <!-- 年份 / 分数 / 选科合并为一个 chip，用「|」分隔 -->
           <button class="archive-chip" title="点击修改档案" @click="openDialog">
-            {{ displayForm.gaokaoYear }}年
-          </button>
-          <button class="archive-chip" title="点击修改档案" @click="openDialog">
-            {{ displayForm.score }}分
-          </button>
-          <button v-if="archiveSubjects.length" class="archive-chip" title="点击修改档案" @click="openDialog">
-            {{ archiveSubjects.join('/') }}
+            <template v-if="displayForm.gaokaoYear">{{ displayForm.gaokaoYear }}年</template>
+            <span v-if="displayForm.gaokaoYear" class="chip-sep">|</span>
+            <template v-if="displayForm.score">{{ displayForm.score }}分</template>
+            <span v-if="displayForm.score && archiveSubjects.length" class="chip-sep">|</span>
+            <template v-if="archiveSubjects.length">{{ archiveSubjects.join('/') }}</template>
           </button>
         </template>
         <button v-else class="archive-chip archive-chip-empty" @click="openDialog">
@@ -291,7 +312,7 @@ function onWinScroll(e?: Event) {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(249, 115, 22, 0.15);
   box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
-  transition: transform 0.35s ease;
+  transition: transform 0.35s ease, top 0.3s ease;
 }
 
 /* 抽屉式收起（collapsible 页面向下滚动时）：上滑隐藏，回顶展开 */
@@ -321,6 +342,30 @@ function onWinScroll(e?: Event) {
 .archive-label-icon {
   width: 18px;
   height: 18px;
+}
+
+/* 「高中模块」标题改为可点击（返回模块主页），重置 button 默认样式 + hover */
+.archive-bar-title {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.archive-bar-title:hover {
+  opacity: 0.7;
+}
+
+/* 合并 chip 内「|」分隔符 */
+.chip-sep {
+  margin: 0 6px;
+  color: #fdba74;
+  font-weight: 400;
 }
 
 @media (max-width: 767px) {
@@ -397,9 +442,27 @@ function onWinScroll(e?: Event) {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 14px;
   min-width: 0;
   margin-left: auto;
+}
+
+/* 吸附条省份按钮：实心红底白字、面积大于身份按钮（仅作用于吸附条，不污染搜索框） */
+.archive-bar-info :deep(.pp-trigger-bar) {
+  min-width: 88px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.28);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.archive-bar-info :deep(.pp-trigger-bar:hover) {
+  background: #dc2626;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.36);
 }
 
 .archive-chip {
@@ -444,7 +507,7 @@ function onWinScroll(e?: Event) {
 }
 
 .archive-identity-select {
-  width: 96px;
+  width: 76px;
 }
 
 .archive-identity-select :deep(.el-select__wrapper) {
@@ -462,7 +525,16 @@ function onWinScroll(e?: Event) {
   box-shadow: 0 0 0 1.5px #f97316 inset;
 }
 
+.archive-identity-select :deep(.el-select__suffix) {
+  display: none;
+}
+
 .archive-identity-select :deep(.el-select__selected-item) {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  justify-content: center;
   font-size: 13px;
   font-weight: 600;
   color: #c2410c;
