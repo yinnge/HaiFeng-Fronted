@@ -30,6 +30,10 @@ const handleToggleStatus = async (row: MemberListVO) => {
     await ElMessageBox.confirm(`确定要${action}用户"${row.username}"吗？`, '提示', {
       type: 'warning',
     })
+  } catch {
+    return
+  }
+  try {
     const res = await updateUserStatus(row.id, { status: newStatus })
     if (res.data.code === 200) {
       ElMessage.success(`${action}成功`)
@@ -37,8 +41,9 @@ const handleToggleStatus = async (row: MemberListVO) => {
     } else {
       ElMessage.error(res.data.msg || `${action}失败`)
     }
-  } catch {
-    // 用户取消
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : `${action}失败，请稍后重试`
+    ElMessage.error(msg)
   }
 }
 

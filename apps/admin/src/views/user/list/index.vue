@@ -83,12 +83,18 @@ const handleReset = () => {
 const handleTeacher = async (row: MemberListVO) => {
   const grant = !row.teacher
   const action = grant ? '设为老师' : '撤销老师'
+  // 第一步：二次确认。用户取消确认时静默返回（不提示）
   try {
     await ElMessageBox.confirm(
       `确定要将用户"${row.username}"${action}吗？\n${grant ? '设为老师后该用户将可访问教师专属资料，' : '撤销后该用户将不再能访问教师专属资料，'}系统会向其发送站内通知。`,
       '提示',
       { type: 'warning', confirmButtonText: `确定${action}`, cancelButtonText: '取消' },
     )
+  } catch {
+    return
+  }
+  // 第二步：调用接口。区分「业务失败」与「HTTP/网络异常」，均给出明确提示
+  try {
     const res = await setMemberTeacher(row.id, { teacher: grant })
     if (res.data.code === 200) {
       ElMessage.success(`${action}成功，已通知用户`)
@@ -96,8 +102,9 @@ const handleTeacher = async (row: MemberListVO) => {
     } else {
       ElMessage.error(res.data.msg || `${action}失败`)
     }
-  } catch {
-    // 用户取消
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : `${action}失败，请稍后重试`
+    ElMessage.error(msg)
   }
 }
 

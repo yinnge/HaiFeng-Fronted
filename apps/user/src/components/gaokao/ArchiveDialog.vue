@@ -777,15 +777,10 @@ onMounted(() => {
   max-width: 220px;
 }
 
-/* 分数/位次数字输入：变窄（高度/配色见非 scoped 块） */
+/* 分数/位次数字输入：宽度与「省份/年份」下拉一致(220px)，上下对齐（高度/配色见非 scoped 块） */
 .form-number {
   width: 100%;
-  max-width: 160px;
-}
-
-/* 对应位次：整体左移 60px，贴拢预估分数（右侧让出留白） */
-.rank-number {
-  margin-left: -60px;
+  max-width: 220px;
 }
 
 .form-hint {

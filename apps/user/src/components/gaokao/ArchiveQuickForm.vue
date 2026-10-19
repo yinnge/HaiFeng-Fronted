@@ -211,7 +211,7 @@ async function onMockFill() {
         位次数据基于 <b>{{ rankDataYear }}</b> 年（当年暂无，自动取最近年份）
       </p>
 
-      <!-- 填报批次 -->
+      <!-- 填报批次：省控线以淡色小字显示在标签 tip 图标右侧（与 dialog 同款） -->
       <div class="gk-item">
         <label class="gk-label">
           填报批次
@@ -222,16 +222,15 @@ async function onMockFill() {
               <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
             </svg>
           </el-tooltip>
+          <span v-if="form.batch && form.batchLineScore" class="gk-batch-line">
+            {{ form.batch }}省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b><span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
+          </span>
+          <span v-else-if="batchLoading" class="gk-batch-line gk-batch-muted">正在查询批次线…</span>
         </label>
-        <div class="gk-batch-row">
+        <div class="gk-row">
           <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="gk-batch-select" popper-class="orange-select-popper">
             <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
           </el-select>
-          <p v-if="form.batch && form.batchLineScore" class="gk-batch-line">
-            {{ form.batch }}省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b>
-            <span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
-          </p>
-          <p v-else-if="batchLoading" class="gk-batch-line gk-batch-muted">正在查询批次线…</p>
         </div>
       </div>
     </div>
@@ -322,10 +321,8 @@ async function onMockFill() {
   gap: 12px;
 }
 
-/* 分数/位次行：两框均为撑满整列，可缩的间隔只有列间距——贴拢为 0（缩 28 需缩窄输入框，暂未做） */
-.gk-row-tight {
-  column-gap: 0;
-}
+/* 分数/位次行：与上方「省份|年份」行共用同一栅格(1fr 1fr + 12px 列距)，
+   两框撑满整列 → 与省份/年份上下严格对齐（勿再改 column-gap/宽度） */
 
 .gk-item {
   display: flex;
@@ -429,26 +426,20 @@ async function onMockFill() {
   line-height: 1.5;
 }
 
-.gk-batch-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .gk-batch-line {
-  margin: 0;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 400;
   color: #6b7280;
   white-space: nowrap;
+  margin-left: 2px;
 }
 
-.gk-batch-score {
+.gk-batch-line .gk-batch-score {
   color: #c2410c;
   font-weight: 700;
 }
 
-.gk-batch-muted {
+.gk-batch-line.gk-batch-muted {
   color: #9ca3af;
 }
 
@@ -596,8 +587,7 @@ async function onMockFill() {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  /* 收紧水平内边距：位次框减 60px 后仍要放下 8 位数（50000000） */
-  padding: 0 2px;
+  padding: 0 10px;
 }
 
 .gk-quick-card .gk-number .el-input__inner {
@@ -605,7 +595,7 @@ async function onMockFill() {
   min-width: 0;
   width: auto;
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .gk-quick-card .gk-number .el-input__prefix {
@@ -626,23 +616,14 @@ async function onMockFill() {
   min-width: 0;
 }
 
-/* 对应位次：宽度减约 60px（文字保持居中），并整体左移 10px，
-   使与「预估分数」的中间间隙为 10px。（-56 而非 -60：8 位数 50000000
-   在 130px 时输入区零余量会裁字，留 4px 安全余量） */
-.gk-quick-card .el-input-number.gk-number.rank-number {
-  width: calc(100% - 56px);
-  margin-left: 10px;
-}
+/* 对应位次：撑满栅格第 2 列 → 与「高考年份」上下对齐（勿再缩宽/左移） */
 
 .gk-quick-card .gk-select {
   width: 100%;
 }
 
-/* 填报批次：宽度收窄约 100px（原占满整行 → 约 170px），
-   让右侧「本科批省控线」淡色小字可与其同行显示 */
+/* 填报批次：放入 gk-row 栅格第 1 列 → 宽度与「高考省份」一致（上下对齐） */
 .gk-quick-card .gk-batch-select {
-  width: auto;
-  max-width: 170px;
-  flex: 0 0 auto;
+  width: 100%;
 }
 </style>

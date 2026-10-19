@@ -8,6 +8,7 @@ interface UserInfo {
   phone?: string
   avatar?: string | null
   memberType: MemberType
+  teacher?: boolean
   inviteCode?: string
   commissionBalance?: number
 }
@@ -56,6 +57,7 @@ export const useUserStore = defineStore('user', () => {
           phone: data.phone,
           avatar: data.avatar,
           memberType: data.memberType,
+          teacher: Boolean(data.teacher),
           inviteCode: data.inviteCode,
           commissionBalance: data.commissionBalance,
         }

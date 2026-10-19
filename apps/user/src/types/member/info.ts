@@ -13,6 +13,7 @@ export interface MemberInfoVO {
   commissionTotalEarned: number
   commissionTotalPaid: number
   memberType: MemberType
+  teacher: boolean
   expireAt: string | null
 }
 
