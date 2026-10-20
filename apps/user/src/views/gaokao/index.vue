@@ -347,7 +347,7 @@ async function initPage() {
       <template v-else>
       <div class="container mx-auto px-6 pb-16 relative">
           <div class="max-w-5xl mx-auto min-h-[200px]">
-          <!-- 首页 Hero：左轮播（约 58%）+ 右志愿测算卡片（约 42%），等高约 615px -->
+          <!-- 首页 Hero：左轮播（约 80%）+ 右志愿测算卡片（约 20%），等高约 615px -->
           <div class="hero-new">
             <!-- 左：轮播区（圆角 16px + 微投影，点击切换/跳转） -->
             <div
@@ -765,7 +765,8 @@ async function initPage() {
 
 @media (min-width: 1024px) {
   .hero-new {
-    grid-template-columns: 1.4fr 1fr;
+    /* 轮播:表单 = 4:1（用户定稿比例，勿回退 58:42） */
+    grid-template-columns: 4fr 1fr;
     height: 615px;
   }
 }

@@ -626,4 +626,65 @@ async function onMockFill() {
 .gk-quick-card .gk-batch-select {
   width: 100%;
 }
+
+/* ===== 窄卡适配（Hero 4:1 定稿后卡片仅 ~200px 宽）=====
+   容器查询：卡片 <240px 时整体等比收紧（字号/内边距/隐藏数字前后缀装饰）；
+   移动端(<1024px) Hero 堆叠、卡片变宽时自动还原为常规样式 */
+.gk-quick-card {
+  container-type: inline-size;
+}
+
+/* 栅格直接子项允许收缩（EP 控件 min-width:auto 会把「选择批次」列撑到 100px 破坏对齐） */
+.gk-quick-card .gk-row > .el-select,
+.gk-quick-card .gk-row > .el-input-number {
+  min-width: 0;
+}
+
+@container (max-width: 240px) {
+  /* 卡片内边距 18 → 12px，给两列控件换空间（列宽 ~81px） */
+  .gk-quick-card .gk-quick-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .gk-quick-card .gk-quick-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* 数字输入：12px 字号 + 极窄内边距 + 隐藏前缀图标/单位后缀
+     （76~81px 列内「8位数+图标+名」数学上放不下，66px 的 8 位数是硬下限） */
+  .gk-quick-card .gk-number .el-input__inner {
+    font-size: 12px;
+  }
+
+  .gk-quick-card .gk-number .el-input__wrapper {
+    padding: 0 2px;
+  }
+
+  .gk-quick-card .gk-number .el-input__prefix,
+  .gk-quick-card .gk-number .el-input__suffix {
+    display: none;
+  }
+
+  /* 下拉框：13px + 收窄内边距（「选择批次」占位 52px 放得下） */
+  .gk-quick-card .gk-select .el-select__wrapper,
+  .gk-quick-card .gk-batch-select .el-select__wrapper {
+    font-size: 13px;
+    padding: 0 4px;
+  }
+
+  /* 底部按钮：等比缩窄（flex:1 1 0 自适应），文字/小字同步缩 */
+  .gk-quick-card .gk-plan,
+  .gk-quick-card .gk-mock {
+    font-size: 13px;
+    padding: 8px 4px;
+  }
+
+  .gk-quick-card .gk-btn-sub {
+    font-size: 9px;
+  }
+}
+
+
 </style>
