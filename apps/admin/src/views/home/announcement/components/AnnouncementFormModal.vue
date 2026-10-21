@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 import type { AnnouncementAddDTO } from '@/types/home/announcement'
 
 const props = defineProps<{
@@ -54,7 +55,8 @@ const dialogTitle = () => (props.mode === 'add' ? '新增公告' : '修改公告
   <el-dialog
     :model-value="visible"
     :title="dialogTitle()"
-    width="700px"
+    width="900px"
+    top="6vh"
     class="form-dialog"
     :close-on-click-modal="false"
     @close="handleClose"
@@ -78,12 +80,8 @@ const dialogTitle = () => (props.mode === 'add' ? '新增公告' : '修改公告
           />
         </el-form-item>
         <el-form-item label="内容" required>
-          <el-input
-            v-model="formData.content"
-            type="textarea"
-            :rows="8"
-            placeholder="请输入公告内容（支持 HTML）"
-          />
+          <!-- v-if 保证每次打开都携带最新 content 重新挂载富文本编辑器 -->
+          <RichTextEditor v-if="visible" v-model="formData.content" :height="420" class="w-full" />
         </el-form-item>
       </el-form>
     </div>

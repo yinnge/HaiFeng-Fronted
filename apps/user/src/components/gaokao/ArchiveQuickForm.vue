@@ -223,7 +223,7 @@ async function onMockFill() {
             </svg>
           </el-tooltip>
           <span v-if="form.batch && form.batchLineScore" class="gk-batch-line">
-            {{ form.batch }}省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b><span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
+            省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b>
           </span>
           <span v-else-if="batchLoading" class="gk-batch-line gk-batch-muted">正在查询批次线…</span>
         </label>
@@ -338,6 +338,9 @@ async function onMockFill() {
   font-size: 13px;
   font-weight: 700;
   color: #1f2937;
+  /* 窄卡里防止「填报批次」等文字被挤成竖排（右侧省控线小字过长时整体溢出而非换行） */
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .gk-ctl-ico {
@@ -432,6 +435,8 @@ async function onMockFill() {
   color: #6b7280;
   white-space: nowrap;
   margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gk-batch-line .gk-batch-score {
@@ -542,6 +547,17 @@ async function onMockFill() {
   color: #9a3412;
 }
 
+/* 高考年份 / 填报批次：隐藏右侧下拉箭头 svg（与吸顶条下拉规范一致，文字居中） */
+.gk-quick-card .gk-select .el-select__suffix,
+.gk-quick-card .gk-batch-select .el-select__suffix {
+  display: none;
+}
+
+/* 高考省份：隐藏定位图标（窄卡省空间；仅 QuickForm 生效，dialog 不受影响） */
+.gk-quick-card .pp-trigger-form .pp-ico {
+  display: none;
+}
+
 /* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一）；
    字号 16px 与省份按钮一致。
    ⚠️ 布局规则只能挂 .el-select__placeholder（选中标签/占位 div 独有双类），
@@ -574,7 +590,20 @@ async function onMockFill() {
   height: auto;
   line-height: normal;
   transform: none;
-  overflow: visible;
+  /* 选中文字过宽时在框内省略号截断（自适应按钮宽度），不溢出盒子 */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.gk-quick-card .gk-select .el-select__placeholder > span,
+.gk-quick-card .gk-batch-select .el-select__placeholder > span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gk-quick-card .gk-number .el-input__inner {
@@ -626,4 +655,69 @@ async function onMockFill() {
 .gk-quick-card .gk-batch-select {
   width: 100%;
 }
+
+/* ===== 窄卡适配（Hero 4:1 定稿后卡片仅 ~200px 宽）=====
+   容器查询：卡片 <240px 时整体等比收紧（字号/内边距/隐藏数字前后缀装饰）；
+   移动端(<1024px) Hero 堆叠、卡片变宽时自动还原为常规样式 */
+.gk-quick-card {
+  container-type: inline-size;
+}
+
+/* 栅格直接子项允许收缩（EP 控件 min-width:auto 会把「选择批次」列撑到 100px 破坏对齐） */
+.gk-quick-card .gk-row > .el-select,
+.gk-quick-card .gk-row > .el-input-number {
+  min-width: 0;
+}
+
+@container (max-width: 240px) {
+  /* 卡片内边距 18 → 12px，给两列控件换空间（列宽 ~81px） */
+  .gk-quick-card .gk-quick-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .gk-quick-card .gk-quick-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* 数字输入：12px 字号 + 极窄内边距 + 隐藏前缀图标/单位后缀
+     （76~81px 列内「8位数+图标+名」数学上放不下，66px 的 8 位数是硬下限） */
+  .gk-quick-card .gk-number .el-input__inner {
+    font-size: 12px;
+  }
+
+  .gk-quick-card .gk-number .el-input__wrapper {
+    padding: 0 2px;
+  }
+
+  .gk-quick-card .gk-number .el-input__prefix,
+  .gk-quick-card .gk-number .el-input__suffix {
+    display: none;
+  }
+
+  /* 下拉框：13px + 收窄内边距（「选择批次」占位 52px 放得下）；省份触发器字号同步 */
+  .gk-quick-card .gk-select .el-select__wrapper,
+  .gk-quick-card .gk-batch-select .el-select__wrapper {
+    font-size: 13px;
+    padding: 0 4px;
+  }
+
+  .gk-quick-card .pp-trigger-form {
+    font-size: 13px;
+  }
+
+  /* 底部按钮：等比缩窄（flex:1 1 0 自适应），文字/小字同步缩 */
+  .gk-quick-card .gk-plan,
+  .gk-quick-card .gk-mock {
+    font-size: 13px;
+    padding: 8px 4px;
+  }
+
+  .gk-quick-card .gk-btn-sub {
+    font-size: 9px;
+  }
+}
+
+
 </style>

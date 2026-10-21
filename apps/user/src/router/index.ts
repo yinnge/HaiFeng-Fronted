@@ -10,6 +10,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' },
   },
   {
+    path: '/coming-soon',
+    name: 'ComingSoon',
+    component: () => import('@/views/ComingSoon.vue'),
+    meta: { title: '敬请期待' },
+  },
+  {
     path: '/middle',
     name: 'MiddleSchoolFiles',
     component: () => import('@/views/fileload/FileLoadPage.vue'),
@@ -487,9 +493,12 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
+    }
+    if (to.hash && to.hash.length > 1 && typeof document !== 'undefined' && document.querySelector(to.hash)) {
+      return { el: to.hash, top: 140, behavior: 'smooth' }
     }
     return { top: 0 }
   },

@@ -2,9 +2,6 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import logoMain from '@/assets/images/logo-main.png'
-import UserAvatar from './UserAvatar.vue'
-import NotificationBell from './NotificationBell.vue'
 import MobileNavDrawer from './MobileNavDrawer.vue'
 import { navItems, moreNavItems, type NavItem, type NavSubItem } from '@/config/navigation'
 import { pushNavItem } from '@/utils/navAnchor'
@@ -13,7 +10,11 @@ import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 const router = useRouter()
 const route = useRoute()
 
-// 导航栏滚动收起：仅主页常驻，其余页面滚动离开顶部后抽屉式收起
+// 顶部新导航（TopToolBar）下方偏移：首页 64px 紧贴其下，其余页面顶到 0
+const props = defineProps<{ topOffset?: number }>()
+const headerTop = computed(() => props.topOffset ?? 0)
+
+// 导航栏滚动收起：所有页面滚动离开顶部后抽屉式收起（主页也收起，与新导航错层）
 const { hidden: headerHidden } = useAutoHideHeader()
 
 const openDropdownId = ref<string | null>(null)
@@ -219,13 +220,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header class="app-header" :class="{ 'is-hidden': headerHidden }">
+  <header class="app-header" :class="{ 'is-hidden': headerHidden }" :style="{ top: headerTop + 'px' }">
     <div class="app-header-inner">
-      <!-- 左侧：Logo -->
-      <router-link to="/" class="logo-link">
-        <img :src="logoMain" alt="海枫未来规划院" class="logo-img" />
-      </router-link>
-
       <!-- 中间：桌面导航 -->
       <nav class="desktop-nav" ref="navContainerRef">
         <template v-for="item in visibleItems" :key="item.id">
@@ -350,9 +346,6 @@ onBeforeUnmount(() => {
 
       <!-- 右侧：操作区 -->
       <div class="header-actions">
-        <UserAvatar />
-        <div class="header-divider"></div>
-        <NotificationBell />
         <button class="hamburger-btn" @click="mobileMenuOpen = true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -403,22 +396,6 @@ onBeforeUnmount(() => {
   .app-header-inner {
     padding: 0.75rem 1.5rem 0.75rem 2rem;
   }
-}
-
-/* Logo */
-.logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  flex-shrink: 0;
-}
-
-.logo-img {
-  height: 2.5rem;
-  width: 2.5rem;
-  object-fit: contain;
-  flex-shrink: 0;
 }
 
 /* Desktop nav */

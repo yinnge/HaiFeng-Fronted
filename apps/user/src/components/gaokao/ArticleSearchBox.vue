@@ -1,17 +1,15 @@
 <script setup lang="ts">
 // apps/user/src/components/gaokao/ArticleSearchBox.vue
-// 资讯标题关键字搜索框：省份筛选（默认「全国」=不限）+ 输入防抖搜索 + 下弹建议（命中段橙色高亮）。
+// 资讯标题关键字搜索框：全国范围关键字搜索 + 输入防抖搜索 + 下弹建议（命中段橙色高亮）。
+// 不再按省份筛选（省份筛选统一由导航栏档案省份 + 列表含全国承担），搜索始终全局。
 // 点击/回车选中后 emit('select', id)，由父组件决定跳转；请求侧带序号丢弃过期响应。
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { searchGaokaoArticles, type GaokaoArticleSearchItemVO } from '@/api/article'
-import ProvincePicker from './ProvincePicker.vue'
 
 const emit = defineEmits<{
   (e: 'select', id: string): void
 }>()
 
-/** '' = 全国（不限省份，不传给后端） */
-const province = ref('')
 const keyword = ref('')
 const suggestions = ref<GaokaoArticleSearchItemVO[]>([])
 const open = ref(false)
@@ -40,7 +38,6 @@ async function doSearch() {
   try {
     const res = await searchGaokaoArticles({
       keyword: kw,
-      province: province.value || undefined,
       limit: 10,
     })
     if (seq !== requestSeq) return
@@ -56,10 +53,6 @@ async function doSearch() {
 }
 
 watch(keyword, scheduleSearch)
-// 切换省份时若已有关键字立即重查（不走防抖）
-watch(province, () => {
-  if (keyword.value.trim()) void doSearch()
-})
 
 function onPick(item: GaokaoArticleSearchItemVO) {
   open.value = false
@@ -105,7 +98,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rootRef" class="asb-row">
-    <ProvincePicker v-model="province" variant="bar" national placeholder="全国" />
     <div class="asb-field">
       <div class="asb-input-wrap">
         <svg class="asb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
