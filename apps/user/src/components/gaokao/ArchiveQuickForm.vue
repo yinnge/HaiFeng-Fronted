@@ -547,6 +547,17 @@ async function onMockFill() {
   color: #9a3412;
 }
 
+/* 高考年份 / 填报批次：隐藏右侧下拉箭头 svg（与吸顶条下拉规范一致，文字居中） */
+.gk-quick-card .gk-select .el-select__suffix,
+.gk-quick-card .gk-batch-select .el-select__suffix {
+  display: none;
+}
+
+/* 高考省份：隐藏定位图标（窄卡省空间；仅 QuickForm 生效，dialog 不受影响） */
+.gk-quick-card .pp-trigger-form .pp-ico {
+  display: none;
+}
+
 /* 高考年份 / 填报批次：图标紧贴文字、整组居中（与弹窗、吸附条统一）；
    字号 16px 与省份按钮一致。
    ⚠️ 布局规则只能挂 .el-select__placeholder（选中标签/占位 div 独有双类），
@@ -685,11 +696,15 @@ async function onMockFill() {
     display: none;
   }
 
-  /* 下拉框：13px + 收窄内边距（「选择批次」占位 52px 放得下） */
+  /* 下拉框：13px + 收窄内边距（「选择批次」占位 52px 放得下）；省份触发器字号同步 */
   .gk-quick-card .gk-select .el-select__wrapper,
   .gk-quick-card .gk-batch-select .el-select__wrapper {
     font-size: 13px;
     padding: 0 4px;
+  }
+
+  .gk-quick-card .pp-trigger-form {
+    font-size: 13px;
   }
 
   /* 底部按钮：等比缩窄（flex:1 1 0 自适应），文字/小字同步缩 */
