@@ -223,7 +223,7 @@ async function onMockFill() {
             </svg>
           </el-tooltip>
           <span v-if="form.batch && form.batchLineScore" class="gk-batch-line">
-            {{ form.batch }}省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b><span v-if="form.batchDataYear">（{{ form.batchDataYear }}年）</span>
+            省控线：<b class="gk-batch-score">{{ form.batchLineScore }} 分</b>
           </span>
           <span v-else-if="batchLoading" class="gk-batch-line gk-batch-muted">正在查询批次线…</span>
         </label>
@@ -338,6 +338,9 @@ async function onMockFill() {
   font-size: 13px;
   font-weight: 700;
   color: #1f2937;
+  /* 窄卡里防止「填报批次」等文字被挤成竖排（右侧省控线小字过长时整体溢出而非换行） */
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .gk-ctl-ico {
@@ -432,6 +435,8 @@ async function onMockFill() {
   color: #6b7280;
   white-space: nowrap;
   margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gk-batch-line .gk-batch-score {
@@ -574,7 +579,20 @@ async function onMockFill() {
   height: auto;
   line-height: normal;
   transform: none;
-  overflow: visible;
+  /* 选中文字过宽时在框内省略号截断（自适应按钮宽度），不溢出盒子 */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.gk-quick-card .gk-select .el-select__placeholder > span,
+.gk-quick-card .gk-batch-select .el-select__placeholder > span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gk-quick-card .gk-number .el-input__inner {

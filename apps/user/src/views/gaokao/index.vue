@@ -759,7 +759,8 @@ async function initPage() {
 .hero-new {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  /* 列间距 0：轮播与测算卡贴紧（用户要求去掉中间间隔）；移动端堆叠保留 20px 行距 */
+  gap: 20px 0;
   padding-top: 24px;
 }
 
