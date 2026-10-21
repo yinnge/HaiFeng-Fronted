@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 import { getPostgradMajorList, getPostgradMajorDisciplineCategories } from '@/api/postgrad-major'
@@ -8,6 +8,7 @@ import type { PostgradMajorListVO, PostgradMajorQueryDTO } from '@/types/postgra
 import { Motion } from 'motion-v'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const list = ref<PostgradMajorListVO[]>([])
@@ -88,6 +89,13 @@ function showDetail(id: string) {
   dialogVisible.value = true
 }
 
+function openDeepLinkedMajor() {
+  const majorId = route.query.majorId
+  if (typeof majorId !== 'string' || !majorId) return
+  showDetail(majorId)
+  void router.replace({ path: route.path, query: {} })
+}
+
 function onPageChange(page: number) {
   currentPage.value = page
   fetchList()
@@ -114,6 +122,7 @@ function getDifficultyTag(difficulty: string) {
 onMounted(() => {
   fetchList()
   fetchDisciplineCategories()
+  openDeepLinkedMajor()
 })
 </script>
 

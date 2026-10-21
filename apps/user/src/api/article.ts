@@ -1,7 +1,7 @@
 /**
  * 高考热点资讯（C 端免登录接口）
  * 对应后端: com.haifeng.app.controller.algorithm.article.GaokaoArticleController
- * 列表按省份精准查询（省份取自用户高考档案，档案变更后需重新拉取）
+ * 列表按档案省份查询，后端自动附带「全国」及「未设省份」的资讯（省份取自用户高考档案，档案变更后需重新拉取）
  */
 import request from '@haifeng/shared/utils/request'
 import type { R } from '@haifeng/shared'

@@ -107,7 +107,7 @@ onMounted(async () => {
           <p class="mt-2 text-sm text-gray-400">按你高考档案的省份精准推送 · 仅展示已发布资讯</p>
         </div>
 
-        <!-- 标题关键字搜索：全国范围（可选省份筛选），点击建议直达详情；与下方档案省份列表互不影响 -->
+        <!-- 标题关键字搜索：全国范围全局搜索，点击建议直达详情；与下方档案省份列表互不影响 -->
         <ArticleSearchBox class="mb-6" @select="goDetail" />
 
         <!-- 未建档：引导填写档案（列表接口按档案省份查询） -->
@@ -151,7 +151,7 @@ onMounted(async () => {
           </div>
 
           <div v-if="!loading && !list.length" class="py-16 text-center text-sm text-gray-400">
-            本省暂无已发布的资讯
+            暂无已发布的资讯
           </div>
         </div>
 

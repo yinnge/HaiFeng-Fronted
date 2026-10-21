@@ -190,7 +190,6 @@ defineExpose({ fetchUnreadCount })
 <style scoped>
 .notification-bell-wrapper {
   position: relative;
-  padding-bottom: 8px;
 }
 
 .notification-bell-btn {

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElDialog } from 'element-plus'
 import { Motion } from 'motion-v'
 import { getCertificateCategories, getCertificateList, getCertificateDetail } from '@/api/certificate'
 import type { CertificateListVO, CertificateDetailVO } from '@/types/certificate'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const categories = ref<string[]>([])
@@ -94,9 +95,17 @@ function onSizeChange(size: number) {
   fetchList()
 }
 
+function openDeepLinkedCertificate() {
+  const certId = route.query.certId
+  if (typeof certId !== 'string' || !certId) return
+  void openDetail(certId)
+  void router.replace({ path: route.path, query: {} })
+}
+
 onMounted(() => {
   fetchCategories()
   fetchList()
+  openDeepLinkedCertificate()
 })
 </script>
 
