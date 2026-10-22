@@ -53,10 +53,10 @@ const restrictionText = computed(() => {
   <div
     class="group flex items-stretch rounded-xl border transition-all duration-200"
     :class="isSelected
-      ? 'border-green-200 bg-gradient-to-r from-green-50/80 to-white shadow-sm'
-      : 'border-gray-100/60 bg-white/80 hover:bg-gray-50/80 hover:border-gray-200/60'"
+      ? 'border-green-200 bg-green-50/50 shadow-sm'
+      : 'border-surface-border bg-white hover:bg-slate-50/60 hover:border-sem-blue/25'"
   >
-    <div class="w-24 shrink-0 flex flex-col items-center justify-center p-3 border-r border-gray-100/60">
+    <div class="w-24 shrink-0 flex flex-col items-center justify-center p-3 border-r border-surface-border">
       <div class="relative">
         <span
           class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white shadow-md transition-transform duration-200 hover:scale-105"
@@ -72,7 +72,7 @@ const restrictionText = computed(() => {
       <div class="flex items-center gap-2 flex-wrap">
         <button
           type="button"
-          class="text-sm font-semibold text-gray-800 hover:text-brand-orange hover:underline underline-offset-2 transition-colors cursor-pointer"
+          class="text-sm font-semibold text-gray-800 hover:text-sem-blue hover:underline underline-offset-2 transition-colors cursor-pointer"
           title="查看专业信息"
           @click.stop="$emit('clickMajor', major.majorName)"
         >
@@ -95,7 +95,7 @@ const restrictionText = computed(() => {
           学制 {{ displayDuration }}
         </span>
         <span class="text-gray-300">·</span>
-        <span class="text-brand-orange font-medium">{{ major.tuition }}/年</span>
+        <span class="text-gray-700 font-medium">{{ major.tuition }}/年</span>
       </div>
       <p class="mt-2 text-xs text-gray-500 leading-relaxed break-words">{{ major.description }}</p>
       <!-- 条件限制：红色字体贴底，有才展示 -->
@@ -104,11 +104,11 @@ const restrictionText = computed(() => {
       </div>
     </div>
 
-    <div class="w-[30rem] shrink-0 border-l border-gray-100/60 p-3 bg-gray-50/20">
-      <div class="overflow-hidden rounded-lg border border-gray-200/60">
+    <div class="w-[30rem] shrink-0 border-l border-surface-border p-3 bg-slate-50/60">
+      <div class="overflow-hidden rounded-lg border border-surface-strong">
         <table class="w-full text-[11px]">
           <thead>
-            <tr class="bg-gray-100/40">
+            <tr class="bg-slate-50">
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">年份</th>
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">最低分/位次</th>
               <th class="text-left font-semibold text-gray-600 px-3 py-1.5">平均分/位次</th>
@@ -116,8 +116,8 @@ const restrictionText = computed(() => {
               <th class="text-center font-semibold text-gray-600 px-3 py-1.5">录取人数</th>
             </tr>
           </thead>
-          <tbody class="text-gray-600 divide-y divide-gray-100/60">
-            <tr v-for="s in major.historyScores" :key="s.year" class="hover:bg-gray-50/60 transition-colors">
+          <tbody class="text-gray-600 divide-y divide-surface-border">
+            <tr v-for="s in major.historyScores" :key="s.year" class="hover:bg-white transition-colors">
               <td class="px-3 py-1.5 font-medium tabular-nums">{{ s.year }}</td>
               <td class="px-3 py-1.5 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
               <td class="px-3 py-1.5 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
@@ -131,16 +131,16 @@ const restrictionText = computed(() => {
 
     <div
       v-if="canSelect"
-      class="w-14 shrink-0 flex items-center justify-center border-l border-gray-100/60 cursor-pointer transition-colors duration-200"
-      :class="isSelected ? 'bg-green-50/60 hover:bg-green-100/60' : 'hover:bg-brand-orange/5'"
+      class="w-14 shrink-0 flex items-center justify-center border-l border-surface-border cursor-pointer transition-colors duration-200"
+      :class="isSelected ? 'bg-green-50/60 hover:bg-green-100/60' : 'hover:bg-sem-blue-bg'"
       @click="$emit('toggleSelect')"
     >
       <button
         type="button"
         class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 pointer-events-none"
         :class="isSelected
-          ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md shadow-green-500/25'
-          : 'text-gray-400 group-hover:text-brand-orange'"
+          ? 'bg-green-500 text-white shadow-md shadow-green-500/25'
+          : 'text-gray-400 group-hover:text-sem-blue'"
       >
         <svg v-if="isSelected" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />

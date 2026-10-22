@@ -1,341 +1,302 @@
-# Design System: 海枫未来规划院 (HaiFeng Future Planning Institute)
+# 文件列表 & 详情页优化方案
+## 任务
+修改：/college，在大学专栏里面有一个大学资料的路由模块。现在需要修改他们，优化界面。
 
-## 1. Visual Theme & Atmosphere
 
-A warm, inviting educational platform with confident asymmetric layouts and fluid spring-physics motion. The atmosphere is **academic yet approachable** — like a well-lit university study hall with warm wood tones and natural light. The design balances professional credibility (for exam preparation) with modern digital-first aesthetics (for Gen-Z university students aged 18-25).
+文件列表界面和文件详情界面该怎么优化？
 
-- **Density:** "Daily App Balanced" (5) — Information-rich but never overwhelming. Generous whitespace between sections.
-- **Variance:** "Offset Asymmetric" (6) — Hero sections break symmetry. Content cards use varied layouts. Not rigid grid systems.
-- **Motion:** "Fluid CSS" (6) — Spring physics on interactions. Staggered reveals. No jarring jumps. Every hover has purposeful feedback.
+1. **视觉问题**：橙色边框病"复发"了，而且这次是在**容器级别**复发（不是卡片级别）
 
-The warm orange brand identity is the emotional anchor — it communicates energy, optimism, and academic ambition. Blue serves as the functional accent for active states and selections, creating clear visual hierarchy against the orange base.
+下面分别拆解。
 
-## 2. Color Palette & Roles
+---
 
-### Primary Brand Colors
-- **Brand Orange** (`#F97316`) — Primary CTA buttons, sidebar backgrounds, card top borders, active nav indicators. The signature brand color.
-- **Brand Orange Light** (`#FB923C`) — Gradient endpoints, hover state highlights, lighter accents. Always paired with Brand Orange.
-- **Brand Orange Dark** (`#EA580C`) — Hover depth on primary elements, pressed states. Provides tactile feedback.
-- **Brand Orange Deep** (`#C2410C`) — Active/pressed state for buttons, deepest interaction feedback.
+## 一、视觉问题：橙框病在"容器级别"复发
 
-### Secondary & Accent Colors
-- **Gold** (`#D4A85A`) — Premium badges, VIP indicators, login card accents. Conveys exclusivity and value.
-- **Gold Light** (`#F5A54A`) — Lighter gold variant, avatar borders, secondary highlights.
-- **Active Blue** (`#1D4ED8`) — Admin sidebar active states, selection indicators, functional contrast against orange.
-- **Active Blue Light** (`#DBEAFE`) — Active item background tint, selected state fills.
+我们在 CODEBUDDY.md 里定的规则主要是针对"**卡片（card）**"不能用橙色硬边框，但这次的页面证明了同一个毛病会在更大的尺度上重演——**区块容器（section）** 也被套上了同样的橙色描边逻辑。
 
-### Neutral Palette (Canvas & Text)
-- **Canvas Warm** (`#FFF7ED`) — Primary page background. Fixed multi-layer warm gradient canvas.
-- **Surface White** (`#FFFFFF`) — Cards, modals, header fill. Clean elevated surfaces.
-- **Surface Cream** (`#FAF9F5`) — Admin page background, subtle warm alternative to pure white.
-- **Text Primary** (`#1F2937`) — Headings, primary content. High contrast on light backgrounds.
-- **Text Secondary** (`#374151`) — Body text, descriptions. Comfortable reading weight.
-- **Text Muted** (`#6B7280`) — Captions, metadata, placeholder text.
-- **Text Faint** (`#9CA3AF`) — Disabled states, extremely subtle labels.
-- **Border Light** (`#E5E7EB`) — Card borders, dividers, structural lines. Subtle and warm-tinted.
-- **Border Whisper** (`#F3F4F6`) — Ultra-subtle separators, table row dividers.
+### 具体病灶清单
 
-### Semantic Colors
-- **Success** (`#10B981`) — Correct answers, successful operations, positive feedback.
-- **Danger** (`#DC2626`) — Errors, delete actions, critical warnings. Gradient: `linear-gradient(135deg, #ef4444, #f87171)`.
-- **Warning** (`#F59E0B`) — Caution states, pending actions, time warnings.
+| 区域 | 当前做法 | 违反的规则 |
+|---|---|---|
+| 顶部"大学专栏·精选学习资料"介绍框 | 米黄底 + 隐约橙色氛围 | 整个页面已经有全局网格背景做氛围了，这里再叠一层橙色渐变底色，等于"氛围感"打架，显得脏 |
+| "筛选"区块容器 | 白底 + 完整橙色描边包围 | **典型的"四边硬框包围"**，和卡片一样犯规 |
+| "文件列表"标题区块 | 橙色实心药丸标签当**区域标题** | 橙色被当成"万能标题底色"到处用 |
+| "筛选""文件列表"两个胶囊标签 | 橙色填充 | 一个页面里短短几屏出现 5+ 处橙色色块，视觉疲劳 |
+| 详情页整个白色容器 | 顶部+底部 2px 橙色描边线贯穿整个页面宽度 | 又是一次"用橙色给整块内容画框"，这正是我们改版前要根治的毛病 |
+| 当前身份"大一"胶囊 | 橙色填充 | 这是一个**状态/身份标签**，不是强调重点，不该用品牌色 |
 
-### Gradient Definitions
-- **Primary Gradient** (`linear-gradient(135deg, #F97316, #FB923C)`) — CTA buttons, card top borders, primary accents.
-- **Horizontal Gradient** (`linear-gradient(90deg, #F97316, #FB923C)`) — Card top accent bars, vertical side indicators.
-- **Header Gradient** (`linear-gradient(180deg, #FFF7ED, #FFFFFF)`) — Dialog headers, section intros.
-- **Canvas Gradient** — Multi-layer `radial-gradient` on `#FFF7ED` base creating warm orange-to-white fog with amber glow accents. Fixed position.
-- **Canvas Grain** — Fixed, `pointer-events: none` pseudo-element covering the viewport: SVG `feTurbulence` fractal noise, `opacity: 0.025–0.035`, `mix-blend-mode: multiply`. Breaks digital flatness. NEVER attached to scrolling containers (fixed layer only).
-- **Login Card Gradient** — Glassmorphism: `backdrop-filter: blur(20px)` with layered warm gradients.
+**本质问题**：设计系统2.0 定的规则范围局限在"卡片"这个最小单元，没有明确说"区块容器 / 页面级容器"同样适用这条规则，所以执行时"换了个尺度又把老毛病带回来了"。**这个要补充成一条通用铁律：任何矩形容器（不管是卡片、区块、整页外框），都不得用品牌色/语义色做四边包围描边，分隔一律靠背景色层次+阴影。**
 
-### Shadow System (Orange-Tinted)
-- **Shadow Card** — `0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)` — Subtle resting state.
-- **Shadow Card Hover** — `0 8px 25px rgba(232,114,42,0.12)` — Warm orange glow on hover.
-- **Shadow Brand** — `0 4px 14px rgba(232,114,42,0.25)` — Primary button glow, active brand elements.
-- **Shadow Gold** — `0 4px 15px rgba(191,138,48,0.4)` — Premium/VIP elements.
-- **Shadow Blue** — `0 4px 14px rgba(30,136,229,0.25)` — Admin active states.
+### 修复方案
 
-## 3. Typography Rules
-
-### Font Stacks
-- **Display/Headlines:** `Geist`, `Inter`, `system-ui`, `sans-serif` — Track-tight, weight-driven hierarchy. Headlines use `font-bold (700)` for authority, not massive sizes.
-- **Body:** `Geist`, `Inter`, `system-ui`, `sans-serif` — Relaxed leading (`line-height: 1.6-1.8`), max 65 characters per line for comfortable reading.
-- **Mono:** `Geist Mono`, `ui-monospace`, `monospace` — Code snippets, timestamps, numerical data, exam scores.
-
-### Type Scale
-- **Hero Title:** `clamp(1.5rem, 1rem + 2vw, 3rem)` — Bold, orange-gradient text. Never pure black.
-- **Section Heading:** `text-3xl (30px)` / `text-2xl (24px)` — Semibold, primary text color.
-- **Card Title:** `text-lg (18px)` / `text-base (16px)` — Bold, primary text.
-- **Body Text:** `text-sm (14px)` / `text-base (16px)` — Normal weight, secondary text color.
-- **Small/Labels:** `text-xs (12px)` — Medium weight, muted color. Tags, metadata, timestamps.
-- **Nav Links:** `clamp(0.875rem, 0.75rem + 0.35vw, 1.125rem)` — Fluid scaling with viewport.
-
-### Font Weights
-- **Bold (700):** Headings, nav links, sidebar level-1 items, card titles.
-- **Semibold (600):** Buttons, active states, user names, form submit actions.
-- **Medium (500):** Secondary text, tags, sidebar level-2 items.
-- **Normal (400):** Body text, sidebar level-3 items, descriptions.
-
-### Anti-Patterns
-- **BANNED:** `Inter` font is banned for premium/creative contexts. Use `Geist` exclusively.
-- **BANNED:** Generic serif fonts (`Times New Roman`, `Georgia`) for any UI context.
-- **BANNED:** Font sizes below `12px` / `0.75rem` for readable content.
-
-## 4. Component Stylings
-
-### Anti-Plasticity Rules (质感红线 — read this FIRST)
-
-1. **Strokes are the last resort.** Every hard border makes the UI flatter and more "plastic". Preference order: tonal surfaces > warm-tinted shadow > spacing > hairline > full border.
-2. **Uniformity is the enemy.** Never give every card the same border + same top accent bar. Most cards stay borderless; reserve accents for 1–2 highlighted elements per page.
-3. **Depth via layering, not lines.** Warm-tinted shadows (`rgba(232,114,42,*)`), Double-Bezel shells, slight overlap in hero zones. Pure black/gray shadows and hard 3px accent bars on everything are banned.
-4. **Grain over flat gradient.** A flat gradient canvas reads as digital plastic. The page canvas must carry the 0.03-opacity noise layer (see Gradient Definitions → Canvas Grain).
-
-### Buttons
-
-**Primary CTA (`btn-brand`):**
-- Background: `linear-gradient(135deg, #F97316, #FB923C)`
-- Text: white, `font-semibold`, `rounded-full`
-- Padding: `px-6 py-2.5`
-- Shadow: `0 4px 14px rgba(232,114,42,0.25)`
-- Hover: `translateY(-1px)`, deeper shadow `0 6px 20px rgba(232,114,42,0.3)`
-- Active: `translateY(0)`, shadow reduces
-- Focus: `ring-2 ring-brand-orange ring-offset-2`
-
-**Secondary Button (`btn-secondary`):**
-- Background: white
-- Border: `1px solid #E5E7EB`
-- Hover: orange border + orange text + light orange shadow
-- Rounded: `rounded-full`
-
-**Pill/Tag Buttons:**
-- `rounded-full px-4 py-1.5 text-sm`
-- Active: orange gradient background, white text
-- Inactive: `orange-50` background, orange text
-
-**Gold Premium Button:**
-- Background: `linear-gradient(135deg, #D4A85A, #BF8A30, #A67C28, #BF8A30, #D4A85A)`
-- Animated `background-position` shift
-- Shadow: `0 4px 15px rgba(191,138,48,0.4)`
-
-### Cards
-
-**Standard Card (borderless by default):**
-- Background: white
-- Border-radius: `rounded-xl (12px)`
-- Border: **none by default.** Surface separation comes from background tone + shadow + spacing, NOT strokes.
-- Hairline (optional, ONLY when the card sits on a busy/colored canvas and truly needs separation): `1px solid rgba(249,115,22,0.12)` — never darker than this.
-- Top accent bar: **removed as a default.** The 3px gradient top bar (`#F97316 → #FB923C`) is reserved for at most 1–2 hero/feature cards per page. NEVER apply it to entire card grids/lists.
-- Shadow: `shadow-card` (subtle resting)
-- Hover: `shadow-card-hover`, `translateY(-6px)`, deeper orange shadow
-- Transition: `all 0.3s ease-out`
-
-**Double-Bezel Card (hero / feature zones only):**
-- Outer shell: `bg-[#FFF1E2]` or `rgba(249,115,22,0.07)`, `rounded-[20px]`, padding `p-1.5`–`p-2`, hairline `ring-1 ring-orange-500/10`, warm shadow
-- Inner core: white, `rounded-[14px]` (concentric: outer radius − 6px), inset highlight `shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]`
-- Optional floating badge overlapping the shell edge (rotate −2° to −5°, hairline gold stroke) for depth
-- Use for hero panels, VIP/pricing features, one highlighted stat — max 1–2 per page
-
-**Glassmorphism Card (Login):**
-- `backdrop-filter: blur(20px)`
-- Multi-gradient background with warm tones
-- Border: `1px solid rgba(212,168,90,0.3)`
-- `BorderBeam` animated flowing light on edges
-
-**Card Hover Effect:**
 ```css
-.card-hover {
-  transition: all 0.3s ease-out;
+/* ❌ 错误：区块容器橙框包围 */
+.resource-hero, .filter-section, .file-list-section {
+  border: 1px solid #FF8C3D;  /* 删除 */
 }
-.card-hover:hover {
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-0.5rem);
+
+/* ✅ 正确：扁平化处理，取消硬边框分隔 */
+.resource-hero {
+  background: #FFFFFF;               /* 不要米黄渐变底，交给全局网格背景做氛围 */
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 2px 8px var(--neutral-shadow);
+  /* 可选：极简点缀——只在图标处保留一点橙色，而不是整块背景 */
+}
+
+.filter-section {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px var(--neutral-shadow);
+  /* 不再需要边框 */
+}
+
+/* "筛选" "文件列表" 这类区域标题，改用左侧色条+文字，不用实心药丸 */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--brand-orange), var(--brand-orange-light));
 }
 ```
 
-### Inputs & Forms
+详情页的整页橙框同理，直接删除 `border-top/border-bottom`，改成卡片本身的阴影分隔即可。
 
-- Label above input, helper text optional, error text below
-- Focus ring in brand orange color
-- Standard gap spacing (`gap-4` or `gap-6`)
-- Element Plus form components with orange-themed overrides
-- Error states: red border + inline error text below
+### "当前身份"标签建议改色
 
-### Dialogs/Modals
+这是一个**身份/状态标识**，语义上接近"信息类"而非"强调类"，按我们的四色语义表应该用**蓝色**：
 
-- Border-radius: `16px`
-- Accent: **NO hard 3px top/bottom borders.** The header carries the gradient fill alone; a single hairline `1px solid rgba(249,115,22,0.15)` divider under the header is the maximum allowed line.
-- Header gradient: `linear-gradient(180deg, #FFF7ED, #FFFFFF)`
-- Overlay: `rgba(15,23,42,0.45)` + `backdrop-filter: blur(2px)`
-- Primary button: `border-radius: 20px` (pill shape), orange gradient
-
-### Avatars
-
-- Circular (`border-radius: 50%`)
-- Orange gradient fallback: `linear-gradient(135deg, #F5A54A, #E8722A)`
-- Border: `2px solid #F5A54A`
-- Ring: `box-shadow: 0 0 0 2px rgba(245,165,74,0.2)`
-
-### Dropdowns
-
-- White background, `border-radius: 12px`
-- Orange-tinted border: `1px solid rgba(245,165,74,0.3)`
-- Orange-tinted shadow: `0 4px 24px rgba(232,114,42,0.15)`
-- Dividers: `rgba(245,165,74,0.15)` (orange-tinted)
-- Hover items: `rgba(245,165,74,0.08)` background + orange text
-
-### Scrollbar
-
-- Width: 6px
-- Track: transparent
-- Thumb: `#CBD5E1` (slate-300), hover: `#94A3B8` (slate-400)
-- Border-radius: 3px
-
-### Skeleton Loaders
-
-- Pulse animation matching exact layout dimensions
-- No circular spinners — always match the shape of content being loaded
-
-### Empty States
-
-- Composed, illustrated compositions — not just "No data" text
-- Warm orange illustration style
-- Clear call-to-action to populate data
-
-## 5. Layout Principles
-
-### User App Structure
-```
-DefaultLayout
-  ├── AppHeader (sticky, glassmorphism blur, z-50)
-  │   └── max-width: 2200px centered
-  ├── <main> (flex-1)
-  │   └── container mx-auto px-6 (max-width: 1280px)
-  └── SiteFooter (warm gradient background, 3-column grid)
+```css
+.identity-pill {
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
+}
 ```
 
-### Admin App Structure
+---
+
+
+## 二、列表卡片设计优化
+
+修复数据问题后，卡片结构也需要同步升级为更符合"文件管理"场景的信息层级：
+
 ```
-el-container (h-screen)
-  ├── el-aside (240px / 64px collapsed)
-  │   └── Sidebar (white bg, orange L1, blue active)
-  └── el-container
-      ├── el-header (white bg, border-bottom)
-      └── el-main (bg: #F0F2F5, padding: 20px)
-```
-
-### Grid & Spacing
-- **Container:** `max-width: 2200px` (header), `max-width: 1280px` (content)
-- **Section padding:** `py-12 px-6` to `py-24 px-6` depending on importance
-- **Card gap:** `gap-6` (24px) standard, `gap-8` (32px) for feature grids
-- **Internal card padding:** `p-6` (24px) standard
-- **Mobile:** All multi-column layouts collapse to single column below `768px`
-
-### Responsive Breakpoints
-- Mobile-first approach
-- `sm: 640px` — Small tablets
-- `md: 768px` — Tablets, single-column collapse
-- `lg: 1024px` — Small desktops
-- `xl: 1280px` — Standard desktops
-- `2xl: 1700px` — Large screens
-
-### Key Rules
-- **Controlled overlap allowed in hero/feature zones** — floating badges and Double-Bezel shells may slightly overlap their parent container to create depth. Forms, tables, and dense lists always stay strictly separated.
-- **No horizontal scroll on mobile** — critical failure
-- **Touch targets:** All interactive elements minimum `44px` tap target
-- **Full-height sections:** Use `min-h-[100dvh]` — never `h-screen` (iOS Safari jump)
-- **Fluid typography:** Headlines scale via `clamp()`
-
-## 6. Motion & Interaction
-
-### Spring Physics
-- **Default:** `stiffness: 100, damping: 20` — premium, weighty feel
-- **Button hover:** `translateY(-1px)` with `transition: all 0.2s ease`
-- **Card hover:** `translateY(-6px)` with `transition: all 0.3s ease-out`
-
-### Transitions
-- **Page transitions:** Vue `<transition name="fade">` — 0.2s opacity fade
-- **Dropdown:** `opacity + translateY(-8px)`, 0.2s ease
-- **Modal entrance:** Scale-in `scale(0.95) -> 1` + fade
-- **Staggered reveals:** Cards and list items cascade with delays
-
-### Perpetual Micro-Interactions
-- **BorderBeam:** Flowing light beam along card/element borders (orange gradient)
-- **Particles:** Interactive canvas particle background on login pages
-- **Skeleton pulse:** Loading states with subtle shimmer animation
-- **Gradient shift:** Login card background-position animation
-
-### Performance
-- Animate exclusively via `transform` and `opacity`
-- Never animate `top`, `left`, `width`, `height`
-- Use `will-change: transform` for GPU acceleration on frequently animated elements
-- Grain/noise filters on fixed pseudo-elements only
-
-## 7. Anti-Patterns (Banned)
-
-### Visual Banned
-- **No emojis** anywhere in the UI
-- **No `Inter` font** — use Geist exclusively
-- **No pure black** (`#000000`) — use Off-Black (`#1F2937`) or Zinc-950
-- **No neon/outer glow shadows** — all shadows are orange-tinted and diffused
-- **No oversaturated accents** — keep saturation below 80%
-- **No generic serif fonts** (`Times New Roman`, `Georgia`, `Garamond`)
-- **No purple/blue neon aesthetic** — strictly forbidden
-- **No excessive gradient text** on large headers
-
-### Layout Banned
-- **No uncontrolled overlap in dense UI** (forms / tables / lists) — overlap is reserved for hero & marketing zones
-- **No 3-column equal card layouts** — use asymmetric grids, 2-column zig-zag, or horizontal scroll
-- **No centered Hero sections** when variance exceeds 4
-- **No flexbox percentage math** — use CSS Grid or Tailwind utilities
-- **No horizontal scroll on mobile**
-
-### Content Banned
-- **No generic placeholder names** ("John Doe", "Acme", "Nexus")
-- **No fake round numbers** (`99.99%`, `50%`)
-- **No AI copywriting clichés** ("Elevate", "Seamless", "Unleash", "Next-Gen")
-- **No filler UI text** ("Scroll to explore", "Swipe down", scroll arrows, bouncing chevrons)
-- **No broken Unsplash links** — use `picsum.photos` or SVG avatars
-
-### Interaction Banned
-- **No custom mouse cursors**
-- **No circular spinners** for loading — always use skeleton loaders matching layout shape
-- **No "No data" text** for empty states — use composed illustrations
-
-## 8. Stitch Prompt Examples
-
-When generating screens with Stitch, use these prompt patterns:
-
-### Home Page Hero
-```
-Warm educational hero section for Chinese university students. Orange gradient
-background fading to warm cream, with a subtle grain overlay for physical texture.
-Large bold headline in Geist font. Double-Bezel card (warm outer shell + white
-inner core) floating above with exam countdown or quick actions, one small badge
-slightly overlapping the shell edge for depth. Asymmetric layout with content on
-left, decorative illustration on right. Spring-physics entrance animation.
+┌─────────────────────────────┐
+│ ┌────┐                 [PDF] │  ← 文件类型徽标右上角浮标（保留，样式微调）
+│ │ 📄 │                       │
+│ └────┘                       │
+│                               │
+│ 高考志愿填报方案深度分析报告    │  ← 改为"真实文件名/标题"，而非UUID
+│ [计算机科学] [重点推荐]        │  ← 改为映射后的中文语义标签
+│ 481 KB · 2026-09-02           │  ← 次要信息合并一行，弱化处理
+└─────────────────────────────┘
 ```
 
-### Exam Practice Screen
-```
-Clean exam practice interface. White paper-like card on warm cream background.
-Left sidebar with question navigation (pill-shaped buttons). Main content area
-with serif-style exam text. Orange accent for selected answers. Timer in top-right
-with gold gradient. Submit button at bottom with orange gradient and spring hover.
+### 文件类型图标 Token 化（按文件类型分配语义色，而不是随意配色）
+
+你现在 PDF=红、图片=紫 的配色思路是对的（按类型区分色彩），建议把这套配色关系做成一个**固定的 token 表**，后续所有文件类型统一遵守，不要每加一种类型就随手配一个颜色：
+
+```js
+// fileTypeStyle.js
+export const FILE_TYPE_STYLE = {
+  pdf:   { label: 'PDF',  color: '#EF4444', bg: 'linear-gradient(135deg,#FEF2F2,#FEE2E2)' },
+  image: { label: '图片', color: '#8B5CF6', bg: 'linear-gradient(135deg,#F5F3FF,#EDE9FE)' },
+  word:  { label: 'Word', color: '#3B82F6', bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)' },
+  excel: { label: 'Excel',color: '#22C55E', bg: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)' },
+  ppt:   { label: 'PPT',  color: '#F59E0B', bg: 'linear-gradient(135deg,#FFFBEB,#FEF3C7)' },
+  zip:   { label: '压缩包',color: '#64748B', bg: 'linear-gradient(135deg,#F8FAFC,#F1F5F9)' },
+}
 ```
 
-### Vocabulary Card
-```
-Vocabulary learning card component. White borderless rounded card with warm-tinted
-shadow (no strokes, no top accent bar). Word in large bold Geist font. Phonetic
-transcription in muted gray. Example sentence below. Four option buttons in pill
-shape — correct turns green, wrong turns red. Card flips with 3D rotation animation.
+图标容器按「设计系统2.0 第三章」的立体细节标准重做（当前图1的图标是纯色平涂方块，偏单薄）：
+
+```css
+.file-icon-badge {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--file-type-bg);              /* 由JS注入，来自上面token表 */
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.7),
+              0 1px 4px rgba(0,0,0,0.06);
+}
+.file-icon-badge svg {
+  width: 26px; height: 26px;
+  color: var(--file-type-color);
+}
+.file-type-corner-badge {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px;
+  background: var(--file-type-color);
+  color: #fff;
+}
 ```
 
-### Dashboard Stats
+### 卡片整体容器（去掉米黄渐变缩略图底，改中性色）
+
+```css
+.file-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--neutral-shadow);
+  border: 1px solid var(--neutral-border);
+  transition: all .25s;
+}
+.file-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px var(--neutral-shadow-hover);
+}
+.file-card__thumb {
+  background: #F8FAFC;   /* 不要米黄渐变，中性底 */
+  padding: 28px 0;
+  display: flex; justify-content: center;
+  position: relative;
+}
+.file-card__body { padding: 14px 16px 16px; }
+.file-card__title {
+  font-size: 14px; font-weight: 600; color: #1f2937;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.file-card__meta {
+  display: flex; gap: 6px; margin: 8px 0;
+}
+.file-card__footer {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #94A3B8;
+}
 ```
-Admin dashboard stats row. Borderless white cards with warm shadows; ONE card
-(highlighted metric) uses the Double-Bezel shell with a 3px gradient top accent.
-Large number in bold Geist Mono font. Label in muted gray below. Sparkline chart
-in orange. Hover lifts card with warm orange shadow. Responsive: 4 columns desktop,
-2 columns tablet, 1 column mobile.
+
+---
+
+## 四、详情页优化
+
+### 1. 整页去橙框（已在第一部分说明），改为白卡阴影
+
+### 2. 右侧信息面板：用映射后的数据渲染
+
 ```
+┌─────────────────────────────┐
+│ [PDF] 高考志愿填报方案深度分析报告.pdf │ ← 真实文件名，不是UUID
+├─────────────────────────────┤
+│ 基础信息                      │
+│ 文件大小    481 KB            │
+│ 上传时间    2026-09-02        │
+│ 所属专栏    大学专栏           │
+├─────────────────────────────┤
+│ 分类                         │
+│ 学科       计算机科学与技术     │ ← 映射后文字，不是324
+│ 适用阶段    大一              │
+├─────────────────────────────┤
+│ 文档简介                      │
+│ 本文深度解析山西省2026年高考...  │ ← 真实简介文字，不是4324
+├─────────────────────────────┤
+│ 标签                         │
+│ [重点推荐] [高考志愿]          │ ← 映射后文字，不是344
+└─────────────────────────────┘
+```
+
+每个信息分组之间，**用极淡的分隔线代替独立边框盒子**：
+
+```css
+.detail-panel-group {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--neutral-border);
+}
+.detail-panel-group:last-child { border-bottom: none; }
+.detail-panel-label { font-size: 12px; color: #94A3B8; margin-bottom: 8px; }
+.detail-panel-value { font-size: 14px; color: #1f2937; font-weight: 500; }
+```
+
+### 3. kkfileview 预览区域的"工业灰"观感优化
+
+当前预览区域左右两边是 kkfileview 默认的深灰色背景，和整体浅色、精致的设计语言格格不入，属于**"第三方组件默认样式没有被二次包装"**的典型问题。建议：
+
+```css
+.preview-iframe-wrapper {
+  border-radius: 16px;
+  overflow: hidden;              /* 关键：把iframe四个角"裁"成圆角 */
+  box-shadow: 0 4px 20px var(--neutral-shadow);
+  background: #F1F5F9;           /* 把kkfileview默认的深炭灰，换成和全局背景协调的浅灰 */
+}
+.preview-iframe-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+```
+
+**额外建议**：kkfileview 本身的背景色可以通过它的配置文件/URL参数自定义（它支持传 `office_preview_switch_disabled` 等参数，具体看你用的版本是否支持自定义背景色/工具栏颜色），如果支持，直接把它的深灰背景改成 `#F1F5F9` 这种和你全站一致的浅灰，比在外层套壳更彻底。如果不支持，就用上面"外层包裹+圆角裁切+阴影"的方案做视觉兼容处理。
+
+此外，加一个**骨架屏/加载状态**，因为 kkfileview 转码加载有时候会有延迟，白屏等待体验差：
+
+```vue
+<template>
+  <div class="preview-iframe-wrapper">
+    <div v-if="loading" class="preview-skeleton">
+      <el-skeleton :rows="8" animated />
+    </div>
+    <iframe
+      v-show="!loading"
+      :src="previewUrl"
+      @load="loading = false"
+    />
+  </div>
+</template>
+```
+
+### 4. 底部按钮
+
+"下载文件""新窗口打开"两个按钮目前已经符合规范（主橙色按钮+次白底按钮），**这部分保留不动**。
+
+---
+
+## 五、补充到 AGENTS.md 的新条目（这次讨论的产出，下次统一收录时用）
+
+```markdown
+## 已知坑：橙框病在"容器级别"复发（设计系统2.0 补充条款）
+- 2.0 版规则原文只强调"卡片不能用橙色硬边框"，但实际开发中该毛病会在更大尺度复现：
+  区块容器（筛选区/列表标题区）、整页外层容器 同样被套上橙色四边描边或顶底描边。
+- **补充铁律**：不管是卡片、区块(section)、还是整页容器，任何矩形区域都不得用品牌色/语义色做
+  四边（或顶+底）包围描边。分隔一律用"背景色层次 + box-shadow"，颜色只允许用在：
+  左侧4px色条标题、图标、文字强调、徽标/标签这些"点状/线状局部元素"上。
+- 排查方法：search 项目内 `border.*#FF` / `border-top.*border-bottom` 组合出现在
+  non-card 的 section/wrapper/container 类名上的写法，均需按此条款改为阴影方案。
+
+## 已知坑：文件资料模块 —— 原始数据库字段/UUID 直接渲染给用户（P0，高于样式优先级）
+- 现象：文件列表卡片标题显示 OSS 存储用的 UUID 文件名（如 `74ddb69d-0d85-...`），
+  而不是用户上传时的原始文件名；学科/标签字段显示原始数据库ID数字（如 `324`、`344`），
+  未转换成中文名称；详情页"文档简介"字段显示纯数字，疑似脏数据或字段错位。
+- 根因：① 数据库设计缺失 original_name 字段，或前端渲染了 storage_name/storage_key
+  而非 original_name；② 前端直接渲染外键ID，未做字典映射，或后端接口未返回 xxxName
+  便捷字段；③ 简介字段数据本身异常，需回查该条记录的录入来源。
+- 正确方案：
+  1) 数据库层：文件表需同时保存 `storage_name`（OSS用，UUID）和 `original_name`
+     （用户上传时的真实文件名，展示用），前端一律渲染 `original_name`。
+  2) 接口层：涉及 subjectId/tagId 等外键的列表/详情接口，后端直接在返回体里多给一个
+     `subjectName` / `tagNames` 字段，前端不自己维护字典做转换（减少前后端不一致风险）。
+  3) 任何页面新增字段渲染前，先确认该字段是"原始外键ID"还是"展示用文本"，
+     **严禁把裸ID/UUID/storage_key 直接丢进模板渲染**，这是比颜色/边框更高优先级的bug，
+     属于"能不能用"级别而非"好不好看"级别。
+- 适用范围：所有专栏（初中/高中/大学/考研等）的文件资料列表与详情页，结构相同，需统一排查。
+
+## 第三方组件默认样式二次包装规范（kkfileview 等 iframe 嵌入场景）
+- 第三方预览组件（kkfileview）自带的深灰背景/默认工具栏与站点整体浅色高级感不符，
+  严禁直接裸露使用，必须用外层容器包裹：`border-radius` 裁切圆角 + `box-shadow` 阴影
+  融入卡片体系 + 背景色替换为站点中性灰 `#F1F5F9`（若组件支持配置则优先改组件自身背景）。
+- 预览加载需配 `el-skeleton` 骨架屏，避免 iframe 转码期间白屏。
+```
+
+---

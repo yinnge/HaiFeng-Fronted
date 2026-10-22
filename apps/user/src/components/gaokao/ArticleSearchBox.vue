@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // apps/user/src/components/gaokao/ArticleSearchBox.vue
-// 资讯标题关键字搜索框：全国范围关键字搜索 + 输入防抖搜索 + 下弹建议（命中段橙色高亮）。
+// 资讯标题关键字搜索框：全国范围关键字搜索 + 输入防抖搜索 + 下弹建议（命中段蓝色高亮）。
 // 不再按省份筛选（省份筛选统一由导航栏档案省份 + 列表含全国承担），搜索始终全局。
 // 点击/回车选中后 emit('select', id)，由父组件决定跳转；请求侧带序号丢弃过期响应。
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -160,21 +160,21 @@ onBeforeUnmount(() => {
   height: 42px;
   padding: 0 14px;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.25);
-  border-radius: 16px;
+  border: 1px solid var(--neutral-border-strong);
+  border-radius: 12px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .asb-input-wrap:focus-within {
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  border-color: var(--sem-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .asb-ico {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: #fb923c;
+  color: var(--sem-blue);
 }
 
 .asb-input {
@@ -201,9 +201,9 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   padding: 6px;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.12);
+  border: 1px solid var(--neutral-border);
   border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(249, 115, 22, 0.12);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
 }
 
 .asb-item {
@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
 }
 
 .asb-item:hover {
-  background: #fff7ed;
+  background: var(--sem-blue-bg);
 }
 
 .asb-title {
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
 }
 
 .asb-hit {
-  color: #f97316;
+  color: var(--sem-blue);
   font-weight: 600;
 }
 
@@ -243,12 +243,12 @@ onBeforeUnmount(() => {
 .asb-tag {
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
-  border-radius: 999px;
+  padding: 1px 7px;
+  border-radius: 6px;
   font-size: 11px;
-  color: #e8722a;
-  background: rgba(249, 115, 22, 0.08);
-  border: 1px solid rgba(249, 115, 22, 0.18);
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
+  border: 1px solid var(--sem-blue-soft);
 }
 
 .asb-empty {

@@ -56,7 +56,7 @@ watch(
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div v-if="loading" class="flex justify-center py-10">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-500"></div>
     </div>
 
     <article v-else-if="detail" class="notice-detail">
@@ -97,7 +97,7 @@ watch(
 .notice-detail__divider {
   height: 1px;
   margin: 1rem 0;
-  background: linear-gradient(90deg, #f97316, #fbbf24);
+  background: var(--neutral-border);
 }
 
 .notice-detail__empty {
@@ -154,7 +154,7 @@ watch(
 }
 
 .announcement-content a {
-  color: #f97316;
+  color: #2563eb;
   text-decoration: underline;
 }
 
@@ -171,7 +171,7 @@ watch(
 }
 
 .announcement-content blockquote {
-  border-left: 3px solid #f97316;
+  border-left: 3px solid var(--sem-blue);
   padding-left: 12px;
   color: #6b7280;
   margin: 8px 0 12px;

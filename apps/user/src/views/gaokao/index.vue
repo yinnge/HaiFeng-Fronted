@@ -316,7 +316,7 @@ async function initPage() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+  <div class="min-h-screen flex flex-col bg-surface-bg">
     <!-- 档案吸附条：常驻导航栏下方，往下滑动页面时固定不动（共享组件，Groups 页复用）
          高中模块：目录最左扩展「高中资料」，右侧省份后加身份下拉（高一/高二/高三） -->
     <ArchiveBar
@@ -392,13 +392,13 @@ async function initPage() {
 
           <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
           <div class="mt-12 mb-5 flex items-baseline justify-between gap-4">
-            <h3 class="border-l-[4px] border-brand-blue pl-3 text-xl font-bold text-gray-800">特殊通道</h3>
+            <h3 class="border-l-[4px] border-sem-yellow pl-3 text-xl font-bold text-gray-800">特殊通道</h3>
             <span class="hidden md:block text-sm text-gray-400">综合评价 · 强基计划 · 专项计划 · 民族班 · 全国联招</span>
           </div>
 
           <!-- 加载中：与页面卡片同构的骨架屏（替代通用转圈） -->
           <div v-if="loading" class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
-            <div v-for="i in 6" :key="i" class="rounded-2xl bg-white p-6 shadow-card border border-gray-100/60 animate-pulse">
+            <div v-for="i in 6" :key="i" class="rounded-2xl bg-white p-6 shadow-hf border border-surface-border animate-pulse">
               <div class="mb-4 h-12 w-12 rounded-xl bg-gray-200/80"></div>
               <div class="h-4 w-24 rounded bg-gray-200/80"></div>
               <div class="mt-3 mb-2 flex gap-1.5">
@@ -419,21 +419,21 @@ async function initPage() {
               class="h-full"
             >
               <div
-                class="group flex h-full flex-col rounded-2xl bg-gradient-to-r from-gray-100/40 via-gray-50/20 to-white p-6 shadow-card border border-gray-100/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-blue/40 hover:shadow-card-hover active:scale-[0.98] cursor-pointer"
+                class="group flex h-full flex-col rounded-2xl bg-white p-6 shadow-hf border border-surface-border transition-all duration-300 hover:-translate-y-0.5 hover:border-sem-yellow/40 hover:shadow-hf-hover active:scale-[0.98] cursor-pointer"
                 @click="goChannel(item)"
               >
-                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors group-hover:bg-brand-blue/15">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sem-yellow-bg text-sem-yellow-deep transition-colors group-hover:bg-sem-yellow-soft">
                   <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path v-for="d in (channelIcon[item.channelCode] || channelIcon.FALLBACK).paths" :key="d" :d="d" />
                   </svg>
                 </div>
                 <h4 class="text-[17px] font-bold text-gray-800">{{ item.channelName }}</h4>
                 <div class="mb-2 flex min-h-[24px] flex-wrap gap-1.5">
-                  <span v-if="isHot(item.channelCode)" class="inline-flex items-center rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-medium text-brand-orange border border-brand-orange/20">热门</span>
-                  <span v-if="isQualified(item.channelCode)" class="inline-flex items-center rounded-full bg-brand-blue/10 px-2.5 py-0.5 text-xs font-medium text-brand-blue border border-brand-blue/20">需资格</span>
+                  <span v-if="isHot(item.channelCode)" class="inline-flex items-center rounded-md bg-sem-red-bg px-2 py-0.5 text-[11px] font-semibold text-sem-red border border-sem-red/20">热门</span>
+                  <span v-if="isQualified(item.channelCode)" class="inline-flex items-center rounded-md bg-sem-blue-bg px-2 py-0.5 text-[11px] font-semibold text-sem-blue border border-sem-blue/20">需资格</span>
                 </div>
                 <p class="flex-1 text-sm leading-relaxed text-gray-500">{{ channelDesc[item.channelCode] || item.subtitle }}</p>
-                <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-blue">
+                <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sem-blue">
                   进入通道
                   <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M6.5 3.5 11 8l-4.5 4.5" />
@@ -445,7 +445,7 @@ async function initPage() {
 
           <!-- 热点资讯：按档案省份推送，仅展示 4 条，查看更多跳资讯列表页 -->
           <div class="mt-12 mb-5 flex items-center justify-between gap-4">
-            <h3 class="border-l-[4px] border-brand-orange pl-3 text-xl font-bold text-gray-800">热点资讯</h3>
+            <h3 class="border-l-[4px] border-sem-blue pl-3 text-xl font-bold text-gray-800">热点资讯</h3>
             <button class="news-more-btn" @click="goArticles">
               查看更多
               <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -469,7 +469,7 @@ async function initPage() {
             </div>
             <p v-else-if="!newsLoading" class="py-8 text-center text-sm text-gray-400">本省暂无已发布的资讯</p>
           </div>
-          <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-orange-100 bg-white/70 px-5 py-4 text-sm text-gray-500">
+          <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-surface-border bg-white px-5 py-4 text-sm text-gray-500">
             填写高考档案后，将按你的省份推送热点资讯
             <button class="news-empty-btn" @click="archiveBarRef?.openDialog()">
               去填写档案
@@ -480,8 +480,7 @@ async function initPage() {
           </div>
         </div>
 
-        <!-- 底部品牌橙渐变分隔条（衔接直通考院，消除硬断崖） -->
-        <div class="mx-auto mt-12 h-[3px] max-w-5xl rounded-full bg-gradient-to-r from-transparent via-brand-orange/40 to-transparent" aria-hidden="true"></div>
+        <div class="mx-auto mt-12 h-px max-w-5xl bg-gradient-to-r from-transparent via-surface-strong to-transparent" aria-hidden="true"></div>
         <div v-if="!loading && !displayChannels.length" class="mt-6 text-center text-sm text-gray-400">
           暂无其他报考通道数据
         </div>
@@ -529,19 +528,20 @@ async function initPage() {
   align-items: center;
   gap: 4px;
   padding: 6px 16px;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: var(--brand-orange);
   color: #fff;
   border: none;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.28);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.24);
   transition: all 0.25s ease;
 }
 
 .news-empty-btn:hover {
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.36);
+  background: var(--brand-orange-dark);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
   transform: translateY(-1px);
 }
 
@@ -556,9 +556,9 @@ async function initPage() {
   gap: 4px;
   padding: 6px 16px;
   background: #fff;
-  color: #f97316;
-  border: 1px solid rgba(249, 115, 22, 0.35);
-  border-radius: 20px;
+  color: var(--sem-blue);
+  border: 1px solid var(--neutral-border-strong);
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -566,10 +566,10 @@ async function initPage() {
 }
 
 .news-more-btn:hover {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
+  border-color: var(--sem-blue-soft);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
   transform: translateY(-1px);
 }
 
@@ -592,11 +592,11 @@ async function initPage() {
 }
 
 .news-item:hover {
-  background: rgba(249, 115, 22, 0.06);
+  background: var(--sem-blue-bg);
 }
 
 .news-item:hover .news-title {
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 .news-dot {
@@ -604,7 +604,7 @@ async function initPage() {
   height: 6px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: var(--sem-blue);
 }
 
 .news-title {
@@ -625,7 +625,8 @@ async function initPage() {
 .exams-section {
   position: relative;
   padding: 64px 24px 72px;
-  background: linear-gradient(180deg, #fff 0%, #fff7ed 60%, #fff 100%);
+  background: var(--neutral-bg);
+  border-top: 1px solid var(--neutral-border);
   overflow: hidden;
   /* 锚点滚动时避免被 sticky header 遮挡 */
   scroll-margin-top: 88px;
@@ -638,7 +639,7 @@ async function initPage() {
   width: 320px;
   height: 320px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -650,7 +651,7 @@ async function initPage() {
   width: 360px;
   height: 360px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 146, 60, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
 }
 
 .container {
@@ -680,7 +681,7 @@ async function initPage() {
   height: 4px;
   margin: 10px auto 0;
   border-radius: 2px;
-  background: linear-gradient(90deg, #f97316, #fb923c);
+  background: var(--sem-green);
 }
 
 .section-subtitle {
@@ -707,9 +708,9 @@ async function initPage() {
   gap: 8px;
   padding: 12px 16px;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.12);
+  border: 1px solid var(--neutral-border);
   border-radius: 12px;
-  color: #4b5563;
+  color: #475569;
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -719,15 +720,15 @@ async function initPage() {
 .exam-link svg {
   width: 14px;
   height: 14px;
-  color: #fb923c;
+  color: var(--sem-green);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
 .exam-link:hover {
-  border-color: #f97316;
-  color: #f97316;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.12);
+  border-color: var(--sem-green-soft);
+  color: var(--sem-green);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   transform: translateY(-2px);
 }
 
@@ -778,8 +779,8 @@ async function initPage() {
   overflow: hidden;
   height: 475px;
   border-radius: 16px;
-  box-shadow: 0 8px 24px -8px rgba(249, 115, 22, 0.18);
-  background: #fff7ed;
+  box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.18);
+  background: #fff;
 }
 
 @media (min-width: 1024px) {
@@ -859,7 +860,7 @@ async function initPage() {
   opacity: 0.92;
 }
 
-/* 胶囊型指示器：激活态品牌橙，非激活态半透明白色 */
+/* 胶囊型指示器：激活态蓝色，非激活态半透明白色 */
 .carousel-indicators {
   position: absolute;
   bottom: 16px;
@@ -887,6 +888,6 @@ async function initPage() {
 
 .carousel-dot.is-active {
   width: 30px;
-  background: #f97316;
+  background: var(--sem-blue);
 }
 </style>

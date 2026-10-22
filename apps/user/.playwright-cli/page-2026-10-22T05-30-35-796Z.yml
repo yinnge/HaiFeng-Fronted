@@ -1,0 +1,450 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - link "海枫未来规划院" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - img "海枫未来规划院" [ref=e8]
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - text: 海枫
+            - generic [ref=e11]: 未来规划院
+          - generic [ref=e12]: 专注中升学、高考志愿及硕博就业的全周期规划服务
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - textbox "全站查询" [ref=e20]
+        - generic [ref=e21]: ⌘K
+      - generic [ref=e22]:
+        - navigation [ref=e23]:
+          - link "首页" [ref=e24] [cursor=pointer]:
+            - /url: /
+          - button "百宝箱" [ref=e25] [cursor=pointer]
+          - button "生涯规划图谱" [ref=e26] [cursor=pointer]
+          - button "大数据对比" [ref=e27] [cursor=pointer]
+          - button "专家咨询预约" [ref=e28] [cursor=pointer]
+        - button "登录" [ref=e30] [cursor=pointer]
+  - banner [ref=e31]:
+    - navigation [ref=e33]:
+      - button "首 页" [ref=e34] [cursor=pointer]
+      - button "初中专栏" [ref=e36] [cursor=pointer]:
+        - text: 初中专栏
+        - img [ref=e37]
+      - button "高中专栏" [ref=e40] [cursor=pointer]:
+        - text: 高中专栏
+        - img [ref=e41]
+      - button "高考志愿填报" [ref=e44] [cursor=pointer]:
+        - text: 高考志愿填报
+        - img [ref=e45]
+      - button "大学专栏" [ref=e48] [cursor=pointer]:
+        - text: 大学专栏
+        - img [ref=e49]
+      - button "英语四六级" [ref=e52] [cursor=pointer]:
+        - text: 英语四六级
+        - img [ref=e53]
+      - button "考研" [ref=e56] [cursor=pointer]:
+        - text: 考研
+        - img [ref=e57]
+      - button "考公" [ref=e60] [cursor=pointer]:
+        - text: 考公
+        - img [ref=e61]
+      - button "研究生专栏" [ref=e64] [cursor=pointer]:
+        - text: 研究生专栏
+        - img [ref=e65]
+      - button "博士专栏" [ref=e68] [cursor=pointer]:
+        - text: 博士专栏
+        - img [ref=e69]
+      - button "就业信息专栏" [ref=e72] [cursor=pointer]:
+        - text: 就业信息专栏
+        - img [ref=e73]
+  - main [ref=e75]:
+    - generic [ref=e76]:
+      - generic [ref=e78]:
+        - heading "海枫未来规划院" [level=1] [ref=e79]:
+          - generic [ref=e80] [cursor=pointer]:
+            - img
+          - generic [ref=e81]: 海枫未来规划院
+        - paragraph [ref=e82]: 依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
+      - generic [ref=e84]:
+        - generic [ref=e86]:
+          - link "01 初中专栏 学业奠基与升学指导" [ref=e87] [cursor=pointer]:
+            - /url: /middle
+            - img [ref=e89]
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - generic [ref=e94]: "01"
+                - generic [ref=e95]: 初中专栏
+              - generic [ref=e96]: 学业奠基与升学指导
+            - img [ref=e98]
+          - link "02 高中专栏 科目选修与生涯规划" [ref=e100] [cursor=pointer]:
+            - /url: /gaokao?mod=high
+            - img [ref=e102]
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - generic [ref=e107]: "02"
+                - generic [ref=e108]: 高中专栏
+              - generic [ref=e109]: 科目选修与生涯规划
+            - img [ref=e111]
+          - link "03 高考志愿填报 院校位次与专业精选" [ref=e113] [cursor=pointer]:
+            - /url: /gaokao
+            - img [ref=e115]
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - generic [ref=e120]: "03"
+                - generic [ref=e121]: 高考志愿填报
+              - generic [ref=e122]: 院校位次与专业精选
+            - img [ref=e124]
+          - link "04 大学专栏 学分绩点与成长发展" [ref=e126] [cursor=pointer]:
+            - /url: /college
+            - img [ref=e128]
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - generic [ref=e133]: "04"
+                - generic [ref=e134]: 大学专栏
+              - generic [ref=e135]: 学分绩点与成长发展
+            - img [ref=e137]
+          - link "05 英语练习 中考到考研英语在线练习" [ref=e139] [cursor=pointer]:
+            - /url: /english
+            - img [ref=e141]
+            - generic [ref=e144]:
+              - generic [ref=e145]:
+                - generic [ref=e146]: "05"
+                - generic [ref=e147]: 英语练习
+              - generic [ref=e148]: 中考到考研英语在线练习
+            - img [ref=e150]
+          - link "06 考研专栏 择校初试与复试规划" [ref=e152] [cursor=pointer]:
+            - /url: /postgrad-exam
+            - img [ref=e154]
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - generic [ref=e159]: "06"
+                - generic [ref=e160]: 考研专栏
+              - generic [ref=e161]: 择校初试与复试规划
+            - img [ref=e163]
+          - link "07 考公专栏 国考省考选岗精算" [ref=e165] [cursor=pointer]:
+            - /url: /civil-service
+            - img [ref=e167]
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - generic [ref=e173]: "07"
+                - generic [ref=e174]: 考公专栏
+              - generic [ref=e175]: 国考省考选岗精算
+            - img [ref=e177]
+          - link "08 研究生专栏 学术科研与文献开题" [ref=e179] [cursor=pointer]:
+            - /url: /graduate
+            - img [ref=e181]
+            - generic [ref=e183]:
+              - generic [ref=e184]:
+                - generic [ref=e185]: "08"
+                - generic [ref=e186]: 研究生专栏
+              - generic [ref=e187]: 学术科研与文献开题
+            - img [ref=e189]
+          - link "09 博士专栏 申博流程与顶刊发表" [ref=e191] [cursor=pointer]:
+            - /url: /postgraduate/phd
+            - img [ref=e193]
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - generic [ref=e198]: "09"
+                - generic [ref=e199]: 博士专栏
+              - generic [ref=e200]: 申博流程与顶刊发表
+            - img [ref=e202]
+          - link "10 就业信息专栏 行业风向与名企直通" [ref=e204] [cursor=pointer]:
+            - /url: /employment/civil
+            - img [ref=e206]
+            - generic [ref=e209]:
+              - generic [ref=e210]:
+                - generic [ref=e211]: "10"
+                - generic [ref=e212]: 就业信息专栏
+              - generic [ref=e213]: 行业风向与名企直通
+            - img [ref=e215]
+        - complementary [ref=e217]:
+          - generic [ref=e218]:
+            - heading "规划院公告" [level=3] [ref=e219]
+            - button "查看全部" [ref=e220] [cursor=pointer]:
+              - text: 查看全部
+              - img [ref=e221]
+          - list [ref=e223]:
+            - listitem [ref=e224]:
+              - button "NEW 【3454】 456 08-27" [ref=e225] [cursor=pointer]:
+                - generic [ref=e226]: NEW
+                - generic [ref=e227]: 【3454】
+                - generic [ref=e228]: "456"
+                - generic [ref=e229]: 08-27
+            - listitem [ref=e230]:
+              - button "【12312】 need 08-27" [ref=e231] [cursor=pointer]:
+                - generic [ref=e232]: 【12312】
+                - generic [ref=e233]: need
+                - generic [ref=e234]: 08-27
+            - listitem [ref=e235]:
+              - button "【12】 hello 08-01" [ref=e236] [cursor=pointer]:
+                - generic [ref=e237]: 【12】
+                - generic [ref=e238]: hello
+                - generic [ref=e239]: 08-01
+      - generic [ref=e241]:
+        - generic [ref=e242]:
+          - heading "百宝箱" [level=2] [ref=e243]
+          - paragraph [ref=e244]: 查询工具合集 · 院校、专业、城市、企业行业与竞赛证书一箱搞定
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - generic [ref=e247]:
+              - generic [ref=e248]: "01"
+              - generic [ref=e249]:
+                - heading "院校库" [level=3] [ref=e251]
+                - paragraph [ref=e252]: 覆盖全国高校信息、历年录取与培养画像，211、985 一网打尽
+              - link "查看全部院校" [ref=e254] [cursor=pointer]:
+                - /url: /university
+                - text: 查看全部院校
+                - img [ref=e255]
+            - generic [ref=e257]:
+              - link "天 天府新区通用航空职业学院 民办 四川省·眉山市 理工 专科 专业整理中" [ref=e258] [cursor=pointer]:
+                - /url: /university/2095101654406926336
+                - generic [ref=e259]:
+                  - generic [ref=e261]: 天
+                  - generic [ref=e262]:
+                    - generic [ref=e263]:
+                      - heading "天府新区通用航空职业学院" [level=4] [ref=e264]
+                      - generic [ref=e265]: 民办
+                    - generic [ref=e266]:
+                      - generic [ref=e267]: 四川省·眉山市
+                      - generic [ref=e268]: 理工
+                      - generic [ref=e269]: 专科
+                      - generic [ref=e270]: 专业整理中
+              - link "天 天府新区航空旅游职业学院 民办 四川省·眉山市 理工 专科 专业整理中" [ref=e271] [cursor=pointer]:
+                - /url: /university/2095101654398537728
+                - generic [ref=e272]:
+                  - generic [ref=e274]: 天
+                  - generic [ref=e275]:
+                    - generic [ref=e276]:
+                      - heading "天府新区航空旅游职业学院" [level=4] [ref=e277]
+                      - generic [ref=e278]: 民办
+                    - generic [ref=e279]:
+                      - generic [ref=e280]: 四川省·眉山市
+                      - generic [ref=e281]: 理工
+                      - generic [ref=e282]: 专科
+                      - generic [ref=e283]: 专业整理中
+              - link "江 江阳城建职业学院 民办 四川省·泸州市 综合 专科 专业整理中" [ref=e284] [cursor=pointer]:
+                - /url: /university/2095101654381760512
+                - generic [ref=e285]:
+                  - generic [ref=e287]: 江
+                  - generic [ref=e288]:
+                    - generic [ref=e289]:
+                      - heading "江阳城建职业学院" [level=4] [ref=e290]
+                      - generic [ref=e291]: 民办
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: 四川省·泸州市
+                      - generic [ref=e294]: 综合
+                      - generic [ref=e295]: 专科
+                      - generic [ref=e296]: 专业整理中
+              - link "德 德阳科贸职业学院 民办 四川省·德阳市 综合 专科 专业整理中" [ref=e297] [cursor=pointer]:
+                - /url: /university/2095101654369177600
+                - generic [ref=e298]:
+                  - generic [ref=e300]: 德
+                  - generic [ref=e301]:
+                    - generic [ref=e302]:
+                      - heading "德阳科贸职业学院" [level=4] [ref=e303]
+                      - generic [ref=e304]: 民办
+                    - generic [ref=e305]:
+                      - generic [ref=e306]: 四川省·德阳市
+                      - generic [ref=e307]: 综合
+                      - generic [ref=e308]: 专科
+                      - generic [ref=e309]: 专业整理中
+          - generic [ref=e310]:
+            - generic [ref=e311]:
+              - generic [ref=e312]: "02"
+              - generic [ref=e313]:
+                - generic [ref=e314]:
+                  - heading "专业库" [level=3] [ref=e315]
+                  - tablist "专业类型" [ref=e316]:
+                    - tab "本科专业" [selected] [ref=e317] [cursor=pointer]
+                    - tab "考研专业" [ref=e318] [cursor=pointer]
+                - paragraph [ref=e319]: 热门与冷门并行，就业率与薪资水平一次看清
+              - link "查看全部专业" [ref=e321] [cursor=pointer]:
+                - /url: /major
+                - text: 查看全部专业
+                - img [ref=e322]
+            - paragraph [ref=e325]: 暂无本科专业数据
+          - generic [ref=e326]:
+            - generic [ref=e327]:
+              - generic [ref=e328]: "03"
+              - generic [ref=e329]:
+                - heading "城市库" [level=3] [ref=e331]
+                - paragraph [ref=e332]: 城市发展、高校资源与地区分布速览，帮你圈定目标城市
+              - generic [ref=e333]:
+                - generic [ref=e334]: 共收录 349 座城市
+                - link "查看全部城市" [ref=e335] [cursor=pointer]:
+                  - /url: /city
+                  - text: 查看全部城市
+                  - img [ref=e336]
+            - generic [ref=e338]:
+              - link "北京 北京 · 华东大学 GDP 5 万亿 高校 92 重点 34" [ref=e339] [cursor=pointer]:
+                - /url: /city/2088897753043308544
+                - generic [ref=e340]:
+                  - generic [ref=e341]:
+                    - heading "北京" [level=4] [ref=e342]
+                    - paragraph [ref=e343]: 北京 · 华东大学
+                  - img [ref=e345]
+                - generic [ref=e347]:
+                  - generic [ref=e348]: GDP
+                  - strong [ref=e349]: 5 万亿
+                - generic [ref=e350]:
+                  - generic [ref=e351]:
+                    - text: 高校
+                    - strong [ref=e352]: "92"
+                  - generic [ref=e353]:
+                    - text: 重点
+                    - strong [ref=e354]: "34"
+              - link "德阳 四川 · 四川省下辖地级市，位于成都平原东北部 GDP 3265.40 亿元 高校 9 重点 0" [ref=e355] [cursor=pointer]:
+                - /url: /city/2088938760824819712
+                - generic [ref=e356]:
+                  - generic [ref=e357]:
+                    - heading "德阳" [level=4] [ref=e358]
+                    - paragraph [ref=e359]: 四川 · 四川省下辖地级市，位于成都平原东北部
+                  - img [ref=e361]
+                - generic [ref=e363]:
+                  - generic [ref=e364]: GDP
+                  - strong [ref=e365]: 3265.40 亿元
+                - generic [ref=e366]:
+                  - generic [ref=e367]:
+                    - text: 高校
+                    - strong [ref=e368]: "9"
+                  - generic [ref=e369]:
+                    - text: 重点
+                    - strong [ref=e370]: "0"
+              - link "绵阳 四川 · 四川省下辖地级市，省域副中心城市 GDP 4344 亿元 高校 11 重点 0" [ref=e371] [cursor=pointer]:
+                - /url: /city/2088947276759306240
+                - generic [ref=e372]:
+                  - generic [ref=e373]:
+                    - heading "绵阳" [level=4] [ref=e374]
+                    - paragraph [ref=e375]: 四川 · 四川省下辖地级市，省域副中心城市
+                  - img [ref=e377]
+                - generic [ref=e379]:
+                  - generic [ref=e380]: GDP
+                  - strong [ref=e381]: 4344 亿元
+                - generic [ref=e382]:
+                  - generic [ref=e383]:
+                    - text: 高校
+                    - strong [ref=e384]: "11"
+                  - generic [ref=e385]:
+                    - text: 重点
+                    - strong [ref=e386]: "0"
+              - link "上海市 上海市 · 华东 GDP 5.4 万亿 高校 69 重点 14" [ref=e387] [cursor=pointer]:
+                - /url: /city/2109221269462454272
+                - generic [ref=e388]:
+                  - generic [ref=e389]:
+                    - heading "上海市" [level=4] [ref=e390]
+                    - paragraph [ref=e391]: 上海市 · 华东
+                  - img [ref=e393]
+                - generic [ref=e395]:
+                  - generic [ref=e396]: GDP
+                  - strong [ref=e397]: 5.4 万亿
+                - generic [ref=e398]:
+                  - generic [ref=e399]:
+                    - text: 高校
+                    - strong [ref=e400]: "69"
+                  - generic [ref=e401]:
+                    - text: 重点
+                    - strong [ref=e402]: "14"
+          - generic [ref=e403]:
+            - generic [ref=e404]:
+              - generic [ref=e405]:
+                - generic [ref=e406]: "04"
+                - generic [ref=e407]:
+                  - generic [ref=e408]:
+                    - heading "竞赛与证书" [level=3] [ref=e409]
+                    - tablist "竞赛与证书" [ref=e410]:
+                      - tab "竞赛" [selected] [ref=e411] [cursor=pointer]
+                      - tab "证书" [ref=e412] [cursor=pointer]
+                  - paragraph [ref=e413]: 国家级、省级赛事信息与证书考取一览
+              - paragraph [ref=e415]: 暂无竞赛数据
+              - generic [ref=e416]:
+                - link "查看全部竞赛" [ref=e417] [cursor=pointer]:
+                  - /url: /competition
+                  - text: 查看全部竞赛
+                  - img [ref=e418]
+                - link "查看全部证书" [ref=e420] [cursor=pointer]:
+                  - /url: /certificate
+                  - text: 查看全部证书
+                  - img [ref=e421]
+            - generic [ref=e423]:
+              - generic [ref=e424]:
+                - generic [ref=e425]: "05"
+                - generic [ref=e426]:
+                  - generic [ref=e427]:
+                    - heading "企业与行业" [level=3] [ref=e428]
+                    - tablist "企业与行业" [ref=e429]:
+                      - tab "企业" [selected] [ref=e430] [cursor=pointer]
+                      - tab "行业" [ref=e431] [cursor=pointer]
+                  - paragraph [ref=e432]: 行业趋势与龙头企业，规模与人才需求一览
+              - paragraph [ref=e434]: 暂无企业数据
+              - generic [ref=e435]:
+                - link "查看全部企业" [ref=e436] [cursor=pointer]:
+                  - /url: /enterprise
+                  - text: 查看全部企业
+                  - img [ref=e437]
+                - link "查看全部行业" [ref=e439] [cursor=pointer]:
+                  - /url: /industry
+                  - text: 查看全部行业
+                  - img [ref=e440]
+      - generic [ref=e443]:
+        - generic [ref=e444]:
+          - heading "专业规划师" [level=2] [ref=e445]
+          - paragraph [ref=e446]: 资深团队，一对一陪伴你的每一步
+        - generic [ref=e447]:
+          - button [disabled] [ref=e448]:
+            - img [ref=e449]
+          - generic [ref=e452]:
+            - img "121" [ref=e455] [cursor=pointer]
+            - generic [ref=e456]: "121"
+          - button [disabled] [ref=e457]:
+            - img [ref=e458]
+      - generic [ref=e463]:
+        - generic [ref=e464]:
+          - heading "培训机构" [level=2] [ref=e465]
+          - paragraph [ref=e466]: 优质教育资源，助力升学之路
+        - generic [ref=e467]:
+          - textbox "输入机构名称搜索" [ref=e468]
+          - button "搜索" [ref=e469] [cursor=pointer]
+        - generic [ref=e470]:
+          - button "全部" [ref=e471] [cursor=pointer]
+          - button "121" [ref=e472] [cursor=pointer]
+        - paragraph [ref=e477]: 左右拖拽 / 滚动浏览 · 点击卡片查看详情
+        - button "共 1 家 · 查看更多机构" [ref=e479] [cursor=pointer]:
+          - text: 共 1 家 · 查看更多机构
+          - img [ref=e480]
+  - contentinfo [ref=e482]:
+    - generic [ref=e485]:
+      - generic [ref=e486]:
+        - generic [ref=e487]:
+          - img "海枫未来规划院" [ref=e488]
+          - heading "海枫未来规划院" [level=3] [ref=e489]
+        - paragraph [ref=e490]: 我们致力于为学生和求职者提供专业、科学、个性化的学业与职业信息服务，帮助他们在人生关键节点做出明智决策参考。
+        - paragraph [ref=e491]: 从高考志愿到职场上岸，我们全程陪伴，助力每一位用户实现人生理想。
+      - generic [ref=e493]:
+        - button "微信公众号" [ref=e494] [cursor=pointer]:
+          - img [ref=e495]
+        - button "微博" [ref=e497] [cursor=pointer]:
+          - img [ref=e498]
+        - button "知乎" [ref=e500] [cursor=pointer]:
+          - img [ref=e501]:
+            - generic [ref=e503]: 知
+        - button "抖音" [ref=e504] [cursor=pointer]:
+          - img [ref=e505]
+        - button "哔哩哔哩" [ref=e507] [cursor=pointer]:
+          - img [ref=e508]
+      - generic [ref=e510]:
+        - heading "联系我们" [level=4] [ref=e511]
+        - list [ref=e512]:
+          - listitem [ref=e513]:
+            - img [ref=e515]
+            - generic [ref=e517]: "111"
+          - listitem [ref=e518]:
+            - img [ref=e520]
+            - generic [ref=e522]: 咨询热线：11
+          - listitem [ref=e523]:
+            - img [ref=e525]
+            - generic [ref=e527]: 邮箱：11
+          - listitem [ref=e528]:
+            - img [ref=e530]
+            - generic [ref=e532]: 咨询时间：11
+    - generic [ref=e533]:
+      - paragraph [ref=e534]: ©2026 版权归海枫未来规划院所有
+      - paragraph [ref=e535]: ICP备案号：222

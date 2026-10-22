@@ -42,8 +42,8 @@ const goDetail = () => {
   >
     <div class="relative">
       <div
-        class="overflow-hidden cursor-pointer border-2 shadow-md"
-        :class="isActive ? 'border-orange-400 shadow-orange-200' : 'border-orange-100 hover:border-orange-400'"
+        class="overflow-hidden cursor-pointer border border-slate-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06)]"
+        :class="isActive ? 'border-blue-300 shadow-[0_12px_28px_rgba(15,23,42,0.14)]' : 'hover:border-blue-300'"
         style="transform: skewX(-8deg); transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
         @click="goDetail"
       >
@@ -56,14 +56,14 @@ const goDetail = () => {
       </div>
       <div
         v-show="isActive"
-        class="absolute top-0 h-full z-30 w-40 sm:w-44 md:w-48 lg:w-52 xl:w-72 2xl:w-80 bg-white rounded-lg shadow-xl border border-orange-100"
+        class="absolute top-0 h-full z-30 w-40 sm:w-44 md:w-48 lg:w-52 xl:w-72 2xl:w-80 bg-white rounded-lg shadow-[0_14px_36px_rgba(15,23,42,0.14)] border border-slate-200"
         :class="align === 'left' ? 'right-full' : 'left-full'"
         style="transform: skewX(-8deg); transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
       >
         <div class="flex h-full w-full flex-col justify-center px-4" style="transform: skewX(8deg)">
           <div class="min-w-0">
             <p class="text-sm font-bold text-gray-800 truncate">{{ planner.name }}</p>
-            <p class="text-xs text-orange-500 truncate">{{ planner.position }} · {{ planner.region }}</p>
+            <p class="text-xs text-blue-600 truncate">{{ planner.position }} · {{ planner.region }}</p>
           </div>
           <p class="mt-3 text-xs text-gray-500 leading-relaxed line-clamp-2">擅长：{{ planner.specialty }}</p>
         </div>

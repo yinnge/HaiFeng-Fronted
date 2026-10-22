@@ -20,16 +20,14 @@ import { saveArchiveSmart } from '@/utils/gaokaoArchive'
 import ProvincePicker from './ProvincePicker.vue'
 import bgImg from '@/assets/img_1.png'
 
-// 弹窗背景：顶部铺暖色插画（img_1.png，1672×941 横图，100% 宽约 360px 高），
-// 向下用渐变 veil 渐隐融入暖白画布，表单区域近纯色保证可读性。
+// 弹窗背景：顶部铺插画（img_1.png，1672×941 横图，100% 宽约 360px 高），
+// 向下用渐变 veil 渐隐融入白色画布，表单区域保持纯色以保证可读性。
 const dialogBgStyle = computed(() => ({
   backgroundImage: [
-    // 顶部插画从上到下渐隐的 veil（0~380px，之后全遮，露出下方渐变）
-    'linear-gradient(180deg, rgba(255,251,247,0.06) 0px, rgba(255,251,247,0.55) 140px, rgba(255,253,251,0.93) 270px, #fffdfb 380px)',
+    'linear-gradient(180deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.55) 140px, rgba(255,255,255,0.94) 270px, #ffffff 380px)',
     `url(${bgImg})`,
-    // 兜底暖色光晕（图片加载失败时也有底色）
-    'radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255,247,237,0) 58%)',
-    'linear-gradient(180deg, #ffffff 0%, #fffdfb 100%)',
+    'radial-gradient(120% 55% at 50% -12%, #eff6ff 0%, rgba(239,246,255,0) 58%)',
+    'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
   ].join(', '),
   backgroundSize: 'auto, 100% auto, auto, auto',
   backgroundPosition: '0 0, center top, 0 0, 0 0',
@@ -253,7 +251,7 @@ function resetSubjects() {
   ALL_SUBJECT_FIELDS.forEach(({ field }) => (form[field] = undefined))
 }
 
-// ===== 科目按钮 toggle（自定义橙色按钮，替代 radio/checkbox 原生控件） =====
+// ===== 科目按钮 toggle（自定义按钮，替代 radio/checkbox 原生控件） =====
 function toggleSecondSubject(name: string) {
   const idx = secondSubjects.value.indexOf(name)
   if (idx >= 0) {
@@ -457,7 +455,7 @@ onMounted(() => {
             </svg>
             高考年份
           </label>
-          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="orange-select-popper">
+          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="form-select" popper-class="gk-select-popper">
             <template #prefix>
               <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -627,7 +625,7 @@ onMounted(() => {
             {{ form.batch }}省控线：<b class="batch-score">{{ form.batchLineScore }} 分</b>（{{ form.batchDataYear }}年）
           </span>
         </label>
-        <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="orange-select-popper">
+        <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="batch-select" popper-class="gk-select-popper">
           <template #prefix>
             <svg class="ctl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -687,26 +685,24 @@ onMounted(() => {
   color: #1f2937;
 }
 
-/* 字段标签前的线性 SVG 图标（橙色） */
 .form-label-ico {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
-/* 标签右侧「圆圈感叹号」提示图标（hover 出 tooltip） */
 .label-tip-ico {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #fdba74;
+  color: #94a3b8;
   cursor: help;
   transition: color 0.2s ease;
 }
 
 .label-tip-ico:hover {
-  color: #ea580c;
+  color: var(--sem-blue);
 }
 
 /* ===== 弹窗头部（#header 槽）：学士帽徽章 + 标题/副标题，浮于插画背景之上 ===== */
@@ -725,8 +721,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), #ffedd5);
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
 }
 
 .dlg-head-badge svg {
@@ -743,23 +739,19 @@ onMounted(() => {
   margin: 0;
   font-size: 23px;
   font-weight: 900;
-  letter-spacing: 0.03em;
-  color: #44403c;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
   line-height: 1.3;
 }
 
-/* 「高考信息」四字橙色渐变高亮 */
 .dlg-head-hl {
-  background: linear-gradient(120deg, #c2410c 0%, #f97316 60%, #fb923c 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--sem-blue);
 }
 
 .dlg-head-sub {
   margin: 3px 0 0;
   font-size: 13px;
-  color: #a8a29e;
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
@@ -768,7 +760,7 @@ onMounted(() => {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 /* 年份下拉：变窄（高度/配色见非 scoped 块的 EP 内部样式） */
@@ -800,9 +792,9 @@ onMounted(() => {
 }
 
 .subject-placeholder-warn {
-  color: #c2410c;
-  background: #fff7ed;
-  border: 1px dashed rgba(249, 115, 22, 0.4);
+  color: var(--sem-yellow-deep);
+  background: var(--sem-yellow-bg);
+  border: 1px solid var(--sem-yellow-soft);
 }
 
 .subject-sub-label {
@@ -838,9 +830,9 @@ onMounted(() => {
 }
 
 .subject-btn:hover {
-  border-color: #fdba74;
-  background: #fff7ed;
-  color: #c2410c;
+  border-color: var(--sem-blue-soft);
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
   transform: translateY(-1px);
 }
 
@@ -848,14 +840,13 @@ onMounted(() => {
   transform: scale(0.97);
 }
 
-/* 选中：中性灰→浅橙填充 + 橙描边 + ✓ + 加粗，对比拉满 */
 .subject-btn.is-selected,
 .subject-btn.is-selected:hover {
-  background: #ffedd5;
-  border: 1.5px solid #f97316;
-  color: #c2410c;
+  background: var(--sem-blue-bg);
+  border: 1.5px solid var(--sem-blue);
+  color: var(--sem-blue);
   font-weight: 800;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.14);
   transform: none;
 }
 
@@ -864,7 +855,7 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 900;
   line-height: 1;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 /* ===== 填报批次网格：批次选择框占左、省控线信息卡占右（右列左缘对齐对应位次） ===== */
@@ -886,9 +877,8 @@ onMounted(() => {
   margin-left: 2px;
 }
 
-/* 省控线数字（如 410 分）橙红色高亮 */
 .batch-line-inline .batch-score {
-  color: #c2410c;
+  color: var(--sem-blue);
   font-weight: 700;
 }
 
@@ -914,13 +904,15 @@ onMounted(() => {
 }
 
 .plan-btn {
-  background: #fff7ed;
-  color: #c2410c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
+  background: #fff;
+  color: #475569;
+  border: 1px solid var(--neutral-border-strong);
 }
 
 .plan-btn:hover {
-  background: #ffedd5;
+  background: var(--sem-blue-bg);
+  border-color: var(--sem-blue-soft);
+  color: var(--sem-blue);
   transform: translateY(-1px);
 }
 
@@ -932,10 +924,10 @@ onMounted(() => {
 }
 
 .mock-btn {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-dark));
   color: #fff;
   border: none;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.28);
 }
 
 .mock-btn:hover {
@@ -957,16 +949,9 @@ onMounted(() => {
 .archive-dialog.el-dialog,
 .archive-dialog .el-dialog {
   border-radius: 16px;
-  /* 去掉全局 .el-dialog 的上下 3px 突兀橙线：改为四面一致的 1px 柔和橙边 */
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: 1px solid rgba(249, 115, 22, 0.18);
-  border-right: 1px solid rgba(249, 115, 22, 0.18);
-  /* 整弹窗柔和暖色渐变底 + 顶部/右下双光晕（不再是只有头部一块橙 + 白身子） */
-  background:
-    radial-gradient(120% 55% at 50% -12%, #fff7ed 0%, rgba(255, 247, 237, 0) 58%),
-    radial-gradient(80% 50% at 100% 100%, rgba(251, 146, 60, 0.1) 0%, rgba(251, 146, 60, 0) 60%),
-    linear-gradient(180deg, #ffffff 0%, #fffdfb 100%);
+  border: 1px solid var(--neutral-border);
+  background: #fff;
+  box-shadow: 0 24px 64px -16px rgba(15, 23, 42, 0.18);
   overflow: hidden;
 }
 
@@ -985,12 +970,12 @@ onMounted(() => {
 }
 
 .archive-dialog .el-dialog__footer {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--neutral-border);
   padding: 16px 24px;
 }
 
-/* ===== 弹窗内 EP 控件统一橙色风格 =====
-   选项框：不要白框，橙色系；高度加高；去掉下拉框右侧箭头 */
+/* ===== 弹窗内 EP 控件统一中性风格 =====
+   选项框：白底中性描边；高度加高；去掉下拉框右侧箭头 */
 .archive-dialog .el-select__suffix,
 .archive-dialog .el-select__caret {
   display: none;
@@ -1002,27 +987,27 @@ onMounted(() => {
   min-height: 44px;
   flex-wrap: nowrap;
   border-radius: 12px;
-  background: #fffaf3;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset, 0 1px 2px rgba(15, 23, 42, 0.03);
   font-size: 16px;
   font-weight: 500;
-  color: #9a3412;
+  color: #334155;
   padding: 0 14px;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .archive-dialog .el-select__wrapper.is-hovering,
 .archive-dialog .el-select__wrapper.is-focused {
-  background: #fff7ed;
-  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset, 0 2px 6px rgba(59, 130, 246, 0.1);
 }
 
 .archive-dialog .el-select__placeholder {
-  color: #b45309;
+  color: #94a3b8;
 }
 
 .archive-dialog .el-select__selected-item {
-  color: #9a3412;
+  color: #334155;
 }
 
 /* 年份 / 批次下拉：图标紧贴文字、整组居中（与省份按钮一致，Q3 统一）。
@@ -1064,27 +1049,27 @@ onMounted(() => {
   margin-right: 2px;
 }
 
-/* 分数/位次数字输入：橙色系、加高 */
+/* 分数/位次数字输入：中性底、加高 */
 .archive-dialog .el-input-number {
   height: 44px;
 }
 
 .archive-dialog .el-input-number .el-input__wrapper {
   border-radius: 12px;
-  background: #fffaf3;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset, 0 1px 2px rgba(15, 23, 42, 0.03);
   height: 44px;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .archive-dialog .el-input-number .el-input__wrapper.is-focus,
 .archive-dialog .el-input-number .el-input__wrapper:hover {
-  background: #fff7ed;
-  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset, 0 2px 6px rgba(59, 130, 246, 0.1);
 }
 
 .archive-dialog .el-input-number .el-input__inner {
-  color: #9a3412;
+  color: #334155;
   font-weight: 600;
 }
 
@@ -1115,7 +1100,7 @@ onMounted(() => {
 
 /* 输入框内右侧单位（分 / 名） */
 .archive-dialog .el-input-number .num-unit {
-  color: #f97316;
+  color: var(--sem-blue);
   font-size: 14px;
   font-weight: 700;
   margin-left: 2px;
@@ -1128,18 +1113,7 @@ onMounted(() => {
 }
 
 .archive-dialog .el-input-number.is-disabled .el-input__wrapper {
-  background: #f5f5f4;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset;
-}
-
-/* 下拉面板（年份/批次）：选中项橙色而非蓝色 */
-.orange-select-popper .el-select-dropdown__item.is-selected {
-  color: #c2410c;
-  font-weight: 700;
-}
-
-.orange-select-popper .el-select-dropdown__item.is-hovering {
-  background: #fff7ed;
-  color: #ea580c;
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px var(--neutral-border) inset;
 }
 </style>

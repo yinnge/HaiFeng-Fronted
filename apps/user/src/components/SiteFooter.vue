@@ -62,8 +62,6 @@ const handleSocialClick = (url: string, name: string) => {
 
 <template>
   <footer class="site-footer">
-    <div class="warm-gradient-bg" />
-
     <div class="footer-main">
       <div class="footer-container">
         <div class="footer-brand">
@@ -212,18 +210,8 @@ const handleSocialClick = (url: string, name: string) => {
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   overflow: hidden;
-}
-
-.warm-gradient-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: #fef7ed;
-  background:
-    radial-gradient(ellipse 50% 35% at 0% 100%, rgba(232, 114, 42, 0.18) 0%, rgba(245, 165, 74, 0.1) 50%, transparent 100%),
-    radial-gradient(ellipse 70% 60% at 5% 95%, rgba(245, 165, 74, 0.12) 0%, rgba(251, 191, 36, 0.06) 40%, transparent 80%),
-    radial-gradient(ellipse 40% 50% at 100% 90%, rgba(251, 191, 36, 0.08) 0%, transparent 70%),
-    linear-gradient(to bottom, #fef7ed 0%, #fef3e2 30%, #fefbf6 60%, #ffffff 100%);
+  background: #ffffff;
+  border-top: 1px solid var(--neutral-border);
 }
 
 .footer-main {
@@ -386,7 +374,7 @@ const handleSocialClick = (url: string, name: string) => {
   transform: translateY(-50%);
   width: 4px;
   height: 20px;
-  background: linear-gradient(180deg, #ff9f43 0%, #ff6b35 100%);
+  background: var(--brand-orange);
   border-radius: 2px;
 }
 
@@ -423,20 +411,11 @@ const handleSocialClick = (url: string, name: string) => {
   height: 18px;
 }
 
-.contact-icon.location {
-  color: #ff9f43;
-}
-
-.contact-icon.phone {
-  color: #ff6b35;
-}
-
-.contact-icon.email {
-  color: #ffc107;
-}
-
+.contact-icon.location,
+.contact-icon.phone,
+.contact-icon.email,
 .contact-icon.time {
-  color: #ff9f43;
+  color: var(--sem-blue);
 }
 
 .contact-text {
@@ -445,10 +424,10 @@ const handleSocialClick = (url: string, name: string) => {
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(232, 114, 42, 0.12);
+  border-top: 1px solid var(--neutral-border);
   padding: 20px 24px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--neutral-bg);
 }
 
 .copyright {

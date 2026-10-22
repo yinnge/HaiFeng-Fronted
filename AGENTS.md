@@ -1,288 +1,215 @@
-# 项目长期记忆（海枫前端 monorepo）
+# 项目长期记忆与全局设计规范（海枫前端 Monorepo）
 
-## 通用规范
-- 设计令牌见 `AGENTS.md`：品牌主色 `#F97316` / 渐变端 `#FB923C`（两端共享），admin 端暖橙渐变+橙色顶底边框卡片，user 端橙渐变顶边+纯白卡片+橙色块（postgraduate 风格，见下方 User 端规范）。改动前逐条对照对应端的 Checklist。
-- **根背景橙色不可变**：user 端 `html` 全局暖橙画布（背景 `#ffedd5` + 顶部/底部透白雾 + 三道光晕，见 `apps/user/src/assets/styles/index.css`）是品牌底色，**任何改动不得修改它**。页面内容容器透明底露出画布，卡片内部才使用白色 / 橙色块。
-- 约束：仅样式任务不动 `<script>` 逻辑；用 `min-width` 撑满数据列、`width` 只给窄固定列（状态/操作）。
-- 类型检查：`pnpm --filter @haifeng/admin typecheck`（或 user）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
+## 一、 通用工程与跨端铁律（长期记忆）
 
-## 已知坑：Element Plus 弹窗锁滚动 + 页面左移抖动（2026-08-22 彻底根治）
-- 现象：未登录点「开始志愿填报」等触发弹窗（el-dialog / ElMessageBox / el-drawer / el-image 预览）时，右侧滚动条消失、整页左移约 6px；或短页面/没滚动条时弹窗也抖动。
-- 机制（element-plus 实际装 2.13.7）：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow:hidden`），并**内联** `body.style.width = calc(100% - 滚动条宽)` 补偿位移，关闭 200ms 后还原。**这套默认补偿本身是正确的**。
-- **正确根治（2026-08-22 落地于 `apps/user/src/assets/styles/index.css`）**：
-  1) 滚动容器从 `html` 挪到 `body`：`body { overflow-y: scroll; scrollbar-gutter: stable; }` ——**永远显示滚动条 + 永远预留槽位**，弹窗开/关不会出现宽度变化。
-  2) 不写任何 `html:has(body.el-popup-parent--hidden)` 或 `body.el-popup-parent--hidden { width:100%!important }` 自定义规则，让 Element Plus 默认补偿 + 第 1 步的 stable gutter 共同工作。
-  3) 短页面（内容不溢出）也会显示一条 6px 灰色细滚动条（已用 `::-webkit-scrollbar { width:6px }` 样式做得很不显眼），弹窗零抖动。
-- 早期错误版本：曾加 `body.el-popup-parent--hidden { width:100%!important }` 把 Element Plus 的 `calc(100% - 滚动条宽)` 补偿顶掉 → 滚动条消失 + 宽度不补偿 = 左移 6px；或加在 `html` 上的 `scrollbar-gutter:stable` 在 `overflow:visible` 默认下不生效。两种 bug 都已彻底移除。
-- **2026-09-09 修正（关键，防止误删）**：第 13 行「只放 body」的改法并未完全根治——`position:fixed` 悬浮导航锚定**视口(html)**，而页面真正滚动容器就是 html（body 高度 auto 不真正滚动，仅预留空槽），所以视口滚动条出现/消失时右侧 fixed 导航仍会位移（滚动条消失→导航右移约 6px）。正确补丁：
-  1) **`html { scrollbar-gutter: stable; }`**（根元素 scrollbar-gutter 控制视口滚动槽，此场景下生效）——视口级保留滚动槽，fixed 元素零位移。这一条才是关键，之前误以为「html 上不生效」是错的。
-  2) **重新加回 `body.el-popup-parent--hidden { width: 100% !important; }`**——用 `!important` 覆盖 Element Plus 内联的 `width: calc(100% - 滚动条宽)` 补偿（内联无 !important，可被样式表 !important 覆盖），配合 body 的 stable gutter，锁滚动前后 body 内容区宽度恒定 → 整页不抖。**此规则现在安全**：早期左移是因为当时 gutter 错放在 html（body 无 gutter），现 gutter 已在 body，故 `width:100%` + 稳定 gutter = 内容区宽度前后一致，不再左移。请勿以「早期错误版本」为由删除这两条。
-- 验证：浏览器实测打开各类弹窗（ElMessageBox.confirm / alert / prompt、el-dialog、el-drawer、el-image 预览）—— 右侧滚动条位置恒定，页面零位移。CSS 改动 Vite HMR 即时生效。
-- 影响面：全局（user/admin 所有弹层），改 `index.css` 一处即可。
+### 1. 基础架构与构建约束
+- **架构概览**：教育规划平台前端，采用 **pnpm Monorepo** 架构：
+  | 应用 | 路径 | 说明 | UI 框架 / 样式 |
+  |------|------|------|---------|
+  | Admin 管理后台 | `apps/admin/` | 面向管理员 | Element Plus + Tailwind CSS |
+  | User 用户端 | `apps/user/` | 面向 C 端学生/家长 | Vue 3 组件库 + Tailwind CSS |
+  | Shared 共享包 | `packages/shared/` | 对应后端 common | Axios / 通用工具 / 类型定义 |
+- **代码约束**：仅样式任务严禁改动 `<script setup>` 业务逻辑；表格用 `min-width` 撑满数据列，`width` 只给窄固定列（状态/操作）。
+- **类型检查**：`pnpm --filter @haifeng/admin typecheck`（或 `user`）。Vite dev 用 esbuild 不做类型检查，CSS 改动不影响 dev 运行。
+- **后端热更新禁令**：⚠️ 后端应用 JVM 还在运行时，**严禁执行 `mvn clean` / `mvnw clean` / IDE 的 Rebuild / Build Project**。本项目未引入 `spring-boot-devtools`，磁盘改写与运行时类加载撞车会导致 `$Builder` 缺失等 `NoClassDefFoundError`。
 
-## ElMessageBox / el-dialog 全局美化（橙色品牌，2026-08-22）
-- 同样在 `apps/user/src/assets/styles/index.css` 第 94 行往后，全局统一样式：
-  - 圆角 16px + 顶/底 3px 橙渐变边框 + 深阴影。
-  - 头部：浅橙渐变底 + 底部分隔线 + 标题 16px 粗。
-  - 关闭按钮：30×30 圆角方块、灰色清晰可见、悬停变橙。
-  - 状态图标：info=橙、warning=琥珀、success=绿、error=红（与品牌色协调）。
-  - 按钮：药丸 20px 圆角、确定按钮用 `#F97316→#FB923C` 渐变 + 阴影、取消按钮灰边悬停变橙。
-  - 输入框（prompt）：10px 圆角、focus 橙色 inset 边框 + 外发光。
-- 所有 ElMessageBox.confirm / alert / prompt 与 el-dialog（PlanDetail）共享同一套样式，无需逐文件改。
+### 2. 已知坑：Element Plus 弹窗锁滚动 + 页面左移抖动（2026-09-09 终极根治）
+- **现象**：触发弹窗（`el-dialog` / `ElMessageBox` / `el-drawer` / `el-image` 预览）时，右侧滚动条消失导致整页或顶部 `position: fixed` 悬浮导航左右位移约 6px。
+- **机制（element-plus 2.13.7）**：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow: hidden`），并内联写入 `body.style.width = calc(100% - 滚动条宽)`。
+- **正确根治方案（落地于 `apps/user/src/assets/styles/index.css`，严禁误删）**：
+  1. **`html { scrollbar-gutter: stable; }`**：根元素控制视口滚动槽，保证 `position: fixed` 悬浮导航在锁滚动前后零位移。
+  2. **`body { overflow-y: scroll; scrollbar-gutter: stable; }`**：永远显示 6px 细滚动条并预留稳定槽位。
+  3. **`body.el-popup-parent--hidden { width: 100% !important; }`**：用 `!important` 覆盖 Element Plus 内联的 `calc(100% - 滚动条宽)` 补偿，配合稳定 gutter 使锁滚动前后内容区宽度完全恒定。请勿以「早期错误版本」为由删除此条。
 
-## admin 控制面板「系统信息」字段来源（跨端：后端 haifeng-admin）
-- 接口：`GET /api/v1/admin/dashboard/overview` → `DashboardController.getDashboardOverview()` → `DashboardServiceImpl.getSystemInfo()`（《DashboardServiceImpl.java:109-126》）。
-- `appVersion`：**改为读取 pom 版本**（2026-07-31）。后端 `haifeng-admin/pom.xml` 已给 `spring-boot-maven-plugin` 加 `build-info` goal；`DashboardServiceImpl` 通过 `ObjectProvider<BuildProperties>` 注入，`info.setAppVersion(bp.getVersion())`，未生成 build-info 时回退 `"1.0.0"`。改版本号改 pom 的 `<version>`（admin 继承父 pom `1.0.0-SNAPSHOT`）。springVersion/javaVersion 仍硬编码未展示。
-- `siteName` / `aiProvider` / `aiModel`：来自 DB 表 `system_settings`（单例 id=1），经 `systemSettingsMapper.selectById(1L)` 读取（`DashboardServiceImpl.java:115-120`）。
-- **AI 配置两表设计（关键）**：`t_model_provider`（V24 迁移）是**服务商目录**（api_key/base_url/model_name/provider_name/status）；`system_settings.provider_name` / `model_name` 是**"当前选中"指针**，只能经 `updateProviderModel` 写入（校验该 provider 在 `t_model_provider` 存在且启用）。**dashboard 读的是 system_settings 的指针，不是 t_model_provider 目录**。
-- **aiProvider/aiModel 为 null 的根因**：前端此前**没有任何 UI 调用 `updateProviderModel`**（仅在 `api/system/settings.ts` 定义了函数，无调用点），所以配置进目录后指针始终为 null。已在 `system/settings/components/ProviderCard.vue` 新增「设为当前模型」按钮（调 `updateProviderModel`），并对当前激活行打「当前」徽标。配置后 dashboard 即显示。
-- `adminCount`：`sys_admin` 表 `status=1` 计数（`sysAdminMapper.selectCount`）。
-- 关键区分：面板上的「AI 模型」仅是展示配置字符串，**dashboard 不发起 AI 调用**；真正调 AI 大模型由 `system_settings` 的 providerName+modelName+apiNumber(API Key) 驱动，逻辑在后端 AI/对话模块（common 的 AI 客户端），不在 admin system 包。
+### 3. Admin 控制面板「系统信息」字段来源（跨端：后端 haifeng-admin）
+- **接口**：`GET /api/v1/admin/dashboard/overview` → `DashboardController.getDashboardOverview()` → `DashboardServiceImpl.getSystemInfo()`（`DashboardServiceImpl.java:109-126`）。
+- **`appVersion`**：读取 pom 版本（`spring-boot-maven-plugin` 已加 `build-info` goal，通过 `ObjectProvider<BuildProperties>` 注入，未生成时回退 `"1.0.0"`）。
+- **AI 配置两表设计（关键）**：
+  - `t_model_provider`（V24 迁移）是**服务商目录**（`api_key` / `base_url` / `model_name` / `provider_name` / `status`）。
+  - `system_settings`（单例 `id=1`）中的 `provider_name` / `model_name` 是**“当前选中”指针**，只能经 `updateProviderModel` 写入。**Dashboard 读的是 `system_settings` 的指针，不是目录表**。
+  - 前端在 `system/settings/components/ProviderCard.vue` 通过「设为当前模型」按钮调用 `updateProviderModel` 更新指针。
 
-## 后端分页参数硬约束（所有继承 BasePageQueryDTO 的接口通用）
-- 后端 `haifeng-common/.../dto/common/BasePageQueryDTO.java`：`size` 字段 `@Min(10,"每页最小10条")` + `@Max(100,"每页最大100条")`，默认 10；`page` `@Min(1)`。
-- **前端坑**：user 端 `university/List.vue` 曾默认 `pageSize=9`、`page-sizes=[9,18,30]`，全 < 10 → 后端返回 `400 每页最小10条`，分页永远失败。已改为默认 12、`page-sizes=[12,24,36]`（3 列卡片网格，12 正好铺满 4 行）。
-- **经验**：任何调用带 `size` 的分页接口的前端页面，`page-size` 默认值与 `page-sizes` 档位都必须落在 **[10,100]**，否则被 `@Min/@Max` 拦截。新增分页页前先确认后端该 DTO 的下限。
-- 校验链路：`@Valid` 在 Controller 方法参数（`UniversityController.list(@Valid UniversityQueryDTO)`）→ Spring Validation 抛 `MethodArgumentNotValidException` → 全局异常处理器转 `R.fail(400, msg)`。
-  3.⚠️ 唯一要守住的规矩：应用 JVM 还在跑的时候，不要执行 mvn clean / mvnw clean / IDE 的 Rebuild / Build Project。本项目没引入 spring-boot-devtools，没有安全热更新机制，磁盘改写和运行时类加载一旦撞车，就会再次出现 $Builder 缺失这类 NoClassDefFoundError。
-## 就业管理模块：前后端枚举值必须对齐（后端 @Pattern 是权威）
-- 后端 `haifeng-admin` DTO 里用 `@Pattern` 硬编码枚举（如公务员 examType `国考|省考`、学历/学位/政治面貌/报名状态；事业单位学历 `无要求/...`、学位 `无要求/...`、状态 `招聘中|已结束`、标签 `热门|无|急招`）。**前端下拉选项必须与之一字不差**，否则新增/修改直接 400。
-- 2026-07-31 踩坑：admin 公务员表单/搜索写 `['国家级','省级']`（user 端是 `['国考','省考']`），事业单位写 `['不限']`/`['在招','未发布']`，且标签用自由输入框 → 全部必报错。已修：civil 2 处、institution 5 处（含 positionTag 改 select）。
-- 改就业模块前先 grep 后端 `dto/employment/**` 的 `@Pattern` 清单，再对照前端 `*Options` 数组；选项文本改动要同时查该模块的 FormModal / Search / Table（含 pill 映射）/ index.vue（状态切换判断）。
-- 事业单位/公务员状态接口 body 是数字 `StatusDTO{status}`（0=招聘中/报名中，1=已结束），不是字符串；表格下拉 command 拿到的中文值需自行映射回 0/1。
-- 后端 Excel 导入的 `validateExcelRows` 通常只查非空不查枚举，导入可绕过 create 校验（公务员已补 examType 校验，其他模块若加需逐个补）。
-- **第三层校验：DB CHECK 约束（最终权威）**——迁移文件 V20（教师/医疗/金融）、V21（基层/社区/公益）、V22（指南/公告）、V23（公务员/事业单位/军文职/选调生）建表时还有 CHECK 约束，DTO 无 @Pattern 的模块（军文职/选调生/社区/公益/金融/医疗/教师等）由 DB 兜底拦截，报错特征：`violates check constraint "chk_xxx"`。军文职学历合法值"本科及以上/硕士及以上/博士"、状态"进行中/已结束"；选调生类型"定向/非定向/急需紧缺专业选调"；社区"网格员/调解员/安全员/社会工作师/综合岗"+社工证"不要求/XX社工师"；公益岗类别带"类"；医疗"妇幼保健院/未定级"；教师学科"道德与法治"。**前端选项必须以 DB CHECK 为准**。
-- 状态接口分两类：公务员/事业单位 PATCH 数字 `StatusDTO{status}`；军文职/选调生等其余模块 PATCH 字符串 `PositionStatusUpdateDTO{positionStatus}`。
+### 4. 后端分页参数硬约束（所有继承 BasePageQueryDTO 的接口通用）
+- **后端约束**：`haifeng-common/.../dto/common/BasePageQueryDTO.java` 中 `size` 字段带有 `@Min(10, "每页最小10条")` + `@Max(100, "每页最大100条")`，默认 10；`page` 为 `@Min(1)`。
+- **前端铁律**：任何调用带 `size` 分页接口的前端页面，`page-size` 默认值与 `page-sizes` 档位**必须全部落在 `[10, 100]` 区间内**（如 3 列卡片网格统一用 `pageSize=12`、`page-sizes=[12, 24, 36]`），严禁出现 `9` 等小于 10 的数值，否则必报 `400 每页最小10条`。
 
-## 已知坑：admin 状态切换全部失败 = 后端 CORS 缺 PATCH
-- 现象：任意模块操作栏"状态下拉"点了都报"操作失败"，后端日志只见 `Securing OPTIONS /.../status`、无 PATCH。
-- 根因：`haifeng-common/CorsConfig.java` 的 `allowedMethods` 曾缺 `PATCH`（2026-07-31 已补上）。**改 CorsConfig 时不要把 PATCH 弄丢**，否则 12 个模块的 @PatchMapping 状态接口全挂。
-- 诊断套路：前端报"操作失败"+后端只见 OPTIONS 预检 → 先查后端 CORS `allowedMethods` 是否含该 HTTP 方法（GET/POST/PUT/DELETE/PATCH/OPTIONS）。
-- 公务员状态语义：状态接口 `StatusDTO{status}` 仅两态（0=报名中，1=已结束），"即将开始"只能靠 create/表单设置，操作栏下拉不得含第三态。
+### 5. 就业管理模块：前后端枚举值三层对齐（DTO @Pattern + DB CHECK）
+- **第一层（DTO `@Pattern`）**：后端 `haifeng-admin` 的 `dto/employment/**` 用 `@Pattern` 硬编码枚举（如公务员 `examType` 为 `国考|省考`；事业单位状态 `招聘中|已结束`、标签 `热门|无|急招`）。前端下拉选项必须一字不差。
+- **第二层（DB `CHECK` 约束——最终权威）**：迁移文件 V20~V23 建表含 `chk_xxx` 约束（军文职学历 `本科及以上/硕士及以上/博士`、状态 `进行中/已结束`；选调生类型 `定向/非定向/急需紧缺专业选调`；社区岗 + 社工证；公益岗类别带“类”；医疗 `妇幼保健院/未定级`；教师学科 `道德与法治`）。改选项前必须先核对 DB CHECK 与 DTO `@Pattern`。
+- **第三层（状态接口入参形态区分）**：
+  - 公务员/事业单位：`PATCH` 数字 `StatusDTO{ status }`（`0`=招聘中/报名中，`1`=已结束；公务员“即将开始”仅限创建/编辑表单设置，下拉操作栏不含第三态）。
+  - 军文职/选调生等其余模块：`PATCH` 字符串 `PositionStatusUpdateDTO{ positionStatus }`。
+- **必填校验对齐**：全部 12 个就业表单前端必填校验必须与后端 `AddDTO` 的 `@NotBlank(message = "...")` 严格对齐。
 
-## 已知坑：前端"操作失败"吞掉后端真实错误信息（拦截器包装）
-- `packages/shared/src/utils/request.ts` 响应拦截器（:117 与 :49）把所有错误 `reject(new Error(message))`（message 取自 `error.response.data.msg`）——**reject 的是普通 Error，没有 .response 属性**。
-- 因此页面 catch 写 `err.response?.data?.msg || 'xxx失败'` 永远取到 undefined → 显示兜底文案，后端真实原因（如"学历要求不能为空"）被吞。
-- 正确写法：`err.response?.data?.msg || err.message || '兜底文案'`（err.message 就是后端 msg）。**新建页面/模块一律用这种写法**；搜 `err.response?.data?.msg` 可排查存量隐患。
-- 就业管理 14 文件已修 + 选调生表单补前端必填校验（2026-07-31）；guide/notice 是 catch 无参形态（固定文案），未修。
-
-## 已知坑：后端 @NotBlank 无 message → 报错只显示"不能为空"（无字段名）
-- 部分就业模块 DTO（如基层项目 `GrassrootsProjectPositionAddDTO`）的 `@NotBlank`/`@Size` 没写 message，校验失败经 `GlobalExceptionHandler` 返回的就是默认文案"不能为空"（多个字段逗号拼接），管理员看不出缺哪个字段。
-- 排查：`grep @NotBlank` 后端 `dto/employment/**`，没 message 的就是隐患。
-- 已修：选调生（本就带 message）、基层项目 7 个字段补 message（2026-07-31，需重启后端生效）。前端对应表单（selection/grassroots FormModal）已加必填校验提前拦截。
-- 2026-07-31 全量统一：社区/公益岗 DTO 也补了 message（各 6 字段）；**全部 12 个就业表单前端都已加必填校验**（civil/institution/military/selection/teacher/healthcare/finance/community/welfare/grassroots/notice/guide），与后端 @NotBlank 对齐。改表单必填校验时以后端 AddDTO @NotBlank 为权威清单。
-
-## 已知坑：MyBatis-Plus 全局逻辑删除下 updateById 排除 is_deleted
-- `application-dev/prod.yml` 配置了 `logic-delete-field: isDeleted`（logic-delete-value: true / not-delete-value: false）。后果：
-    - **`entity.setIsDeleted(true) + updateById` 永远写不进 is_deleted**（updateById 自动排除逻辑删除字段）→ 12 个就业模块旧 delete() 全部"成功但删不掉"。
-    - selectById/selectPage 自动追加 `is_deleted=false` 条件。
-    - 改 is_deleted 的正确姿势：`mapper.update(null, Wrappers.lambdaUpdate(X.class).set(X::getIsDeleted, val).eq(X::getId, id))`；软删用 `mapper.deleteById(id)`（自动转 UPDATE）。
-- **物理删除**：自定义 `@Delete("DELETE FROM t_xxx WHERE id=#{id}")`（不被逻辑删除拦截器转换）；批量用 `<script><foreach>` IN。12 个就业模块 Mapper 已加 physicalDeleteById/physicalDeleteBatchIds（2026-07-31）。
-- 删除语义（2026-07-31 用户确认）：**禁用=软删除（is_deleted=true 隐藏），删除/批量删除=物理删除**（不可恢复）。前端按钮文案统一"删除"。
-- **查禁用/查全部必须自定义 SQL**：MP 逻辑删除自动注入 is_deleted=false 只作用于 MP 内置方法（selectPage/selectList/selectById），**XML/注解自定义 SQL 不受影响**。guide/notice 的 page() 已改自定义 XML 分页查询（2026-07-31），支持 status 三态（0 启用/1 禁用/null 全部）+ 数组列 resultMap（StringArrayTypeHandler）。其他模块如需"查禁用"沿用此模式。
-- **更新/删除/状态切换碰禁用记录也必须自定义 SQL**：MP 的 `updateById`、`update(entity/wrapper)`、`deleteById` **都会自动注入 WHERE is_deleted=false**（2026-07-31 两次踩坑实证）——对已禁用记录一律 0 行。guide/notice 的 updateStatus 用 @Update 直写 is_deleted、update() 用 XML 动态 update、delete 用 @Delete 物理删。**凡是可能操作 is_deleted=true 记录的方法，一律自定义 SQL，不要用 MP 内置方法。**
-
-
-
-# 海枫管理后台前端设计规范 [vue]
-
-## Design Read
-
-Reading this as: 企业级后台管理系统界面 redesign for 管理员用户, with a 高效、稳定、现代化的 B2B 产品语言, leaning toward a customized enterprise design system with strong brand identity.
-
-目标：
-重新设计海枫管理后台整体视觉风格，优化体验、品牌色统一、交互稳定性以及后台系统专业感。
-
-教育规划平台前端，核心功能：高考志愿填报。采用 **Monorepo 单仓库** 架构：
-
-| 应用 | 路径 | 说明 | UI 框架 |
-|------|------|------|---------|
-| Admin 管理后台 | `apps/admin/` | 面向管理员 | Element Plus |
-| User 用户端 | `apps/user/` | 面向 C 端用户 | 待定 |
-| Shared 共享包 | `packages/shared/` | 对应后端 common | - |
-
-
-## 技术栈选型
-
-* **核心框架**: Vue 3.x (严格使用 Composition API + `<script setup>`)
-* **构建工具**: Vite
-* **开发语言**: TypeScript (必须严格定义 API 响应类型、DTO/VO 的 Interface)
-* **路由管理**: Vue Router 4
-* **状态管理**: Pinia
-* **UI 框架**: Element Plus (管理后台) / 待定 (用户端)
-* **CSS 框架**: Tailwind CSS
-* **HTTP 客户端**: Axios (需封装拦截器处理双 Token)
-* **包管理**: pnpm (Monorepo)
-
----
-
-## UI 设计规范
-
-### 品牌色
-- 主色 `#F97316`，渐变端 `#FB923C`，hover `#EA580C`，active `#C2410C`
-- 主操作统一使用橙色渐变 `linear-gradient(135deg, #F97316, #FB923C)`
-
-### 页面背景
-- 所有管理页面统一暖色渐变：`linear-gradient(180deg, rgba(255,247,237,0.5) 0%, #fff 100%)`
-- 枫叶 logo 水印 `@/assets/images/logo-main.png`，`opacity: 0.05`，右上 + 左下各一个，`pointer-events: none`
-
-### 卡片（Card）
-- 白色背景 `#fff`，`border-radius: 12px`
-- 顶部 `3px solid #F97316`，底部 `3px solid #FB923C`
-- hover：`box-shadow: 0 4px 16px rgba(249,115,22,0.08)` + `translateY(-1px)`
-
-### 按钮（Button）
-- 主操作：橙色渐变药丸 `border-radius: 20px`，带图标，hover 微上浮
-- 次操作：白色底 + `#d1d5db` 描边 + `border-radius: 20px`
-- 危险操作：红色渐变药丸 `linear-gradient(135deg, #ef4444, #f87171)`
-
-### 药丸标签（Pill Label）
-- 区域标题：橙色渐变底 + 白字 + 图标 + `border-radius: 20px`
-- 数据标签：浅橙渐变底 + 深橙文字 + `border-radius: 20px`
-
-### 表格（Table）
-- 表头：浅橙渐变背景 `linear-gradient(180deg, #fff7ed, #ffedd5)` + 深色文字 `#1f2937` + 橙色底边框 `2px solid #F97316`
-- 行 hover：浅橙渐变 `rgba(249,115,22,0.03~0.07)`
-- 斑马纹：`rgba(255,247,237,0.3)`
-- 分页当前页：橙色渐变圆角
-
-### 搜索/筛选栏
-- 卡片容器（橙色顶底边框）
-- 筛选字段左对齐 + 按钮右对齐（`margin-left: auto`）
-- 输入框 hover/focus 时橙色边框
-
-### 弹窗（Dialog）
-- `border-radius: 12px`，标题栏底部橙色分隔线
-- `el-descriptions` 标签列使用浅橙背景 `rgba(249,115,22,0.05)`
-
-### 页面标题
-- 左上角：标题（`22px / 700 / #1f2937`）+ 副标题（`#9ca3af`）
-
-### 分页展示注意事项
-- 不展示id【隐藏】
-
----
-
-## 改动前 Checklist
-
-每次新增或修改模块前，逐项自检：
-
-- [ ] 页面背景是否为暖色渐变 + 枫叶水印？
-- [ ] 页面是否有标题 + 副标题？
-- [ ] 操作按钮是否为橙色渐变药丸（主）/ 描边圆角（次）？
-- [ ] 卡片是否有橙色顶底边框 + hover 动效？
-- [ ] 表格表头是否为浅橙渐变 + 深色文字 + 橙色底边框？
-- [ ] 搜索栏是否左右对齐 + 药丸标题？
-- [ ] 弹窗是否圆角 + 橙色分隔线？
-- [ ] 标签/Tag 是否为药丸样式（非 Element Plus 默认）？
-
----
-
-## 禁止事项
-
-- ❌ 禁止使用 Element Plus 默认灰色按钮作为主操作
-- ❌ 禁止使用 `el-card` 默认样式（用自定义卡片 + 橙色边框替代）
-- ❌ 禁止使用 `el-table` 默认表头样式（必须自定义浅橙渐变表头 + 橙色底边框）
-- ❌ 禁止页面无背景装饰（每个页面必须有暖色渐变背景）
-- ❌ 禁止按钮无圆角（统一 `border-radius: 20px` 药丸形）
-- ❌ 禁止硬编码颜色（品牌色使用上述色值变量）
-
----
-
-# User 端 UI 设计规范 [vue]
-
-## Design Read
-
-Reading this as: C端教育规划平台界面 for 高考学生/家长/研究生, with a 清爽、鲜明、专业的内容驱动产品语言, leaning toward 橙渐变顶边白卡片 + 橙色强调块 + 数据驱动写入.
-
-目标：
-User 端面向 C 端用户（高考学生/家长/研究生），核心功能：高考志愿填报、院校查询、内容专栏。视觉风格统一为「橙渐变顶边 + 纯白卡片 + 橙色块」：卡片纯白底、`1px` 橙描边、顶部橙渐变粗边（`border-image`）；强调元素（徽标/按钮/竖条/圆点/统计数字）用橙色渐变或浅橙底。参考实现：`apps/user/src/views/postgraduate/index.vue`、`apps/user/src/views/postgraduate/first-year.vue`。
-
-## UI 设计规范
-
-### 品牌色（与 admin 共享 token）
-- 主色 `#F97316`，渐变端 `#FB923C`，hover `#EA580C`，active `#C2410C`
-- 强调文字橙 `#e8722a`（徽标/指南标题/链接文字）
-- 主渐变 `linear-gradient(90deg, #f97316, #fb923c)`（按钮 / 顶边 / 竖条 / 圆点 / 渐变文字）
-
-### 页面根背景（**不可变**）
-- `html` 全局暖橙画布：`background-color: #ffedd5` + 顶部/底部透白雾 + 三道光晕（已在 `apps/user/src/assets/styles/index.css` 实现）。**任何改动不得修改 html 画布**，只允许在页面内层做白色 / 橙色块。
-- 页面内容容器 `.xx-page`：`max-width: 1280px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem;`，背景透明露出画布（禁止给根容器整屏铺色）。
-
-### Hero（页面首屏区块，可选）
-- 背景：半透明暖白渐变 `linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,247,237,0.92))`
-- 边框：`1px solid rgba(249,115,22,0.18)` + 渐变顶边 + 圆角 `1.5rem` + 阴影 `0 10px 40px rgba(249,115,22,0.1)`
-- 徽标 `.xx-hero-badge`：浅橙渐变底 + 深橙字 + 橙描边药丸（`linear-gradient(90deg, rgba(249,115,22,0.12), rgba(251,146,60,0.12))` + 文字 `#e8722a` + `border: 1px solid rgba(249,115,22,0.25)` + `border-radius: 9999px`）
-- 标题：`clamp(1.6rem, 2.6vw, 2.6rem)` / `font-weight: 800` / `#1f2937`
-- 统计数字：橙渐变文字（`background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent`）
-
-### 卡片（Card）
-- 背景纯白 `#ffffff`，圆角 `1rem`
-- 描边 `1px solid rgba(249,115,22,0.15)`
-- **渐变顶边（标志性，必须保留）**：
-  ```css
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
-  border-top-width: 3px;
+### 6. 已知坑：CORS 缺 PATCH / Axios 拦截器吞报错 / MP 逻辑删除
+- **CORS 必须含 PATCH**：`haifeng-common/CorsConfig.java` 的 `allowedMethods` 必须包含 `PATCH`，否则所有 `@PatchMapping` 状态切换接口在 OPTIONS 预检阶段即失败。
+- **Axios 错误捕获标准写法**：`packages/shared/src/utils/request.ts` 响应拦截器将错误包装为 `reject(new Error(message))`，无 `.response` 属性。前端 `catch` 块**一律写为**：
+  ```ts
+  const msg = err.response?.data?.msg || err.message || '操作失败';
   ```
-- 阴影 `0 4px 20px rgba(249,115,22,0.06)`
-- hover：`translateY(-6px)` + `box-shadow: 0 14px 34px rgba(249,115,22,0.14)` + 描边加深 `rgba(249,115,22,0.35)`
-- 内层小卡（如 tips 卡）：浅橙渐变底 `linear-gradient(160deg, #fffdf9, #fff7ed)` + `1px solid rgba(249,115,22,0.12)`，hover 上浮 `-4px`
-
-### 橙色块（强调元素）
-- 区域标题：左侧 4px 橙渐变竖条（`::before`，`linear-gradient(180deg, #f97316, #fb923c)`，宽 4px 高 1.25rem 圆角）+ `1.5rem / 800 / #1f2937`
-- 药丸徽标/标签：浅橙渐变底 + `#e8722a` 文字 + `1px solid rgba(249,115,22,0.25)` + `border-radius: 9999px`
-- 按钮 `.xx-btn`：橙渐变底 `linear-gradient(90deg, #f97316, #fb923c)` + 白字 + `border-radius: 9999px` + 阴影 `0 4px 14px rgba(249,115,22,0.28)`，hover 上浮 `-2px` + 阴影增强
-- 模块图标底：浅橙渐变圆角方块（`linear-gradient(135deg, rgba(249,115,22,0.12), rgba(251,146,60,0.12))` + `1px solid rgba(249,115,22,0.22)` + `border-radius: 0.75~0.9rem`）
-- 列表圆点：橙渐变小圆点（`width/height: 0.45rem; border-radius: 50%; background: linear-gradient(135deg, #f97316, #fb923c)`）
-- 指南块：浅橙渐变底 `linear-gradient(135deg, rgba(249,115,22,0.06), rgba(251,146,60,0.06))` + `1px dashed rgba(249,115,22,0.35)`，内部小项白底 + 橙描边
-
-### 文字层级（三级灰）
-- 标题：`#1f2937` / `font-weight: 700~800`
-- 正文/描述：`#6b7280`；列表项：`#4b5563`
-- 辅助文字：`#9ca3af`
-- 品牌强调：`#e8722a` / 橙渐变文字（统计数字、重要数值）
-
-### 图标
-- **统一使用 SVG 语义图标（禁止 emoji）**，`stroke-width="2"`、`w-4 h-4` 基准；徽标/模块图标底内放 SVG 白/橙图标
-- 注：参考文件当前实现为 emoji，按本规范后续改造时应替换为 SVG
-
-### 写入手法（数据驱动）
-- 页面内容由 `<script setup>` 中的 `interface` + 常量数组驱动，模板 `v-for` 渲染，避免手写重复 DOM：
-  - 定义 `interface StageItem / ModuleItem` 等，字段含 `title / desc / btn / route / developing / features[]` 等
-  - 跳转统一 `go(item)`：`developing` 标记的弹「该功能正在开发中」（`ElMessage.info`），有 `route` 的 `router.push`
-- 内容区块结构：`Hero（可选）→ section（标题 + 副标题 + 卡片网格）`
-- 网格：`display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem`（自适应列数）
-
-### 参考实现
-- `apps/user/src/views/postgraduate/index.vue`：Hero + 阶段导航卡（4 张白卡）+ 核心模块卡（3 张白卡 + features 列表）
-- `apps/user/src/views/postgraduate/first-year.vue`：模块块（白卡大容器）+ 内层提示卡网格 + 指南块（虚线橙描边）
+- **MyBatis-Plus 逻辑删除（`is_deleted`）铁律**：
+  - 全局配置了 `logic-delete-field: isDeleted`。MP 内置的 `updateById`、`update(entity/wrapper)`、`deleteById`、`selectPage` **全部会自动追加 `WHERE is_deleted=false`**，且 `updateById` 会自动忽略 `isDeleted` 字段。
+  - **禁用 = 软删除（`is_deleted=true`）**；**删除/批量删除 = 物理删除**（必须写自定义 `@Delete("DELETE FROM t_xxx WHERE id=#{id}")`）。
+  - **凡是查询含禁用记录（status 全部/已禁用）、或对已禁用记录执行更新/恢复状态的方法，一律使用 XML 或 `@Update` 自定义 SQL，严禁调用 MP 内置方法。**
 
 ---
 
-## 改动前 Checklist（User 端）
+## 二、 全局色彩体系：主色克制与四色活力光谱
 
-每次新增或修改 user 端模块前，逐项自检：
+### 1. 破除“全屏单一橙色通胀”原则
+当页面上 100% 的边框、标签、图标、分割线全部使用同一种橙色时，橙色会彻底丧失视觉引导力，导致画面显得廉价且疲劳。全站必须执行 **「主色锁定核心场景 + 多巴胺活力辅色分流」** 策略：
+- **品牌橙（10% 关键锚定）**：**仅在顶部导航栏核心标识、主召唤按钮（Primary CTA）、一级模块序号锚点等核心场景突出**。
+- **中性底色（60~70% 呼吸留白）**：大面积容器、背景、卡片表面与分割线必须使用纯净白与冷调石板灰（Slate/Zinc），保证内容清爽耐看。
+- **活力辅色（20% 语义赋能）**：在分类胶囊、学科标签、公告属性、数据看点等场景，引入**晴空蓝、丹霞红、向日葵黄、翡翠绿**，赋予教育平台青春、阳光、热情的生命力。
 
-- [ ] `html` 全局暖橙画布（`#ffedd5` + 白雾 + 光晕）未被改动？
-- [ ] 页面根容器是否透明底 + `max-width: 1280px` 居中（未整屏铺色）？
-- [ ] 卡片是否纯白 `#ffffff` + `1px` 橙描边 + 渐变顶边（`border-image`）？
-- [ ] 卡片 hover 是否上浮 + 橙阴影增强？
-- [ ] 强调元素是否橙色系（徽标 / 按钮 / 竖条 / 圆点 / 渐变文字）？
-- [ ] 主按钮是否为橙渐变药丸 + 白字？
-- [ ] 图标是否全部 SVG（无 emoji）？
-- [ ] 内容是否数据驱动（`interface` + 数组 + `v-for`）？
-- [ ] 文字层级是否为三级灰 + 橙强调？
-- [ ] 跳转是否统一 `go(item)`（`developing` 弹「开发中」）？
+### 2. 全局设计令牌（Design Tokens）
+
+| 色彩角色 | 语义定位与情感特征 | 核心主色 (Text / Icon / Solid) | 柔光底座 (Soft SurfaceBg) | 极细微描边 (Subtle Ring) | 典型适用场景 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **海枫橙 (Brand Orange)** | **品牌核心 · 权威引航** | `#F97316` (Hover `#EA580C`) | `#FFF7ED` (`orange-50`) | `rgba(249, 115, 22, 0.2)` | 顶部导航激活态、核心主按钮、一级序号角标 `01-10`、政策类短签 |
+| **晴空蓝 (Youthful Blue)** | **青春活力 · 理性智库** | `#2563EB` (`blue-600`) | `#EFF6FF` (`blue-50`) | `rgba(37, 99, 235, 0.18)` | 新高考选科标签（`3+1+2`）、资讯类公告、理工/综合学科、四六级/英语模块、博士申请考核、图表主色 |
+| **丹霞红 (Passionate Red)** | **热情奔放 · 焦点冲刺** | `#E11D48` (`rose-600`) | `#FFF1F2` (`rose-50`) | `rgba(225, 29, 72, 0.18)` | 焦点微标签（`热门`、`急招`、`NEW`）、志愿填报冲刺预警、高优红点提示、危险/删除操作 |
+| **向日葵黄 (Sunny Yellow)** | **阳光朝气 · 金榜收获** | `#D97706` (文字) / `#F59E0B` (图标) | `#FFFBEB` (`amber-50`) | `rgba(245, 158, 11, 0.22)` | 国家级竞赛/证书金榜、院校性质（`公办`/`民办`）、名企秋招日历、温暖提示卡、VIP 会员徽标 |
+| **翡翠绿 (Growth Green)** | **生机畅通 · 实证精确** | `#059669` (`emerald-600`) | `#ECFDF5` (`emerald-50`) | `rgba(5, 150, 105, 0.18)` | 状态在线指示（`实时同步`）、考研`报录精算`标签、`招录`类公告、成功率/就业率正向指标 |
+
+> **色彩对比度硬约束（WCAG AA）**：黄色系作文字时，严禁在白底上直接使用浅亮黄（如 `#FACC15` 看不清），文字必须使用深琥珀色 `#D97706` 或 `#B45309`，搭配 `#FFFBEB` 浅黄底，确保清晰锐利。
 
 ---
 
-## 禁止事项（User 端）
+## 三、 【核心标准】方块与卡片容器微质感规范（严禁单纯依赖有色硬边框）
 
-- ❌ 禁止修改 `html` 全局暖橙画布背景（**根背景橙色不可变**）
-- ❌ 禁止卡片使用无色细边 `border-gray-100/60` / 纯白微灰渐变（必须白底 + 橙描边 + 渐变顶边）
-- ❌ 禁止卡片缺少渐变顶边（标志性 `border-image` 顶边必须保留）
-- ❌ 禁止使用 emoji 图标（统一 SVG 语义图标）
-- ❌ 禁止页面根容器整屏铺色 / 不透明背景（必须露出全局暖橙画布）
-- ❌ 禁止硬编码颜色（品牌色用上述色值）
-- ❌ 禁止按钮无圆角（统一 `border-radius: 9999px` 药丸形）
+> **立规背景**：在以往开发中，给每个方块无脑套上 `1px solid #FF8C3D` 亮橙色实线框或使用 `border-image` 顶部渐变边，不仅导致 CSS `border-radius` 圆角被 `border-image` 强行裁切成刺眼的直角外框，更在多卡片矩阵中形成了沉闷压抑的“铁丝网表格感”。**优秀的现代 UI 绝不靠高饱和度硬边框来划分区域，而是靠「高程阴影、微差表面、角标构图与内部收口细节」来塑造质感。**
+
+### 1. 铁律一：彻底废除彩色实线外框与 `border-image`
+- ❌ **严禁**在常规展示卡片、专栏方块、公告栏外围使用亮橙色实线框（`border: 1px solid #F97316`）。
+- ❌ **严禁**在带 `border-radius` 的卡片上使用 `border-image: linear-gradient(...)`（浏览器规范中 `border-image` 会直接破坏圆角渲染，产生直角外框 Bug）。如需顶部彩条装饰，必须使用卡片内部 `overflow: hidden` + 顶部 `::before` 伪元素高度 `3px` 实现。
+
+### 2. 铁律二：塑造方块高级感的「五维细节法则」
+
+所有卡片、矩阵方块与列表容器，必须通过以下 5 项微细节组合来替代简陋的单层边框：
+
+#### 细节 ①：微差表面与无感发丝边（Surface & Hairline Border）
+- 卡片背景采用纯白 `#FFFFFF`，外围仅使用 **1px 极浅冷灰发丝边** `border: 1px solid #F1F5F9`（或 `1px solid rgba(15, 23, 42, 0.05)`）。
+- 搭配双层弥散环境阴影，让方块自然“浮”在画布上：
+  ```css
+  .hf-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow: 
+      0 1px 2px rgba(15, 23, 42, 0.02),
+      0 4px 20px -2px rgba(15, 23, 42, 0.04);
+    transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .hf-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(249, 115, 22, 0.22); /* 仅在 Hover 激活时浮现极淡暖光边 */
+    box-shadow: 
+      0 4px 12px rgba(15, 23, 42, 0.04),
+      0 12px 28px -4px rgba(249, 115, 22, 0.08);
+  }
+  ```
+
+#### 细节 ②：父子角标锚定构图（Absolute Corner Badging）
+- **反例警示**：严禁在方块内部将「图标框」与「实心序号方块 `01`」水平并排放置，这会造成双色块视觉碰撞并挤压标题排版空间。
+- **标准做法**：左侧设 `48px × 48px`（`border-radius: 14px`）无描边柔光图标底座（如暖杏色 `#FFF7ED`、浅蓝色 `#EFF6FF`、浅黄色 `#FFFBEB`）；序号 `01-10` 制成 `20px × 20px` 正圆徽标（白边 `2px solid #FFFFFF`），以 **`position: absolute; top: -6px; left: -6px`** 吸附在图标底座左上角，融合成单一视觉锚点。
+
+#### 细节 ③：标题旁语义化微胶囊（Semantic Micro-Tags）
+- 为避免 10 张矩阵卡片或列表项长相完全雷同，在主标题右侧 `gap: 8px` 处按业务属性挂载**小圆角矩形微标签（`border-radius: 6px`，`padding: 2px 7px`，`font-size: 11px`，`font-weight: 600`）**：
+  - 选科/学术类用**晴空蓝**（如 `3+1+2`、`申请考核`）；
+  - 焦点/冲刺类用**丹霞红**（如 `热门`、`冲刺`）；
+  - 测算/数据类用**翡翠绿**（如 `报录精算`、`实时同步`）；
+  - 赛事/荣誉类用**向日葵黄**（如 `国家级`、`公办`）。
+
+#### 细节 ④：列表去分割线化与底部状态收口（Borderless List & Footer Bar）
+- **去虚线化**：公告或资讯列表项之间**严禁使用 `dashed` 虚线或粗实线分割**，统一使用 `gap: 10px~12px` 留白呼吸，配合单行 `padding: 6px 8px` 与 `border-radius: 8px` 的悬浮浅灰底色反馈。
+- **消除中文方括号**：严禁使用 `【公告】` 这种老旧纯文本括号，一律替换为 `4px~6px` 圆角的四色语义短签（`政策` 暖橙 + 右上角 `5px` 丹霞红圆点、`资讯` 晴空蓝、`招录` 翡翠绿、`就业` 向日葵黄/浅紫）。
+- **容器底部收口**：在公告栏或大型列表卡片底部，放置一条 `background: #F8FAFC; border-radius: 10px; padding: 10px 14px` 的浅灰收口条（如左侧呼吸圆点 + `每日 09:00 更新全国政策快报` + 右侧 `订阅推送` 链接），彻底终结右栏下半部分留白空洞的问题。
+
+#### 细节 ⑤：栅格垂直配平与操作引导（Grid Balancing & Affordance）
+- **右栏组合配平**：当左侧为多行卡片矩阵（如 2×5 专栏）时，右侧窄栏严禁将单个公告框强行 `height: 100%` 拉满造成大面积空白，必须拆分为 **「上半区：规划院公告」+「下半区：快捷通道与智库工具」** 两个高度紧凑的独立卡片，实现左右底部自然齐平。
+- **高对比度微箭头**：方块最右侧的跳转指示器 `→` 或 `↗` 采用深石板灰 `#334155`（Hover 时变为 `#EA580C` 并向右平移 `2px`），杜绝浅灰看不清的弱交互感。
+
+---
+
+## 四、 User 端（C 端用户）UI 详细设计规范
+
+### 1. 页面画布与局部背景层级
+- **根画布兼容**：`apps/user/src/assets/styles/index.css` 中的 `html` 全局画布保持底层兼容，但在具体业务视图（尤其是首页高密度工作台、百宝箱、生涯图谱）中，内容区块内部提倡使用清透的冷灰白底托（`#F8FAFC`）与纯白卡片（`#FFFFFF`）拉开干净的明度层次，避免暖杏粉灰底色直接接触白卡造成画面显脏。
+- **页面容器**：`max-width: 1280px`（或 `1360px`）；`margin: 0 auto; padding: 2rem 1.25rem 4rem;`。
+
+### 2. 顶部双层导航与数据看板（Hero Banner）
+- **品牌标题**：主标题 `20px / 800 / #18181B`，字距 `-0.02em`；右侧目录链接采用圆角热区 + 底部 `16px` 短胶囊指示条。
+- **搜索框**：宽度 `clamp(260px, 22vw, 350px)`，高度 `38px`，全圆角胶囊 `border-radius: 9999px`，冷灰底 `#F8FAFC` + `1px solid #E2E8F0`，聚焦时平滑微展宽并带橙色柔光外环。
+- **智库数据看板条**：白底无框大圆角横幅（`border-radius: 18px`），左侧展示智库定位 + 翡翠绿 `实时同步` 胶囊，右侧横向并列核心大数字指标，数字色彩多元分流：
+  - 第一组（如 `10 大系统专栏`）：主数字用**海枫橙** `#F97316`；
+  - 第二组（如 `120+ 算法库`）：主数字用**深曜黑** `#0F172A`；
+  - 第三组（如 `200K+ 全国学子`）：主数字用**晴空蓝** `#2563EB`。
+
+### 3. 标签与按钮的形态区分（终结“万物皆橙色药丸”）
+- **形态分级**：
+  1. **全圆角胶囊（`border-radius: 9999px`）**：**仅限用于**可点击的主次操作按钮（CTA）、顶部视图切换器（如 `全景决策图谱`）、状态在线徽标。
+  2. **微圆角矩形（`border-radius: 6px`）**：用于所有卡片标题旁的说明性标签（`3+1+2`、`热门`、`报录精算`）、公告分类短签（`政策`、`资讯`）、专业代码与学科标签。
+  3. **正圆角标（`border-radius: 50%`）**：用于吸附在图标左上角的序号 `01-10`。
+- **按钮色彩分级**：
+  - **一级主行动按钮（每屏不超过 1~2 个）**：海枫橙实心或微渐变（`#F97316` → `#EA580C`）+ 白字 + `border-radius: 12px` 或 `9999px`（如右栏「预约 1 对 1 首席升学规划师」）。
+  - **模块级切换/次要按钮**：白底或浅冷灰底 `#F8FAFC` + `1px solid #E2E8F0` + 深灰字 `#334155` + 内部精致 SVG 图标（如「全景决策图谱」按钮）。
+  - **辅助工具小卡**：采用清爽的冷灰蓝底 `#F8FAFC` + 左上角线性图标 + 右上角外链图标 `↗` + 底部翡翠绿/晴空蓝辅助说明小字（如「全周期日历」、「百宝箱查询矩阵」）。
+
+### 4. 文字层级与图标规范
+- **四级文字色阶（Slate 体系）**：
+  - 一级标题/核心数字：`#0F172A` (`slate-900`)，`font-weight: 700~800`
+  - 二级卡片标题/导航文字：`#1E293B` (`slate-800`)，`font-weight: 600~700`
+  - 三级正文/列表标题：`#475569` (`slate-600`)
+  - 四级辅助描述/日期时间戳：`#64748B` (`slate-500`) 或 `#94A3B8` (`slate-400`)
+- **图标铁律**：全站统一使用精细线性 SVG 语义图标（`stroke-width="1.75"` 或 `"2"`），**严禁使用任何 Emoji 图标**。
+- **防御性数据渲染**：凡涉及数量统计字段（如院校卡片的 `major_count`），当值为 `0` 或 `null` 时，前端必须渲染为 `"专业数据整理中"`，**严禁直接渲染出 `"0 个专业"`**。
+
+---
+
+## 五、 Admin 端（管理后台）UI 详细设计规范
+
+### 1. 整体基调与色彩扩展
+- **页面背景**：柔和浅灰暖白底 `#F8FAFC`，保留右上/左下极低透明度（`opacity: 0.03`）枫叶水印，确保长时间办公视觉不疲劳。
+- **容器与卡片**：废除原先沉重的“上下各 3px 粗橙色边框”，改为纯白底 `#FFFFFF` + `border-radius: 12px` + `1px solid #E2E8F0` 极细边框 + 柔和环境阴影 `0 2px 12px rgba(15, 23, 42, 0.03)`。重点统计卡片可采用左侧 `4px` 四色竖条（橙/蓝/红/黄）区分不同业务指标维度。
+
+### 2. 表格、状态标签与操作按钮
+- **表格（`el-table`）**：
+  - 表头：清爽冷灰或极浅暖白背景 `#F8FAFC` + 深色粗体文字 `#1E293B` + 底部 `1px solid #E2E8F0` 分隔线（取代原先刺眼的 2px 亮橙底边框）。
+  - 行 Hover：`rgba(249, 115, 22, 0.03)` 或 `#F8FAFC`。
+  - 分页：隐藏所有记录的数据库原始 `id` 列；分页组件当前页使用海枫橙圆角高亮。
+- **多色语义状态标签（取代单一橙色药丸）**：
+  - **进行中 / 报名中 / 启用 / 正常**：翡翠绿底 `#ECFDF5` + `#059669` 文字 + `6px` 圆角。
+  - **即将开始 / 审核中 / 常规分类**：晴空蓝底 `#EFF6FF` + `#2563EB` 文字 + `6px` 圆角。
+  - **公办 / 国家级 / 重点推荐**：向日葵黄底 `#FFFBEB` + `#D97706` 文字 + `6px` 圆角。
+  - **热门 / 急招 / 预警**：丹霞红底 `#FFF1F2` + `#E11D48` 文字 + `6px` 圆角。
+  - **已结束 / 禁用 / 归档**：中性冷灰底 `#F1F5F9` + `#64748B` 文字 + `6px` 圆角。
+- **弹窗（`el-dialog` / `ElMessageBox`）**：
+  - 圆角 `16px`，头部底部分隔线采用 `1px solid #F1F5F9`，配合四色语义图标（Info=晴空蓝、Warning=向日葵黄、Success=翡翠绿、Error=丹霞红）。
+
+---
+
+## 六、 改动前自检 Checklist
+
+每次新增或修改页面/组件前，必须逐条核对：
+
+- [ ] **【容器细节】** 卡片是否已去掉亮橙色硬边框与 `border-image`，改用纯白底 + `1px` 极浅冷灰发丝边 + 柔和弥散阴影？
+- [ ] **【角标构图】** 序号 `01-10` 是否已做成圆形角标吸附在图标底座左上角，而非独立色块与标题水平挤压？
+- [ ] **【四色分流】** 页面是否合理运用了晴空蓝（选科/资讯/学术）、丹霞红（热门/急招/预警）、向日葵黄（荣誉/公办/日历）、翡翠绿（实证/招录），避免了满屏同一种橙色？
+- [ ] **【标签形态】** 行内说明标签与公告分类是否已改为 `6px` 微圆角矩形（而非全部做成千篇一律的橙色药丸）？
+- [ ] **【列表与配平】** 公告列表是否已去掉 `【】` 括号与底部 `dashed` 虚线，并加上了底部浅灰收口条与右栏下半区工具模块配平？
+- [ ] **【防御渲染】** 列表与卡片中的计数（如专业数）是否已做 `> 0` 判断，杜绝页面出现 `0 个专业`？
+- [ ] **【工程红线】** 分页 `pageSize` 是否在 `[10, 100]` 区间？错误捕获是否包含 `err.message`？就业枚举是否对齐 DB CHECK？
+
+---
+
+## 七、 全局严禁事项（Anti-Patterns）
+
+- ❌ **严禁**给普通卡片、专栏方块、公告栏添加高饱和度橙色实线外框（`1px solid #FF8C3D` / `#F97316`）
+- ❌ **严禁**在带圆角的容器上使用 `border-image`（会导致浏览器圆角失效变成直角硬框）
+- ❌ **严禁**全站所有标签、徽标、数据块只用橙色一种颜色（必须按语义使用蓝、红、黄、绿分流）
+- ❌ **严禁**把所有行内微标签都做成全圆角药丸（行内标签统一用 `4px~6px` 微圆角，胶囊仅限交互按钮）
+- ❌ **严禁**将卡片序号做成实心方块与主标题并排碰撞（必须绝对定位吸附于图标框左上角）
+- ❌ **严禁**在公告列表中使用中文方括号 `【公告】` 及老旧的 `dashed` 虚线分割
+- ❌ **严禁**在页面上使用任何 Emoji 图标（必须使用线性 SVG 图标）
+- ❌ **严禁**删除 `index.css` 中根治 Element Plus 弹窗抖动的 `scrollbar-gutter: stable` 与 `width: 100% !important` 补丁

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAnnouncements } from '@/api/home'
 import type { AnnouncementListVO } from '@/types/home'
@@ -13,23 +13,6 @@ const loading = ref(false)
 const detailVisible = ref(false)
 const detailId = ref<string | null>(null)
 const listVisible = ref(false)
-
-const leftRef = ref<HTMLElement | null>(null)
-const leftHeight = ref(0)
-const stacked = ref(false)
-
-const PANEL_HEADER_HEIGHT = 52
-const NOTICE_ITEM_HEIGHT = 40
-const MIN_COUNT = 5
-const MAX_COUNT = 10
-
-const visibleCount = computed(() => {
-  if (stacked.value) return MIN_COUNT
-  const available = leftHeight.value - PANEL_HEADER_HEIGHT
-  if (available <= 0) return MIN_COUNT
-  const count = Math.floor(available / NOTICE_ITEM_HEIGHT)
-  return Math.min(MAX_COUNT, Math.max(MIN_COUNT, count))
-})
 
 const fetchAnnouncements = async () => {
   loading.value = true
@@ -48,52 +31,21 @@ function openDetail(id: string) {
   detailVisible.value = true
 }
 
-let resizeObserver: ResizeObserver | null = null
-let mql: MediaQueryList | null = null
-
-function applyStacked(e: MediaQueryList | MediaQueryListEvent) {
-  stacked.value = e.matches
-}
-
-onMounted(async () => {
+onMounted(() => {
   fetchAnnouncements()
-
-  if (typeof window !== 'undefined') {
-    mql = window.matchMedia('(max-width: 1024px)')
-    applyStacked(mql)
-    mql.addEventListener('change', applyStacked)
-
-    await nextTick()
-    if (leftRef.value) {
-      resizeObserver = new ResizeObserver((entries) => {
-        const entry = entries[0]
-        if (entry) leftHeight.value = entry.contentRect.height
-      })
-      resizeObserver.observe(leftRef.value)
-      leftHeight.value = leftRef.value.getBoundingClientRect().height
-    }
-  }
-})
-
-onUnmounted(() => {
-  resizeObserver?.disconnect()
-  mql?.removeEventListener('change', applyStacked)
 })
 </script>
 
 <template>
-  <section class="home-plan-section reveal">
-    <div class="home-plan-grid" :class="{ 'is-stacked': stacked }">
-      <div ref="leftRef" class="home-plan-grid__left">
+  <section class="home-plan-section">
+    <div class="home-plan-grid">
+      <div class="home-plan-grid__left">
         <PlanMatrix />
       </div>
 
       <NoticePanel
         :announcements="announcements"
         :loading="loading"
-        :visible-count="visibleCount"
-        :panel-height="stacked ? null : leftHeight"
-        :stacked="stacked"
         @select="openDetail"
         @view-all="listVisible = true"
       />
@@ -107,9 +59,9 @@ onUnmounted(() => {
 <style scoped>
 .home-plan-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
   gap: 1.5rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .home-plan-grid__left {

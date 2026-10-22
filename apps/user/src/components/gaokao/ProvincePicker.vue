@@ -2,8 +2,8 @@
 // apps/user/src/components/gaokao/ProvincePicker.vue
 // 省份选择器：触发按钮只显示省份名（居中、无下拉箭头），
 // 悬停/点击弹出 6 列网格省份面板（非一列下拉）。
-// 选中项：文字 #C2410C + 浅橙背景；悬停浅橙。
-// variant: 'bar' = 吸附条小按钮；'form' = 弹窗内表单输入框样式（更高、橙色边框）
+// 选中项：蓝色文字 + 浅蓝背景；悬停浅蓝。
+// variant: 'bar' = 吸附条小按钮；'form' = 弹窗内表单输入框样式（更高、中性边框）
 import { ref, computed } from 'vue'
 import { ProvinceOptions } from '@haifeng/shared'
 
@@ -95,20 +95,21 @@ function pick(val: string) {
   min-width: 76px;
   height: 34px;
   padding: 0 14px;
-  border-radius: 16px;
+  border-radius: 999px;
   background: #fff;
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset;
   font-size: 14px;
   font-weight: 600;
-  color: #c2410c;
+  color: #334155;
 }
 
 .pp-trigger-bar:hover {
-  box-shadow: 0 0 0 1.5px #ea580c inset;
-  background: #fff7ed;
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset;
+  color: var(--sem-blue);
 }
 
-/* 弹窗表单输入框样式：高 44px、橙色系、图标+省份名整体居中 */
+/* 弹窗表单输入框样式：高 44px、中性底、图标+省份名整体居中 */
 .pp-trigger-form {
   width: 100%;
   max-width: 220px;
@@ -116,11 +117,11 @@ function pick(val: string) {
   padding: 0 14px;
   gap: 6px;
   border-radius: 12px;
-  background: #fff7ed;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45) inset;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset;
   font-size: 16px;
   font-weight: 600;
-  color: #9a3412;
+  color: #334155;
 }
 
 /* form 变体内的定位图标（与其它选项框前缀图标同款） */
@@ -128,11 +129,13 @@ function pick(val: string) {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 .pp-trigger-form:hover {
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset;
+  color: var(--sem-blue);
 }
 
 /* ===== 6 列省份网格面板 ===== */
@@ -154,27 +157,26 @@ function pick(val: string) {
   justify-content: center;
   padding: 0 4px;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.18);
+  border: 1px solid var(--neutral-border);
   border-radius: 10px;
   font-size: 13px;
-  color: #4b5563;
+  color: #475569;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .pp-cell:hover {
-  background: #fff7ed;
-  border-color: #fb923c;
-  color: #ea580c;
+  background: var(--sem-blue-bg);
+  border-color: var(--sem-blue-soft);
+  color: var(--sem-blue);
 }
 
-/* 选中：文字 #C2410C + 浅橙背景 + 橙边 */
 .pp-cell-active,
 .pp-cell-active:hover {
-  background: #ffedd5;
-  border-color: #f97316;
-  color: #c2410c;
+  background: var(--sem-blue-bg);
+  border-color: var(--sem-blue);
+  color: var(--sem-blue);
   font-weight: 700;
 }
 </style>

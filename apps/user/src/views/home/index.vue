@@ -6,7 +6,7 @@ import { getPlanners, getInstitutions } from '@/api/home'
 import type { PlannerListVO, InstitutionListVO } from '@/types/home'
 import PlannerCard from './components/PlannerCard.vue'
 import CircularGallery from './components/CircularGallery.vue'
-import HomePlanSection from './components/HomePlanSection.vue'
+import HomePathwaySection from './components/HomePathwaySection.vue'
 import ToolboxSection from './components/toolbox/ToolboxSection.vue'
 import AnimatedLogo from '@/components/AnimatedLogo.vue'
 
@@ -146,9 +146,20 @@ onUnmounted(() => {
 
 <template>
   <div class="home-page">
+    <!-- ==================== 消隐微网格 + 顶部双色极光（DESIGN.md） ==================== -->
+    <div class="bg-grid-aurora" aria-hidden="true"></div>
+
     <!-- ==================== Hero（居中品牌头） ==================== -->
     <section class="hero-section grain-overlay">
+      <div class="hero-glow" aria-hidden="true"></div>
       <div class="hero-inner">
+        <div class="hero-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z" />
+          </svg>
+          AI 驱动 · 全周期升学规划
+        </div>
         <h1 class="hero-title">
           <AnimatedLogo class="hero-logo" />
           <span>海枫<span class="hero-title-gradient">未来规划院</span></span>
@@ -156,14 +167,28 @@ onUnmounted(() => {
         <p class="hero-desc">
           依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
         </p>
+        <div class="hero-actions">
+          <router-link to="/gaokao" class="hero-cta hero-cta-primary">
+            开始志愿规划
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </router-link>
+          <a href="#toolbox" class="hero-cta hero-cta-secondary">
+            探索百宝箱
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+            </svg>
+          </a>
+        </div>
       </div>
     </section>
 
-    <!-- ==================== 全周期规划矩阵 + 规划院公告 ==================== -->
-    <HomePlanSection />
+    <!-- ==================== 全周期规划矩阵 / 生涯星图（可切换） ==================== -->
+    <HomePathwaySection />
 
     <!-- ==================== 百宝箱 ==================== -->
-    <section id="toolbox" class="section-wrapper">
+    <section id="toolbox" class="section-wrapper section-toolbox">
       <div class="section-container reveal">
         <div class="section-head reveal-left">
           <h2 class="section-title">百宝箱</h2>
@@ -175,7 +200,7 @@ onUnmounted(() => {
     </section>
 
     <!-- ==================== 专业规划师 ==================== -->
-    <section class="section-wrapper">
+    <section class="section-wrapper section-planner">
       <div class="section-container reveal">
         <div class="section-head">
           <h2 class="section-title">专业规划师</h2>
@@ -232,7 +257,7 @@ onUnmounted(() => {
     </section>
 
     <!-- ==================== 培训机构 ==================== -->
-    <section class="section-wrapper section-alt grain-overlay">
+    <section class="section-wrapper section-institution section-alt grain-overlay">
       <div class="section-container reveal">
         <div class="section-head">
           <h2 class="section-title">培训机构</h2>
@@ -300,10 +325,51 @@ onUnmounted(() => {
   padding: 0 1.25rem 4rem;
 }
 
+/* ============ 消隐微网格 + 顶部双色氛围极光（DESIGN.md） ============
+   全屏固定层：以“未来规划”为中心点向外辐射，网格在屏幕中心显现、
+   向四周羽化隐入纯净底色；顶部左微橙右微蓝两道柔光托住大标题。
+   1) 作为 .home-page 的嵌套子元素（非 main 直接子节点），
+      不受全局 `.app-shell main > * { background: transparent !important }` 影响。
+   2) 祖先链（.app-shell / main）无 transform/filter，fixed 正确相对视口。
+   3) 自身 mask 让网格+极光在边缘自然消隐，露出 html 同色底 #F8FAFC，无缝衔接。 */
+.bg-grid-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #f8fafc; /* 纯净极浅灰冷白底，与全局 html 画布同色 */
+  background-image:
+    /* 顶部极淡双色环境光晕：左微橙，右微蓝，烘托科技与青春 */
+    radial-gradient(at 20% 0%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(59, 130, 246, 0.06) 0px, transparent 50%),
+    /* 细微网格线 (32px * 32px 宫格) —— 深蓝灰极弱透明度，不发脏 */
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+
+  /* 核心：径向遮罩，让网格在四周自然消隐（不生硬到底） */
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 60%, transparent 100%);
+}
+
 /* ============ Hero（居中品牌头） ============ */
 .hero-section {
   position: relative;
-  padding: 3.5rem 0 2.5rem;
+  padding: 2.5rem 0 2rem;
+  isolation: isolate;
+}
+
+/* 暖光只属于 Hero：不再铺满全站，避免整页橙色通胀 */
+.hero-glow {
+  position: absolute;
+  inset: -3rem 10% auto;
+  height: 24rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 60% at 72% 8%, rgba(249, 115, 22, 0.1), transparent 70%),
+    radial-gradient(ellipse 44% 56% at 24% 0%, rgba(251, 191, 36, 0.08), transparent 72%);
+  filter: blur(8px);
 }
 
 .hero-inner {
@@ -311,6 +377,25 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--sem-blue-bg);
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hero-badge svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .hero-title {
@@ -334,7 +419,7 @@ onUnmounted(() => {
 }
 
 .hero-title-gradient {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-light));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -348,14 +433,73 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.hero-cta svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.hero-cta-primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-light));
+  box-shadow: 0 8px 22px rgba(249, 115, 22, 0.22);
+}
+
+.hero-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(249, 115, 22, 0.3);
+}
+
+.hero-cta-secondary {
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid var(--neutral-border-strong);
+}
+
+.hero-cta-secondary:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  background: var(--neutral-bg);
+}
+
 /* ============ Sections ============ */
 .section-wrapper {
-  padding: 3.5rem 0;
   position: relative;
+  padding: 3.5rem 0;
+  scroll-margin-top: 8.75rem;
 }
 
 .section-alt {
-  background: linear-gradient(180deg, rgba(255, 247, 237, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
+  background: transparent;
+}
+
+.section-alt .section-container {
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  border: 1px solid var(--neutral-border);
+  box-shadow: 0 2px 10px var(--neutral-shadow);
 }
 
 .section-container {
@@ -384,7 +528,19 @@ onUnmounted(() => {
   width: 4px;
   height: 1.25rem;
   border-radius: 2px;
-  background: linear-gradient(180deg, #f97316, #fb923c);
+  background: var(--sem-blue);
+}
+
+.section-toolbox .section-title::before {
+  background: var(--sem-yellow);
+}
+
+.section-planner .section-title::before {
+  background: var(--sem-blue);
+}
+
+.section-institution .section-title::before {
+  background: var(--brand-orange);
 }
 
 .section-sub {
@@ -425,11 +581,11 @@ onUnmounted(() => {
   height: 2.5rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(249, 115, 22, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  color: #6b7280;
+  border: 1px solid var(--neutral-border-strong);
+  box-shadow: 0 4px 16px var(--neutral-shadow);
+  color: #64748b;
   cursor: pointer;
 }
 
@@ -441,8 +597,9 @@ onUnmounted(() => {
 }
 
 .nav-arrow-btn:hover:not(:disabled) {
-  color: #f97316;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15);
+  color: var(--sem-blue);
+  border-color: #bfdbfe;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.14);
 }
 
 .nav-arrow-btn:disabled {
@@ -460,8 +617,8 @@ onUnmounted(() => {
 }
 
 .page-dot.active {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+  background: var(--sem-blue);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.35);
 }
 
 /* ============ Institution ============ */
@@ -476,31 +633,44 @@ onUnmounted(() => {
 .institution-input {
   flex: 1;
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--neutral-border-strong);
+  background: #ffffff;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
+  color: #334155;
   outline: none;
   transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+.institution-input::placeholder {
+  color: #94a3b8;
+}
+
 .institution-input:hover {
-  border-color: #fdba74;
+  border-color: #cbd5e1;
 }
 
 .institution-input:focus {
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  border-color: var(--sem-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .institution-search-btn {
   border-radius: 0.5rem;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: var(--sem-blue);
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #ffffff;
   border: none;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.institution-search-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.22);
 }
 
 .institution-filters {
@@ -516,20 +686,20 @@ onUnmounted(() => {
   padding: 0.375rem 1rem;
   font-size: 0.875rem;
   transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  background: rgba(255, 247, 237, 0.6);
-  color: #e8722a;
+  background: var(--sem-blue-bg);
+  color: #2563eb;
   border: 1px solid transparent;
   cursor: pointer;
 }
 
 .filter-pill:hover {
-  background: rgba(255, 247, 237, 1);
+  background: #dbeafe;
 }
 
 .filter-pill.active {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: var(--sem-blue);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.22);
 }
 
 .more-link {
@@ -537,14 +707,14 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.875rem;
-  color: #f97316;
+  color: var(--sem-blue);
   cursor: pointer;
   background: none;
   border: none;
 }
 
 .more-link:hover {
-  color: #ea580c;
+  color: #2563eb;
 }
 
 /* ============ Responsive ============ */
@@ -558,11 +728,25 @@ onUnmounted(() => {
   .hero-title {
     font-size: clamp(1.6rem, 6vw, 2.2rem);
   }
+  .hero-actions {
+    width: 100%;
+  }
+  .hero-cta {
+    flex: 1;
+    min-width: 9.5rem;
+  }
+  .section-alt .section-container {
+    padding: 1.25rem;
+    border-radius: 1.125rem;
+  }
 }
 
 @media (max-width: 640px) {
   .section-wrapper {
     padding: 2.5rem 0;
+  }
+  .hero-section {
+    padding: 1.75rem 0 1rem;
   }
 }
 </style>

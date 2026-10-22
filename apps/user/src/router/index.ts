@@ -493,12 +493,17 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(to, _from, savedPosition) {
+  scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     }
     if (to.hash && to.hash.length > 1 && typeof document !== 'undefined' && document.querySelector(to.hash)) {
       return { el: to.hash, top: 140, behavior: 'smooth' }
+    }
+    // 同页面仅 query 变化的导航（如首页切换图谱视图、列表分页/筛选）
+    // 不滚动到顶端，保持当前位置
+    if (to.path === from.path) {
+      return false
     }
     return { top: 0 }
   },

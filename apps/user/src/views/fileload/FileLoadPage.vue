@@ -425,7 +425,7 @@ watch(effectiveStage, () => {
     <nav v-if="stageNav" class="stage-nav" :style="{ top: `${barTop}px` }">
       <div class="stage-nav-inner">
         <span class="stage-nav-label">
-          <svg class="stage-nav-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg class="stage-nav-label-icon shrink-0 text-sem-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
           </svg>
@@ -490,7 +490,7 @@ watch(effectiveStage, () => {
         </div>
           <p class="text-gray-600 leading-relaxed mb-4">{{ bannerDesc }}</p>
           <div class="flex flex-wrap gap-2">
-            <span v-for="kw in ['学习资料', '政策解读', '备考指南', '持续更新']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
+            <span v-for="kw in ['学习资料', '政策解读', '备考指南', '持续更新']" :key="kw" class="rounded-full bg-slate-50 px-4 py-1.5 text-sm text-slate-500 border border-slate-200">
               {{ kw }}
             </span>
           </div>
@@ -498,13 +498,11 @@ watch(effectiveStage, () => {
       </Motion>
 
       <!-- 筛选栏 -->
-      <section class="mb-6 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg space-y-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v6a1 1 0 01-.293.707L14 15.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 018 17v-1.586L3.293 10.707A1 1 0 013 10V4z" />
-            </svg>
-            筛选
+      <section class="mb-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-1 h-5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500"></span>
+            <h2 class="text-lg font-bold text-gray-800">筛选</h2>
           </div>
           <button v-if="hasActiveFilter" class="text-xs text-orange-500 hover:underline" @click="resetFilters">
             重置筛选
@@ -541,12 +539,10 @@ watch(effectiveStage, () => {
       </section>
 
       <!-- 文件列表 -->
-      <section class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-        <div class="mb-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M5 5h14v14H5zM9 9h6M9 13h6" />
-          </svg>
-          文件列表
+      <section class="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+        <div class="mb-5 flex items-center gap-2">
+          <span class="inline-block w-1 h-5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500"></span>
+          <h2 class="text-lg font-bold text-gray-800">文件列表</h2>
         </div>
         <div v-loading="loading" class="min-h-[400px]">
           <div v-if="list.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -648,10 +644,10 @@ watch(effectiveStage, () => {
 .stage-nav {
   position: sticky;
   z-index: 40;
-  background: rgba(255, 251, 245, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
-  box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.03);
   transition: top 0.3s ease;
 }
 
@@ -705,13 +701,13 @@ watch(effectiveStage, () => {
 }
 
 .stage-nav-item:hover {
-  color: #ea580c;
-  background: rgba(249, 115, 22, 0.08);
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .stage-nav-item.is-active {
-  color: #c2410c;
-  background: #ffedd5;
+  color: #1d4ed8;
+  background: #eff6ff;
   font-weight: 700;
 }
 
@@ -725,7 +721,7 @@ watch(effectiveStage, () => {
 }
 
 .stage-nav-item.is-soon:hover {
-  color: #ea580c;
+  color: #64748b;
 }
 
 /* ===== 右侧身份切换：下拉框（初三/初二/初一、大一~大四） ===== */
@@ -739,7 +735,7 @@ watch(effectiveStage, () => {
 
 .stage-identity-label {
   font-size: 13px;
-  color: #a8a29e;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -752,21 +748,21 @@ watch(effectiveStage, () => {
   min-height: 34px;
   padding: 0 14px;
   border-radius: 999px;
-  background: #fff7ed;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35) inset;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .stage-identity-select :deep(.el-select__wrapper.is-hovering),
 .stage-identity-select :deep(.el-select__wrapper.is-focused) {
-  background: #ffedd5;
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1.5px #3b82f6 inset;
 }
 
 .stage-identity-select :deep(.el-select__selected-item) {
   font-size: 14px;
   font-weight: 700;
-  color: #c2410c;
+  color: #2563eb;
 }
 
 /* 药丸下拉不显示向下箭头（统一规范：导航栏/吸顶条上的下拉触发器不展示 svg 箭头） */
@@ -790,12 +786,12 @@ watch(effectiveStage, () => {
 <style>
 /* 身份下拉面板：popper-class 传送到 body，scoped 无效，故放在非 scoped 块（类名唯一，无泄漏） */
 .stage-identity-popper .el-select-dropdown__item.is-selected {
-  color: #c2410c;
+  color: #2563eb;
   font-weight: 700;
 }
 
 .stage-identity-popper .el-select-dropdown__item.is-hovering {
-  background: #fff7ed;
-  color: #ea580c;
+  background: #eff6ff;
+  color: #2563eb;
 }
 </style>

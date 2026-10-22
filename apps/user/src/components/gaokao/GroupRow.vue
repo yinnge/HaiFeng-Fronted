@@ -69,16 +69,16 @@ const requirementText = computed(() => {
 const cardClass = computed(() => {
   const base = 'group relative rounded-2xl border transition-all duration-300 ease-out'
   if (props.isMasked) return `${base} opacity-60`
-  if (hasHardConflict.value) return `${base} border-red-200/60 bg-gradient-to-br from-red-50/80 to-white shadow-card hover:shadow-card-hover`
-  if (hasSoftConflict.value) return `${base} border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white shadow-card hover:shadow-card-hover`
-  return `${base} border-gray-100/80 bg-white shadow-card hover:shadow-card-hover hover:border-brand-orange/20`
+  if (hasHardConflict.value) return `${base} border-red-200/70 bg-red-50/50 shadow-hf hover:shadow-hf-hover`
+  if (hasSoftConflict.value) return `${base} border-amber-200/70 bg-amber-50/50 shadow-hf hover:shadow-hf-hover`
+  return `${base} border-surface-border bg-white shadow-hf hover:shadow-hf-hover hover:border-sem-blue/25`
 })
 </script>
 
 <template>
   <div :class="cardClass">
     <div class="flex items-stretch">
-      <div class="w-28 shrink-0 flex flex-col items-center justify-center p-4 border-r border-gray-100/60">
+      <div class="w-28 shrink-0 flex flex-col items-center justify-center p-4 border-r border-surface-border">
         <div class="relative">
           <span
             class="inline-flex h-12 w-12 items-center justify-center rounded-2xl text-base font-bold text-white shadow-lg transition-transform duration-200 group-hover:scale-105"
@@ -94,13 +94,13 @@ const cardClass = computed(() => {
       <div class="flex-1 min-w-0 p-5">
         <div class="flex items-center gap-3 flex-wrap">
           <span
-            class="text-lg font-bold text-gray-800 truncate cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2"
+            class="text-lg font-bold text-gray-800 truncate cursor-pointer transition-colors duration-200 hover:text-sem-blue hover:underline underline-offset-2"
             @click.stop="$emit('clickUniversity', group.universityName)"
           >
             {{ group.universityName }}
           </span>
           <span
-            class="inline-flex items-center text-sm text-gray-500 cursor-pointer transition-colors duration-200 hover:text-brand-orange hover:underline underline-offset-2"
+            class="inline-flex items-center text-sm text-gray-500 cursor-pointer transition-colors duration-200 hover:text-sem-blue hover:underline underline-offset-2"
             @click.stop="$emit('clickCity', group.cityName)"
           >
             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,17 +157,17 @@ const cardClass = computed(() => {
         </div>
       </div>
 
-      <div class="w-[32rem] shrink-0 border-l border-gray-100/60 p-4 bg-gray-50/30">
+      <div class="w-[32rem] shrink-0 border-l border-surface-border p-4 bg-slate-50/60">
         <div class="flex items-center mb-3">
           <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
           <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">历史分数</span>
         </div>
-        <div class="overflow-hidden rounded-xl border border-gray-200/60">
+        <div class="overflow-hidden rounded-xl border border-surface-strong">
           <table class="w-full text-xs">
             <thead>
-              <tr class="bg-gray-100/60">
+              <tr class="bg-slate-50">
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">年份</th>
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">最低分/位次</th>
                 <th class="text-left font-semibold text-gray-600 px-4 py-2">平均分/位次</th>
@@ -175,8 +175,8 @@ const cardClass = computed(() => {
                 <th class="text-center font-semibold text-gray-600 px-4 py-2">录取人数</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100/60">
-              <tr v-for="s in group.historyScores" :key="s.year" class="text-gray-600 hover:bg-gray-50 transition-colors">
+            <tbody class="divide-y divide-surface-border">
+              <tr v-for="s in group.historyScores" :key="s.year" class="text-gray-600 hover:bg-white transition-colors">
                 <td class="px-4 py-2 font-medium tabular-nums">{{ s.year }}</td>
                 <td class="px-4 py-2 tabular-nums">{{ s.minScore }}/{{ s.minRank }}</td>
                 <td class="px-4 py-2 tabular-nums">{{ s.avgScore }}/{{ s.avgRank }}</td>
@@ -188,12 +188,12 @@ const cardClass = computed(() => {
         </div>
       </div>
 
-      <div class="w-20 shrink-0 flex flex-col items-center justify-center gap-2 border-l border-gray-100/60 p-3">
+      <div class="w-20 shrink-0 flex flex-col items-center justify-center gap-2 border-l border-surface-border p-3">
         <button
           class="w-full flex flex-col items-center justify-center gap-1.5 px-3 py-3 rounded-xl transition-all duration-200 text-sm font-medium"
           :class="isExpanded
-            ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20'
-            : 'text-brand-blue hover:bg-brand-blue/10 hover:border-brand-blue/20 border border-transparent'"
+            ? 'bg-sem-blue-bg text-sem-blue border border-sem-blue/20'
+            : 'text-gray-500 hover:bg-sem-blue-bg hover:text-sem-blue hover:border-sem-blue/20 border border-transparent'"
           @click="$emit('toggleExpand')"
         >
           <svg
@@ -210,13 +210,13 @@ const cardClass = computed(() => {
 
     <div v-if="isMasked" class="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-sm flex items-center justify-center">
       <div class="text-center">
-        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-brand-orange/10 flex items-center justify-center">
-          <svg class="w-6 h-6 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-50 flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
         <p class="text-sm text-gray-500 mb-2">升级会员查看完整数据</p>
-        <span class="text-xs text-brand-orange font-semibold cursor-pointer hover:underline" @click="recharge.open()">立即升级</span>
+        <span class="text-xs text-amber-600 font-semibold cursor-pointer hover:underline" @click="recharge.open()">立即升级</span>
       </div>
     </div>
   </div>
