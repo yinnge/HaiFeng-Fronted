@@ -87,7 +87,7 @@ async function onMockFill() {
         </div>
         <div class="gk-item">
           <label class="gk-label">高考年份</label>
-          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="gk-select" popper-class="orange-select-popper">
+          <el-select v-model="form.gaokaoYear" placeholder="选择年份" class="gk-select" popper-class="gk-select-popper">
             <el-option v-for="y in yearOptions" :key="y" :label="`${y}年`" :value="y" />
           </el-select>
         </div>
@@ -228,7 +228,7 @@ async function onMockFill() {
           <span v-else-if="batchLoading" class="gk-batch-line gk-batch-muted">正在查询批次线…</span>
         </label>
         <div class="gk-row">
-          <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="gk-batch-select" popper-class="orange-select-popper">
+          <el-select v-model="form.batch" placeholder="选择批次" :disabled="!batchList.length" class="gk-batch-select" popper-class="gk-select-popper">
             <el-option v-for="b in batchList" :key="b.batch" :label="b.batch" :value="b.batch" />
           </el-select>
         </div>
@@ -250,16 +250,15 @@ async function onMockFill() {
 </template>
 
 <style scoped>
-/* ===== 志愿测算卡片：纯白底 + #FFEDD5 边框 + 柔和橙光投影 ===== */
 .gk-quick-card {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   background: #ffffff;
-  border: 1px solid #ffedd5;
+  border: 1px solid var(--neutral-border);
   border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.08);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), 0 12px 32px -8px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
@@ -280,28 +279,28 @@ async function onMockFill() {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), #ffedd5);
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.18);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
 }
 
 .gk-quick-badge svg {
   width: 24px;
   height: 24px;
-  color: #c2410c;
+  color: var(--sem-blue);
 }
 
 .gk-quick-title {
   margin: 0;
   font-size: 19px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #44403c;
+  letter-spacing: -0.01em;
+  color: var(--text-heading);
 }
 
 .gk-quick-sub {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #a8a29e;
+  color: var(--text-muted);
 }
 
 /* 表单区：可滚动，防止 40% 窄列内容溢出 */
@@ -347,19 +346,19 @@ async function onMockFill() {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 .gk-tip-ico {
   width: 13px;
   height: 13px;
   flex-shrink: 0;
-  color: #fdba74;
+  color: #94a3b8;
   cursor: help;
 }
 
 .gk-tip-ico:hover {
-  color: #ea580c;
+  color: var(--sem-blue);
 }
 
 .gk-ph {
@@ -372,9 +371,9 @@ async function onMockFill() {
 }
 
 .gk-ph-warn {
-  color: #c2410c;
-  background: #fff7ed;
-  border: 1px dashed rgba(249, 115, 22, 0.4);
+  color: var(--sem-yellow-deep);
+  background: var(--sem-yellow-bg);
+  border: 1px solid var(--sem-yellow-soft);
 }
 
 .gk-sub-label {
@@ -393,20 +392,21 @@ async function onMockFill() {
 .gk-subject-btn {
   min-width: 64px;
   padding: 8px 14px;
-  background: #fff7ed;
-  border: 1px solid rgba(249, 115, 22, 0.35);
+  background: #f8fafc;
+  border: 1px solid var(--neutral-border-strong);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #9a3412;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
 }
 
 .gk-subject-btn:hover {
-  border-color: #f97316;
-  background: #ffedd5;
+  border-color: var(--sem-blue-soft);
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
   transform: translateY(-1px);
 }
 
@@ -416,10 +416,10 @@ async function onMockFill() {
 
 .gk-subject-btn.is-selected,
 .gk-subject-btn.is-selected:hover {
-  background: #ffedd5;
-  border-color: #f97316;
-  color: #c2410c;
-  box-shadow: 0 0 0 1px #f97316 inset;
+  background: var(--sem-blue-bg);
+  border-color: var(--sem-blue);
+  color: var(--sem-blue);
+  box-shadow: 0 0 0 1px var(--sem-blue) inset;
 }
 
 .gk-hint {
@@ -440,7 +440,7 @@ async function onMockFill() {
 }
 
 .gk-batch-line .gk-batch-score {
-  color: #c2410c;
+  color: var(--sem-blue);
   font-weight: 700;
 }
 
@@ -454,7 +454,7 @@ async function onMockFill() {
   gap: 12px;
   padding: 14px 18px 18px;
   flex-shrink: 0;
-  border-top: 1px solid #fff7ed;
+  border-top: 1px solid var(--neutral-border);
 }
 
 .gk-plan,
@@ -474,21 +474,23 @@ async function onMockFill() {
 }
 
 .gk-plan {
-  background: #fff7ed;
-  color: #c2410c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
+  background: #fff;
+  color: #475569;
+  border: 1px solid var(--neutral-border-strong);
 }
 
 .gk-plan:hover {
-  background: #ffedd5;
+  background: var(--sem-blue-bg);
+  border-color: var(--sem-blue-soft);
+  color: var(--sem-blue);
   transform: translateY(-1px);
 }
 
 .gk-mock {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-orange-dark) 100%);
   color: #fff;
   border: none;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.28);
 }
 
 .gk-mock:hover:not(:disabled) {
@@ -510,7 +512,7 @@ async function onMockFill() {
 </style>
 
 <style>
-/* EP 控件（el-select / el-input-number）橙色风格：非 scoped（类名为卡片根的后代，唯一无泄漏） */
+/* EP 控件（el-select / el-input-number）：非 scoped（类名为卡片根的后代，唯一无泄漏） */
 .gk-quick-card .gk-select .el-select__wrapper,
 .gk-quick-card .gk-batch-select .el-select__wrapper,
 .gk-quick-card .gk-number .el-input__wrapper {
@@ -519,11 +521,11 @@ async function onMockFill() {
   min-height: 44px;
   flex-wrap: nowrap;
   border-radius: 10px;
-  background: #fffaf3;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4) inset, 0 1px 2px rgba(249, 115, 22, 0.06);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset, 0 1px 2px rgba(15, 23, 42, 0.03);
   font-size: 13px;
   font-weight: 500;
-  color: #9a3412;
+  color: #334155;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -533,18 +535,18 @@ async function onMockFill() {
 .gk-quick-card .gk-batch-select .el-select__wrapper.is-focused,
 .gk-quick-card .gk-number .el-input__wrapper.is-focus,
 .gk-quick-card .gk-number .el-input__wrapper:hover {
-  background: #fff7ed;
-  box-shadow: 0 0 0 1.5px #f97316 inset, 0 2px 6px rgba(249, 115, 22, 0.12);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset, 0 2px 6px rgba(59, 130, 246, 0.1);
 }
 
 .gk-quick-card .gk-select .el-select__placeholder,
 .gk-quick-card .gk-batch-select .el-select__placeholder {
-  color: #b45309;
+  color: #94a3b8;
 }
 
 .gk-quick-card .gk-select .el-select__selected-item,
 .gk-quick-card .gk-batch-select .el-select__selected-item {
-  color: #9a3412;
+  color: #334155;
 }
 
 /* 高考年份 / 填报批次：隐藏右侧下拉箭头 svg（与吸顶条下拉规范一致，文字居中） */
@@ -607,7 +609,7 @@ async function onMockFill() {
 }
 
 .gk-quick-card .gk-number .el-input__inner {
-  color: #9a3412;
+  color: #334155;
   font-weight: 600;
 }
 

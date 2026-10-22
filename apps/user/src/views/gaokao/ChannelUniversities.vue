@@ -161,10 +161,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen channel-page">
+  <div class="min-h-screen channel-page bg-surface-bg">
     <main class="container mx-auto px-6 py-8 max-w-6xl" v-loading="loading">
       <template v-if="detail">
-        <!-- Hero 头部（品牌橙渐变，压过全局 transparent 规则需 !important） -->
+        <!-- Hero 头部（强基蓝 / 特殊通道暖金，压过全局 transparent 规则需 !important） -->
         <section class="channel-hero fade-up" :class="{ 'hero-warm': detail.channelCode !== 'STRONG_BASE' }">
           <div class="hero-orb" aria-hidden="true" />
           <div class="hero-back">
@@ -325,15 +325,17 @@ onUnmounted(() => {
   margin-bottom: 24px;
   padding: 24px 36px 32px;
   border-radius: 20px;
-  /* 全局 .app-shell main > * 会强制透明，必须 !important 保证实心橙渐变 */
-  background: linear-gradient(135deg, #e8722a 0%, #f59e0b 100%) !important;
+  /* 全局 .app-shell main > * 会强制透明，必须 !important 保证实心渐变 */
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
   color: #fff;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.18);
 }
 
-/* 4 通道专用：柔和亮暖橙（STRONG_BASE 强基页保持原渐变不变） */
+/* 4 通道专用：暖金渐变（STRONG_BASE 强基页保持蓝色品牌渐变） */
 .channel-hero.hero-warm {
-  background: linear-gradient(120deg, #f97316 0%, #fbbf24 100%) !important;
+  background: linear-gradient(120deg, #78350f 0%, #b45309 100%) !important;
   padding: 14px 22px 18px;
+  box-shadow: 0 12px 32px rgba(217, 119, 6, 0.16);
 }
 .channel-hero.hero-warm .hero-back {
   margin-bottom: 10px;
@@ -391,9 +393,9 @@ section.fade-up:last-of-type {
   align-items: center;
   gap: 4px;
   padding: 5px 14px;
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-size: 12px;
   cursor: pointer;
@@ -409,8 +411,8 @@ section.fade-up:last-of-type {
 .hero-badge {
   display: inline-block;
   margin-bottom: 10px;
-  padding: 3px 12px;
-  border-radius: 999px;
+  padding: 3px 10px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.35);
   font-size: 12px;
@@ -431,10 +433,12 @@ section.fade-up:last-of-type {
 /* ===== 白卡（压过全局 transparent 规则） ===== */
 .white-card {
   background: #ffffff !important;
-  border: 1px solid #f0e9e3;
+  border: 1px solid #f1f5f9;
   border-radius: 16px;
   padding: 22px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
 }
 .section-head {
   display: flex;
@@ -443,10 +447,22 @@ section.fade-up:last-of-type {
   margin-bottom: 14px;
 }
 .section-title {
+  position: relative;
   margin: 0;
+  padding-left: 12px;
   font-size: 17px;
   font-weight: 700;
-  color: #1f2937;
+  color: #0f172a;
+}
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 999px;
+  background: #3b82f6;
 }
 .section-count {
   font-size: 13px;
@@ -461,26 +477,26 @@ section.fade-up:last-of-type {
   margin-bottom: 16px;
   padding: 12px;
   border-radius: 12px;
-  background: #faf7f4;
-  border: 1px solid #f5ece3;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
 }
 .region-chip {
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid #eee3d8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
   background: #fff;
-  color: #6b7280;
+  color: #64748b;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .region-chip:hover {
-  border-color: #e8722a;
-  color: #e8722a;
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
 }
 .region-chip.active {
-  background: #e8722a;
-  border-color: #e8722a;
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: #fff;
 }
 
@@ -494,7 +510,7 @@ section.fade-up:last-of-type {
   padding: 16px;
   border-radius: 14px;
   background: #fff;
-  border: 1px solid #f0e9e3;
+  border: 1px solid #f1f5f9;
 }
 .search-field {
   flex: 1;
@@ -534,16 +550,17 @@ section.fade-up:last-of-type {
   padding: 0 28px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(90deg, #e8722a, #f59e0b);
+  background: #3b82f6;
   color: #fff;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(232, 114, 42, 0.25);
-  transition: filter 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.22);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 .search-btn:hover {
-  filter: brightness(1.05);
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.28);
 }
 
 /* ===== 关联大学大卡画廊（3 列） ===== */
@@ -568,13 +585,16 @@ section.fade-up:last-of-type {
   padding: 18px;
   border-radius: 16px;
   background: #fff;
-  border: 1px solid #f0e9e3;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .univ-card:hover {
   transform: translateY(-3px);
-  border-color: #fdd9c3;
-  box-shadow: 0 8px 20px rgba(232, 114, 42, 0.1);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.04),
+    0 12px 28px -4px rgba(59, 130, 246, 0.12);
 }
 .univ-head {
   display: flex;
@@ -593,8 +613,8 @@ section.fade-up:last-of-type {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #fff3e8, #ffe8d6);
-  color: #e8722a;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 18px;
   font-weight: 700;
 }
@@ -602,7 +622,7 @@ section.fade-up:last-of-type {
   margin: 0 0 3px 0;
   font-size: 15px;
   font-weight: 700;
-  color: #1f2937;
+  color: #1e293b;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -617,15 +637,15 @@ section.fade-up:last-of-type {
   color: #9ca3af;
 }
 .univ-region {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: #fff3e8;
-  color: #e8722a;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 11px;
 }
 .univ-divider {
   height: 1px;
-  background: #f8f3ed;
+  background: #f1f5f9;
   margin-bottom: 12px;
 }
 .univ-time {
@@ -646,17 +666,19 @@ section.fade-up:last-of-type {
 .univ-btn {
   margin-top: auto;
   padding: 8px 0;
-  border: none;
-  border-radius: 10px;
-  background: #ea580c;
-  color: #fff;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 .univ-btn:hover {
-  background: #c2410c;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
 }
 .empty-tip {
   padding: 48px 0;
@@ -683,7 +705,7 @@ section.fade-up:last-of-type {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e8722a;
+  background: #3b82f6;
   animation: dotPulse 1.2s ease-in-out infinite;
 }
 .load-more-dots i:nth-child(2) { animation-delay: 0.2s; }
@@ -696,8 +718,13 @@ section.fade-up:last-of-type {
 
 /* ===== 通道正文 ===== */
 .channel-content {
-  color: #4b5563;
+  color: #475569;
   line-height: 1.8;
   font-size: 14px;
+}
+.channel-content :deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 </style>

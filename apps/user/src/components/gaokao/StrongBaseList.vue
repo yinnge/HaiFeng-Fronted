@@ -232,10 +232,22 @@ onMounted(fetchData)
   margin-bottom: 14px;
 }
 .sb-title {
+  position: relative;
   margin: 0;
+  padding-left: 12px;
   font-size: 17px;
   font-weight: 700;
-  color: #1f2937;
+  color: #0f172a;
+}
+.sb-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 999px;
+  background: #3b82f6;
 }
 .sb-count {
   font-size: 13px;
@@ -245,10 +257,12 @@ onMounted(fetchData)
 /* ===== 白卡（压过全局 transparent 规则） ===== */
 .white-card {
   background: #ffffff !important;
-  border: 1px solid #f0e9e3;
+  border: 1px solid #f1f5f9;
   border-radius: 16px;
   padding: 20px 22px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
 }
 
 /* ===== 搜索栏 ===== */
@@ -263,15 +277,16 @@ onMounted(fetchData)
   width: 100%;
   padding: 9px 14px;
   border-radius: 10px;
-  border: 1px solid #ece4db;
+  border: 1px solid #e2e8f0;
   background: #fff;
   font-size: 14px;
-  color: #1f2937;
+  color: #1e293b;
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .search-input:focus {
-  border-color: #e8722a;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 .sb-search {
   display: flex;
@@ -289,7 +304,7 @@ onMounted(fetchData)
   flex: none;
   border: none;
   border-radius: 8px;
-  background: #f97316;
+  background: #3b82f6;
   color: #fff;
   font-size: 13px;
   font-weight: 500;
@@ -297,7 +312,7 @@ onMounted(fetchData)
   transition: background 0.2s ease;
 }
 .sb-search-btn:hover {
-  background: #ea580c;
+  background: #2563eb;
 }
 
 /* ===== 强基卡片 ===== */
@@ -315,13 +330,16 @@ onMounted(fetchData)
   padding: 18px 18px;
   border-radius: 14px;
   background: #fff;
-  border: 1px solid #f0e9e3;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .sb-card:hover {
   transform: translateY(-3px);
-  border-color: #fdd9c3;
-  box-shadow: 0 8px 20px rgba(232, 114, 42, 0.1);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.04),
+    0 12px 28px -4px rgba(59, 130, 246, 0.12);
 }
 .sb-card-head {
   display: flex;
@@ -343,8 +361,8 @@ onMounted(fetchData)
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  background: linear-gradient(135deg, #fff3e8, #ffe8d6);
-  color: #e8722a;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 16px;
   font-weight: 700;
 }
@@ -352,17 +370,17 @@ onMounted(fetchData)
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: #1f2937;
+  color: #1e293b;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sb-year {
   flex-shrink: 0;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #fff3e8;
-  color: #e8722a;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 12px;
   font-weight: 500;
 }
@@ -382,9 +400,10 @@ onMounted(fetchData)
   padding: 10px 12px;
   margin-bottom: 12px;
   border-radius: 10px;
-  background: #faf7f4;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
   font-size: 12px;
-  color: #6b7280;
+  color: #64748b;
 }
 .sb-scores {
   display: grid;
@@ -396,8 +415,8 @@ onMounted(fetchData)
   padding: 10px 0;
   text-align: center;
   border-radius: 10px;
-  background: #fffaf5;
-  border: 1px solid #f5ece3;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
 }
 .sb-score-label {
   display: block;
@@ -408,22 +427,24 @@ onMounted(fetchData)
 .sb-score-value {
   font-size: 16px;
   font-weight: 700;
-  color: #e8722a;
+  color: #1d4ed8;
 }
 .univ-btn {
   width: 100%;
   padding: 8px 0;
-  border: 1px solid #f5c9a8;
-  border-radius: 10px;
-  background: transparent;
-  color: #e8722a;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .univ-btn:hover {
-  background: #fff3e8;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
 }
 .empty-tip {
   padding: 48px 0;

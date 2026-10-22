@@ -1,0 +1,97 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - link "海枫未来规划院" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - img "海枫未来规划院" [ref=e8]
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - text: 海枫
+            - generic [ref=e11]: 未来规划院
+          - generic [ref=e12]: 专注中升学、高考志愿及硕博就业的全周期规划服务
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - textbox "全站查询" [ref=e20]
+        - generic [ref=e21]: ⌘K
+      - generic [ref=e22]:
+        - navigation [ref=e23]:
+          - link "首页" [ref=e24] [cursor=pointer]:
+            - /url: /
+          - button "百宝箱" [ref=e25] [cursor=pointer]
+          - button "生涯规划图谱" [ref=e26] [cursor=pointer]
+          - button "大数据对比" [ref=e27] [cursor=pointer]
+          - button "专家咨询预约" [ref=e28] [cursor=pointer]
+        - button "登录" [ref=e30] [cursor=pointer]
+  - banner [ref=e31]:
+    - navigation [ref=e33]:
+      - button "首 页" [ref=e34] [cursor=pointer]
+      - button "初中专栏" [ref=e36] [cursor=pointer]:
+        - text: 初中专栏
+        - img [ref=e37]
+      - button "高中专栏" [ref=e40] [cursor=pointer]:
+        - text: 高中专栏
+        - img [ref=e41]
+      - button "高考志愿填报" [ref=e44] [cursor=pointer]:
+        - text: 高考志愿填报
+        - img [ref=e45]
+      - button "大学专栏" [ref=e48] [cursor=pointer]:
+        - text: 大学专栏
+        - img [ref=e49]
+      - button "英语四六级" [ref=e52] [cursor=pointer]:
+        - text: 英语四六级
+        - img [ref=e53]
+      - button "考研" [ref=e56] [cursor=pointer]:
+        - text: 考研
+        - img [ref=e57]
+      - button "考公" [ref=e60] [cursor=pointer]:
+        - text: 考公
+        - img [ref=e61]
+      - button "研究生专栏" [ref=e64] [cursor=pointer]:
+        - text: 研究生专栏
+        - img [ref=e65]
+      - button "博士专栏" [ref=e68] [cursor=pointer]:
+        - text: 博士专栏
+        - img [ref=e69]
+      - button "就业信息专栏" [ref=e72] [cursor=pointer]:
+        - text: 就业信息专栏
+        - img [ref=e73]
+  - main [ref=e75]
+  - contentinfo [ref=e76]:
+    - generic [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - img "海枫未来规划院" [ref=e82]
+          - heading "海枫未来规划院" [level=3] [ref=e83]
+        - paragraph [ref=e84]: 我们致力于为学生和求职者提供专业、科学、个性化的学业与职业信息服务，帮助他们在人生关键节点做出明智决策参考。
+        - paragraph [ref=e85]: 从高考志愿到职场上岸，我们全程陪伴，助力每一位用户实现人生理想。
+      - generic [ref=e87]:
+        - button "微信公众号" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+        - button "微博" [ref=e91] [cursor=pointer]:
+          - img [ref=e92]
+        - button "知乎" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]:
+            - generic [ref=e97]: 知
+        - button "抖音" [ref=e98] [cursor=pointer]:
+          - img [ref=e99]
+        - button "哔哩哔哩" [ref=e101] [cursor=pointer]:
+          - img [ref=e102]
+      - generic [ref=e104]:
+        - heading "联系我们" [level=4] [ref=e105]
+        - list [ref=e106]:
+          - listitem [ref=e107]:
+            - img [ref=e109]
+            - generic [ref=e111]: "111"
+          - listitem [ref=e112]:
+            - img [ref=e114]
+            - generic [ref=e116]: 咨询热线：11
+          - listitem [ref=e117]:
+            - img [ref=e119]
+            - generic [ref=e121]: 邮箱：11
+          - listitem [ref=e122]:
+            - img [ref=e124]
+            - generic [ref=e126]: 咨询时间：11
+    - generic [ref=e127]:
+      - paragraph [ref=e128]: ©2026 版权归海枫未来规划院所有
+      - paragraph [ref=e129]: ICP备案号：222

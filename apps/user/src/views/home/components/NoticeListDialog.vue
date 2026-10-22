@@ -46,7 +46,7 @@ watch(
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div v-if="loading" class="flex justify-center py-10">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-500"></div>
     </div>
 
     <ul v-else-if="list.length" class="notice-list-dialog">
@@ -61,6 +61,9 @@ watch(
 
 <style scoped>
 .notice-list-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   max-height: 60vh;
   overflow-y: auto;
   margin: 0;

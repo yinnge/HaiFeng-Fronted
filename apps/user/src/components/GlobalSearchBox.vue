@@ -302,8 +302,8 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
   transition: all 0.2s ease;
 }
 .gs-icon-btn:hover {
-  background: #f5f6f7;
-  color: #ff7a00;
+  background: var(--neutral-bg);
+  color: var(--brand-orange-dark);
 }
 .gs-icon-btn svg {
   width: 20px;
@@ -342,8 +342,8 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
 }
 .gs-input-wrap.focused {
   background: #fff;
-  border-color: #ff7a00;
-  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.12), 0 4px 12px rgba(15, 23, 42, 0.04);
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12), 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 .gs-magnifier {
   width: 16px;
@@ -387,9 +387,9 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
   max-height: 60vh;
   overflow-y: auto;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.18);
+  border: 1px solid var(--neutral-border-strong);
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(31, 41, 55, 0.14);
+  box-shadow: 0 12px 40px var(--neutral-shadow-hover);
   padding: 6px;
   z-index: 200;
 }
@@ -402,7 +402,7 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
 }
 .gs-group + .gs-group {
   margin-top: 2px;
-  border-top: 1px dashed #f0f0f0;
+  border-top: 1px solid var(--neutral-border);
 }
 .gs-group-label {
   padding: 6px 10px 2px;
@@ -423,7 +423,7 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
   transition: background 0.15s ease;
 }
 .gs-item:hover {
-  background: #fff7ed;
+  background: var(--neutral-bg);
 }
 .gs-item-name {
   font-size: 14px;
@@ -433,7 +433,7 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
   text-overflow: ellipsis;
 }
 .gs-hit {
-  color: #ff7a00;
+  color: var(--brand-orange-dark);
   font-weight: 700;
 }
 .gs-item-sub {

@@ -240,7 +240,7 @@ function onWinScroll(e?: Event) {
         title="返回高考模块主页"
         @click="goModuleHome"
       >
-        <svg class="archive-label-icon shrink-0 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg class="archive-label-icon shrink-0 text-sem-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
           <circle cx="12" cy="10" r="3" />
         </svg>
@@ -308,10 +308,10 @@ function onWinScroll(e?: Event) {
 .archive-bar {
   position: sticky;
   z-index: 40;
-  background: rgba(255, 251, 245, 0.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
-  box-shadow: 0 1px 8px rgba(249, 115, 22, 0.06);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--neutral-border);
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.04);
   transition: transform 0.35s ease, top 0.3s ease;
 }
 
@@ -336,7 +336,7 @@ function onWinScroll(e?: Event) {
   flex-shrink: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #1f2937;
+  color: #0f172a;
 }
 
 .archive-label-icon {
@@ -364,7 +364,7 @@ function onWinScroll(e?: Event) {
 /* 合并 chip 内「|」分隔符 */
 .chip-sep {
   margin: 0 6px;
-  color: #fdba74;
+  color: #cbd5e1;
   font-weight: 400;
 }
 
@@ -401,13 +401,13 @@ function onWinScroll(e?: Event) {
 }
 
 .archive-nav-item:hover {
-  color: #ea580c;
-  background: rgba(249, 115, 22, 0.08);
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
 }
 
 .archive-nav-item.is-active {
-  color: #c2410c;
-  background: #ffedd5;
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
   font-weight: 700;
 }
 
@@ -426,9 +426,9 @@ function onWinScroll(e?: Event) {
   width: 16px;
   height: 16px;
   border-radius: 50% 50% 50% 4px;
-  background: linear-gradient(135deg, #f97316, #ef4444);
+  background: linear-gradient(135deg, var(--sem-red-light), var(--sem-red));
   color: #fff;
-  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.32);
 }
 
 .nav-hot-badge svg {
@@ -447,22 +447,23 @@ function onWinScroll(e?: Event) {
   margin-left: auto;
 }
 
-/* 吸附条省份按钮：实心红底白字、面积大于身份按钮（仅作用于吸附条，不污染搜索框） */
+/* 吸附条省份按钮：白底中性描边，蓝色交互（仅作用于吸附条，不污染搜索框） */
 .archive-bar-info :deep(.pp-trigger-bar) {
   min-width: 88px;
   height: 38px;
   padding: 0 18px;
-  border-radius: 16px;
-  background: #ef4444;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.28);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset;
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: #334155;
 }
 
 .archive-bar-info :deep(.pp-trigger-bar:hover) {
-  background: #dc2626;
-  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.36);
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset;
+  color: var(--sem-blue);
 }
 
 .archive-chip {
@@ -470,25 +471,25 @@ function onWinScroll(e?: Event) {
   align-items: center;
   padding: 4px 12px;
   background: #fff;
-  border: 1px solid rgba(249, 115, 22, 0.25);
-  border-radius: 16px;
+  border: 1px solid var(--neutral-border-strong);
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .archive-chip:hover {
-  border-color: #f97316;
-  color: #f97316;
-  background: #fff7ed;
+  border-color: var(--sem-blue-soft);
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
 }
 
 .archive-chip-empty {
-  border-style: dashed;
-  color: #9ca3af;
+  border-color: var(--neutral-border-strong);
+  color: #94a3b8;
   font-weight: 400;
 }
 
@@ -502,7 +503,7 @@ function onWinScroll(e?: Event) {
 
 .archive-identity-label {
   font-size: 13px;
-  color: #a8a29e;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -515,14 +516,14 @@ function onWinScroll(e?: Event) {
   padding: 0 12px;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.25) inset;
+  box-shadow: 0 0 0 1px var(--neutral-border-strong) inset;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .archive-identity-select :deep(.el-select__wrapper.is-hovering),
 .archive-identity-select :deep(.el-select__wrapper.is-focused) {
-  background: #fff7ed;
-  box-shadow: 0 0 0 1.5px #f97316 inset;
+  background: var(--sem-blue-bg);
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset;
 }
 
 .archive-identity-select :deep(.el-select__suffix) {
@@ -537,7 +538,7 @@ function onWinScroll(e?: Event) {
   justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  color: #c2410c;
+  color: var(--sem-blue);
 }
 
 @media (max-width: 767px) {
@@ -550,12 +551,13 @@ function onWinScroll(e?: Event) {
 <style>
 /* 身份下拉面板：popper-class 传送到 body，scoped 无效，故放在非 scoped 块（类名唯一，无泄漏） */
 .archive-identity-popper .el-select-dropdown__item.is-selected {
-  color: #c2410c;
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
   font-weight: 700;
 }
 
 .archive-identity-popper .el-select-dropdown__item.is-hovering {
-  background: #fff7ed;
-  color: #ea580c;
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
 }
 </style>

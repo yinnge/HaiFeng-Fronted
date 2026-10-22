@@ -1,0 +1,360 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "海枫未来规划院" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "海枫未来规划院" [ref=e7]
+      - navigation [ref=e8]:
+        - button "首 页" [ref=e9] [cursor=pointer]
+        - button "初中专栏" [ref=e11] [cursor=pointer]:
+          - text: 初中专栏
+          - img [ref=e12]
+        - button "高中专栏" [ref=e15] [cursor=pointer]:
+          - text: 高中专栏
+          - img [ref=e16]
+        - button "高考志愿填报" [ref=e19] [cursor=pointer]:
+          - text: 高考志愿填报
+          - img [ref=e20]
+        - button "大学专栏" [ref=e23] [cursor=pointer]:
+          - text: 大学专栏
+          - img [ref=e24]
+        - button "英语四六级" [ref=e27] [cursor=pointer]:
+          - text: 英语四六级
+          - img [ref=e28]
+        - button "考研" [ref=e31] [cursor=pointer]:
+          - text: 考研
+          - img [ref=e32]
+        - button "考公" [ref=e35] [cursor=pointer]:
+          - text: 考公
+          - img [ref=e36]
+        - button "研究生专栏" [ref=e39] [cursor=pointer]:
+          - text: 研究生专栏
+          - img [ref=e40]
+        - button "更多" [ref=e43] [cursor=pointer]:
+          - text: 更多
+          - img [ref=e44]
+      - button "登录" [ref=e47] [cursor=pointer]
+  - main [ref=e49]:
+    - generic [ref=e50]:
+      - generic [ref=e52]:
+        - button "高中模块" [ref=e53] [cursor=pointer]:
+          - img [ref=e54]
+          - text: 高中模块
+        - navigation [ref=e57]:
+          - button "高中资料" [ref=e58] [cursor=pointer]
+          - button "高考真题" [ref=e59] [cursor=pointer]
+          - button "高中生涯规划" [ref=e60] [cursor=pointer]
+          - button "高考志愿" [ref=e61] [cursor=pointer]:
+            - text: 高考志愿
+            - generic "火爆" [ref=e62]:
+              - img [ref=e63]
+          - button "高中资讯" [ref=e66] [cursor=pointer]
+          - button "高考百宝箱" [ref=e67] [cursor=pointer]
+        - generic [ref=e68]:
+          - button "北京" [ref=e69] [cursor=pointer]
+          - generic [ref=e72] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e74]
+              - generic [ref=e75]: 高三
+          - button "点击填写年份 / 分数 / 科目" [ref=e76] [cursor=pointer]
+      - main [ref=e77]:
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83] [cursor=pointer]:
+                  - img [ref=e84]
+                  - img "完善高考档案" [ref=e85]
+                  - generic:
+                    - paragraph: 完善高考档案
+                    - paragraph: 一步填写，智能推荐院校与专业
+                - generic [ref=e86] [cursor=pointer]:
+                  - img [ref=e87]
+                  - img "高考真题资料" [ref=e88]
+                  - generic:
+                    - paragraph: 高考真题资料
+                    - paragraph: 历年真题与解析，备考更有底气
+              - generic [ref=e89]:
+                - button "切换到第 1 张" [ref=e90] [cursor=pointer]
+                - button "切换到第 2 张" [ref=e91] [cursor=pointer]
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - img [ref=e95]
+                - generic [ref=e98]:
+                  - paragraph [ref=e99]: 志愿填报
+                  - paragraph [ref=e100]: 完善信息，智能推荐院校与专业
+              - generic [ref=e101]:
+                - generic [ref=e102]:
+                  - generic [ref=e103]:
+                    - generic [ref=e104]: 高考省份
+                    - button "北京" [ref=e105] [cursor=pointer]:
+                      - img [ref=e106]
+                      - text: 北京
+                  - generic [ref=e109]:
+                    - generic [ref=e110]: 高考年份
+                    - generic [ref=e112] [cursor=pointer]:
+                      - generic [ref=e113]:
+                        - combobox [ref=e115]
+                        - generic [ref=e117]: 2026年
+                      - img [ref=e120]
+                - generic [ref=e122]:
+                  - generic [ref=e123]: 高考科目
+                  - generic [ref=e125]:
+                    - paragraph [ref=e126]: 选考科目（选3个）
+                    - generic [ref=e127]:
+                      - button "物理" [ref=e128] [cursor=pointer]
+                      - button "化学" [ref=e129] [cursor=pointer]
+                      - button "生物" [ref=e130] [cursor=pointer]
+                      - button "政治" [ref=e131] [cursor=pointer]
+                      - button "历史" [ref=e132] [cursor=pointer]
+                      - button "地理" [ref=e133] [cursor=pointer]
+                - generic [ref=e134]:
+                  - generic [ref=e135]:
+                    - generic [ref=e136]: 预估分数
+                    - spinbutton [ref=e140]: "0"
+                  - generic [ref=e141]:
+                    - generic [ref=e142]:
+                      - text: 对应位次
+                      - img [ref=e144]
+                    - spinbutton [ref=e149]: "0"
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - text: 填报批次
+                    - img [ref=e153]
+                  - generic [ref=e157]:
+                    - generic [ref=e158]:
+                      - combobox [disabled] [ref=e160]
+                      - generic [ref=e162]: 选择批次
+                    - generic:
+                      - generic:
+                        - img
+              - generic [ref=e163]:
+                - button "制定方案 一键生成专属志愿" [ref=e164] [cursor=pointer]:
+                  - text: 制定方案
+                  - generic [ref=e165]: 一键生成专属志愿
+                - button "模拟填报 自选冲稳保院校" [ref=e166] [cursor=pointer]:
+                  - text: 模拟填报
+                  - generic [ref=e167]: 自选冲稳保院校
+          - generic [ref=e168]:
+            - heading "特殊通道" [level=3] [ref=e169]
+            - generic [ref=e170]: 综合评价 · 强基计划 · 专项计划 · 民族班 · 全国联招
+          - generic [ref=e171]:
+            - generic [ref=e173] [cursor=pointer]:
+              - img [ref=e175]
+              - heading "综合评价" [level=4] [ref=e177]
+              - generic [ref=e179]: 热门
+              - paragraph [ref=e180]: 高考成绩+综合素质评价，多元录取
+              - generic [ref=e181]:
+                - text: 进入通道
+                - img [ref=e182]
+            - generic [ref=e185] [cursor=pointer]:
+              - img [ref=e187]
+              - heading "强基计划" [level=4] [ref=e190]
+              - generic [ref=e192]: 热门
+              - paragraph [ref=e193]: 聚焦基础学科，培养拔尖创新人才
+              - generic [ref=e194]:
+                - text: 进入通道
+                - img [ref=e195]
+            - generic [ref=e198] [cursor=pointer]:
+              - img [ref=e200]
+              - heading "专项计划" [level=4] [ref=e203]
+              - generic [ref=e205]: 需资格
+              - paragraph [ref=e206]: 面向农村和贫困地区考生的专项招生
+              - generic [ref=e207]:
+                - text: 进入通道
+                - img [ref=e208]
+            - generic [ref=e211] [cursor=pointer]:
+              - img [ref=e213]
+              - heading "民族班" [level=4] [ref=e216]
+              - paragraph [ref=e218]: 面向少数民族考生的特殊招生
+              - generic [ref=e219]:
+                - text: 进入通道
+                - img [ref=e220]
+            - generic [ref=e223] [cursor=pointer]:
+              - img [ref=e225]
+              - heading "全国联招" [level=4] [ref=e229]
+              - paragraph [ref=e231]: 面向华侨、港澳台学生的联合招生
+              - generic [ref=e232]:
+                - text: 进入通道
+                - img [ref=e233]
+          - generic [ref=e235]:
+            - heading "热点资讯" [level=3] [ref=e236]
+            - button "查看更多" [ref=e237] [cursor=pointer]:
+              - text: 查看更多
+              - img [ref=e238]
+          - paragraph [ref=e241]: 本省暂无已发布的资讯
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - heading "直通考院" [level=2] [ref=e246]
+            - paragraph [ref=e247]: 快速访问各省市教育考试院官方网站，获取最新招考信息
+          - generic [ref=e249]:
+            - link "北京教育考试院" [ref=e250] [cursor=pointer]:
+              - /url: http://www.bjeea.cn
+              - img [ref=e251]
+              - generic [ref=e254]: 北京教育考试院
+            - link "上海教育考试院" [ref=e255] [cursor=pointer]:
+              - /url: http://www.shmeea.edu.cn
+              - img [ref=e256]
+              - generic [ref=e259]: 上海教育考试院
+            - link "天津招考资讯网" [ref=e260] [cursor=pointer]:
+              - /url: http://www.zhaokao.net
+              - img [ref=e261]
+              - generic [ref=e264]: 天津招考资讯网
+            - link "重庆教育考试院" [ref=e265] [cursor=pointer]:
+              - /url: http://www.cqksy.cn
+              - img [ref=e266]
+              - generic [ref=e269]: 重庆教育考试院
+            - link "河北教育考试院" [ref=e270] [cursor=pointer]:
+              - /url: http://www.hebeea.edu.cn
+              - img [ref=e271]
+              - generic [ref=e274]: 河北教育考试院
+            - link "山西招生考试网" [ref=e275] [cursor=pointer]:
+              - /url: http://www.sxkszx.cn
+              - img [ref=e276]
+              - generic [ref=e279]: 山西招生考试网
+            - link "内蒙古教育招生考试中心" [ref=e280] [cursor=pointer]:
+              - /url: http://www.nm.zsks.cn
+              - img [ref=e281]
+              - generic [ref=e284]: 内蒙古教育招生考试中心
+            - link "辽宁招生考试之窗" [ref=e285] [cursor=pointer]:
+              - /url: http://www.lnzsks.com
+              - img [ref=e286]
+              - generic [ref=e289]: 辽宁招生考试之窗
+            - link "吉林省教育考试院" [ref=e290] [cursor=pointer]:
+              - /url: http://www.jleea.edu.cn
+              - img [ref=e291]
+              - generic [ref=e294]: 吉林省教育考试院
+            - link "黑龙江省招生考试信息港" [ref=e295] [cursor=pointer]:
+              - /url: http://www.lzk.hl.cn
+              - img [ref=e296]
+              - generic [ref=e299]: 黑龙江省招生考试信息港
+            - link "江苏省教育考试院" [ref=e300] [cursor=pointer]:
+              - /url: http://www.jseea.cn
+              - img [ref=e301]
+              - generic [ref=e304]: 江苏省教育考试院
+            - link "浙江省教育考试院" [ref=e305] [cursor=pointer]:
+              - /url: http://www.zjzs.net
+              - img [ref=e306]
+              - generic [ref=e309]: 浙江省教育考试院
+            - link "安徽教育招生考试院" [ref=e310] [cursor=pointer]:
+              - /url: http://www.ahzsks.cn
+              - img [ref=e311]
+              - generic [ref=e314]: 安徽教育招生考试院
+            - link "福建省教育考试院" [ref=e315] [cursor=pointer]:
+              - /url: http://www.fjzs.com.cn
+              - img [ref=e316]
+              - generic [ref=e319]: 福建省教育考试院
+            - link "江西省教育考试院" [ref=e320] [cursor=pointer]:
+              - /url: http://www.jxeea.cn
+              - img [ref=e321]
+              - generic [ref=e324]: 江西省教育考试院
+            - link "山东省教育招生考试院" [ref=e325] [cursor=pointer]:
+              - /url: http://www.sdzk.cn
+              - img [ref=e326]
+              - generic [ref=e329]: 山东省教育招生考试院
+            - link "河南省招生办公室" [ref=e330] [cursor=pointer]:
+              - /url: http://www.heao.gov.cn
+              - img [ref=e331]
+              - generic [ref=e334]: 河南省招生办公室
+            - link "湖北省教育考试院" [ref=e335] [cursor=pointer]:
+              - /url: http://www.hbea.edu.cn
+              - img [ref=e336]
+              - generic [ref=e339]: 湖北省教育考试院
+            - link "湖南省教育考试院" [ref=e340] [cursor=pointer]:
+              - /url: http://www.hneeb.cn
+              - img [ref=e341]
+              - generic [ref=e344]: 湖南省教育考试院
+            - link "广东省教育考试院" [ref=e345] [cursor=pointer]:
+              - /url: http://www.eeagd.edu.cn
+              - img [ref=e346]
+              - generic [ref=e349]: 广东省教育考试院
+            - link "广西招生考试院" [ref=e350] [cursor=pointer]:
+              - /url: http://www.gxeea.cn
+              - img [ref=e351]
+              - generic [ref=e354]: 广西招生考试院
+            - link "海南省考试局" [ref=e355] [cursor=pointer]:
+              - /url: http://ea.hainan.gov.cn
+              - img [ref=e356]
+              - generic [ref=e359]: 海南省考试局
+            - link "四川省教育考试院" [ref=e360] [cursor=pointer]:
+              - /url: http://www.sceea.cn
+              - img [ref=e361]
+              - generic [ref=e364]: 四川省教育考试院
+            - link "贵州省招生考试院" [ref=e365] [cursor=pointer]:
+              - /url: http://www.gzszk.com
+              - img [ref=e366]
+              - generic [ref=e369]: 贵州省招生考试院
+            - link "云南省招考频道" [ref=e370] [cursor=pointer]:
+              - /url: http://www.ynzs.cn
+              - img [ref=e371]
+              - generic [ref=e374]: 云南省招考频道
+            - link "新疆招生网" [ref=e375] [cursor=pointer]:
+              - /url: http://www.xjzk.gov.cn
+              - img [ref=e376]
+              - generic [ref=e379]: 新疆招生网
+            - link "陕西省教育考试院" [ref=e380] [cursor=pointer]:
+              - /url: http://www.sneac.com
+              - img [ref=e381]
+              - generic [ref=e384]: 陕西省教育考试院
+            - link "甘肃省教育考试院" [ref=e385] [cursor=pointer]:
+              - /url: http://www.ganseea.cn
+              - img [ref=e386]
+              - generic [ref=e389]: 甘肃省教育考试院
+            - link "宁夏教育考试院" [ref=e390] [cursor=pointer]:
+              - /url: http://www.nxjyks.cn
+              - img [ref=e391]
+              - generic [ref=e394]: 宁夏教育考试院
+            - link "青海省教育考试网" [ref=e395] [cursor=pointer]:
+              - /url: http://www.qhjyks.com
+              - img [ref=e396]
+              - generic [ref=e399]: 青海省教育考试网
+            - link "西藏教育考试院" [ref=e400] [cursor=pointer]:
+              - /url: http://www.xzedu.gov.cn
+              - img [ref=e401]
+              - generic [ref=e404]: 西藏教育考试院
+            - link "香港考试及评核局" [ref=e405] [cursor=pointer]:
+              - /url: https://www.hkeaa.edu.hk
+              - img [ref=e406]
+              - generic [ref=e409]: 香港考试及评核局
+            - link "澳门教育及青年发展局" [ref=e410] [cursor=pointer]:
+              - /url: https://www.dsej.gov.mo
+              - img [ref=e411]
+              - generic [ref=e414]: 澳门教育及青年发展局
+  - contentinfo [ref=e415]:
+    - generic [ref=e418]:
+      - generic [ref=e419]:
+        - generic [ref=e420]:
+          - img "海枫未来规划院" [ref=e421]
+          - heading "海枫未来规划院" [level=3] [ref=e422]
+        - paragraph [ref=e423]: 我们致力于为学生和求职者提供专业、科学、个性化的学业与职业信息服务，帮助他们在人生关键节点做出明智决策参考。
+        - paragraph [ref=e424]: 从高考志愿到职场上岸，我们全程陪伴，助力每一位用户实现人生理想。
+      - generic [ref=e426]:
+        - button "微信公众号" [ref=e427] [cursor=pointer]:
+          - img [ref=e428]
+        - button "微博" [ref=e430] [cursor=pointer]:
+          - img [ref=e431]
+        - button "知乎" [ref=e433] [cursor=pointer]:
+          - img [ref=e434]:
+            - generic [ref=e436]: 知
+        - button "抖音" [ref=e437] [cursor=pointer]:
+          - img [ref=e438]
+        - button "哔哩哔哩" [ref=e440] [cursor=pointer]:
+          - img [ref=e441]
+      - generic [ref=e443]:
+        - heading "联系我们" [level=4] [ref=e444]
+        - list [ref=e445]:
+          - listitem [ref=e446]:
+            - img [ref=e448]
+            - generic [ref=e450]: "111"
+          - listitem [ref=e451]:
+            - img [ref=e453]
+            - generic [ref=e455]: 咨询热线：11
+          - listitem [ref=e456]:
+            - img [ref=e458]
+            - generic [ref=e460]: 邮箱：11
+          - listitem [ref=e461]:
+            - img [ref=e463]
+            - generic [ref=e465]: 咨询时间：11
+    - generic [ref=e466]:
+      - paragraph [ref=e467]: ©2026 版权归海枫未来规划院所有
+      - paragraph [ref=e468]: ICP备案号：222

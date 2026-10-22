@@ -42,15 +42,15 @@ let isMounted = false
 
 type GL = OGLRenderingContext
 
-// 空图 / 加载失败时的橙白色系占位图（避免 WebGL 纹理无内容）
+// 空图 / 加载失败时的蓝白色系占位图（避免 WebGL 纹理无内容）
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900">' +
-      '<rect width="700" height="900" fill="#fde8d4"/>' +
-      '<circle cx="350" cy="400" r="72" fill="#f5a54a"/>' +
-      '<rect x="250" y="512" width="200" height="16" rx="8" fill="#e8722a"/>' +
-      '<rect x="290" y="544" width="120" height="10" rx="5" fill="#f5cbb3"/>' +
+      '<rect width="700" height="900" fill="#EFF6FF"/>' +
+      '<circle cx="350" cy="400" r="72" fill="#93C5FD"/>' +
+      '<rect x="250" y="512" width="200" height="16" rx="8" fill="#3B82F6"/>' +
+      '<rect x="290" y="544" width="120" height="10" rx="5" fill="#DBEAFE"/>' +
       '</svg>'
   )
 

@@ -13,10 +13,22 @@ const expert = useExpertContact()
 
 const isHome = computed(() => route.path === '/')
 
-const comingSoonLinks = [
-  { label: '生涯规划图谱', from: 'career-map' },
+const navExtraLinks = [
+  { label: '生涯规划图谱', view: 'graph' },
   { label: '大数据对比', from: 'data-compare' },
 ]
+
+function onNavExtra(l: { label: string; route?: string; from?: string; view?: string }) {
+  mobileMenuOpen.value = false
+  if (l.view) {
+    // 跳转首页并切换到生涯星图视图（由首页读取 query.view 平滑滚动定位）
+    router.push({ path: '/', query: { view: l.view } })
+  } else if (l.route) {
+    router.push(l.route)
+  } else if (l.from) {
+    router.push({ path: '/coming-soon', query: { from: l.from } })
+  }
+}
 
 const mobileMenuOpen = ref(false)
 
@@ -37,11 +49,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   mql?.removeEventListener('change', applyNarrow)
 })
-
-function toComingSoon(from: string) {
-  mobileMenuOpen.value = false
-  router.push({ path: '/coming-soon', query: { from } })
-}
 
 function goToolbox() {
   mobileMenuOpen.value = false
@@ -83,11 +90,11 @@ function openExpert() {
           <router-link to="/" class="tt-link" :class="{ active: isHome }">首页</router-link>
           <button type="button" class="tt-link" @click="goToolbox">百宝箱</button>
           <button
-            v-for="l in comingSoonLinks"
-            :key="l.from"
+            v-for="l in navExtraLinks"
+            :key="l.label"
             type="button"
             class="tt-link"
-            @click="toComingSoon(l.from)"
+            @click="onNavExtra(l)"
           >
             {{ l.label }}
           </button>
@@ -126,11 +133,11 @@ function openExpert() {
         </button>
         <button type="button" class="tt-mobile-link" @click="goToolbox">百宝箱</button>
         <button
-          v-for="l in comingSoonLinks"
-          :key="l.from"
+          v-for="l in navExtraLinks"
+          :key="l.label"
           type="button"
           class="tt-mobile-link"
-          @click="toComingSoon(l.from)"
+          @click="onNavExtra(l)"
         >
           {{ l.label }}
         </button>
@@ -148,7 +155,8 @@ function openExpert() {
   height: 64px;
   padding: 0 24px;
   background: #fff;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid var(--neutral-border);
+  box-shadow: 0 1px 2px var(--neutral-shadow);
 }
 
 .tt-grid {
@@ -200,7 +208,7 @@ function openExpert() {
   gap: 2px;
 }
 .tt-grad {
-  background: linear-gradient(135deg, #FF7A00 0%, #EA580C 100%);
+  background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-orange-dark) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -256,17 +264,17 @@ function openExpert() {
   transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .tt-link:hover {
-  color: #EA580C;
-  background: rgba(255, 122, 0, 0.07);
+  color: var(--brand-orange-dark);
+  background: rgba(249, 115, 22, 0.06);
 }
 .tt-link:active {
   transform: scale(0.97);
 }
 .tt-link.active,
 .tt-link.router-link-active {
-  color: #EA580C;
+  color: var(--brand-orange-dark);
   font-weight: 700;
-  background: rgba(255, 122, 0, 0.09);
+  background: rgba(249, 115, 22, 0.07);
 }
 .tt-link.active::after,
 .tt-link.router-link-active::after {
@@ -278,7 +286,7 @@ function openExpert() {
   width: 16px;
   height: 2.5px;
   border-radius: 999px;
-  background: #EA580C;
+  background: var(--brand-orange);
 }
 
 .tt-account {
@@ -301,8 +309,8 @@ function openExpert() {
   transition: all 0.2s ease;
 }
 .tt-hamburger:hover {
-  background: #fff7ed;
-  color: #ff7a00;
+  background: var(--neutral-bg);
+  color: var(--brand-orange);
 }
 .tt-hamburger svg {
   width: 22px;
@@ -316,8 +324,8 @@ function openExpert() {
   left: 0;
   right: 0;
   background: #fff;
-  border-bottom: 1px solid #eeeeee;
-  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.1);
+  border-bottom: 1px solid var(--neutral-border);
+  box-shadow: 0 8px 24px var(--neutral-shadow-hover);
   padding: 8px 16px;
   display: flex;
   flex-direction: column;
@@ -330,13 +338,13 @@ function openExpert() {
   background: none;
   border: none;
   padding: 12px 4px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--neutral-border);
 }
 .tt-mobile-link:last-child {
   border-bottom: none;
 }
 .tt-mobile-link.active {
-  color: #ff7a00;
+  color: var(--brand-orange-dark);
   font-weight: 700;
 }
 

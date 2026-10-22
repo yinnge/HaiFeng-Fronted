@@ -3,6 +3,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import MobileNavDrawer from './MobileNavDrawer.vue'
+import UserAvatar from './UserAvatar.vue'
+import NotificationBell from './NotificationBell.vue'
 import { navItems, moreNavItems, type NavItem, type NavSubItem } from '@/config/navigation'
 import { pushNavItem } from '@/utils/navAnchor'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
@@ -13,6 +15,9 @@ const route = useRoute()
 // 顶部新导航（TopToolBar）下方偏移：首页 64px 紧贴其下，其余页面顶到 0
 const props = defineProps<{ topOffset?: number }>()
 const headerTop = computed(() => props.topOffset ?? 0)
+
+// 首页由新导航 TopToolBar 承载 账号/消息；旧导航仅在非首页展示，避免同屏重复
+const isHome = computed(() => route.path === '/')
 
 // 导航栏滚动收起：所有页面滚动离开顶部后抽屉式收起（主页也收起，与新导航错层）
 const { hidden: headerHidden } = useAutoHideHeader()
@@ -344,8 +349,12 @@ onBeforeUnmount(() => {
         </div>
       </nav>
 
-      <!-- 右侧：操作区 -->
+      <!-- 右侧：操作区（消息+账号仅非首页显示；首页由 TopToolBar 展示） -->
       <div class="header-actions">
+        <template v-if="!isHome">
+          <NotificationBell />
+          <UserAvatar />
+        </template>
         <button class="hamburger-btn" @click="mobileMenuOpen = true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -363,9 +372,9 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.8);
+  background: #ffffff;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--neutral-border);
   transition: transform 0.3s ease;
   will-change: transform;
 }
@@ -430,12 +439,12 @@ onBeforeUnmount(() => {
 }
 
 .nav-link:hover {
-  color: #e8722a;
+  color: var(--brand-orange-dark);
 }
 
 .nav-link.active {
-  color: #e8722a;
-  border-bottom-color: #e8722a;
+  color: var(--brand-orange-dark);
+  border-bottom-color: var(--brand-orange);
 }
 
 .nav-arrow {
@@ -459,27 +468,26 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* 首页强调样式 */
+/* 首页链接：与其他导航一致，仅保留激活态橙色下划线 */
 .nav-link-home {
-  color: #e8722a;
-  background: rgba(245, 165, 74, 0.1);
-  border-radius: 9999px;
-  padding: 0.375rem 1rem;
-  text-shadow: 0 0 8px rgba(232, 114, 42, 0.3);
-  box-shadow: 0 0 12px rgba(232, 114, 42, 0.15);
-  transition: all 0.2s ease;
+  color: #1f2937;
+  background: transparent;
+  border-radius: 0;
+  padding: clamp(0.375rem, 0.3rem + 0.2vw, 0.5rem) clamp(0.5rem, 0.4rem + 0.2vw, 0.625rem);
+  text-shadow: none;
+  box-shadow: none;
 }
 
 .nav-link-home:hover {
-  background: rgba(245, 165, 74, 0.2);
-  box-shadow: 0 0 16px rgba(232, 114, 42, 0.3);
+  background: transparent;
+  box-shadow: none;
 }
 
 .nav-link-home.active {
-  color: #e8722a;
-  background: linear-gradient(135deg, rgba(245, 165, 74, 0.25), rgba(232, 114, 42, 0.2));
-  border-bottom-color: transparent;
-  box-shadow: 0 0 20px rgba(232, 114, 42, 0.35);
+  color: var(--brand-orange-dark);
+  background: transparent;
+  border-bottom-color: var(--brand-orange);
+  box-shadow: none;
 }
 
 .dropdown-panel {
@@ -490,8 +498,8 @@ onBeforeUnmount(() => {
   min-width: 160px;
   background: white;
   border-radius: 0.75rem;
-  border: 1px solid rgba(245, 165, 74, 0.3);
-  box-shadow: 0 4px 24px rgba(232, 114, 42, 0.15);
+  border: 1px solid var(--neutral-border-strong);
+  box-shadow: 0 8px 24px var(--neutral-shadow-hover);
   padding: 0.375rem 0;
   z-index: 100;
   margin-top: 4px;
@@ -510,8 +518,8 @@ onBeforeUnmount(() => {
 }
 
 .dropdown-item:hover {
-  background: #fff7ed;
-  color: #e8722a;
+  background: var(--neutral-bg);
+  color: var(--brand-orange-dark);
 }
 
 /* 更多面板里的分组标题 */
@@ -522,7 +530,7 @@ onBeforeUnmount(() => {
   color: #9ca3af;
   text-align: center;
   white-space: nowrap;
-  border-top: 1px dashed rgba(245, 165, 74, 0.25);
+  border-top: 1px solid var(--neutral-border);
 }
 
 .overflow-group-label:first-child {
@@ -558,8 +566,8 @@ onBeforeUnmount(() => {
   min-width: 150px;
   background: white;
   border-radius: 0.75rem;
-  border: 1px solid rgba(245, 165, 74, 0.3);
-  box-shadow: 0 4px 24px rgba(232, 114, 42, 0.15);
+  border: 1px solid var(--neutral-border-strong);
+  box-shadow: 0 8px 24px var(--neutral-shadow-hover);
   padding: 0.375rem 0;
   z-index: 101;
 }
@@ -586,7 +594,7 @@ onBeforeUnmount(() => {
 .header-divider {
   width: 1px;
   height: 1.5rem;
-  background: linear-gradient(180deg, transparent, #f5a54a 30%, #e8722a 70%, transparent);
+  background: var(--neutral-border-strong);
   flex-shrink: 0;
 }
 
@@ -602,8 +610,8 @@ onBeforeUnmount(() => {
 }
 
 .hamburger-btn:hover {
-  background: rgba(245, 165, 74, 0.08);
-  color: #e8722a;
+  background: var(--neutral-bg);
+  color: var(--brand-orange-dark);
 }
 
 .hamburger-btn svg {

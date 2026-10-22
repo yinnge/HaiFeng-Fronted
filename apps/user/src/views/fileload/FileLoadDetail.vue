@@ -20,6 +20,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const loading = ref(false)
+const previewLoading = ref(false)
 const detail = ref<FileLoadDetailVO | null>(null)
 const vipBlocked = ref(false)
 /** 教师专属详情：从路由 query.teacher 判定，走 /high/teacher 端点 */
@@ -57,6 +58,8 @@ async function load() {
   try {
     const res = await getFileLoadDetail(props.audience, String(id), isTeacher.value)
     detail.value = res.data.data
+    // kkfileview 转码期间显示骨架屏，iframe @load 后关闭
+    previewLoading.value = !!res.data.data?.previewUrl
     vipBlocked.value = false
     teacherForbidden.value = false
   } catch (e: any) {
@@ -230,10 +233,10 @@ onMounted(load)
         <h1 class="text-xl md:text-2xl font-bold text-gray-800">{{ pageTitle }} · 文件详情</h1>
       </div>
 
-      <div v-loading="loading" class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
+      <div v-loading="loading" class="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
         <div v-if="detail" class="flex flex-col lg:flex-row gap-6">
           <!-- 左：百度网盘资源 / iframe 内嵌预览 -->
-          <div class="flex-1 min-h-[700px] lg:min-h-[860px] rounded-xl border border-orange-100 overflow-hidden bg-white flex flex-col">
+          <div class="flex-1 min-h-[700px] lg:min-h-[860px] rounded-xl border border-gray-100 overflow-hidden bg-[#F1F5F9] flex flex-col">
             <template v-if="isNetdisk">
               <div class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
                 <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center shadow-xl shadow-blue-200">
@@ -252,19 +255,25 @@ onMounted(load)
               </div>
             </template>
             <template v-else>
-              <iframe
-                v-if="detail.previewUrl"
-                :src="detail.previewUrl"
-                class="w-full h-full min-h-[700px] lg:min-h-[860px]"
-                frameborder="0"
-                title="文件预览"
-              ></iframe>
-              <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
-                <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
-                </svg>
-                <p class="text-sm">该文件类型暂不支持在线预览</p>
-                <p class="text-xs mt-1">请使用右侧「下载文件」按钮保存到本地查看</p>
+              <div class="preview-iframe-wrapper relative w-full h-full min-h-[700px] lg:min-h-[860px] flex-1">
+                <div v-if="previewLoading" class="preview-skeleton absolute inset-0 flex items-center justify-center bg-[#F1F5F9]">
+                  <el-skeleton :rows="10" animated />
+                </div>
+                <iframe
+                  v-if="detail.previewUrl"
+                  :src="detail.previewUrl"
+                  class="absolute inset-0 w-full h-full border-0"
+                  frameborder="0"
+                  title="文件预览"
+                  @load="previewLoading = false"
+                ></iframe>
+                <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
+                  <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+                  </svg>
+                  <p class="text-sm">该文件类型暂不支持在线预览</p>
+                  <p class="text-xs mt-1">请使用右侧「下载文件」按钮保存到本地查看</p>
+                </div>
               </div>
             </template>
           </div>
@@ -272,7 +281,7 @@ onMounted(load)
           <!-- 右：元数据面板 -->
           <aside class="w-full lg:w-[300px] shrink-0 flex flex-col gap-4">
             <!-- 文件头部 -->
-            <div class="flex items-center gap-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 border border-orange-100">
+            <div class="flex items-center gap-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 border border-gray-100">
               <div
                 class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md"
                 :class="isNetdisk ? 'from-blue-500 to-sky-400 shadow-blue-200' : fileTypeMeta(detail.fileType).iconBg"

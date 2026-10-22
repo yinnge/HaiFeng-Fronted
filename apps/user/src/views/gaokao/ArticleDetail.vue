@@ -69,7 +69,7 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+  <div class="min-h-screen bg-surface-bg">
     <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 -->
     <ArchiveBar
       :extra-items="gaokaoExtraItems"
@@ -81,7 +81,7 @@ onMounted(fetchDetail)
       <div class="mx-auto max-w-4xl px-6 py-8">
         <!-- 返回 -->
         <button
-          class="inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-brand-orange"
+          class="inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-sem-blue"
           @click="goBack"
         >
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -92,32 +92,32 @@ onMounted(fetchDetail)
 
         <div v-loading="loading" class="mt-5 min-h-[300px]">
           <template v-if="detail">
-            <article class="rounded-2xl bg-white p-6 shadow-card border border-orange-100/70 md:p-10">
+            <article class="rounded-2xl border border-surface-border bg-white p-6 shadow-hf md:p-10">
               <!-- 头部 -->
               <h1 class="text-2xl font-bold leading-snug text-gray-800 md:text-3xl">{{ detail.title }}</h1>
               <div class="mt-4 flex flex-wrap items-center gap-2">
                 <span
                   v-if="detail.columnName"
-                  class="inline-flex items-center rounded-full bg-gradient-to-r from-brand-orange to-brand-orange-light px-3 py-1 text-xs font-semibold text-white"
+                  class="inline-flex items-center rounded-md bg-sem-blue px-2.5 py-1 text-xs font-semibold text-white"
                 >
                   {{ detail.columnName }}
                 </span>
                 <span
                   v-if="detail.province"
-                  class="inline-flex items-center rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-medium text-brand-orange border border-brand-orange/20"
+                  class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
                 >
                   {{ detail.province }}
                 </span>
                 <span
                   v-if="detail.year != null"
-                  class="inline-flex items-center rounded-full bg-brand-blue/10 px-2.5 py-0.5 text-xs font-medium text-brand-blue border border-brand-blue/20"
+                  class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
                 >
                   {{ detail.year }} 年
                 </span>
                 <span class="text-xs text-gray-400">浏览 {{ detail.viewCount ?? 0 }}</span>
                 <span v-if="detail.publishTime" class="text-xs text-gray-400">发布于 {{ formatTime(detail.publishTime) }}</span>
               </div>
-              <p v-if="detail.summary" class="mt-4 rounded-r-lg border-l-[3px] border-brand-orange-light bg-orange-50 px-4 py-3 text-sm leading-relaxed text-gray-600">
+              <p v-if="detail.summary" class="mt-4 rounded-r-lg border-l-[3px] border-sem-blue bg-sem-blue-bg px-4 py-3 text-sm leading-relaxed text-gray-600">
                 {{ detail.summary }}
               </p>
 
@@ -128,7 +128,9 @@ onMounted(fetchDetail)
             </article>
           </template>
 
-          <div v-else-if="!loading" class="py-20 text-center text-sm text-gray-400">资讯不存在或已下架</div>
+          <div v-else-if="!loading" class="rounded-2xl border border-surface-border bg-white py-20 text-center shadow-hf">
+            <p class="text-sm text-gray-500">资讯不存在或已下架</p>
+          </div>
         </div>
       </div>
     </main>

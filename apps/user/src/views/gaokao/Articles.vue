@@ -74,7 +74,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-brand-gray-50 via-orange-50/20 to-white">
+  <div class="min-h-screen bg-surface-bg">
     <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 -->
     <ArchiveBar
       :extra-items="gaokaoExtraItems"
@@ -87,7 +87,7 @@ onMounted(async () => {
         <!-- 返回 + 页头 -->
         <div class="mb-6">
           <button
-            class="inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-brand-orange"
+            class="inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-sem-blue"
             @click="goBack"
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -99,7 +99,7 @@ onMounted(async () => {
             <h1 class="text-2xl font-bold text-gray-800 md:text-3xl">热点资讯</h1>
             <span
               v-if="hasArchive"
-              class="inline-flex items-center rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-medium text-brand-orange border border-brand-orange/20"
+              class="inline-flex items-center rounded-md border border-sem-blue/15 bg-sem-blue-bg px-2.5 py-1 text-xs font-medium text-sem-blue"
             >
               {{ archive!.gaokaoProvince }}
             </span>
@@ -111,15 +111,15 @@ onMounted(async () => {
         <ArticleSearchBox class="mb-6" @select="goDetail" />
 
         <!-- 未建档：引导填写档案（列表接口按档案省份查询） -->
-        <div v-if="!hasArchive" class="rounded-2xl bg-white p-10 text-center shadow-card border border-orange-100">
-          <div class="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-orange/10 text-brand-orange">
+        <div v-if="!hasArchive" class="rounded-2xl border border-surface-border bg-white p-10 text-center shadow-hf">
+          <div class="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-sem-blue-bg text-sem-blue">
             <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
           </div>
           <p class="mb-5 text-gray-500">尚未填写高考档案，资讯按档案省份推送，请先建档</p>
           <button
-            class="rounded-full bg-gradient-to-r from-brand-orange-dark to-brand-orange px-8 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
+            class="rounded-xl bg-brand-orange px-8 py-3 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(249,115,22,0.22)] transition-all hover:-translate-y-0.5 hover:bg-brand-orange-dark hover:shadow-[0_8px_22px_rgba(249,115,22,0.28)] active:translate-y-0"
             @click="goArchive"
           >
             去填写高考档案 →
@@ -131,18 +131,18 @@ onMounted(async () => {
           <div
             v-for="item in list"
             :key="item.id"
-            class="group cursor-pointer rounded-2xl bg-white p-5 shadow-card border border-orange-100/70 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-orange/40 hover:shadow-card-hover"
+            class="group cursor-pointer rounded-2xl border border-surface-border bg-white p-5 shadow-hf transition-all duration-300 hover:-translate-y-0.5 hover:border-sem-blue/25 hover:shadow-hf-hover"
             @click="goDetail(item.id)"
           >
             <div class="flex flex-wrap items-center gap-2">
               <span
                 v-if="item.columnName"
-                class="inline-flex items-center rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-medium text-brand-orange border border-brand-orange/20"
+                class="inline-flex items-center gap-1.5 rounded-md bg-sem-blue-bg px-2.5 py-0.5 text-xs font-medium text-sem-blue"
               >
                 {{ item.columnName }}
               </span>
             </div>
-            <h3 class="mt-2 text-[17px] font-semibold text-gray-800 transition-colors group-hover:text-brand-orange">
+            <h3 class="mt-2 text-[17px] font-semibold text-gray-800 transition-colors group-hover:text-sem-blue">
               {{ item.title }}
             </h3>
             <p v-if="item.summary" class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-500">
@@ -150,8 +150,14 @@ onMounted(async () => {
             </p>
           </div>
 
-          <div v-if="!loading && !list.length" class="py-16 text-center text-sm text-gray-400">
-            暂无已发布的资讯
+          <div v-if="!loading && !list.length" class="rounded-2xl border border-surface-border bg-white py-16 text-center shadow-hf">
+            <div class="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sem-blue-bg text-sem-blue">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            </div>
+            <p class="text-sm text-gray-500">暂无已发布的资讯</p>
           </div>
         </div>
 

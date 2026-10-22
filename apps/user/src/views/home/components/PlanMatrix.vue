@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { navItems } from '@/config/navigation'
 
+type Stage = 'foundation' | 'core' | 'advance' | 'selection' | 'summit'
+type TagTone = 'blue' | 'rose' | 'emerald' | 'amber'
+
 interface PlanColumn {
   id: string
   num: string
   title: string
   desc: string
+  stage: Stage
+  tag?: string
+  tagTone?: TagTone
 }
 
 const iconMap: Record<string, string> = {
@@ -22,16 +28,16 @@ const iconMap: Record<string, string> = {
 }
 
 const columns: PlanColumn[] = [
-  { id: 'middle', num: '01', title: '初中专栏', desc: '学业奠基与升学指导' },
-  { id: 'high', num: '02', title: '高中专栏', desc: '科目选修与生涯规划' },
-  { id: 'gaokao', num: '03', title: '高考志愿填报', desc: '院校位次与专业精选' },
-  { id: 'college', num: '04', title: '大学专栏', desc: '学分绩点与成长发展' },
-  { id: 'cet', num: '05', title: '英语练习', desc: '中考到考研英语在线练习' },
-  { id: 'kaoyan', num: '06', title: '考研专栏', desc: '择校初试与复试规划' },
-  { id: 'kaogong', num: '07', title: '考公专栏', desc: '国考省考选岗精算' },
-  { id: 'postgrad', num: '08', title: '研究生专栏', desc: '学术科研与文献开题' },
-  { id: 'phd', num: '09', title: '博士专栏', desc: '申博流程与顶刊发表' },
-  { id: 'employment', num: '10', title: '就业信息专栏', desc: '行业风向与名企直通' },
+  { id: 'middle', num: '01', title: '初中专栏', desc: '学业奠基与升学指导', stage: 'foundation' },
+  { id: 'high', num: '02', title: '高中专栏', desc: '科目选修与生涯规划', stage: 'foundation', tag: '3+1+2', tagTone: 'blue' },
+  { id: 'gaokao', num: '03', title: '高考志愿填报', desc: '院校位次与专业精选', stage: 'core', tag: '热门', tagTone: 'rose' },
+  { id: 'college', num: '04', title: '大学专栏', desc: '学分绩点与成长发展', stage: 'core' },
+  { id: 'cet', num: '05', title: '英语练习', desc: '中考到考研英语在线练习', stage: 'advance' },
+  { id: 'kaoyan', num: '06', title: '考研专栏', desc: '择校初试与复试规划', stage: 'advance', tag: '报录精算', tagTone: 'emerald' },
+  { id: 'kaogong', num: '07', title: '考公专栏', desc: '国考省考选岗精算', stage: 'selection', tag: '冲刺', tagTone: 'rose' },
+  { id: 'postgrad', num: '08', title: '研究生专栏', desc: '学术科研与文献开题', stage: 'selection' },
+  { id: 'phd', num: '09', title: '博士专栏', desc: '申博流程与顶刊发表', stage: 'summit', tag: '申请考核', tagTone: 'blue' },
+  { id: 'employment', num: '10', title: '就业信息专栏', desc: '行业风向与名企直通', stage: 'summit', tag: '直通', tagTone: 'amber' },
 ]
 
 const routeOverrides: Record<string, string> = {
@@ -56,12 +62,20 @@ const items = columns.map(c => ({
       :key="item.id"
       :to="item.route"
       class="plan-card"
+      :class="`plan-card--${item.stage}`"
     >
-      <span class="plan-card__icon" v-html="item.icon"></span>
+      <span class="plan-card__icon">
+        <span class="plan-card__num">{{ item.num }}</span>
+        <span class="plan-card__glyph" v-html="item.icon"></span>
+      </span>
       <span class="plan-card__body">
         <span class="plan-card__title">
-          <span class="plan-card__num">{{ item.num }}</span>
           <span class="plan-card__name">{{ item.title }}</span>
+          <span
+            v-if="item.tag"
+            class="plan-card__tag"
+            :class="`plan-card__tag--${item.tagTone}`"
+          >{{ item.tag }}</span>
         </span>
         <span class="plan-card__desc">{{ item.desc }}</span>
       </span>
@@ -82,49 +96,108 @@ const items = columns.map(c => ({
 }
 
 .plan-card {
+  --accent: #2563eb;
+  --accent-bg: #eff6ff;
+  --accent-ring: rgba(37, 99, 235, 0.18);
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.9rem;
   min-width: 0;
+  min-height: 5.25rem;
   padding: 1.1rem 1.15rem;
   background: #ffffff;
   border-radius: 1rem;
-  border: 1px solid rgba(249, 115, 22, 0.15);
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #f97316, #fb923c) 1;
-  border-top-width: 3px;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
   text-decoration: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.plan-card--foundation {
+  --accent: #2563eb;
+  --accent-bg: #eff6ff;
+  --accent-ring: rgba(37, 99, 235, 0.18);
+}
+
+.plan-card--core {
+  --accent: #f97316;
+  --accent-bg: #fff7ed;
+  --accent-ring: rgba(249, 115, 22, 0.2);
+}
+
+.plan-card--advance {
+  --accent: #0891b2;
+  --accent-bg: #ecfeff;
+  --accent-ring: rgba(8, 145, 178, 0.18);
+}
+
+.plan-card--selection {
+  --accent: #d97706;
+  --accent-bg: #fffbeb;
+  --accent-ring: rgba(217, 119, 6, 0.18);
+}
+
+.plan-card--summit {
+  --accent: #4f46e5;
+  --accent-bg: #eef2ff;
+  --accent-ring: rgba(79, 70, 229, 0.18);
 }
 
 .plan-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 34px rgba(249, 115, 22, 0.14);
+  transform: translateY(-3px);
+  border-color: var(--accent-ring);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.04),
+    0 14px 28px -6px rgba(15, 23, 42, 0.1);
+}
+
+.plan-card:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: 0.1s;
+}
+
+.plan-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .plan-card__icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 3.25rem;
+  height: 3.25rem;
   flex-shrink: 0;
-  border-radius: 0.8rem;
-  color: #f97316;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(251, 146, 60, 0.12));
-  border: 1px solid rgba(249, 115, 22, 0.22);
-  transition: color 0.25s ease;
+  border-radius: 0.875rem;
+  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent-bg) 0%, #ffffff 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    0 1px 3px var(--accent-ring);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .plan-card:hover .plan-card__icon {
-  color: #ea580c;
+  transform: scale(1.04);
 }
 
-.plan-card__icon :deep(svg) {
+.plan-card__glyph,
+.plan-card__glyph :deep(svg) {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+.plan-card__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .plan-card__body {
@@ -153,19 +226,57 @@ const items = columns.map(c => ({
 }
 
 .plan-card__num {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.25rem;
-  flex-shrink: 0;
-  border-radius: 0.35rem;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: var(--accent);
   color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.58rem;
+  font-weight: 800;
   line-height: 1;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.16);
+}
+
+.plan-card__tag {
+  flex-shrink: 0;
+  max-width: 4.5rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan-card__tag--blue {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.plan-card__tag--rose {
+  color: #e11d48;
+  background: #fff1f2;
+}
+
+.plan-card__tag--emerald {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.plan-card__tag--amber {
+  color: #d97706;
+  background: #fffbeb;
 }
 
 .plan-card__desc {
@@ -180,7 +291,7 @@ const items = columns.map(c => ({
   width: 1.1rem;
   height: 1.1rem;
   flex-shrink: 0;
-  color: #d1d5db;
+  color: #94a3b8;
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
@@ -190,13 +301,25 @@ const items = columns.map(c => ({
 }
 
 .plan-card:hover .plan-card__arrow {
-  color: #f97316;
+  color: var(--accent);
   transform: translateX(3px);
 }
 
 @media (max-width: 768px) {
   .plan-matrix {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card,
+  .plan-card__icon,
+  .plan-card__arrow {
+    transition: none;
+  }
+
+  .plan-card:hover {
+    transform: none;
   }
 }
 </style>

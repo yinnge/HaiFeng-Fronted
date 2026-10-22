@@ -13,7 +13,7 @@ const { visible, siteInfo, loading, close } = useExpertContact()
     class="expert-dialog"
   >
     <div v-if="loading" class="flex justify-center py-10">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500"></div>
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-500"></div>
     </div>
     <div v-else class="space-y-4">
       <div class="expert-info-row">
@@ -46,7 +46,7 @@ const { visible, siteInfo, loading, close } = useExpertContact()
       </div>
       <div class="pt-2 text-center">
         <p class="mb-3 text-sm font-semibold text-gray-700">微信二维码</p>
-        <div class="inline-block rounded-xl border border-orange-100 bg-orange-50/40 p-2 shadow-md">
+        <div class="inline-block rounded-xl border border-slate-200 bg-slate-50 p-2 shadow-sm">
           <img
             v-if="siteInfo?.contactUrl?.wechat"
             :src="siteInfo.contactUrl.wechat"
@@ -62,7 +62,7 @@ const { visible, siteInfo, loading, close } = useExpertContact()
     </div>
     <template #footer>
       <button
-        class="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-semibold text-white hover:from-orange-600 hover:to-amber-600 spring-fast"
+        class="rounded-xl bg-blue-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 spring-fast"
         @click="close"
       >我知道了</button>
     </template>
@@ -75,7 +75,7 @@ const { visible, siteInfo, loading, close } = useExpertContact()
   align-items: flex-start;
   gap: 0.75rem;
   border-radius: 0.75rem;
-  background: rgba(255, 247, 237, 0.6);
+  background: var(--neutral-bg);
   padding: 0.75rem;
 }
 
@@ -84,7 +84,7 @@ const { visible, siteInfo, loading, close } = useExpertContact()
   height: 1.25rem;
   flex-shrink: 0;
   margin-top: 0.125rem;
-  color: #f97316;
+  color: var(--sem-blue);
 }
 
 .expert-info-label {
@@ -101,15 +101,13 @@ const { visible, siteInfo, loading, close } = useExpertContact()
 
 <style>
 .expert-dialog .el-dialog {
-  border-radius: 12px;
-  background: linear-gradient(to bottom, #f8fafc, #ffffff);
-  border-top: 3px solid #f97316;
-  border-bottom: 3px solid #fb923c;
+  border-radius: 16px;
+  background: #ffffff;
   overflow: hidden;
 }
 
 .expert-dialog .el-dialog__header {
-  border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+  border-bottom: 1px solid var(--neutral-border);
   padding-bottom: 14px;
 }
 

@@ -105,7 +105,7 @@ function handleClose() {
     <div class="h-full flex flex-col">
       <!-- 加载状态 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
-        <el-icon class="is-loading text-4xl text-orange-500"><Loading /></el-icon>
+        <el-icon class="is-loading text-4xl text-sem-blue"><Loading /></el-icon>
       </div>
 
       <!-- 无数据 -->
@@ -128,7 +128,7 @@ function handleClose() {
 
           <div class="mb-6">
             <h3 class="text-sm font-semibold text-gray-700 mb-2">院校数量</h3>
-            <div class="text-2xl font-bold text-orange-500">{{ cityData.collegeCount }}<span class="text-sm font-normal text-gray-500 ml-1">所</span></div>
+            <div class="text-2xl font-bold text-sem-blue">{{ cityData.collegeCount }}<span class="text-sm font-normal text-gray-500 ml-1">所</span></div>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@ function handleClose() {
               </div>
               <div
                 v-else
-                class="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xl font-bold shrink-0"
+                class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shrink-0"
               >
                 {{ universityData.name.charAt(0) }}
               </div>
@@ -167,7 +167,7 @@ function handleClose() {
               <span
                 v-for="tag in universityData.tags"
                 :key="tag"
-                class="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-medium"
+                class="text-xs bg-sem-blue-bg text-sem-blue px-2.5 py-1 rounded-md font-medium"
               >
                 {{ tag }}
               </span>
@@ -177,29 +177,29 @@ function handleClose() {
           <div class="mb-6">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">基本信息</h3>
             <div class="grid grid-cols-2 gap-3">
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">区域</div>
                 <div class="text-sm font-medium text-gray-700">{{ universityData.region || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">类型</div>
                 <div class="text-sm font-medium text-gray-700">{{ universityData.category || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">层次</div>
                 <div class="text-sm font-medium text-gray-700">{{ universityData.educationLevel || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">性质</div>
                 <div class="text-sm font-medium text-gray-700">{{ universityData.nature || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">主管部门</div>
                 <div class="text-sm font-medium text-gray-700">{{ universityData.department || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">推荐指数</div>
-                <div class="text-sm font-medium text-orange-500">{{ universityData.recommendationRate ?? '-' }}</div>
+                <div class="text-sm font-medium text-sem-green">{{ universityData.recommendationRate ?? '-' }}</div>
               </div>
             </div>
           </div>
@@ -219,7 +219,7 @@ function handleClose() {
               <span
                 v-for="tag in majorData.majorTags.split(/[,，、]/).filter(Boolean)"
                 :key="tag"
-                class="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-medium"
+                class="text-xs bg-sem-blue-bg text-sem-blue px-2.5 py-1 rounded-md font-medium"
               >
                 {{ tag }}
               </span>
@@ -229,39 +229,39 @@ function handleClose() {
           <div class="mb-6">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">基本信息</h3>
             <div class="grid grid-cols-2 gap-3">
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">门类</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.disciplineName || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">专业类别</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.majorCategory || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">所属大类</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.parentCategory || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">专业类型</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.majorType || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">授予学位</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.degreeAwarded || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">学制</div>
                 <div class="text-sm font-medium text-gray-700">{{ majorData.studyDuration || '-' }}</div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">就业率</div>
-                <div class="text-sm font-medium text-orange-500">
+                <div class="text-sm font-medium text-sem-green">
                   {{ majorData.employmentRate != null ? `${(majorData.employmentRate * 100).toFixed(1)}%` : '-' }}
                 </div>
               </div>
-              <div class="bg-gray-50 rounded-lg p-3">
+              <div class="rounded-lg border border-surface-border bg-slate-50/70 p-3">
                 <div class="text-xs text-gray-400 mb-1">薪资区间</div>
-                <div class="text-sm font-medium text-orange-500">
+                <div class="text-sm font-medium text-amber-600">
                   {{ majorData.salaryMin != null && majorData.salaryMax != null
                     ? `¥${majorData.salaryMin} ~ ¥${majorData.salaryMax}`
                     : '-' }}
@@ -278,9 +278,9 @@ function handleClose() {
       </div>
 
       <!-- 底部按钮 -->
-      <div class="shrink-0 border-t border-gray-100 p-4 bg-white flex gap-3">
+      <div class="shrink-0 border-t border-surface-border p-4 bg-white flex gap-3">
         <button
-          class="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-white font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-md text-sm"
+          class="flex-1 rounded-xl bg-brand-orange px-4 py-2.5 text-white font-semibold hover:bg-brand-orange-dark transition-all shadow-[0_4px_12px_rgba(249,115,22,0.2)] text-sm"
           :disabled="!currentId"
           @click="goDetail"
         >

@@ -37,8 +37,21 @@
 
 ## 吸顶导航条 UI 规范（2026-10-19）
 - **下拉触发器不显示向下箭头 svg**：导航栏/吸顶条（AppHeader 子条、ArchiveBar、EnglishBar、FileLoadPage 的 stage-nav）上的「药丸式」`el-select` 触发器统一隐藏 `.el-select__suffix`（`display:none`）。已处理：ArchiveBar 身份选择、EnglishBar 考试类型、FileLoadPage 身份选择（/college、/middle 共用）。**后续新增吸顶条上的下拉统一照此，不要向下箭头。**
-- **全局头部滚动收起**：仅主页 `/` 常驻，其余页面 `window.scrollY>8` 时抽屉式收起（translateY(-100%)）。`composables/useAutoHideHeader.ts` 为**模块级单例**，AppHeader 与所有吸顶子条共享同一 `hidden`；子条在头部收起时把 sticky `top` 收为 `0`，填补顶部空隙（否则头部收起后子条仍停在 `top:导航高` 留一段空白）。
-- 主页 `/` 永不让头部收起；非主页（含 /college、/middle、/english、/gaokao 及子路由）一律滚动收起。
+- **全局头部滚动收起**：所有页面（含主页）`window.scrollY>8` 时抽屉式收起（translateY(-100%)）。`composables/useAutoHideHeader.ts` 为**模块级单例**，AppHeader 与所有吸顶子条共享同一 `hidden`；子条在头部收起时把 sticky `top` 收为 `0`，填补顶部空隙（否则头部收起后子条仍停在 `top:导航高` 留一段空白）。
+- 主页 `/` 同样滚动收起（2026-10-21 改）：顶部「工具/账号层」TopToolBar 仅首页常驻（z-60、不收起），旧 AppHeader 在其下方（首页 top=64 紧贴、其余 top=0），二者错层；TopToolBar 与 AppHeader 同处 DefaultLayout。
+
+## 顶部双层导航 + 全站搜索（2026-10-21）
+- **双层结构**：`DefaultLayout` 在 `AppHeader` 上方仅首页(`route.path==='/'`)渲染 `TopToolBar`（工具/账号层，sticky top:0 z-60，常驻不收起）；旧 `AppHeader` 接 `:top-offset`（首页 64、其余 0）紧贴其下。滚动时 AppHeader 抽屉式收起、TopToolBar 留顶（错层）。
+- **账号区分布（2026-10-22 定稿）**：新导航 TopToolBar（仅首页）与旧导航 AppHeader（**仅非首页** `v-if="!isHome"`）都带 铃铛+头像（铃铛在头像左）；`UserAvatar` 触发区只显示头像+身份标签（无用户名），未登录渲染 `user-avatar-login-btn`（验证时勿用 `.user-avatar-wrapper` 选择器，未登录会误判 false）。
+- **旧导航 AppHeader 去 logo**：最左侧 logo 已删除（仅删除该 logo，不影响内容分类导航）；`logoMain` 引用已移除。
+- **搜索 `GlobalSearchBox`**：**已去掉模块筛选按钮**（原 高考/中考/考公/考研/英语四六级 作用域删除）——搜索本质是「实体+资讯」全站查，模块筛选只作用于资讯组、很鸡肋，故移除。现为**纯胶囊**：放大镜+输入框+⌘K，`width:100%; max-width:360px; flex:1` 可随导航收缩；聚焦橙描边+光晕。下拉=院校/城市/专业/资讯 分组（资讯走 `searchArticle(null,kw)` 全模块）。点选跳 `/university/:id` `/city/:id` `/major/:id` `/gaokao/article/:id`。**待补**：非高考资讯详情无通用路由（仅 `/gaokao/article/:id` 写死高考模块），需补通用 `/article/:id` + 后端 id 查询。
+- **⚠️ 布局坑：flex 链要靠 `flex:1` 传递宽度，不能用 `width:100%`**（新导航实测）：`tt-center`(grid 1fr 轨道) → `.gs-root` → `.gs-panel` → `.gs-input-wrap`。中间两层若只写 `width:100%` **不会撑满**（flex item 的 width:100% 不等于 grow），实测 875px 轨道下 panel 仍停在内容宽 282px。**必须逐级 `flex:1; min-width:0`**，末端 `.gs-input-wrap` 再 `flex:1; max-width:360px`。
+- **新导航栅格（2026-10-21 定稿）**：`grid-template-columns: auto minmax(0,1fr) auto; gap:24px`。品牌(内容宽) | 搜索(弹性可缩、**靠左不居中**) | 功能区(内容宽，**永不挤压**)。旧 `1fr auto 1fr` 会让右侧 1fr 装不下 662px 内容，`justify-content:flex-end` 把溢出**往左推**盖住搜索框（实测 1366px 重叠 157px）——已根治，OVERLAP=0。
+- **新导航响应式**：链接 gap 24→16px（≤1400px 再降到 12px）；副标题 ≤1199px 隐藏；搜索框 ≤1099px 收为图标按钮（GlobalSearchBox 的 mql 断点已从 1023 改到 **1099**）。实测 1920/1440/1366/1280 均无重叠、无横向溢出。
+- **新导航样式规范（2026-10-21 定稿）**：品牌标题 `.tt-brand-title` 20px/800/#18181B、「未来规划院」`.tt-grad` 渐变 135deg #FF7A00→#EA580C、副标 11.5px #71717A；右导航 `.tt-link` 14.5px/600/#3F3F46、hover/active 橙 #EA580C + 圆角胶囊热区 + 底部 16px 短指示条（替代旧满宽横线）。
+- **百宝箱单例**：`useTreasureBox.ts` 模块级单例 `open`；`FloatingTreasure`（首页悬浮 img.png）与 `TopToolBar` 的「百宝箱」按钮共用同一弹窗（`openBox()`）。
+- **ComingSoon 占位页**：`/coming-soon?from=xxx`（career-map/data-compare/consultation），三个入口共用，居中大字+图标+返回首页。
+- 模块作用域列表（高考/中考/考公/考研/英语四六级）当前前端写死；如后端有动态字典接口，后续改动态拉取。
 
 ## git 红线
 收尾必 commit；`git pull --rebase` 前确认 `git status` 干净。

@@ -368,7 +368,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-gray-50 to-white">
+  <div class="min-h-screen flex flex-col bg-surface-bg">
     <!-- 档案吸附条：与 gaokao 首页共享组件；本页向下滚动时抽屉式收起，回顶展开 -->
     <ArchiveBar ref="archiveBarRef" collapsible @saved="onArchiveSaved" />
 
@@ -390,7 +390,7 @@ onMounted(() => {
             修改档案
           </button>
           <button
-            class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5 border-red-400 text-orange-500 hover:border-red-500 hover:bg-red-50 hover:shadow-[0_2px_8px_rgba(239,68,68,0.18)]"
+            class="btn-secondary px-4 py-2 text-sm flex items-center gap-1.5 border-sem-blue/30 text-sem-blue hover:border-sem-blue hover:bg-sem-blue-bg hover:shadow-[0_2px_8px_rgba(59,130,246,0.12)]"
             @click="goAiHistory"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -414,7 +414,7 @@ onMounted(() => {
       </div>
 
       <!-- 档位图例 + 已选统计 -->
-      <div class="rounded-2xl bg-white p-5 shadow-card border border-gray-100/60 mb-6">
+      <div class="rounded-2xl bg-white p-5 shadow-hf border border-surface-border mb-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-semibold text-gray-700">冲稳保垫 · 志愿档位</h3>
           <span class="text-xs text-gray-400">
@@ -426,7 +426,7 @@ onMounted(() => {
             v-for="d in levelDict"
             :key="d.code"
             :title="d.description"
-            class="cursor-help rounded-xl border border-gray-100/80 bg-gray-50/50 p-3 transition-colors hover:bg-white hover:border-gray-200"
+            class="cursor-help rounded-xl border border-surface-border bg-slate-50/60 p-3 transition-colors hover:bg-white hover:border-surface-strong"
           >
             <div class="flex items-center gap-2 mb-2">
               <span class="h-3.5 w-3.5 shrink-0 rounded-full" :style="{ backgroundColor: d.color }"></span>
@@ -450,7 +450,7 @@ onMounted(() => {
       </div>
 
       <!-- 搜索栏 -->
-      <div class="rounded-2xl bg-white p-6 shadow-card border border-gray-100/60 mb-6">
+      <div class="rounded-2xl bg-white p-6 shadow-hf border border-surface-border mb-6">
         <div class="flex items-end gap-4 flex-wrap">
           <div class="flex-1 min-w-[140px] max-w-[220px]">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">院校名称</label>
@@ -496,22 +496,22 @@ onMounted(() => {
           </div>
           <!-- 查询按钮：shrink-0 禁止被压缩 -->
           <button
-            class="btn-brand px-6 py-2.5 text-sm shrink-0"
+            class="shrink-0 rounded-xl bg-sem-blue px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(59,130,246,0.2)] transition-all hover:bg-blue-600 hover:shadow-[0_6px_16px_rgba(59,130,246,0.26)]"
             @click="handleSearch"
           >
             查询
           </button>
         </div>
-        <div class="mt-4 pt-4 border-t border-gray-100/60 flex items-center gap-4 text-sm">
+        <div class="mt-4 pt-4 border-t border-surface-border flex items-center gap-4 text-sm">
           <span class="inline-flex items-center text-gray-500">
-            <svg class="w-4 h-4 mr-1.5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1.5 text-sem-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
             批次：<span class="font-semibold text-gray-700">{{ archive?.batch || '-' }}</span>
           </span>
           <span class="text-gray-300">|</span>
           <span class="inline-flex items-center text-gray-500">
-            <svg class="w-4 h-4 mr-1.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1.5 text-sem-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             共 <span class="font-semibold text-gray-700 mx-1">{{ pagination.total }}</span> 个专业组
@@ -520,7 +520,7 @@ onMounted(() => {
       </div>
 
       <!-- 安全系数档位筛选 -->
-      <div class="rounded-2xl bg-white p-5 shadow-card border border-gray-100/60 mb-6">
+      <div class="rounded-2xl bg-white p-5 shadow-hf border border-surface-border mb-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-semibold text-gray-700">安全系数 · 档位筛选</h3>
           <span v-if="activeSafetyShort" class="text-xs text-gray-400">再次点击可取消筛选</span>
@@ -531,7 +531,7 @@ onMounted(() => {
             :key="opt.short"
             type="button"
             class="rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer"
-            :class="activeSafetyShort === opt.short ? '' : 'border-gray-100/80 bg-gray-50/50 hover:bg-white hover:border-gray-200'"
+            :class="activeSafetyShort === opt.short ? '' : 'border-surface-border bg-slate-50/60 hover:bg-white hover:border-surface-strong'"
             :style="activeSafetyShort === opt.short
               ? { borderColor: opt.color, backgroundColor: opt.color + '14', boxShadow: `0 0 0 1px ${opt.color}55` }
               : {}"
@@ -555,7 +555,7 @@ onMounted(() => {
 
       <!-- 专业组列表 -->
       <div v-if="loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="rounded-2xl border border-gray-100/60 bg-white p-5 shadow-card animate-pulse">
+        <div v-for="i in 3" :key="i" class="rounded-2xl border border-surface-border bg-white p-5 shadow-hf animate-pulse">
           <div class="flex items-stretch gap-4">
             <div class="w-28 shrink-0 flex flex-col items-center justify-center">
               <div class="w-12 h-12 rounded-2xl bg-gray-200" />
@@ -586,8 +586,8 @@ onMounted(() => {
       </div>
 
       <div v-else-if="groups.length === 0" class="text-center py-20">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-brand-orange/10 flex items-center justify-center">
-          <svg class="w-10 h-10 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-sem-blue-bg flex items-center justify-center">
+          <svg class="w-10 h-10 text-sem-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -614,9 +614,9 @@ onMounted(() => {
                 class="ml-14 mt-3 space-y-2"
               >
                 <div v-if="majorLoading" class="flex items-center justify-center py-8 gap-2">
-                  <div class="w-2 h-2 rounded-full bg-brand-orange animate-bounce" style="animation-delay: 0ms" />
-                  <div class="w-2 h-2 rounded-full bg-brand-orange animate-bounce" style="animation-delay: 150ms" />
-                  <div class="w-2 h-2 rounded-full bg-brand-orange animate-bounce" style="animation-delay: 300ms" />
+                  <div class="w-2 h-2 rounded-full bg-sem-blue animate-bounce" style="animation-delay: 0ms" />
+                  <div class="w-2 h-2 rounded-full bg-sem-blue animate-bounce" style="animation-delay: 150ms" />
+                  <div class="w-2 h-2 rounded-full bg-sem-blue animate-bounce" style="animation-delay: 300ms" />
                 </div>
                 <MajorRow
                   v-for="major in majors"
@@ -635,10 +635,10 @@ onMounted(() => {
 
       <!-- 分页 -->
       <div v-if="pagination.total > pagination.size" class="mt-8 flex justify-center">
-        <div class="inline-flex items-center gap-1 bg-white rounded-2xl shadow-card border border-gray-100/60 p-1.5">
+        <div class="inline-flex items-center gap-1 bg-white rounded-2xl shadow-hf border border-surface-border p-1.5">
           <button
             class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200"
-            :class="pagination.page <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
+            :class="pagination.page <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-sem-blue-bg hover:text-sem-blue'"
             :disabled="pagination.page <= 1"
             @click="handlePageChange(pagination.page - 1)"
           >
@@ -653,8 +653,8 @@ onMounted(() => {
               v-else
               class="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-200"
               :class="p === pagination.page
-                ? 'bg-gradient-to-br from-brand-orange to-brand-orange-light text-white shadow-brand'
-                : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
+                ? 'bg-sem-blue text-white shadow-[0_4px_12px_rgba(59,130,246,0.24)]'
+                : 'text-gray-600 hover:bg-sem-blue-bg hover:text-sem-blue'"
               @click="handlePageChange(p as number)"
             >
               {{ p }}
@@ -663,7 +663,7 @@ onMounted(() => {
 
           <button
             class="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200"
-            :class="pagination.page >= totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-brand-orange/10 hover:text-brand-orange'"
+            :class="pagination.page >= totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-sem-blue-bg hover:text-sem-blue'"
             :disabled="pagination.page >= totalPages"
             @click="handlePageChange(pagination.page + 1)"
           >
@@ -678,7 +678,7 @@ onMounted(() => {
             <span class="text-sm text-gray-500">每页</span>
             <select
               v-model="pagination.size"
-              class="h-8 px-2 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange transition-all"
+              class="h-8 px-2 rounded-lg border border-surface-strong text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-sem-blue/20 focus:border-sem-blue transition-all"
               @change="handleSizeChange(pagination.size)"
             >
               <option :value="10">10</option>
@@ -696,13 +696,13 @@ onMounted(() => {
     <div class="fixed right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3">
       <!-- 修改档案 -->
       <button
-        class="group w-12 h-auto py-3 rounded-xl shadow-card border border-gray-100 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-brand hover:border-brand-orange"
+        class="group w-12 h-auto py-3 rounded-xl shadow-hf border border-surface-border bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-hf-hover hover:border-sem-blue/40"
         @click="archiveBarRef?.openDialog()"
       >
-        <svg class="w-5 h-5 text-gray-500 group-hover:text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-gray-500 group-hover:text-sem-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
-        <span class="vertical-text text-xs font-medium text-gray-600 group-hover:text-brand-orange">修改档案</span>
+        <span class="vertical-text text-xs font-medium text-gray-600 group-hover:text-sem-blue">修改档案</span>
       </button>
       <!-- 志愿表 -->
       <button
@@ -722,7 +722,7 @@ onMounted(() => {
       </button>
       <!-- 清除志愿表 -->
       <button
-        class="group w-12 h-auto py-3 rounded-xl shadow-card border border-red-200 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-red-200 hover:border-red-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-card disabled:hover:border-red-200"
+        class="group w-12 h-auto py-3 rounded-xl shadow-hf border border-red-200 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-red-200 hover:border-red-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-hf disabled:hover:border-red-200"
         :disabled="selectionStore.totalCount === 0"
         :title="selectionStore.totalCount === 0 ? '暂无可清除的专业' : '清除全部已选专业'"
         @click="handleClearSelection"
@@ -736,14 +736,14 @@ onMounted(() => {
 
     <!-- 左侧小贴士：常驻切换按钮 + 点击展开的左侧面板 -->
     <button
-      class="fixed left-2 top-1/2 -translate-y-1/2 z-50 group w-11 h-auto py-3 rounded-xl shadow-card border border-gray-100 bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-brand hover:border-brand-orange"
+      class="fixed left-2 top-1/2 -translate-y-1/2 z-50 group w-11 h-auto py-3 rounded-xl shadow-hf border border-surface-border bg-white/95 backdrop-blur flex flex-col items-center gap-1.5 transition-all hover:shadow-hf-hover hover:border-sem-blue/40"
       :title="tipsVisible ? '收起小贴士' : '查看小贴士'"
       @click="tipsVisible = !tipsVisible"
     >
-      <svg class="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 text-sem-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <span class="vertical-text text-xs font-medium text-gray-600 group-hover:text-brand-orange">小贴士</span>
+      <span class="vertical-text text-xs font-medium text-gray-600 group-hover:text-sem-blue">小贴士</span>
     </button>
 
     <!-- 小贴士面板（左中，点击按钮展开/收起） -->
@@ -751,17 +751,17 @@ onMounted(() => {
       <Transition name="tips">
         <div
           v-if="tipsVisible"
-          class="pointer-events-auto w-[240px] max-w-[78vw] rounded-2xl bg-white shadow-card border border-gray-100/70 px-4 py-4"
+          class="pointer-events-auto w-[240px] max-w-[78vw] rounded-2xl bg-white shadow-hf border border-surface-border px-4 py-4"
         >
           <div class="flex items-center gap-2 mb-2.5">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-orange/10 text-brand-orange">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-sem-blue-bg text-sem-blue">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
             <h4 class="text-sm font-semibold text-gray-800">小贴士</h4>
             <button
-              class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-orange hover:bg-brand-orange/10 transition-colors"
+              class="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-sem-blue hover:bg-sem-blue-bg transition-colors"
               @click="tipsVisible = false"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -4,6 +4,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============ 视觉设计系统 2.0 设计令牌 ============ */
+:root {
+  /* 品牌橙：克制使用，仅限导航品牌区 / 核心 CTA / 关键数据高亮 */
+  --brand-orange: #f97316;
+  --brand-orange-light: #fb923c;
+  --brand-orange-dark: #ea580c;
+
+  /* 青春蓝：规划 / 成长 / 信息类 */
+  --sem-blue: #3b82f6;
+  --sem-blue-light: #60a5fa;
+  --sem-blue-bg: #eff6ff;
+  --sem-blue-soft: #dbeafe;
+
+  /* 热情红：竞争 / 紧迫 / 焦点类 */
+  --sem-red: #ef4444;
+  --sem-red-light: #f87171;
+  --sem-red-bg: #fef2f2;
+  --sem-red-soft: #fee2e2;
+
+  /* 阳光黄：提示 / 辅助 / 积极类 */
+  --sem-yellow: #f59e0b;
+  --sem-yellow-light: #fbbf24;
+  --sem-yellow-bg: #fffbeb;
+  --sem-yellow-soft: #fef3c7;
+  --sem-yellow-deep: #d97706;
+
+  /* 翡翠绿：招录 / 数据 / 正向结果类 */
+  --sem-green: #059669;
+  --sem-green-light: #10b981;
+  --sem-green-bg: #ecfdf5;
+  --sem-green-soft: #d1fae5;
+
+  /* 中性色：页面背景、分隔与阴影 */
+  --neutral-bg: #f8fafc;
+  --neutral-border: #f1f5f9;
+  --neutral-border-strong: #e2e8f0;
+  --neutral-shadow: rgba(15, 23, 42, 0.04);
+  --neutral-shadow-hover: rgba(15, 23, 42, 0.1);
+
+  /* 文字层级 */
+  --text-heading: #1f2937;
+  --text-strong: #0f172a;
+  --text-body: #4b5563;
+  --text-muted: #6b7280;
+  --text-subtle: #94a3b8;
+}
+
 /* 全局样式 */
 * {
   margin: 0;
@@ -31,34 +78,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ============ 全站暖色页面画布（统一风格，对齐「直通考院」区块观感） ============ */
-/* 根画布：白底透橙 + 径向光晕点缀，固定视口，所有页面默认透出其暖橙背景。
-   设计要点（突出「白→橘→白」分层，但不刺眼）：
-   1) 竖向渐变首尾透白、中段加深到 #ffedd5(orange-100)，使橘色带明显可读；
-   2) 顶部/中部/底部三层白雾带清晰硬边（白→半透→透明），制造通透层次；
-   3) 三处橙/琥珀光晕加重透明度，做明显点缀。 */
+/* ============ 全站中性页面画布（视觉设计系统 2.0） ============ */
+/* 根画布改为冷调浅灰 #F8FAFC：白色卡片靠阴影与中性发丝边浮起。
+   原暖橙光晕已降级为首页 Hero 的局部点缀（见 home/index.vue），不再铺满视口。 */
 html {
-  background-color: #fff7ed;
-  background-image:
-    /* 顶部白雾：页面上方明显泛白，硬边收口 */
-    radial-gradient(140% 50% at 50% -5%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.6) 34%, transparent 62%),
-    /* 中部柔白涂抹：白雾压在橘色上，制造「白底透橘」通透层次 */
-    radial-gradient(70% 40% at 50% 46%, rgba(255, 255, 255, 0.62) 0%, transparent 70%),
-    /* 底部白雾：明显回归白，硬边收口 */
-    radial-gradient(140% 50% at 50% 105%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.55) 34%, transparent 62%),
-    /* 橙色点缀光晕（左上，加重） */
-    radial-gradient(circle at 12% 18%, rgba(249, 115, 22, 0.2) 0%, transparent 40%),
-    /* 琥珀点缀光晕（右上，加重） */
-    radial-gradient(circle at 88% 28%, rgba(251, 146, 60, 0.17) 0%, transparent 40%),
-    /* 橙色点缀光晕（下中，加重） */
-    radial-gradient(circle at 68% 88%, rgba(249, 115, 22, 0.15) 0%, transparent 40%),
-    /* 基础竖向渐变：白→橘100→白，橘色带明显、首尾透白 */
-    linear-gradient(180deg, #ffffff 0%, #fff4e6 28%, #ffedd5 50%, #fff4e6 72%, #ffffff 100%);
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: var(--neutral-bg);
 }
 
-/* 让路由内容根容器透出暖色画布：仅作用于页面根节点，
+/* 让路由内容根容器透出中性画布：仅作用于页面根节点，
    不破坏内部白色卡片（卡片是根的嵌套子元素，非 main/#app 的直接子节点）。
    .app-shell = DefaultLayout 根；#app > * 覆盖 blank 布局（登录/注册/404）。 */
 .app-shell main > *,
@@ -111,22 +138,20 @@ body.el-popup-parent--hidden {
   backdrop-filter: blur(2px);
 }
 
-/* 弹窗主体容器：圆角 + 阴影 + 橙色顶边 */
+/* 弹窗主体容器：圆角 + 阴影；按 2.0 规范取消上下橙色硬边 */
 .el-message-box,
 .el-dialog {
   border-radius: 16px !important;
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
-  border-top: 3px solid #F97316;
-  border-bottom: 3px solid #FB923C;
 }
 
-/* 头部：底部分隔线 + 浅橙渐变底 */
+/* 头部：白底 + 中性细分隔线 */
 .el-message-box__header,
 .el-dialog__header {
   padding: 18px 56px 16px 24px !important;
-  border-bottom: 1px solid #f3f4f6;
-  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--neutral-border);
+  background: #ffffff;
 }
 
 .el-message-box__title,
@@ -158,12 +183,12 @@ body.el-popup-parent--hidden {
 
 .el-message-box__headerbtn:hover,
 .el-dialog__headerbtn:hover {
-  background: #fff7ed !important;
+  background: var(--neutral-bg) !important;
 }
 
 .el-message-box__headerbtn:hover .el-message-box__close,
 .el-dialog__headerbtn:hover .el-dialog__close {
-  color: #F97316;
+  color: var(--brand-orange-dark);
 }
 
 /* 内容区：合理留白 */
@@ -187,13 +212,13 @@ body.el-popup-parent--hidden {
   margin: 0;
 }
 
-/* 状态图标：橙色基底 */
+/* 状态图标：按语义着色 */
 .el-message-box__status {
   font-size: 22px !important;
 }
 
 .el-message-box__status.el-message-box-icon--info {
-  color: #F97316;
+  color: var(--sem-blue);
 }
 
 .el-message-box__status.el-message-box-icon--warning {
@@ -258,33 +283,33 @@ body.el-popup-parent--hidden {
 }
 
 .el-message-box__btns .el-button--primary {
-  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-light)) !important;
   border-color: transparent !important;
   color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
 }
 
 .el-message-box__btns .el-button--primary:hover {
-  background: linear-gradient(135deg, #ea6a0f, #f97316) !important;
+  background: linear-gradient(135deg, var(--brand-orange-dark), var(--brand-orange)) !important;
   box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4) !important;
   transform: translateY(-1px);
 }
 
 .el-message-box__btns .el-button:not(.el-button--primary) {
   background: #ffffff !important;
-  border-color: #d1d5db !important;
-  color: #6b7280 !important;
+  border-color: var(--neutral-border-strong) !important;
+  color: #64748b !important;
 }
 
 .el-message-box__btns .el-button:not(.el-button--primary):hover {
-  border-color: #F97316 !important;
-  color: #F97316 !important;
-  background: #fff7ed !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+  background: var(--neutral-bg) !important;
 }
 
 /* 选择文本样式 */
 ::selection {
-  background: rgba(232, 114, 42, 0.2);
+  background: rgba(249, 115, 22, 0.18);
   color: #1e293b;
 }
 
@@ -476,13 +501,13 @@ body.el-popup-parent--hidden {
     @apply relative overflow-hidden bg-gradient-to-r from-brand-orange to-brand-orange-light 
            text-white font-semibold px-6 py-2.5 rounded-full 
            focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
-    box-shadow: 0 4px 14px 0 rgba(232, 114, 42, 0.25);
+    box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.25);
     transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .btn-brand:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px 0 rgba(232, 114, 42, 0.4);
+    box-shadow: 0 6px 20px 0 rgba(249, 115, 22, 0.4);
   }
 
   .btn-brand:active {
@@ -504,15 +529,15 @@ body.el-popup-parent--hidden {
   .btn-secondary {
     @apply relative overflow-hidden bg-white border border-gray-200 
            text-gray-700 font-medium px-6 py-2.5 rounded-full 
-           hover:border-brand-orange hover:text-brand-orange
+           hover:border-gray-300 hover:text-gray-900
            active:shadow-none
-           focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2;
+           focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2;
     transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .btn-secondary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(232, 114, 42, 0.15);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   }
 
   .btn-secondary:active {
@@ -537,6 +562,29 @@ body.el-popup-parent--hidden {
   .pill-gold {
     @apply bg-brand-gold/10 text-brand-gold-dark border border-brand-gold/20;
   }
+}
+
+/* 高考档案下拉面板：白底中性描边，蓝色选中态 */
+.gk-select-popper.el-popper {
+  border: 1px solid var(--neutral-border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+}
+
+.gk-select-popper .el-select-dropdown__item {
+  border-radius: 8px;
+  color: #475569;
+}
+
+.gk-select-popper .el-select-dropdown__item.is-selected {
+  color: var(--sem-blue);
+  background: var(--sem-blue-bg);
+  font-weight: 700;
+}
+
+.gk-select-popper .el-select-dropdown__item.is-hovering {
+  background: var(--sem-blue-bg);
+  color: var(--sem-blue);
 }
 
 /* ===== 登录引导弹窗（渐变浅橙主题，配合 utils/loginGuide.ts） ===== */
