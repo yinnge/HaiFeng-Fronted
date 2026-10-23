@@ -7,7 +7,7 @@
 | 模块 | 功能 | 权限要求 |
 |------|------|----------|
 | 首页管理 | 站点信息展示（ICP、联系方式、社交媒体） | 公开访问 |
-| 模糊搜索 | 大学/城市/专业联想搜索（用于资料填写） | 需登录 |
+| 模糊搜索 | 大学/城市/专业联想搜索（用于资料填写/全站搜索） | 公开访问 |
 | 用户资料 | 个人资料的查看与编辑 | 需登录 |
 | 用户信息 | 账号信息、密码、微信号、头像管理 | 需登录 |
 | 佣金管理 | 佣金查询、提现申请 | 需登录 |
@@ -80,7 +80,7 @@ Host: api.haifeng.com
 
 ## 二、模糊搜索
 
-> 用于个人资料填写时的联想输入，所有接口需登录后访问。
+> 用于个人资料填写与全站搜索的联想输入，所有接口公开访问，无需登录。
 
 ### 2.1 搜索大学
 
@@ -91,7 +91,7 @@ Host: api.haifeng.com
 | 项目 | 值 |
 |------|-----|
 | URL | `GET /api/v1/app/search/university` |
-| 权限 | @RequireLogin |
+| 权限 | 公开 |
 | 模糊匹配字段 | `t_universities.name` |
 
 **请求参数**
@@ -106,7 +106,6 @@ Host: api.haifeng.com
 ```http
 GET /api/v1/app/search/university?keyword=北京&limit=5 HTTP/1.1
 Host: api.haifeng.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 **响应示例**
@@ -135,7 +134,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | 项目 | 值 |
 |------|-----|
 | URL | `GET /api/v1/app/search/city` |
-| 权限 | @RequireLogin |
+| 权限 | 公开 |
 | 模糊匹配字段 | `t_city.city_name` |
 
 **请求参数**
@@ -150,7 +149,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```http
 GET /api/v1/app/search/city?keyword=上海&limit=5 HTTP/1.1
 Host: api.haifeng.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 **响应示例**
@@ -175,7 +173,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | 项目 | 值 |
 |------|-----|
 | URL | `GET /api/v1/app/search/major` |
-| 权限 | @RequireLogin |
+| 权限 | 公开 |
 | 模糊匹配字段 | `t_major.major_name` |
 
 **请求参数**
@@ -190,7 +188,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```http
 GET /api/v1/app/search/major?keyword=计算机&limit=5 HTTP/1.1
 Host: api.haifeng.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 **响应示例**

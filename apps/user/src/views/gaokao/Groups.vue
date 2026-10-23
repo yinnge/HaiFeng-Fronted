@@ -34,6 +34,27 @@ const archiveBarRef = ref<InstanceType<typeof ArchiveBar> | null>(null)
 // 档案数据
 const archive = ref<GaokaoArchiveVO | null>(null)
 
+/**
+ * 游客档案随查询上行：后端 `admission/*` 接口免登录，但仍需档案参与选科过滤与
+ * 安全系数计算。游客档案只存在浏览器（localStorage），故查询时一并带上，
+ * 由后端 GuestArchiveResolver 组装成临时档案（不落库）。
+ * 已登录用户走服务端档案，无需传（传了后端也以库中档案为准）。
+ */
+const guestArchiveParams = computed(() => {
+  if (isLoggedIn() || !archive.value) return {}
+  const a = archive.value
+  return {
+    gaokaoProvince: a.gaokaoProvince,
+    gaokaoYear: a.gaokaoYear,
+    score: a.score,
+    rank: a.rank,
+    subjectType: a.subjectType,
+    secondSubjectType: a.secondSubjectType,
+    thirdSubjectType: a.thirdSubjectType,
+    batchLineScore: a.batchLineScore,
+  }
+})
+
 // 搜索条件
 const searchForm = reactive({
   universityName: '',
@@ -91,6 +112,22 @@ const isNormal = computed(() => userStore.userInfo?.memberType === 'normal')
 // 档位字典（搏/冲/稳/保/垫）+ 推荐上限
 const levelDict = ref<SafetyLevelDictVO[]>([])
 
+/**
+ * 游客兜底档位字典：`/wish-plan/level-dict` 整类挂 @RequireLogin（会员权益上限），
+ * 游客调用必然 401。这里用本地五档配置兜底，保证「冲稳保垫」图例照常展示
+ * （limit=0 表示游客不做档位数量限制）。
+ */
+const GUEST_LEVEL_DICT: SafetyLevelDictVO[] = safetyLevelOptions.map((o) => ({
+  code: o.short,
+  name: o.name,
+  nameShort: o.short,
+  minCoefficient: o.min,
+  maxCoefficient: o.max,
+  color: o.color,
+  description: `${o.name}（安全系数 ${o.rangeText}）`,
+  limit: 0,
+}))
+
 // 档位简写 -> countByLevel 的 key
 const LEVEL_KEY_MAP: Record<string, 'reachHigh' | 'reach' | 'match' | 'safe' | 'floor'> = {
   '搏': 'reachHigh',
@@ -106,13 +143,18 @@ function countForLevel(levelShort: string): number {
   return selectionStore.countByLevel[key] || 0
 }
 
-// 拉取档位字典（含推荐上限），失败静默降级
+// 拉取档位字典（含推荐上限）；游客用本地兜底字典，失败静默降级
 async function fetchLevelDict() {
+  if (!isLoggedIn()) {
+    levelDict.value = GUEST_LEVEL_DICT
+    return
+  }
   try {
     const res = await getLevelDict()
     levelDict.value = res.data.data || []
   } catch {
     // 图例加载失败不影响专业选择
+    levelDict.value = GUEST_LEVEL_DICT
   }
 }
 
@@ -168,7 +210,20 @@ async function loadArchive() {
 
 // 档案保存成功（吸附条弹窗）：重新加载档案，内部会按新档案重查专业组
 function onArchiveSaved() {
+  archiveMissingPrompted = false
   loadArchive()
+}
+
+/**
+ * 后端返回「档案不存在」(1010) 时只提示一次并直接打开档案弹窗。
+ * 原实现每次都 `ElMessage.error`，查询/翻页时会连续弹提示（"一直在弹"）。
+ */
+let archiveMissingPrompted = false
+function promptArchiveOnce(msg: string) {
+  if (archiveMissingPrompted) return
+  archiveMissingPrompted = true
+  ElMessage.warning(msg || '请先填写高考档案')
+  archiveBarRef.value?.openDialog()
 }
 
 // 加载专业组
@@ -188,6 +243,7 @@ async function loadGroups() {
       maxSafetyLevel: active?.max,
       page: pagination.page,
       size: pagination.size,
+      ...guestArchiveParams.value,
     })
     const data = res.data.data
     groups.value = data.records
@@ -195,7 +251,13 @@ async function loadGroups() {
     // 并行检查约束
     checkAllGroupConstraints()
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载专业组失败')
+    const msg = e?.message || '加载专业组失败'
+    // 档案缺失（1010）：提示一次 + 直接打开档案弹窗，避免每次查询都弹提示
+    if (msg.includes('档案')) {
+      promptArchiveOnce(msg)
+    } else {
+      ElMessage.error(msg)
+    }
   } finally {
     loading.value = false
   }
@@ -245,7 +307,12 @@ async function toggleExpand(groupId: string) {
   expandedGroupId.value = groupId
   majorLoading.value = true
   try {
-    const res = await getMajorPage({ groupId, page: 1, size: 100 })
+    const res = await getMajorPage({
+      groupId,
+      page: 1,
+      size: 100,
+      ...guestArchiveParams.value,
+    })
     majors.value = res.data.data.records
   } catch (e: any) {
     ElMessage.error(e?.message || '加载专业明细失败')
@@ -369,8 +436,10 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-surface-bg">
-    <!-- 档案吸附条：与 gaokao 首页共享组件；本页向下滚动时抽屉式收起，回顶展开 -->
-    <ArchiveBar ref="archiveBarRef" collapsible @saved="onArchiveSaved" />
+    <!-- 档案吸附条：与 gaokao 首页共享组件；本页向下滚动时抽屉式收起，回顶展开。
+         province-dialog：省份按钮改为「点击打开档案弹窗」——本页专业组按档案省份过滤，
+         直接切省份不会刷新列表，改走弹窗保存后由 onArchiveSaved 重查，列表随之更新 -->
+    <ArchiveBar ref="archiveBarRef" collapsible province-dialog @saved="onArchiveSaved" />
 
     <main class="flex-1 container mx-auto px-6 py-8 max-w-7xl">
       <!-- 顶部操作栏 -->

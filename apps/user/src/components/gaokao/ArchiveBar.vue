@@ -16,6 +16,7 @@ import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import ProvincePicker from './ProvincePicker.vue'
 import ArchiveDialog from './ArchiveDialog.vue'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
+import { useProvinceLock } from '@/composables/useProvinceLock'
 
 // ===== 中部页面目录 =====
 interface BarNavItem {
@@ -30,14 +31,18 @@ interface BarNavItem {
 // extraItems：追加到目录最左侧的扩展项（如「高中资料」），不传则目录保持原样；
 // identityOptions/identity：右侧身份下拉（高一高二高三等），受控 + emit('identity-change')，
 // 不传 identityOptions 则不渲染该控件（Groups 等复用方行为完全不变）。
+// provinceDialog=true：省份按钮不再弹出省份面板，改为「点击打开档案弹窗」——
+// 用于专业组 / 资讯等「列表按省份过滤」的页面：直接切省份不会刷新列表，
+// 走档案弹窗保存后由页面重新加载档案并重查，省份按钮随之自动更新。
 const props = withDefaults(
   defineProps<{
     collapsible?: boolean
     extraItems?: BarNavItem[]
     identityOptions?: string[]
     identity?: string
+    provinceDialog?: boolean
   }>(),
-  { collapsible: false },
+  { collapsible: false, provinceDialog: false },
 )
 
 const route = useRoute()
@@ -54,6 +59,9 @@ const emit = defineEmits<{
 
 const displayForm = ref<GaokaoArchiveVO | null>(null)
 const dialogVisible = ref(false)
+
+// 省份锁定（登录用户保存过档案后不可再改；游客永不锁定）
+const { provinceLocked } = useProvinceLock()
 
 // 吸附偏移：动态测量导航栏实际高度，避免写死（导航内容高度随断点变化）
 const stickyTop = ref(64)
@@ -136,8 +144,13 @@ const archiveProvince = computed(() => displayForm.value?.gaokaoProvince || '北
  * 省份切换：只改省份这一个字段并持久化。
  * - 已有完整档案（有分数）：登录调 saveArchive 入库（仅省份不同）/ 游客写 localStorage；
  * - 尚无完整档案：仅更新本地展示，游客另存 localStorage；登录态不调接口（半成品档案会被后端校验拦截）。
+ * - 省份已锁定（登录用户已保存过档案）：直接拦截，提示不可修改。
  */
 async function onProvinceChange(val: string) {
+  if (provinceLocked.value) {
+    ElMessage.warning('高考省份已保存，不可再修改')
+    return
+  }
   const prev = displayForm.value
   const merged = {
     ...(prev || {}),
@@ -150,7 +163,13 @@ async function onProvinceChange(val: string) {
   const hasFullArchive = !!prev?.score
   if (hasFullArchive) {
     try {
-      await saveArchiveSmart({ ...merged })
+      const res = await saveArchiveSmart({ ...merged })
+      if (res.canceled) {
+        // 用户在「省份确认」弹框点了取消 → 回滚展示
+        displayForm.value = prev
+        emit('archive-change', prev)
+        return
+      }
     } catch (e: any) {
       ElMessage.error(e?.message || '省份保存失败')
       displayForm.value = prev
@@ -270,7 +289,25 @@ function onWinScroll(e?: Event) {
 
       <!-- 右侧信息：省份选择器在前，年份/分数/科目点击打开档案弹窗 -->
       <div class="archive-bar-info">
-        <ProvincePicker :model-value="archiveProvince" variant="bar" @update:model-value="onProvinceChange" />
+        <!-- 省份：模式 A = 面板直接切换；模式 B（provinceDialog）= 点击打开档案弹窗 -->
+        <button
+          v-if="provinceDialog"
+          type="button"
+          class="pp-trigger pp-trigger-bar"
+          :class="{ 'is-disabled': provinceLocked }"
+          :disabled="provinceLocked"
+          :title="provinceLocked ? '省份已确认，不可修改' : '点击打开档案弹窗修改省份'"
+          @click="openDialog()"
+        >
+          {{ archiveProvince }}
+        </button>
+        <ProvincePicker
+          v-else
+          :model-value="archiveProvince"
+          variant="bar"
+          :disabled="provinceLocked"
+          @update:model-value="onProvinceChange"
+        />
         <!-- 身份切换（高一/高二/高三）：切换后由父组件联动「高中资料」列表查询 -->
         <div v-if="identityOptions && identityOptions.length" class="archive-identity">
           <el-select

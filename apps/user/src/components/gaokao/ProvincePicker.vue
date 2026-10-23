@@ -14,8 +14,13 @@ const props = withDefaults(
     placeholder?: string
     /** 面板最前面是否加「全国」格（值为空串）；搜索框场景用 */
     national?: boolean
+    /**
+     * 禁用（不可切换）：登录用户保存档案后省份锁定时置 true。
+     * 禁用态按钮置灰、hover 提示「省份已确认，不可修改」。
+     */
+    disabled?: boolean
   }>(),
-  { variant: 'bar', placeholder: '北京', national: false },
+  { variant: 'bar', placeholder: '北京', national: false, disabled: false },
 )
 
 const emit = defineEmits<{
@@ -32,6 +37,7 @@ const cells = computed(() =>
 )
 
 function pick(val: string) {
+  if (props.disabled) return
   emit('update:modelValue', val)
   // 选完收起面板
   popoverRef.value?.hide()
@@ -45,14 +51,16 @@ function pick(val: string) {
     trigger="hover"
     :hide-after="120"
     :width="476"
+    :disabled="disabled"
     popper-class="province-popper"
   >
     <template #reference>
       <button
         type="button"
         class="pp-trigger"
-        :class="variant === 'form' ? 'pp-trigger-form' : 'pp-trigger-bar'"
-        :title="`当前省份：${display}`"
+        :class="[variant === 'form' ? 'pp-trigger-form' : 'pp-trigger-bar', { 'is-disabled': disabled }]"
+        :disabled="disabled"
+        :title="disabled ? '省份已确认，不可修改' : `当前省份：${display}`"
       >
         <svg v-if="variant === 'form'" class="pp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
@@ -136,6 +144,15 @@ function pick(val: string) {
   background: var(--sem-blue-bg);
   box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.45) inset;
   color: var(--sem-blue);
+}
+
+/* ===== 禁用态（省份已锁定）：置灰 + 禁止 hover 反馈 ===== */
+.pp-trigger.is-disabled,
+.pp-trigger.is-disabled:hover {
+  background: #f1f5f9;
+  box-shadow: 0 0 0 1px var(--neutral-border) inset;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 /* ===== 6 列省份网格面板 ===== */

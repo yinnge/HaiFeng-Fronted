@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import { confirmLogin } from '@/utils/loginGuide'
+import { HIGH_IDENTITIES } from '@/composables/useGaokaoModuleNav'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -27,7 +28,7 @@ const routes: RouteRecordRaw[] = [
     path: '/high',
     name: 'HighSchoolFiles',
     component: () => import('@/views/fileload/FileLoadPage.vue'),
-    props: { audience: 'high', title: '高中专栏' },
+    props: { audience: 'high', title: '高中专栏', identityOptions: HIGH_IDENTITIES },
     meta: { title: '高中专栏' },
   },
   {
@@ -117,10 +118,22 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '专业组查询' },
   },
   {
+    path: '/gaokao/special',
+    name: 'GaokaoSpecialChannels',
+    component: () => import('@/views/gaokao/SpecialChannels.vue'),
+    meta: { title: '特殊通道' },
+  },
+  {
     path: '/gaokao/channel/:id',
     name: 'GaokaoChannelUniversities',
     component: () => import('@/views/gaokao/ChannelUniversities.vue'),
     meta: { title: '通道大学', requiresAuth: true },
+  },
+  {
+    path: '/gaokao/strong-base/:id',
+    name: 'GaokaoStrongBaseDetail',
+    component: () => import('@/views/gaokao/StrongBaseDetail.vue'),
+    meta: { title: '强基数据详情', requiresAuth: true },
   },
   {
     path: '/gaokao/articles',
@@ -459,10 +472,9 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '申博信息' },
   },
   {
+    // 旧「特殊招生通道」页已并入高考模块：保留重定向，避免旧链接 404
     path: '/special',
-    name: 'SpecialChannel',
-    component: () => import('@/views/special/index.vue'),
-    meta: { title: '特殊招生通道' },
+    redirect: '/gaokao/special',
   },
   {
     path: '/english',
@@ -472,15 +484,11 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/special/channel/:id',
-    name: 'SpecialChannelDetail',
-    component: () => import('@/views/special/ChannelDetail.vue'),
-    meta: { title: '通道详情', requiresAuth: true },
+    redirect: (to) => ({ path: `/gaokao/channel/${to.params.id}` }),
   },
   {
     path: '/special/strong-base/:id',
-    name: 'SpecialStrongBaseDetail',
-    component: () => import('@/views/special/StrongBaseDetail.vue'),
-    meta: { title: '强基数据详情', requiresAuth: true },
+    redirect: (to) => ({ path: `/gaokao/strong-base/${to.params.id}` }),
   },
   {
     path: '/:pathMatch(.*)*',

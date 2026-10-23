@@ -4,8 +4,6 @@ import NoticeTag from './NoticeTag.vue'
 
 defineProps<{
   item: AnnouncementListVO
-  isNew?: boolean
-  featured?: boolean
 }>()
 
 defineEmits<{
@@ -20,27 +18,10 @@ function formatDate(value?: string) {
 </script>
 
 <template>
-  <button
-    type="button"
-    class="notice-item"
-    :class="{ 'notice-item--featured': featured }"
-    @click="$emit('select', item.id)"
-  >
-    <template v-if="featured">
-      <span class="notice-item__eyebrow">
-        <span v-if="isNew" class="notice-new">NEW</span>
-        <NoticeTag :tag="item.tag" />
-        <span class="notice-date">{{ formatDate(item.updatedAt) }}</span>
-      </span>
-      <span class="notice-item__title">{{ item.title }}</span>
-    </template>
-
-    <template v-else>
-      <span v-if="isNew" class="notice-new">NEW</span>
-      <NoticeTag :tag="item.tag" />
-      <span class="notice-title">{{ item.title }}</span>
-      <span class="notice-date">{{ formatDate(item.updatedAt) }}</span>
-    </template>
+  <button type="button" class="notice-item" @click="$emit('select', item.id)">
+    <NoticeTag :tag="item.tag" />
+    <span class="notice-title">{{ item.title }}</span>
+    <span class="notice-date">{{ formatDate(item.updatedAt) }}</span>
   </button>
 </template>
 
@@ -64,59 +45,6 @@ function formatDate(value?: string) {
 
 .notice-item:hover {
   background: #f8fafc;
-}
-
-.notice-item--featured {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
-  min-height: 5.5rem;
-  padding: 0.8rem 0.85rem;
-  background: #fff7ed;
-  border: 1px solid rgba(249, 115, 22, 0.12);
-}
-
-.notice-item--featured:hover {
-  background: #fff4e8;
-}
-
-.notice-item__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.notice-item__eyebrow .notice-date {
-  margin-left: auto;
-}
-
-.notice-item__title {
-  display: -webkit-box;
-  overflow: hidden;
-  color: #1e293b;
-  font-size: 0.88rem;
-  font-weight: 700;
-  line-height: 1.5;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  transition: color 0.2s ease;
-}
-
-.notice-item--featured:hover .notice-item__title {
-  color: #ea580c;
-}
-
-.notice-new {
-  flex-shrink: 0;
-  padding: 0.08rem 0.32rem;
-  border-radius: 0.25rem;
-  background: #fff1f2;
-  color: #e11d48;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.5;
 }
 
 .notice-title {

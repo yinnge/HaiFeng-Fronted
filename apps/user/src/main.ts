@@ -22,19 +22,24 @@ setSessionExpiredHandler(() => {
   // 立即清理 store 中的 token，使路由守卫 isLoggedIn() 立刻失效，
   // 避免「token 已清但 store 仍为脏值」导致反复 401 闪屏、点按钮不跳转
   useUserStore().logout()
-  ElMessageBox.alert('登录已过期，请重新登录', '提示', {
+  ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
     confirmButtonText: '重新登录',
+    cancelButtonText: '取消',
     type: 'warning',
-    showClose: false,
+    showClose: true,
     closeOnClickModal: false,
-    closeOnPressEscape: false,
-  }).finally(() => {
-    // 改用 SPA 内跳转（router.push）替代 window.location.href 整页刷新，
-    // 避免「长时间 idle 后点路由 → 整个页面白屏刷新」的突兀感；
-    // 带上 redirect 让重新登录后平滑回到触发失效前的那个路由。
-    const redirect = router.currentRoute.value.fullPath
-    router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
+    closeOnPressEscape: true,
   })
+    .then(() => {
+      // 改用 SPA 内跳转（router.push）替代 window.location.href 整页刷新，
+      // 避免「长时间 idle 后点路由 → 整个页面白屏刷新」的突兀感；
+      // 带上 redirect 让重新登录后平滑回到触发失效前的那个路由。
+      const redirect = router.currentRoute.value.fullPath
+      router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
+    })
+    .catch(() => {
+      // 取消 / 关闭弹窗：留在当前页，按游客状态继续浏览
+    })
 })
 
 // 标签页重新聚焦 / 从后台切回时刷新会员信息，使 admin 升级 VIP 后 UI（徽标/提示）实时更新。

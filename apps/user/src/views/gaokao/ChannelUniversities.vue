@@ -137,7 +137,7 @@ function goUnivDetail(universityId: string) {
 }
 
 function goBack() {
-  router.push('/gaokao')
+  router.push('/gaokao/special')
 }
 
 onMounted(async () => {

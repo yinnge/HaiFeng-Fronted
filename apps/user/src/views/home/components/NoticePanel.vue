@@ -1,27 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AnnouncementListVO } from '@/types/home'
-import NoticeRow from './NoticeRow.vue'
+import type { HomeArticleNewsVO } from '@/types/home'
+import ArticleRow from './ArticleRow.vue'
 
 const props = defineProps<{
-  announcements: AnnouncementListVO[]
+  articles: HomeArticleNewsVO[]
   loading?: boolean
 }>()
 
 defineEmits<{
-  select: [id: string]
+  select: [id: string | number]
   'view-all': []
 }>()
 
-const items = computed(() => props.announcements.slice(0, 4))
-const featured = computed(() => items.value[0] ?? null)
-const rest = computed(() => items.value.slice(1))
+const items = computed(() => props.articles.slice(0, 4))
 </script>
 
 <template>
   <aside class="notice-panel">
     <div class="notice-panel__header">
-      <h3 class="notice-panel__title">规划院公告</h3>
+      <h3 class="notice-panel__title">规划院资讯</h3>
       <button type="button" class="notice-panel__more" @click="$emit('view-all')">
         查看全部
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -31,23 +29,14 @@ const rest = computed(() => items.value.slice(1))
     </div>
 
     <div v-if="loading" class="notice-skeleton" aria-hidden="true">
-      <div class="notice-skeleton__featured"></div>
-      <div v-for="n in 3" :key="n" class="notice-skeleton__row"></div>
+      <div v-for="n in 4" :key="n" class="notice-skeleton__row"></div>
     </div>
 
     <template v-else>
       <div class="notice-panel__body">
-        <NoticeRow
-          v-if="featured"
-          :item="featured"
-          :is-new="true"
-          featured
-          @select="$emit('select', $event)"
-        />
-
-        <ul v-if="rest.length" class="notice-list">
-          <li v-for="(item, index) in rest" :key="item.id" class="notice-list__item">
-            <NoticeRow :item="item" :is-new="index === 0" @select="$emit('select', $event)" />
+        <ul v-if="items.length" class="notice-list">
+          <li v-for="item in items" :key="item.id" class="notice-list__item">
+            <ArticleRow :item="item" @select="$emit('select', $event)" />
           </li>
         </ul>
 
@@ -58,7 +47,7 @@ const rest = computed(() => items.value.slice(1))
               <path d="M8 10h8M8 14h5" />
             </svg>
           </span>
-          <span class="notice-empty__title">暂无公告</span>
+          <span class="notice-empty__title">暂无资讯</span>
           <span class="notice-empty__sub">可以先从院校库或专业库开始探索</span>
         </div>
 
@@ -70,7 +59,7 @@ const rest = computed(() => items.value.slice(1))
             </svg>
           </span>
           <span class="notice-panel__source-text">
-            <span class="notice-panel__source-title">公告实时同步</span>
+            <span class="notice-panel__source-title">资讯实时同步</span>
             <span class="notice-panel__source-sub">教育考试院 · 阳光高考 · 高校研招网</span>
           </span>
         </div>
@@ -78,7 +67,7 @@ const rest = computed(() => items.value.slice(1))
 
       <div class="notice-quick">
         <router-link to="/university" class="notice-quick__card">
-          <span class="notice-quick__icon" aria-hidden="true">
+          <span class="notice-quick__icon notice-quick__icon--university" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 21h18" />
               <path d="M5 21V8l7-5 7 5v13" />
@@ -98,7 +87,7 @@ const rest = computed(() => items.value.slice(1))
         </router-link>
 
         <router-link to="/major" class="notice-quick__card">
-          <span class="notice-quick__icon" aria-hidden="true">
+          <span class="notice-quick__icon notice-quick__icon--major" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" />
               <path d="M4 5.5v15" />
@@ -120,10 +109,10 @@ const rest = computed(() => items.value.slice(1))
       <div v-if="items.length" class="notice-panel__footer">
         <span class="notice-panel__sync">
           <span class="notice-panel__dot" aria-hidden="true"></span>
-          每日 09:00 更新
+          全部资讯
         </span>
         <button type="button" class="notice-panel__footer-link" @click="$emit('view-all')">
-          共 {{ announcements.length }} 条
+          共 {{ articles.length }} 条
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 10h12M11 5l5 5-5 5" />
           </svg>
@@ -320,6 +309,15 @@ const rest = computed(() => items.value.slice(1))
   height: 1rem;
 }
 
+/* 院校库 = 蓝 / 专业库 = 红 */
+.notice-quick__icon--university {
+  color: #2563eb;
+}
+
+.notice-quick__icon--major {
+  color: #dc2626;
+}
+
 .notice-quick__text {
   display: flex;
   flex-direction: column;
@@ -460,14 +458,6 @@ const rest = computed(() => items.value.slice(1))
   padding: 1rem 1.25rem;
 }
 
-.notice-skeleton__featured {
-  height: 5.5rem;
-  border-radius: 0.75rem;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
-  background-size: 400% 100%;
-  animation: notice-shimmer 1.4s ease infinite;
-}
-
 .notice-skeleton__row {
   height: 2.4rem;
   border-radius: 0.625rem;
@@ -492,7 +482,6 @@ const rest = computed(() => items.value.slice(1))
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .notice-skeleton__featured,
   .notice-skeleton__row {
     animation: none;
   }

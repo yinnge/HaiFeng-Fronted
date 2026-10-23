@@ -315,8 +315,10 @@ export function useArchiveForm() {
     saving.value = true
     try {
       buildSubjectTypes()
-      const { toServer } = await saveArchiveSmart({ ...form })
-      ElMessage.success(toServer ? '档案已保存' : '档案已本地保存（登录后自动同步）')
+      const res = await saveArchiveSmart({ ...form })
+      // 登录用户首次保存时会弹「省份确认之后不可再更改」确认框，取消则中止
+      if (res.canceled) return false
+      ElMessage.success(res.toServer ? '档案已保存' : '档案已本地保存（登录后自动同步）')
       return true
     } catch (e: any) {
       ElMessage.error(e?.message || '保存档案失败')

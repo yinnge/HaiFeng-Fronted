@@ -4,7 +4,7 @@
 import { ref } from 'vue'
 
 const HIGH_IDENTITY_KEY = 'haifeng_high_identity'
-export const HIGH_IDENTITIES = ['高三', '高二', '高一']
+export const HIGH_IDENTITIES = ['高一', '高二', '高三']
 
 // 模块级共享 ref（跨页持久 + 实时同步）
 const highIdentity = ref<string>('高三')

@@ -77,3 +77,15 @@ admin `main.ts` 已注册 `setSessionExpiredHandler`（非可关闭弹窗+重定
 - **坑2（el-input-number 撑爆溢出）**：el-input-number 是 inline-flex，内层 `.el-input`/`.el-input__wrapper` 默认按内容 sizing，input 固有宽(~20字符)把 wrapper 撑到 230px+ 溢出外层盒子（橙色边框画在 wrapper 上，视觉上就是"框超宽"）。必须显式 `.el-input{width:100%;min-width:0}` + `.el-input__wrapper{width:100%;box-sizing:border-box}`。另：`.gk-number` 本身就是 el-input-number 根元素，`.gk-number .el-input-number` 这类后代选择器永远匹配不到（曾致宽度规则整轮失效）。
 - **容量参考**：8 位数位次(50000000) 16px 字号需输入区 ≥88px；缩框时用 playwright 验 scrollWidth≤clientWidth。
 - **方法教训**：EP 控件内部布局问题连续盲改 CSS 三轮未中，最后用 playwright-cli 连 dev server 读真实 DOM+计算样式一次定位。**以后 EP 内部布局问题直接测 DOM，不盲改。**（坑：playwright-cli 会话不跨 bash 命令保持，open+eval+screenshot 须同一条命令链式执行；QuickForm 在 /gaokao 非 /；弹窗触发点=吸顶条「点击填写…」文字节点。）
+
+## ★ 规则：游客（未登录）档案与专业组查询链路（2026-10-23 定稿）
+- **产品约定**：不注册也可填高考档案（仅 localStorage，key `haifeng:guest-gaokao-archive`）并查询专业组。
+- **前端**：`Groups.vue` 用 `guestArchiveParams`（province/year/score/rank/三科/batchLineScore）随 `getGroupPage`/`getMajorPage` 上行；已登录不传，后端以库中档案为权威。类型 `GuestArchiveParams` 在 `api/gaokao/index.ts`。
+- **后端**：`admission/group/page`、`admission/major/page` 免登录，档案解析统一走 `GuestArchiveResolver`（登录+库有档案→用库；否则按请求参数建**临时** MemberGaokao 不落库；都无→1010）。DTO 统一继承 `GuestArchiveQueryDTO`。**注意：控制器上 `@RequireLogin` 属于 Aspect 层面，加白名单无效**，`/wish-plan/level-dict` 整类需登录 → 游客用前端兜底档位字典。
+- **`request.ts` 铁律**：401 只有在「有 token」时才算会话过期；无 access 且无 refresh token（游客）一律直接 reject 原始 msg，禁止弹「登录已过期」。新增接口时不要绕过此判断。
+
+## ★ 规则：高考省份锁定（2026-10-23）
+- 游客（未登录）：导航栏 + 档案表单的省份随便切，档案只存 localStorage。
+- 登录用户：**第一次保存档案**时弹框「省份确认之后不可再更改，是否继续？」；确认入库后省份锁定（导航栏 ProvincePicker 与 ArchiveDialog/ArchiveQuickForm 的高考省份全部 disabled），后端 `saveArchive` 也会拒绝省份变更。
+- 锁定状态单例：`composables/useProvinceLock.ts`（`provinceLocked`），由 `utils/gaokaoArchive.ts` 的 `loadArchiveSmart`/`saveArchiveSmart` 同步；判断口径：**已登录 + 服务端已有档案**（含游客档案迁移入库后）。
+- 新增/改动档案保存时注意：`saveArchiveSmart` 返回值已改为 `{ toServer, canceled }`，取消确认框时 `canceled=true` 不算保存成功。

@@ -15,7 +15,7 @@ export const searchArticle = (moduleName: string | null, keyword: string, limit 
 }
 
 /**
- * 搜索大学
+ * 搜索大学（免登录）
  */
 export const searchUniversity = (keyword: string, limit = 10) => {
   return request.get<R<SearchItem[]>>(`${PREFIX}/university`, {
@@ -24,7 +24,7 @@ export const searchUniversity = (keyword: string, limit = 10) => {
 }
 
 /**
- * 搜索城市
+ * 搜索城市（免登录）
  */
 export const searchCity = (keyword: string, limit = 10) => {
   return request.get<R<SearchItem[]>>(`${PREFIX}/city`, {
@@ -33,7 +33,7 @@ export const searchCity = (keyword: string, limit = 10) => {
 }
 
 /**
- * 搜索专业
+ * 搜索专业（免登录）
  */
 export const searchMajor = (keyword: string, limit = 10) => {
   return request.get<R<SearchItem[]>>(`${PREFIX}/major`, {

@@ -67,6 +67,13 @@ function onPageChange(p: number) {
   fetchList()
 }
 
+/** 档案弹窗保存成功（省份等可能已变）→ 重新加载档案并按新省份重查列表 */
+async function onArchiveSaved() {
+  page.value = 1
+  await fetchArchive()
+  await fetchList()
+}
+
 onMounted(async () => {
   await fetchArchive()
   await fetchList()
@@ -75,12 +82,15 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-surface-bg">
-    <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一 -->
+    <!-- 档案吸附条：与 /gaokao 完全一致的模块导航（含「高中资料」+ 高中身份），保证各处小导航栏统一。
+         province-dialog：资讯按档案省份过滤，省份按钮改为点击打开档案弹窗，保存后自动重查列表 -->
     <ArchiveBar
       :extra-items="gaokaoExtraItems"
       :identity-options="HIGH_IDENTITIES"
       :identity="highIdentity"
+      province-dialog
       @identity-change="onHighIdentityChange"
+      @saved="onArchiveSaved"
     />
     <main class="flex-1">
       <div class="mx-auto max-w-5xl px-6 py-8">

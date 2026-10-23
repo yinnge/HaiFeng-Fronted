@@ -60,7 +60,7 @@ export const navItems: NavItem[] = [
     inactiveQuery: { mod: 'high' },
     subItems: [
       { label: '高考报志愿', route: '/gaokao' },
-      { label: '特殊通道', route: '/special' },
+      { label: '特殊通道', route: '/gaokao/special' },
       // 带 # 锚点：跳转 /gaokao 并滚动到页面底部「直通考院」区（AppHeader/MobileNavDrawer 的 handleSubClick 经 pushNavItem 处理）
       { label: '直通院校', route: '/gaokao#exams' },
     ],

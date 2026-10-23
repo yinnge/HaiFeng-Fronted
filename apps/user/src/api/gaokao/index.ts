@@ -195,6 +195,21 @@ export const checkGroupConstraint = (groupId: string) =>
 
 // ========== 录取查询接口 ==========
 
+/**
+ * 游客档案参数：`admission/*` 接口免登录，但后端仍需高考档案做选科过滤与安全系数计算。
+ * 未登录用户把浏览器本地档案随查询上行，后端组装成临时档案（不落库）。
+ */
+export interface GuestArchiveParams {
+  gaokaoProvince?: string
+  gaokaoYear?: number
+  score?: number
+  rank?: number
+  subjectType?: string
+  secondSubjectType?: string
+  thirdSubjectType?: string
+  batchLineScore?: number
+}
+
 export const getGroupPage = (params: {
   batch: string
   universityName?: string
@@ -206,7 +221,7 @@ export const getGroupPage = (params: {
   maxSafetyLevel?: number
   page?: number
   size?: number
-}) => request.get<R<PageResult<AdmissionGroupVO>>>(`${ADMISSION_PREFIX}/group/page`, { params })
+} & GuestArchiveParams) => request.get<R<PageResult<AdmissionGroupVO>>>(`${ADMISSION_PREFIX}/group/page`, { params })
 
 export const getMajorPage = (params: {
   groupId: string
@@ -214,7 +229,7 @@ export const getMajorPage = (params: {
   majorCode?: string
   page?: number
   size?: number
-}) => request.get<R<PageResult<AdmissionMajorVO>>>(`${ADMISSION_PREFIX}/major/page`, { params })
+} & GuestArchiveParams) => request.get<R<PageResult<AdmissionMajorVO>>>(`${ADMISSION_PREFIX}/major/page`, { params })
 
 // 批量校验专业组是否仍存在于目录，返回仍有效的组 id 列表（已删除/禁用的不会返回）
 export const checkGroupsExist = (ids: string[]) =>
