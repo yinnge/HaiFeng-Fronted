@@ -1,12 +1,8 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Motion, useReducedMotion } from 'motion-v'
-import { getChannelList } from '@/api/special'
 import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 import type { GaokaoArchiveVO } from '@/api/gaokao'
-import type { SpecialChannelListVO } from '@/types/special'
 import { scrollToHash } from '@/utils/navAnchor'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
 import ArchiveQuickForm from '@/components/gaokao/ArchiveQuickForm.vue'
@@ -27,9 +23,6 @@ const activeTab = computed(() => (route.query.tab as string) || 'volunteer')
 /** ===== 高中身份（高一/高二/高三，默认高三）：驱动内嵌「高中资料」的列表查询 =====
  *  由共享 composable 提供（模块级共享 ref，跨子页实时同步 + localStorage 持久化）。 */
 const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } = useGaokaoModuleNav()
-
-const loading = ref(false)
-const channels = ref<SpecialChannelListVO[]>([])
 
 // ===== 高考档案：展示/编辑统一由共享吸附条组件（ArchiveBar）负责，
 // 本页只接收事件更新展示数据并联动资讯区 =====
@@ -142,70 +135,9 @@ function goArticles() {
   router.push('/gaokao/articles')
 }
 
-// 尊重系统「减弱动态效果」设置：开启时区块直接静态呈现，不做浮现动画
-const reduceMotion = useReducedMotion()
-const revealInitial = computed(() =>
-  reduceMotion.value ? undefined : { opacity: 0, y: 24 },
-)
-const revealIn = computed(() =>
-  reduceMotion.value ? undefined : { opacity: 1, y: 0 },
-)
-
-// 其余通道代码（按展示顺序）
-// 注意：统招不在此列表内——它是产品固定入口，直接硬编码展示，
-// 不依赖后台是否在 t_special_channel 录入 NORMAL 记录，否则运营没录数据时入口会整个消失
-const channelCodes = ['COMPREHENSIVE', 'STRONG_BASE', 'SPECIAL_PROGRAM', 'ETHNIC_MINORITY', 'JOINT_NATIONAL']
-
-// 内联手绘线稿图标（stroke-width 2，延续全站 SVG 线稿风格）
-interface ChannelGlyph {
-  paths: string[]
-}
-
-const channelIcon: Record<string, ChannelGlyph> = {
-  COMPREHENSIVE: {
-    paths: ['M12 3.6 14.5 8.6l5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 3.6Z'],
-  },
-  STRONG_BASE: {
-    paths: [
-      'M4 21h16',
-      'M6.5 21V9.5m3.5 11.5V9.5m4 11.5V9.5m3.5 11.5V9.5',
-      'M3.5 9.5 12 4.5l8.5 5',
-    ],
-  },
-  SPECIAL_PROGRAM: {
-    paths: [
-      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
-      'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z',
-      'M12 11.6h.01',
-    ],
-  },
-  ETHNIC_MINORITY: {
-    paths: [
-      'M12 4.5l1.8 3.9 3.9 1.8-3.9 1.8-1.8 3.9-1.8-3.9-3.9-1.8 3.9-1.8 1.8-3.9Z',
-      'M18.7 15l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z',
-    ],
-  },
-  JOINT_NATIONAL: {
-    paths: [
-      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
-      'M3.6 9.5h16.8M3.6 14.5h16.8',
-      'M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18',
-    ],
-  },
-  FALLBACK: {
-    paths: [
-      'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
-      'M16 8l-2.3 5.7L8 16l2.3-5.7L16 8Z',
-    ],
-  },
-}
-
-const channelDesc: Record<string, string> = {
-  COMPREHENSIVE: '高考成绩+综合素质评价，多元录取',
-  STRONG_BASE: '聚焦基础学科，培养拔尖创新人才',
-  SPECIAL_PROGRAM: '面向农村和贫困地区考生的专项招生',
-  ETHNIC_MINORITY: '面向少数民族考生的特殊招生',
-  JOINT_NATIONAL: '面向华侨、港澳台学生的联合招生',
+// 特殊通道为低频路径，landing 仅保留单行入口，5 类通道卡片移至 /gaokao/special
+function goSpecialChannels() {
+  router.push('/gaokao/special')
 }
 
 // 直通考院：各省市教育考试院官网（写死动态数据，模板 v-for 渲染）
@@ -250,39 +182,6 @@ const examSites: ExamSite[] = [
   { name: '澳门教育及青年发展局', url: 'https://www.dsej.gov.mo' },
 ]
 
-const displayChannels = computed(() =>
-  channelCodes
-    .map((code) => channels.value.find((c) => c.channelCode === code))
-    .filter((c): c is SpecialChannelListVO => !!c)
-)
-
-async function fetchChannels() {
-  loading.value = true
-  try {
-    const res = await getChannelList({ page: 1, size: 100 })
-    channels.value = res.data.data.records
-  } catch (e: any) {
-    ElMessage.error(e?.message || '获取通道信息失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 通道卡「热门」标签（纯展示）
-function isHot(code: string) {
-  return code === 'COMPREHENSIVE' || code === 'STRONG_BASE'
-}
-
-// 通道卡「需资格」标签（纯展示）
-function isQualified(code: string) {
-  return code === 'SPECIAL_PROGRAM'
-}
-
-// 其余通道：进入通道大学列表
-function goChannel(item: SpecialChannelListVO) {
-  router.push(`/gaokao/channel/${item.id}`)
-}
-
 onMounted(() => {
   void initPage()
   startCarousel()
@@ -296,14 +195,9 @@ onBeforeUnmount(() => {
   stopCarousel()
 })
 
-// 初始化：拉数据 → 等 Vue 把展开的卡片刷进 DOM → 再处理锚点滚动。
-// 关键：fetchChannels 把 loading 置 false 后，DOM 不会立刻更新（异步刷新）。
-// 若不等 nextTick 就去量 #exams 的位置，此时卡片区还是 200px loading 占位，
-// 滚动目标算得太靠上，等卡片撑开后 #exams 被推到页底，滚动就到不了底部。
+// 初始化：等 Vue 完成首屏渲染、页面高度稳定后再处理锚点滚动
 async function initPage() {
-  await Promise.allSettled([fetchChannels()])
   // 资讯由 ArchiveBar 的 archive-change 事件驱动（档案就绪后自动拉取）
-  // 等 DOM 完成刷新（卡片展开、页面高度稳定）再滚动，避免位置偏移
   await nextTick()
   await nextTick()
   // 从导航「直通院校」跳转（/gaokao#exams）：跨页进入时确保滚动到考院区。
@@ -330,11 +224,13 @@ async function initPage() {
     />
 
     <main class="flex-1">
-      <!-- 高中资料：按右上角身份（高一/高二/高三，默认高三）内联查询，不跳新页面 -->
+      <!-- 高中资料：页内「当前身份」平铺按钮独立驱动查询（与右上角档案身份分离）；
+            identityOptions 触发表单内身份筛选行，initialIdentity 取用户档案身份(默认高三) -->
       <FileLoadPage
         v-if="activeTab === 'highfile'"
         audience="high"
-        :stage="highIdentity"
+        :identity-options="HIGH_IDENTITIES"
+        :initial-identity="highIdentity"
         title="高中资料"
       />
       <!-- 高考真题：内联复用 /high 文件列表（原模原样，仅入口位置不同），不跳新页面 -->
@@ -390,58 +286,40 @@ async function initPage() {
             <ArchiveQuickForm :archive="displayForm" @saved="onArchiveSaved" @change="onCardChange" />
           </div>
 
-          <!-- 特殊通道分区：蓝字标题 + 5 卡网格（3+2） -->
+          <!-- 特殊通道：低频路径，仅保留单行入口，5 类通道卡片移至 /gaokao/special -->
           <div class="mt-12 mb-5 flex items-baseline justify-between gap-4">
             <h3 class="border-l-[4px] border-sem-yellow pl-3 text-xl font-bold text-gray-800">特殊通道</h3>
-            <span class="hidden md:block text-sm text-gray-400">综合评价 · 强基计划 · 专项计划 · 民族班 · 全国联招</span>
+            <span class="hidden md:block text-sm text-gray-400">非统招路径 · 仅符合相应资格的考生可报考</span>
           </div>
 
-          <!-- 加载中：与页面卡片同构的骨架屏（替代通用转圈） -->
-          <div v-if="loading" class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
-            <div v-for="i in 6" :key="i" class="rounded-2xl bg-white p-6 shadow-hf border border-surface-border animate-pulse">
-              <div class="mb-4 h-12 w-12 rounded-xl bg-gray-200/80"></div>
-              <div class="h-4 w-24 rounded bg-gray-200/80"></div>
-              <div class="mt-3 mb-2 flex gap-1.5">
-                <div class="h-5 w-12 rounded-full bg-gray-100"></div>
-              </div>
-              <div class="h-3 w-full rounded bg-gray-100"></div>
-              <div class="mt-2 h-3 w-3/4 rounded bg-gray-100"></div>
-            </div>
-          </div>
-          <div v-else class="grid grid-cols-1 gap-4 min-h-[200px] sm:grid-cols-2 md:grid-cols-3">
-            <Motion
-              v-for="(item, i) in displayChannels"
-              :key="item.channelCode"
-              :initial="revealInitial"
-              :while-in-view="revealIn"
-              :in-view-options="{ once: true }"
-              :transition="{ duration: 0.5, delay: 0.15 + i * 0.06 }"
-              class="h-full"
-            >
-              <div
-                class="group flex h-full flex-col rounded-2xl bg-white p-6 shadow-hf border border-surface-border transition-all duration-300 hover:-translate-y-0.5 hover:border-sem-yellow/40 hover:shadow-hf-hover active:scale-[0.98] cursor-pointer"
-                @click="goChannel(item)"
-              >
-                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sem-yellow-bg text-sem-yellow-deep transition-colors group-hover:bg-sem-yellow-soft">
-                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path v-for="d in (channelIcon[item.channelCode] || channelIcon.FALLBACK).paths" :key="d" :d="d" />
-                  </svg>
-                </div>
-                <h4 class="text-[17px] font-bold text-gray-800">{{ item.channelName }}</h4>
-                <div class="mb-2 flex min-h-[24px] flex-wrap gap-1.5">
-                  <span v-if="isHot(item.channelCode)" class="inline-flex items-center rounded-md bg-sem-red-bg px-2 py-0.5 text-[11px] font-semibold text-sem-red border border-sem-red/20">热门</span>
-                  <span v-if="isQualified(item.channelCode)" class="inline-flex items-center rounded-md bg-sem-blue-bg px-2 py-0.5 text-[11px] font-semibold text-sem-blue border border-sem-blue/20">需资格</span>
-                </div>
-                <p class="flex-1 text-sm leading-relaxed text-gray-500">{{ channelDesc[item.channelCode] || item.subtitle }}</p>
-                <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sem-blue">
-                  进入通道
-                  <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M6.5 3.5 11 8l-4.5 4.5" />
-                  </svg>
-                </span>
-              </div>
-            </Motion>
-          </div>
+          <button
+            type="button"
+            class="group flex w-full items-center gap-4 rounded-2xl border border-surface-border bg-white px-5 py-4 text-left shadow-hf transition-all duration-300 hover:-translate-y-0.5 hover:border-sem-yellow/40 hover:shadow-hf-hover active:scale-[0.995]"
+            @click="goSpecialChannels"
+          >
+            <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sem-yellow-bg text-[#D97706]">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M16 8l-2.3 5.7L8 16l2.3-5.7L16 8Z" />
+              </svg>
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15px] font-bold text-gray-800">特殊招生通道</span>
+              <span class="mt-1.5 flex flex-wrap gap-1.5">
+                <span class="rounded-md bg-sem-blue-bg px-1.5 py-0.5 text-[11px] font-semibold text-sem-blue">综合评价</span>
+                <span class="rounded-md bg-sem-yellow-bg px-1.5 py-0.5 text-[11px] font-semibold text-[#D97706]">强基计划</span>
+                <span class="rounded-md bg-sem-green-bg px-1.5 py-0.5 text-[11px] font-semibold text-sem-green">专项计划</span>
+                <span class="rounded-md bg-sem-red-bg px-1.5 py-0.5 text-[11px] font-semibold text-sem-red">民族班</span>
+                <span class="rounded-md bg-[#F1F5F9] px-1.5 py-0.5 text-[11px] font-semibold text-[#475569]">全国联招</span>
+              </span>
+            </span>
+            <span class="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-gray-500 transition-colors group-hover:text-brand-orange">
+              <span class="hidden sm:inline">查看全部</span>
+              <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5 11 8l-4.5 4.5" />
+              </svg>
+            </span>
+          </button>
 
           <!-- 热点资讯：按档案省份推送，仅展示 4 条，查看更多跳资讯列表页 -->
           <div class="mt-12 mb-5 flex items-center justify-between gap-4">
@@ -478,11 +356,6 @@ async function initPage() {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div class="mx-auto mt-12 h-px max-w-5xl bg-gradient-to-r from-transparent via-surface-strong to-transparent" aria-hidden="true"></div>
-        <div v-if="!loading && !displayChannels.length" class="mt-6 text-center text-sm text-gray-400">
-          暂无其他报考通道数据
         </div>
       </div>
 

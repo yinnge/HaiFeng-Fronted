@@ -1,6 +1,11 @@
 // apps/user/src/utils/gaokaoArchive.ts
 // 高考档案统一存取源：登录用户走服务端接口；游客走 localStorage（刷新不丢）。
 // 游客登录后首次读取时，若服务端尚无档案而本地有游客档案，则静默迁移入库。
+// 省份锁定规则（模块级单例 useProvinceLock）：
+// - 游客：省份随便切换；
+// - 登录且服务端已保存过档案：省份锁定，导航栏与档案表单都不可再改；
+// - 登录用户「第一次保存档案」时弹框确认「省份确认后不可再更改」。
+import { ElMessageBox } from 'element-plus'
 import { isLoggedIn } from '@haifeng/shared/utils/auth'
 import {
   getArchive,
@@ -8,6 +13,7 @@ import {
   type GaokaoArchiveForm,
   type GaokaoArchiveVO,
 } from '@/api/gaokao'
+import { useProvinceLock } from '@/composables/useProvinceLock'
 
 const GUEST_ARCHIVE_KEY = 'haifeng:guest-gaokao-archive'
 
@@ -50,8 +56,17 @@ export interface ArchiveSource {
  * - 已登录：读服务端档案；若服务端没有而本地有游客档案 → 静默迁移入库（saveArchive）后返回服务端档案；
  *   迁移失败则降级使用游客档案（不打断流程）。
  * - 未登录：直接读游客档案（绝不调需登录接口，避免 401 干扰）。
+ *
+ * 读取后同步「省份锁定」状态：已登录 + 服务端已有档案 → 锁定。
  */
 export async function loadArchiveSmart(): Promise<ArchiveSource> {
+  const source = await readArchiveSmart()
+  const { setProvinceLocked } = useProvinceLock()
+  setProvinceLocked(isLoggedIn() && !!source.archive && !source.fromGuest)
+  return source
+}
+
+async function readArchiveSmart(): Promise<ArchiveSource> {
   if (isLoggedIn()) {
     try {
       const res = await getArchive()
@@ -83,13 +98,52 @@ export async function loadArchiveSmart(): Promise<ArchiveSource> {
   return { archive: loadGuestArchive() as GaokaoArchiveVO | null, fromGuest: true }
 }
 
-/** 保存档案：登录 → 入库；游客 → localStorage */
-export async function saveArchiveSmart(form: GaokaoArchiveForm): Promise<{ toServer: boolean }> {
+export interface SaveArchiveResult {
+  /** 是否已写入服务端（登录用户） */
+  toServer: boolean
+  /** 用户在「省份确认」弹框点了取消（未保存） */
+  canceled: boolean
+}
+
+/**
+ * 首次保存档案（仅登录用户）前的省份确认。
+ * 省份一旦确认入库即不可再修改（后端 saveArchive 同样强制），故保存前明确告知用户。
+ * - 游客：随便切，不提示
+ * - 已登录但省份已锁定：无需重复提示
+ */
+async function confirmProvinceBeforeSave(): Promise<boolean> {
+  if (!isLoggedIn()) return true
+  const { provinceLocked } = useProvinceLock()
+  if (provinceLocked.value) return true
+  try {
+    await ElMessageBox.confirm(
+      '省份确认之后不可再更改，是否继续？',
+      '确认高考省份',
+      {
+        confirmButtonText: '确认并保存',
+        cancelButtonText: '再想想',
+        type: 'warning',
+        closeOnClickModal: false,
+      }
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** 保存档案：登录 → 入库（首次保存先确认省份）；游客 → localStorage */
+export async function saveArchiveSmart(form: GaokaoArchiveForm): Promise<SaveArchiveResult> {
   if (isLoggedIn()) {
+    if (!(await confirmProvinceBeforeSave())) {
+      return { toServer: false, canceled: true }
+    }
     await saveArchive(form)
     clearGuestArchive()
-    return { toServer: true }
+    // 服务端已落档 → 省份锁定，之后不可再改
+    useProvinceLock().setProvinceLocked(true)
+    return { toServer: true, canceled: false }
   }
   saveGuestArchive(form)
-  return { toServer: false }
+  return { toServer: false, canceled: false }
 }

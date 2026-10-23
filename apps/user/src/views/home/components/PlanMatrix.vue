@@ -27,16 +27,19 @@ const iconMap: Record<string, string> = {
   employment: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
 }
 
+// 展示顺序：第一列自上而下 1-5（初中/高中/大学/研究生/博士），
+// 第二列自上而下 6-10（高考/英语/考研/考公/就业）。
+// 颜色由各自 stage 决定，随条目走、不随位置变；num 按新序列重排。
 const columns: PlanColumn[] = [
   { id: 'middle', num: '01', title: '初中专栏', desc: '学业奠基与升学指导', stage: 'foundation' },
-  { id: 'high', num: '02', title: '高中专栏', desc: '科目选修与生涯规划', stage: 'foundation', tag: '3+1+2', tagTone: 'blue' },
-  { id: 'gaokao', num: '03', title: '高考志愿填报', desc: '院校位次与专业精选', stage: 'core', tag: '热门', tagTone: 'rose' },
-  { id: 'college', num: '04', title: '大学专栏', desc: '学分绩点与成长发展', stage: 'core' },
-  { id: 'cet', num: '05', title: '英语练习', desc: '中考到考研英语在线练习', stage: 'advance' },
-  { id: 'kaoyan', num: '06', title: '考研专栏', desc: '择校初试与复试规划', stage: 'advance', tag: '报录精算', tagTone: 'emerald' },
-  { id: 'kaogong', num: '07', title: '考公专栏', desc: '国考省考选岗精算', stage: 'selection', tag: '冲刺', tagTone: 'rose' },
-  { id: 'postgrad', num: '08', title: '研究生专栏', desc: '学术科研与文献开题', stage: 'selection' },
-  { id: 'phd', num: '09', title: '博士专栏', desc: '申博流程与顶刊发表', stage: 'summit', tag: '申请考核', tagTone: 'blue' },
+  { id: 'high', num: '02', title: '高中专栏', desc: '科目选修与生涯规划', stage: 'foundation', tag: '全方位覆盖', tagTone: 'blue' },
+  { id: 'college', num: '03', title: '大学专栏', desc: '学分绩点与成长发展', stage: 'core' },
+  { id: 'postgrad', num: '04', title: '研究生专栏', desc: '学术科研与文献开题', stage: 'selection' },
+  { id: 'phd', num: '05', title: '博士专栏', desc: '申博流程与顶刊发表', stage: 'summit', tag: '申请考核', tagTone: 'blue' },
+  { id: 'gaokao', num: '06', title: '高考志愿填报', desc: '院校位次与专业精选', stage: 'core', tag: '热门', tagTone: 'rose' },
+  { id: 'cet', num: '07', title: '英语专项练习', desc: '中考、高考、四六级、考研英语在线练习', stage: 'advance' },
+  { id: 'kaoyan', num: '08', title: '考研专栏', desc: '择校初试与复试规划', stage: 'advance', tag: '报录精算', tagTone: 'emerald' },
+  { id: 'kaogong', num: '09', title: '考公专栏', desc: '国考省考选岗精算', stage: 'selection', tag: '冲刺', tagTone: 'rose' },
   { id: 'employment', num: '10', title: '就业信息专栏', desc: '行业风向与名企直通', stage: 'summit', tag: '直通', tagTone: 'amber' },
 ]
 
@@ -92,6 +95,9 @@ const items = columns.map(c => ({
 .plan-matrix {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* 列优先排布：先填满第一列(1-5)再填第二列(6-10)，实现“1-5竖排、6-10竖排” */
+  grid-template-rows: repeat(5, auto);
+  grid-auto-flow: column;
   gap: 1rem;
 }
 
@@ -308,6 +314,8 @@ const items = columns.map(c => ({
 @media (max-width: 768px) {
   .plan-matrix {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-flow: row;
   }
 }
 

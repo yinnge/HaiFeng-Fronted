@@ -39,7 +39,7 @@ watch(
 <template>
   <el-dialog
     :model-value="modelValue"
-    title="规划院公告"
+    title="规划院资讯公告"
     width="min(720px, 92vw)"
     append-to-body
     class="notice-dialog"
@@ -50,8 +50,8 @@ watch(
     </div>
 
     <ul v-else-if="list.length" class="notice-list-dialog">
-      <li v-for="(item, index) in list" :key="item.id">
-        <NoticeRow :item="item" :is-new="index === 0" @select="emit('select', $event)" />
+      <li v-for="item in list" :key="item.id">
+        <NoticeRow :item="item" @select="emit('select', $event)" />
       </li>
     </ul>
 

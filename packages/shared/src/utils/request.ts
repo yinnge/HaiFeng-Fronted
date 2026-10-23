@@ -36,6 +36,15 @@ export function setSessionExpiredHandler(handler: () => void): void {
  * 会话过期：清除本地 token，并触发"请重新登录"。
  * 已注册弹窗 → 弹窗提示；未注册 → 回退直接跳转登录页（保持旧行为兜底）。
  */
+/**
+ * 是否为「游客」：既没有 access token 也没有 refresh token。
+ * 游客访问需登录接口时后端同样返回 401，但这**不是"登录已过期"**，
+ * 不能弹"重新登录"（游客本来就没登录），按普通业务错误抛给调用方降级处理即可。
+ */
+function isGuest(): boolean {
+  return !getAccessToken() && !getRefreshToken()
+}
+
 function notifySessionExpired(): void {
   const now = Date.now()
   if (now - sessionExpiredShownAt < 5000) {
@@ -162,8 +171,14 @@ const createRequest = (baseURL: string): AxiosInstance => {
         }
 
         // 业务码 401（AuthAspect/@RequireLogin 抛 BusinessException 时后端返回 HTTP 200 + code 401）：
-        // 与 HTTP 401 同等对待，先尝试刷新，刷新失败再触发"请重新登录"
+        // - 游客（无任何 token）：按普通业务错误抛出，绝不弹"登录已过期"；
+        // - 已登录：先尝试刷新，刷新失败再触发"请重新登录"
         if (Number(data.code) === ErrorCode.UNAUTHORIZED && !config._retry) {
+          if (isGuest()) {
+            const guestMsg = data.msg || ErrorMessage[Number(data.code)] || '请先登录'
+            console.warn(`[API 401] 游客访问需登录接口：${config.url} - ${guestMsg}`)
+            return Promise.reject(new Error(guestMsg))
+          }
           return refreshAndRetry(config)
         }
 
@@ -179,8 +194,13 @@ const createRequest = (baseURL: string): AxiosInstance => {
     (error) => {
       const originalRequest = error.config
 
-      // 401: Token 过期，尝试刷新
+      // 401: Token 过期，尝试刷新（游客无 token，直接按普通错误抛出，不弹"登录已过期"）
       if (error.response?.status === ErrorCode.UNAUTHORIZED && !originalRequest._retry) {
+        if (isGuest()) {
+          const guestMsg = error.response?.data?.msg || '请先登录'
+          console.warn(`[HTTP 401] 游客访问需登录接口：${originalRequest.url} - ${guestMsg}`)
+          return Promise.reject(new Error(guestMsg))
+        }
         return refreshAndRetry(originalRequest)
       }
 

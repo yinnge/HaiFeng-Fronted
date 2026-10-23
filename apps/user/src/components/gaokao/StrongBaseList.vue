@@ -69,7 +69,7 @@ function onPageChange(page: number) {
 }
 
 function viewDetail(id: string) {
-  router.push(`/special/strong-base/${id}`)
+  router.push(`/gaokao/strong-base/${id}`)
 }
 
 onMounted(fetchData)

@@ -18,6 +18,7 @@ import {
 } from '@/api/gaokao'
 import { saveArchiveSmart } from '@/utils/gaokaoArchive'
 import ProvincePicker from './ProvincePicker.vue'
+import { useProvinceLock } from '@/composables/useProvinceLock'
 import bgImg from '@/assets/img_1.png'
 
 // 弹窗背景：顶部铺插画（img_1.png，1672×941 横图，100% 宽约 360px 高），
@@ -45,6 +46,9 @@ const emit = defineEmits<{
   /** 模拟填报保存成功（已入库或已存本地），携带最终表单 */
   (e: 'saved', form: GaokaoArchiveForm): void
 }>()
+
+// 省份锁定：登录用户保存过档案后不可再改（游客永不锁定）
+const { provinceLocked } = useProvinceLock()
 
 // ===== 表单 =====
 const form = reactive<GaokaoArchiveForm>({
@@ -388,8 +392,10 @@ async function handleMockFill() {
   saving.value = true
   try {
     buildSubjectTypes()
-    const { toServer } = await saveArchiveSmart({ ...form })
-    ElMessage.success(toServer ? '档案已保存' : '档案已本地保存（登录后自动同步）')
+    const res = await saveArchiveSmart({ ...form })
+    // 登录用户首次保存时会弹「省份确认之后不可再更改」确认框，取消则中止
+    if (res.canceled) return
+    ElMessage.success(res.toServer ? '档案已保存' : '档案已本地保存（登录后自动同步）')
     emit('saved', { ...form })
   } catch (e: any) {
     ElMessage.error(e?.message || '保存档案失败')
@@ -445,7 +451,12 @@ onMounted(() => {
             </svg>
             高考省份
           </label>
-          <ProvincePicker v-model="form.gaokaoProvince" variant="form" placeholder="北京" />
+          <ProvincePicker
+            v-model="form.gaokaoProvince"
+            variant="form"
+            placeholder="北京"
+            :disabled="provinceLocked"
+          />
         </div>
         <div class="form-item">
           <label class="form-label">

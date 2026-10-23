@@ -165,22 +165,8 @@ onUnmounted(() => {
           <span>海枫<span class="hero-title-gradient">未来规划院</span></span>
         </h1>
         <p class="hero-desc">
-          依托大数据分析与AI算法，科学规划志愿、精准匹配院校，助你圆梦理想大学。从高考志愿到职场上岸，我们全程陪伴。
+          依托大数据分析与AI算法，科学规划志愿、精准匹配院校，海枫未来规划院助您圆梦理想。从初中高中、高考志愿到职场上岸，我们全程陪伴。
         </p>
-        <div class="hero-actions">
-          <router-link to="/gaokao" class="hero-cta hero-cta-primary">
-            开始志愿规划
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </router-link>
-          <a href="#toolbox" class="hero-cta hero-cta-secondary">
-            探索百宝箱
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
-            </svg>
-          </a>
-        </div>
       </div>
     </section>
 
@@ -433,56 +419,6 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.hero-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 9999px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.hero-cta svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.hero-cta-primary {
-  color: #ffffff;
-  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-light));
-  box-shadow: 0 8px 22px rgba(249, 115, 22, 0.22);
-}
-
-.hero-cta-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(249, 115, 22, 0.3);
-}
-
-.hero-cta-secondary {
-  color: #334155;
-  background: #ffffff;
-  border: 1px solid var(--neutral-border-strong);
-}
-
-.hero-cta-secondary:hover {
-  transform: translateY(-2px);
-  border-color: #cbd5e1;
-  background: var(--neutral-bg);
-}
-
 /* ============ Sections ============ */
 .section-wrapper {
   position: relative;
@@ -727,13 +663,6 @@ onUnmounted(() => {
   }
   .hero-title {
     font-size: clamp(1.6rem, 6vw, 2.2rem);
-  }
-  .hero-actions {
-    width: 100%;
-  }
-  .hero-cta {
-    flex: 1;
-    min-width: 9.5rem;
   }
   .section-alt .section-container {
     padding: 1.25rem;

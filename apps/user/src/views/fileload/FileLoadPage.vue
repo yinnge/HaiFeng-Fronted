@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -11,6 +11,7 @@ import {
 } from '@/api/fileload'
 import type { FileLoadListVO, FileLoadQueryDTO, FileLoadAudience } from '@/types/fileload'
 import { useUserStore } from '@/store'
+import FileCard from './components/FileCard.vue'
 
 const props = defineProps<{
   /** 后端接口受众：middle=初中 / high=高中 / college=大学 / civil-service=考公 / postgrad-exam=考研 / graduate=研究生 */
@@ -22,6 +23,14 @@ const props = defineProps<{
    * 初中/高中/大学专栏不传，由导航 query.stage 或页内行为决定。
    */
   stage?: string
+  /**
+   * 高中专栏：页内「当前身份」平铺按钮选项（高一/高二/高三），由父组件（高考模块）传入。
+   * 传入即渲染身份筛选行，且身份与右上角档案身份完全分离（各自独立、互不驱动）。
+   * 初中/大学专栏不传，改用 stageNav.identities。
+   */
+  identityOptions?: string[]
+  /** 身份筛选初始值（高中专栏默认取用户档案身份 highIdentity） */
+  initialIdentity?: string
 }>()
 
 const router = useRouter()
@@ -33,6 +42,29 @@ const list = ref<FileLoadListVO[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
+const loadError = ref(false)
+const viewMode = ref<'grid' | 'list'>('grid')
+
+type SortMode = 'default' | 'latest' | 'name'
+const sortBy = ref<SortMode>('default')
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: 'default', label: '默认排序' },
+  { value: 'latest', label: '最新发布' },
+  { value: 'name', label: '名称排序' },
+]
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100]
+const listSectionRef = ref<HTMLElement | null>(null)
+
+const sortedList = computed(() => {
+  if (sortBy.value === 'default') return list.value
+  const rows = [...list.value]
+  if (sortBy.value === 'latest') {
+    rows.sort((a, b) => (Date.parse(b.createTime || '') || 0) - (Date.parse(a.createTime || '') || 0))
+  } else {
+    rows.sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN'))
+  }
+  return rows
+})
 
 /**
  * 教师专属模式：从路由 query.teacher 初始化（详情页返回时保持一致）；
@@ -73,7 +105,7 @@ interface StageNavConfig {
 const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
   middle: {
     label: '初中模块',
-    identities: ['初三', '初二', '初一'],
+    identities: ['初一', '初二', '初三'],
     defaultIdentity: '初三',
     sections: [
       { key: 'files', label: '初中资料', mode: 'identity' },
@@ -100,15 +132,40 @@ const stageNav = computed(() => STAGE_NAV_CONFIG[props.audience] || null)
 
 /** 当前激活的目录项 key */
 const activeSection = ref('files')
-/** 当前身份（初一/初二/初三） */
-const identity = ref(STAGE_NAV_CONFIG.middle?.defaultIdentity || '')
+/** 当前身份（初一/初二/初三 / 大一~大四，初中/大学专栏右上角下拉 + 筛选按钮共用，双向同步） */
+const identity = ref(STAGE_NAV_CONFIG[props.audience]?.defaultIdentity || '')
+
+/**
+ * 高中专栏：页内「当前身份」平铺按钮的选中值。与右上角档案身份（ArchiveBar / 高考档案表）完全分离，
+ * 仅此处独立驱动「高中资料」查询，互不影响。
+ */
+const identityFilter = ref(props.initialIdentity || props.identityOptions?.[0] || '')
+
+/** 是否处于「高中身份独立模式」（传入 identityOptions 即视为高中专栏） */
+const isHighIdentityMode = computed(() => !!props.identityOptions?.length)
+/** 当前身份平铺按钮的可选项：高中取传入的 identityOptions，初中/大学取 stageNav.identities */
+const identityButtonOptions = computed<string[]>(() =>
+  props.identityOptions?.length ? props.identityOptions : (stageNav.value?.identities ?? []),
+)
+/** 是否渲染「当前身份」平铺按钮行：高中专栏恒显示；初中/大学仅「资料」子目录(identity 模式)显示，真题(fixed)不显示 */
+const showIdentityFilter = computed(() => {
+  if (isHighIdentityMode.value) return true
+  const nav = stageNav.value
+  if (!nav) return false
+  const sec = nav.sections.find((s) => s.key === activeSection.value)
+  return sec?.mode === 'identity'
+})
+/** 当前选中的身份（空串='全部'）：高中用 identityFilter，初中/大学用 identity */
+const currentIdentity = computed(() => (isHighIdentityMode.value ? identityFilter.value : identity.value))
 
 /**
  * 生效的面向人群（接口 applicableStage）：
- * - 有页内导航栏：由当前目录项决定 —— identity 跟随身份 / fixed 固定人群 / soon 不带筛选；
+ * - 高中专栏（传了 identityOptions）：由页内身份平铺按钮独立驱动（与右上角档案身份分离）；
+ * - 有页内导航栏（初中/大学）：由当前目录项决定 —— identity 跟随身份 / fixed 固定人群 / soon 不带筛选；
  * - 无页内导航栏：路由 props.stage（考公/考研/研究生单一人群专栏）优先，其次 query.stage。
  */
 const effectiveStage = computed(() => {
+  if (isHighIdentityMode.value) return identityFilter.value
   const nav = stageNav.value
   if (!nav) return props.stage || (route.query.stage as string) || ''
   const sec = nav.sections.find((s) => s.key === activeSection.value)
@@ -137,8 +194,25 @@ function onSectionClick(sec: StageNavSection) {
 function onIdentityChange(val: string) {
   identity.value = val
   currentPage.value = 1
-  void router.replace({ path: route.path, query: { ...route.query, stage: val } })
+  const q = { ...route.query }
+  if (val) q.stage = val
+  else delete q.stage
+  void router.replace({ path: route.path, query: q })
   fetchList(true)
+}
+
+/**
+ * 当前身份平铺按钮点击：
+ * - 高中专栏（分离模式）：仅更新页内 identityFilter，由 watch(effectiveStage) 自动重拉；右上角档案身份不变；
+ * - 初中/大学专栏（一致模式）：走 onIdentityChange，同步右上角下拉 + URL。
+ */
+function onIdentityButtonClick(val: string) {
+  if (isHighIdentityMode.value) {
+    identityFilter.value = val
+    currentPage.value = 1
+  } else {
+    onIdentityChange(val)
+  }
 }
 
 /** 进入页面/切换受众时按 URL 回填目录与身份（兼容旧链接 /middle?stage=中考资料） */
@@ -152,7 +226,7 @@ function syncFromQuery() {
     return
   }
   activeSection.value = 'files'
-  identity.value = s && nav.identities.includes(s) ? s : nav.defaultIdentity
+  identity.value = s === '' ? '' : (s && nav.identities.includes(s) ? s : nav.defaultIdentity)
 }
 
 const subjectOptions = ref<string[]>([])
@@ -181,13 +255,37 @@ const bannerDesc = computed(() => {
   return audienceDescMap[props.audience] || audienceDescMap.middle
 })
 const audienceDescMap: Record<FileLoadAudience, string> = {
-  middle: '初中阶段精选学习资料、升学政策与备考指南，持续更新中。',
-  high: '高中阶段精选学习资料、高考政策与备考指南，持续更新中。',
-  college: '大学阶段精选学习资料、考研就业与学业规划指南，持续更新中。',
-  'civil-service': '考公阶段精选备考资料、真题解析与政策解读，持续更新中。',
-  'postgrad-exam': '考研阶段精选备考资料、真题解析与复习规划，持续更新中。',
-  graduate: '研究生阶段精选学习资料、科研工具与学术发展指南，持续更新中。',
+  middle: '涵盖各学科精品资料、真题试卷、备考指南，助力初中生高效学习、稳步提升！',
+  high: '涵盖高中各学科精品资料、高考真题与备考指南，助力高中生高效复习、稳步提升！',
+  college: '涵盖大学课程资料、考研就业与学业规划指南，助力大学生高效学习、稳步进阶！',
+  'civil-service': '涵盖行测申论精品资料、历年真题与政策解读，助力考公人高效备考、稳步上岸！',
+  'postgrad-exam': '涵盖考研公共课与专业课资料、历年真题、复习规划，助力考研人高效备考、稳步提升！',
+  graduate: '涵盖科研工具、学术写作与研究生课程资料，助力研究生高效科研、稳步成长！',
 }
+
+const BANNER_FEATURES: Record<FileLoadAudience, string[]> = {
+  middle: ['权威精选', '贴合考纲', '名师推荐', '持续更新'],
+  high: ['权威精选', '贴合高考', '名师推荐', '持续更新'],
+  college: ['权威精选', '贴合课程', '学长推荐', '持续更新'],
+  'civil-service': ['权威精选', '紧扣大纲', '名师推荐', '持续更新'],
+  'postgrad-exam': ['权威精选', '紧扣大纲', '名师推荐', '持续更新'],
+  graduate: ['权威精选', '科研实用', '导师推荐', '持续更新'],
+}
+
+const bannerFeatureLabels = computed(() =>
+  teacherMode.value
+    ? ['权威精选', '教师专享', '名校资源', '持续更新']
+    : (BANNER_FEATURES[props.audience] || BANNER_FEATURES.middle),
+)
+const FEATURE_TONES = ['blue', 'rose', 'amber', 'green']
+
+const bannerTitleParts = computed(() => {
+  if (/资料$/.test(bannerTitle.value)) {
+    const main = bannerTitle.value.replace(/资料$/, '').trim()
+    return { main: main || bannerTitle.value, lead: '', accent: main ? '精选资源' : '' }
+  }
+  return { main: bannerTitle.value, lead: '精选', accent: '学习资料' }
+})
 
 const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value))
 
@@ -226,6 +324,7 @@ async function fetchList(force = false) {
 
   loading.value = true
   teacherForbidden.value = false
+  loadError.value = false
   try {
     const params: FileLoadQueryDTO = {
       page: currentPage.value,
@@ -238,6 +337,7 @@ async function fetchList(force = false) {
     const res = await getFileLoadList(props.audience, params, teacherMode.value)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    loadError.value = false
   } catch (e: any) {
     lastQueryKey = '' // 失败允许重试
     const msg = e?.message || ''
@@ -248,7 +348,11 @@ async function fetchList(force = false) {
       total.value = 0
       return
     }
-    ElMessage.error(e?.message || '获取文件列表失败')
+    if (list.value.length === 0) {
+      loadError.value = true
+    } else {
+      ElMessage.error(e?.message || '获取文件列表失败')
+    }
   } finally {
     loading.value = false
   }
@@ -321,46 +425,37 @@ async function openDetail(item: FileLoadListVO) {
   router.push({ path: `/${props.audience}/${item.id}`, query: teacherMode.value ? { teacher: '1' } : {} })
 }
 
-/* ---------------- 工具函数 ---------------- */
-function formatSize(bytes?: number): string {
-  if (!bytes || bytes <= 0) return '-'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let i = 0
-  let v = bytes
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024
-    i++
-  }
-  return `${v.toFixed(v >= 100 ? 0 : 1)} ${units[i]}`
-}
-
-function formatDate(time?: string): string {
-  if (!time) return '-'
-  const d = new Date(time)
-  if (Number.isNaN(d.getTime())) return time
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-/** 按文件类型返回图标与配色 */
-function fileTypeMeta(fileType?: string): { label: string; badge: string; iconBg: string } {
-  const t = (fileType || '').toLowerCase()
-  if (t === 'pdf') return { label: 'PDF', badge: 'bg-red-100 text-red-600', iconBg: 'from-red-500 to-rose-400' }
-  if (t === 'doc' || t === 'docx') return { label: 'Word', badge: 'bg-blue-100 text-blue-600', iconBg: 'from-blue-500 to-sky-400' }
-  if (t === 'xls' || t === 'xlsx') return { label: 'Excel', badge: 'bg-green-100 text-green-600', iconBg: 'from-green-500 to-emerald-400' }
-  if (t === 'ppt' || t === 'pptx') return { label: 'PPT', badge: 'bg-orange-100 text-orange-600', iconBg: 'from-orange-500 to-amber-400' }
-  if (t === 'jpg' || t === 'jpeg' || t === 'png' || t === 'gif' || t === 'bmp') return { label: '图片', badge: 'bg-purple-100 text-purple-600', iconBg: 'from-purple-500 to-violet-400' }
-  if (t === 'txt') return { label: '文本', badge: 'bg-gray-100 text-gray-600', iconBg: 'from-gray-500 to-slate-400' }
-  return { label: (fileType || '文件').toUpperCase(), badge: 'bg-gray-100 text-gray-600', iconBg: 'from-gray-500 to-slate-400' }
-}
-
 /* ---------------- 分页 ---------------- */
+async function scrollToList() {
+  await nextTick()
+  listSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function onPageChange(page: number) {
   currentPage.value = page
   fetchList()
+  void scrollToList()
 }
-function onSizeChange(size: number) {
+
+function onSizeSelect(event: Event) {
+  const size = Number((event.target as HTMLSelectElement).value)
+  if (!Number.isFinite(size)) return
   pageSize.value = size
   currentPage.value = 1
+  fetchList()
+  void scrollToList()
+}
+
+function onSortChange(event: Event) {
+  sortBy.value = (event.target as HTMLSelectElement).value as SortMode
+}
+
+function onViewChange(mode: 'grid' | 'list') {
+  viewMode.value = mode
+}
+
+function onRefresh() {
+  lastQueryKey = ''
   fetchList()
 }
 
@@ -454,6 +549,7 @@ watch(effectiveStage, () => {
             popper-class="stage-identity-popper"
             @update:model-value="onIdentityChange"
           >
+            <el-option label="全部" value="" />
             <el-option v-for="opt in stageNav.identities" :key="opt" :label="opt" :value="opt" />
           </el-select>
         </div>
@@ -462,177 +558,336 @@ watch(effectiveStage, () => {
 
     <main class="container mx-auto px-6 py-8 flex-1">
       <!-- Intro Banner -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
-          <div class="flex items-center justify-between gap-3 mb-3">
-          <div class="flex items-center gap-3">
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </span>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">{{ bannerTitle }} · 精选学习资料</h1>
+      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-6">
+        <div class="file-banner">
+          <div class="file-banner__content">
+            <div class="file-banner__badge-row">
+              <span class="file-banner__badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 6.3v12.4" />
+                  <path d="M12 6.3C10.8 5.5 9.2 5 7.5 5S4.2 5.5 3 6.3v12.4C4.2 18 5.8 18 7.5 18s3.3.5 4.5 1.3" />
+                  <path d="M12 6.3C13.2 5.5 14.8 5 16.5 5s3.3.5 4.5 1.3v12.4c-1.2-.8-2.8-1.3-4.5-1.3s-3.3.5-4.5 1.3" />
+                </svg>
+                资料库
+              </span>
+              <button
+                v-if="props.audience === 'high'"
+                type="button"
+                class="file-teacher-btn"
+                :class="{ 'is-on': teacherMode }"
+                @click="toggleTeacher"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m12 4 9 5-9 5-9-5 9-5Z" />
+                  <path d="M7 11.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-4.5" />
+                  <path d="M21 9v5" />
+                </svg>
+                {{ teacherMode ? '返回高中资料' : '教师专属' }}
+              </button>
+            </div>
+
+            <h1 class="file-banner__title">
+              {{ bannerTitleParts.main }}
+              <span v-if="bannerTitleParts.lead" class="file-banner__lead">{{ bannerTitleParts.lead }}</span>
+              <span class="file-banner__accent">{{ bannerTitleParts.accent }}</span>
+            </h1>
+            <p class="file-banner__desc">{{ bannerDesc }}</p>
+
+            <div class="file-banner__features">
+              <span
+                v-for="(feature, index) in bannerFeatureLabels"
+                :key="feature"
+                class="file-feature"
+                :class="`tone-${FEATURE_TONES[index]}`"
+              >
+                <span class="file-feature__icon">
+                  <svg v-if="index === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 5 6v5c0 4.4 3 8.4 7 10 4-1.6 7-5.6 7-10V6l-7-3Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  <svg v-else-if="index === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <circle cx="12" cy="12" r="3.5" />
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                  </svg>
+                  <svg v-else-if="index === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+                    <path d="M20 4v7h-7" />
+                  </svg>
+                </span>
+                {{ feature }}
+              </span>
+            </div>
           </div>
-          <button
-            v-if="props.audience === 'high'"
-            type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition-all"
-            :class="teacherMode
-              ? 'bg-white text-orange-600 border border-orange-300 hover:bg-orange-50'
-              : 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200 hover:from-sky-600 hover:to-cyan-600'"
-            @click="toggleTeacher"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+
+          <div class="file-banner__note" aria-hidden="true">
+            <span>好好学习</span>
+            <span>未来可期！</span>
+            <svg viewBox="0 0 120 12" preserveAspectRatio="none">
+              <path d="M2 8c24-6 62-7 116-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            {{ teacherMode ? '返回高中资料' : '教师专属' }}
-          </button>
-        </div>
-          <p class="text-gray-600 leading-relaxed mb-4">{{ bannerDesc }}</p>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="kw in ['学习资料', '政策解读', '备考指南', '持续更新']" :key="kw" class="rounded-full bg-slate-50 px-4 py-1.5 text-sm text-slate-500 border border-slate-200">
-              {{ kw }}
-            </span>
           </div>
         </div>
       </Motion>
 
       <!-- 筛选栏 -->
-      <section class="mb-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-        <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
-          <div class="flex items-center gap-2">
-            <span class="inline-block w-1 h-5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500"></span>
-            <h2 class="text-lg font-bold text-gray-800">筛选</h2>
+      <section class="file-filter mb-6">
+        <div class="file-filter__head">
+          <div class="file-filter__title">
+            <span class="file-filter__bar" aria-hidden="true"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" />
+            </svg>
+            <h2>筛选条件</h2>
           </div>
-          <button v-if="hasActiveFilter" class="text-xs text-orange-500 hover:underline" @click="resetFilters">
+          <button v-if="hasActiveFilter" type="button" class="file-filter__reset" @click="resetFilters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 2.6-6.4" />
+              <path d="M3 4v6h6" />
+            </svg>
             重置筛选
           </button>
         </div>
 
-        <!-- 学科 / 标签：下拉框（面向人群已由导航入口写死，页内不再提供筛选） -->
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-400 shrink-0">学科</span>
+        <div class="file-filter__row">
+          <div class="filter-field">
+            <span class="filter-label">学科</span>
             <el-select
               v-model="subjectFilter"
               placeholder="全部学科"
               clearable
-              style="width: 160px"
+              class="file-select"
               @change="onFilterChange"
             >
+              <template #prefix>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+                </svg>
+              </template>
               <el-option v-for="o in subjectOptions" :key="o" :label="o" :value="o" />
             </el-select>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-400 shrink-0">标签</span>
+
+          <div class="filter-field">
+            <span class="filter-label">标签</span>
             <el-select
               v-model="tagFilter"
               placeholder="全部标签"
               clearable
-              style="width: 160px"
+              class="file-select"
               @change="onFilterChange"
             >
+              <template #prefix>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20.6 13.4 12 22a2 2 0 0 1-2.8 0L3 15.8V3h12.8l5.8 5.8a2 2 0 0 1 0 2.8Z" />
+                  <circle cx="8.5" cy="8.5" r="1.3" />
+                </svg>
+              </template>
               <el-option v-for="o in tagOptions" :key="o" :label="o" :value="o" />
             </el-select>
+          </div>
+
+          <button
+            v-if="hasActiveFilter"
+            type="button"
+            class="filter-clear"
+            @click="resetFilters"
+          >
+            清除筛选
+          </button>
+        </div>
+
+        <!-- 当前身份：平铺按钮（初中/大学与右上角下拉双向同步；高中独立分离；空串=全部） -->
+        <div v-if="showIdentityFilter" class="file-identity">
+          <span class="filter-label">当前身份</span>
+          <div class="file-identity__buttons">
+            <button
+              v-for="opt in identityButtonOptions"
+              :key="opt"
+              type="button"
+              class="identity-btn"
+              :class="{ 'is-active': currentIdentity === opt }"
+              @click="onIdentityButtonClick(opt)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5 20c.7-3.3 3.5-5 7-5s6.3 1.7 7 5" />
+              </svg>
+              {{ opt }}
+            </button>
+            <button
+              type="button"
+              class="identity-btn"
+              :class="{ 'is-active': currentIdentity === '' }"
+              @click="onIdentityButtonClick('')"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2" />
+                <path d="M2.8 19.5c.6-3 3-4.5 6.2-4.5s5.6 1.5 6.2 4.5" />
+                <path d="M16 5.2a3.2 3.2 0 0 1 0 6M18.4 15.4c2 .5 3.2 1.9 3.6 4.1" />
+              </svg>
+              全部
+            </button>
           </div>
         </div>
       </section>
 
       <!-- 文件列表 -->
-      <section class="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-        <div class="mb-5 flex items-center gap-2">
-          <span class="inline-block w-1 h-5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500"></span>
-          <h2 class="text-lg font-bold text-gray-800">文件列表</h2>
-        </div>
-        <div v-loading="loading" class="min-h-[400px]">
-          <div v-if="list.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <div
-              v-for="item in list"
-              :key="item.id"
-              class="group relative rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl hover:border-orange-200 hover:-translate-y-0.5 transition-all overflow-hidden cursor-pointer"
-              @click="openDetail(item)"
-            >
-              <!-- 文件图标区 -->
-              <div class="relative h-32 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center overflow-hidden">
-                <img
-                  v-if="item.storageType === 'BAIDU' && item.coverUrl"
-                  :src="item.coverUrl"
-                  alt=""
-                  class="absolute inset-0 w-full h-full object-cover"
-                />
-                <div
-                  v-else
-                  class="w-16 h-16 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110"
-                  :class="item.storageType === 'BAIDU' ? 'from-blue-500 to-sky-400 shadow-blue-100' : fileTypeMeta(item.fileType).iconBg"
-                >
-                  <svg v-if="item.storageType === 'BAIDU'" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
-                  </svg>
-                  <svg v-else class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z" />
-                  </svg>
-                </div>
-                <span
-                  class="absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-xs font-bold"
-                  :class="item.storageType === 'BAIDU'
-                    ? 'bg-blue-500 text-white shadow-sm'
-                    : fileTypeMeta(item.fileType).badge"
-                >
-                  {{ item.storageType === 'BAIDU' ? '网盘' : fileTypeMeta(item.fileType).label }}
-                </span>
-              </div>
-
-              <!-- 信息区 -->
-              <div class="p-4">
-                <h3 class="text-base font-bold text-gray-800 truncate" :title="item.fileName">{{ item.fileName }}</h3>
-                <div class="mt-2 flex flex-wrap gap-1.5">
-                  <span v-if="item.subject" class="rounded-full bg-orange-50 px-2 py-0.5 text-xs text-orange-600 border border-orange-100">
-                    {{ item.subject }}
-                  </span>
-                  <span v-if="item.applicableStage" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-600 border border-amber-100">
-                    {{ item.applicableStage }}
-                  </span>
-                  <span v-if="item.tag" class="rounded-full bg-rose-50 px-2 py-0.5 text-xs text-rose-600 border border-rose-100">
-                    {{ item.tag }}
-                  </span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-gray-400">
-                  <span>{{ item.storageType === 'BAIDU' ? '百度网盘' : formatSize(item.fileSize) }}</span>
-                  <span>{{ formatDate(item.createTime) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else-if="teacherForbidden && !loading" class="py-20 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-200 mb-4">
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+      <section ref="listSectionRef" class="file-list-panel">
+        <div class="file-list-head">
+          <div class="file-list-head__main">
+            <span class="file-list-head__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.6.8L12 7h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
               </svg>
+            </span>
+            <div class="file-list-head__text">
+              <div class="file-list-head__title">
+                <h2>文件列表</h2>
+                <span v-if="total" class="file-count">共 {{ total }} 份资料</span>
+              </div>
+              <p>精选优质学习资料，助你轻松备考</p>
             </div>
-            <p class="text-base font-semibold text-gray-700">您还不是教师身份</p>
-            <p class="text-sm text-gray-400 mt-1">教师专属资料仅对老师身份开放，请联系管理员开通</p>
-            <button
-              type="button"
-              class="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all"
-              @click="toggleTeacher"
-            >
-              返回高中资料
-            </button>
           </div>
-          <div v-else-if="!loading" class="py-20 text-center text-gray-400">暂无文件数据</div>
+
+          <div class="file-list-tools">
+            <label class="file-sort">
+              <span class="sr-only">排序方式</span>
+              <select :value="sortBy" @change="onSortChange">
+                <option v-for="opt in SORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </label>
+
+            <div class="view-toggle" role="group" aria-label="视图切换">
+              <button
+                type="button"
+                :class="{ 'is-active': viewMode === 'grid' }"
+                aria-label="网格视图"
+                :aria-pressed="viewMode === 'grid'"
+                title="网格视图"
+                @click="onViewChange('grid')"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                :class="{ 'is-active': viewMode === 'list' }"
+                aria-label="列表视图"
+                :aria-pressed="viewMode === 'list'"
+                title="列表视图"
+                @click="onViewChange('list')"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 6h12M9 12h12M9 18h12" />
+                  <circle cx="4" cy="6" r="1" />
+                  <circle cx="4" cy="12" r="1" />
+                  <circle cx="4" cy="18" r="1" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div v-if="total > pageSize" class="mt-8 flex justify-center">
+        <div class="file-list-body" :class="{ 'is-refreshing': loading && list.length > 0 }">
+          <div v-if="loading && !list.length" class="file-skeleton-grid" aria-hidden="true">
+            <div v-for="n in 8" :key="n" class="file-skeleton">
+              <span class="file-skeleton__thumb"></span>
+              <span class="file-skeleton__line is-title"></span>
+              <span class="file-skeleton__line"></span>
+              <span class="file-skeleton__line is-short"></span>
+            </div>
+          </div>
+
+          <div v-else-if="teacherForbidden" class="file-state">
+            <span class="file-state__icon tone-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m12 4 9 5-9 5-9-5 9-5Z" />
+                <path d="M7 11.5V16c0 1.7 2.2 3 5 3s5-1.3 5-3v-4.5" />
+                <path d="M21 9v5" />
+              </svg>
+            </span>
+            <p class="file-state__title">您还不是教师身份</p>
+            <p class="file-state__desc">教师专属资料仅对老师身份开放，请联系管理员开通</p>
+            <button type="button" class="file-state__primary" @click="toggleTeacher">返回高中资料</button>
+          </div>
+
+          <div v-else-if="loadError && !list.length" class="file-state">
+            <span class="file-state__icon tone-rose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M7 18a4 4 0 0 1-.9-7.9A5.5 5.5 0 0 1 16.9 9a4.5 4.5 0 0 1 .6 9H7Z" />
+                <path d="m9.5 11.5 5 5M14.5 11.5l-5 5" />
+              </svg>
+            </span>
+            <p class="file-state__title">资料加载失败</p>
+            <p class="file-state__desc">网络可能开小差了，请稍后重试</p>
+            <button type="button" class="file-state__primary" @click="onRefresh">重新加载</button>
+          </div>
+
+          <div v-else-if="!list.length" class="file-state">
+            <span class="file-state__icon tone-slate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.6.8L12 7h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+                <path d="m9.5 13 1.7 1.7 3.6-3.7" />
+              </svg>
+            </span>
+            <p class="file-state__title">暂无符合条件的资料</p>
+            <p class="file-state__desc">试试更换学科或标签，或重置筛选条件</p>
+            <div class="file-state__actions">
+              <button v-if="hasActiveFilter" type="button" class="file-state__primary" @click="resetFilters">重置筛选</button>
+              <button type="button" class="file-state__ghost" @click="onRefresh">刷新试试</button>
+            </div>
+          </div>
+
+          <div v-else class="file-grid" :class="`is-${viewMode}`">
+            <FileCard
+              v-for="item in sortedList"
+              :key="item.id"
+              :item="item"
+              :view="viewMode"
+              @open="openDetail"
+            />
+          </div>
+
+          <div v-if="loading && list.length" class="file-list-updating">
+            <span class="file-list-updating__spinner" aria-hidden="true"></span>
+            更新中
+          </div>
+        </div>
+
+        <div v-if="total > 0" class="file-pagination">
+          <span class="file-pagination__total">共 <strong>{{ total }}</strong> 条</span>
           <el-pagination
+            class="file-pagination__pages"
             background
-            layout="total, sizes, prev, pager, next"
+            layout="prev, pager, next"
             :total="total"
-            :page-sizes="[10, 20, 30, 50, 100]"
             :page-size="pageSize"
             :current-page="currentPage"
             @current-change="onPageChange"
-            @size-change="onSizeChange"
           />
+          <label class="file-pagination__size">
+            <span>每页</span>
+            <span class="file-size-select">
+              <select :value="pageSize" @change="onSizeSelect">
+                <option v-for="size in PAGE_SIZE_OPTIONS" :key="size" :value="size">{{ size }} 条</option>
+              </select>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </span>
+          </label>
         </div>
       </section>
     </main>
@@ -780,6 +1035,996 @@ watch(effectiveStage, () => {
   .stage-identity-label {
     display: none;
   }
+}
+
+/* ===== Banner ===== */
+.file-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 230px;
+  padding: 28px 32px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 20px;
+  background-color: #f8fafc;
+  background-image: url('/background/img_1.png');
+  background-position: right center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 10px 28px -16px rgba(15, 23, 42, 0.14);
+}
+
+.file-banner::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(255, 247, 237, 0.95), transparent 58%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 44%, rgba(255, 255, 255, 0.6) 64%, rgba(255, 255, 255, 0) 84%);
+  pointer-events: none;
+}
+
+.file-banner__content {
+  position: relative;
+  z-index: 1;
+  max-width: 660px;
+  min-width: 0;
+}
+
+.file-banner__badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.file-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  color: #ea580c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.2);
+}
+
+.file-banner__badge svg {
+  width: 13px;
+  height: 13px;
+}
+
+.file-teacher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  box-shadow: 0 4px 10px -2px rgba(14, 165, 233, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-teacher-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.file-teacher-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -2px rgba(14, 165, 233, 0.5);
+}
+
+.file-teacher-btn.is-on {
+  color: #ea580c;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.file-banner__title {
+  color: #0f172a;
+  font-size: clamp(24px, 2.5vw, 32px);
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+
+.file-banner__lead {
+  margin-left: 4px;
+  color: #334155;
+  font-weight: 700;
+}
+
+.file-banner__accent {
+  margin-left: 4px;
+  color: #f97316;
+}
+
+.file-banner__desc {
+  max-width: 600px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.file-banner__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.file-feature {
+  --tone: #2563eb;
+  --tone-bg: #eff6ff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px 6px 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(4px);
+}
+
+.file-feature__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--tone);
+  border-radius: 7px;
+  background: var(--tone-bg);
+}
+
+.file-feature__icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.file-feature.tone-blue {
+  --tone: #2563eb;
+  --tone-bg: #eff6ff;
+}
+
+.file-feature.tone-rose {
+  --tone: #e11d48;
+  --tone-bg: #fff1f2;
+}
+
+.file-feature.tone-amber {
+  --tone: #d97706;
+  --tone-bg: #fffbeb;
+}
+
+.file-feature.tone-green {
+  --tone: #059669;
+  --tone-bg: #ecfdf5;
+}
+
+.file-banner__note {
+  position: absolute;
+  top: 46px;
+  right: 36px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #2563eb;
+  font-family: 'STKaiti', 'KaiTi', 'Kaiti SC', '楷体', serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: rotate(-5deg);
+  opacity: 0.88;
+}
+
+.file-banner__note svg {
+  width: 92px;
+  height: 10px;
+  margin-top: 1px;
+  color: rgba(37, 99, 235, 0.55);
+}
+
+/* ===== 筛选区 ===== */
+.file-filter {
+  padding: 16px 18px;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 6px 20px -14px rgba(15, 23, 42, 0.12);
+}
+
+.file-filter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.file-filter__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #0f172a;
+}
+
+.file-filter__title > svg {
+  width: 16px;
+  height: 16px;
+  color: #f97316;
+}
+
+.file-filter__title h2 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.file-filter__bar {
+  width: 3px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f97316, #fb923c);
+}
+
+.file-filter__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  color: #64748b;
+  font-size: 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-filter__reset svg {
+  width: 12px;
+  height: 12px;
+}
+
+.file-filter__reset:hover {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.file-filter__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding-top: 12px;
+}
+
+.filter-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filter-label {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.file-select {
+  width: 200px;
+}
+
+.file-select :deep(.el-select__wrapper) {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.file-select :deep(.el-select__wrapper.is-hovering) {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+
+.file-select :deep(.el-select__wrapper.is-focused) {
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1.5px #f97316,
+    0 0 0 3px rgba(249, 115, 22, 0.12);
+}
+
+.file-select :deep(.el-select__prefix) {
+  margin-right: 4px;
+  color: #94a3b8;
+}
+
+.file-select :deep(.el-select__prefix svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.file-select :deep(.el-select__placeholder) {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.filter-clear {
+  padding: 6px 10px;
+  color: #94a3b8;
+  font-size: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-clear:hover {
+  color: #e11d48;
+  background: #fff1f2;
+}
+
+.file-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f8fafc;
+}
+
+.file-identity__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ===== 文件列表面板 ===== */
+.file-list-panel {
+  margin-bottom: 8px;
+  padding: 18px 18px 0;
+  border: 1px solid #f1f5f9;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 10px 30px -22px rgba(15, 23, 42, 0.16);
+  scroll-margin-top: 110px;
+}
+
+.file-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.file-list-head__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-list-head__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: #d97706;
+  border-radius: 10px;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.18);
+}
+
+.file-list-head__icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.file-list-head__text {
+  min-width: 0;
+}
+
+.file-list-head__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-list-head__title h2 {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.file-count {
+  padding: 2px 7px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #eff6ff;
+}
+
+.file-list-head__text p {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.file-list-tools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-sort {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  border-radius: 9px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.file-sort select {
+  height: 100%;
+  padding: 0 28px 0 11px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  border: 0;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.file-sort svg {
+  position: absolute;
+  right: 9px;
+  width: 13px;
+  height: 13px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.view-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f1f5f9;
+}
+
+.view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #94a3b8;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-toggle button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.view-toggle button:hover {
+  color: #475569;
+}
+
+.view-toggle button.is-active {
+  color: #ea580c;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.file-list-body {
+  position: relative;
+  min-height: 260px;
+  padding: 16px 0;
+  transition: opacity 0.2s ease;
+}
+
+.file-list-body.is-refreshing {
+  opacity: 0.55;
+}
+
+.file-grid.is-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.file-grid.is-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.file-list-updating {
+  position: absolute;
+  top: 8px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  color: #ea580c;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
+}
+
+.file-list-updating__spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(249, 115, 22, 0.28);
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: file-spin 0.8s linear infinite;
+}
+
+@keyframes file-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== 骨架屏 ===== */
+.file-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.file-skeleton {
+  padding: 14px;
+  border: 1px solid #f1f5f9;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.file-skeleton__thumb,
+.file-skeleton__line {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 42%, #f1f5f9 60%);
+  background-size: 300% 100%;
+  animation: file-shimmer 1.3s ease-in-out infinite;
+}
+
+.file-skeleton__thumb {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 11px;
+}
+
+.file-skeleton__line {
+  width: 100%;
+  height: 9px;
+  margin-top: 8px;
+}
+
+.file-skeleton__line.is-title {
+  width: 78%;
+  height: 11px;
+  margin-top: 0;
+}
+
+.file-skeleton__line.is-short {
+  width: 46%;
+}
+
+@keyframes file-shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -80% 0;
+  }
+}
+
+/* ===== 空态 / 错误态 ===== */
+.file-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.file-state__icon {
+  --tone: #64748b;
+  --tone-bg: #f8fafc;
+  --tone-ring: rgba(100, 116, 139, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 14px;
+  color: var(--tone);
+  border-radius: 18px;
+  background: var(--tone-bg);
+  box-shadow: inset 0 0 0 1px var(--tone-ring);
+}
+
+.file-state__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.file-state__icon.tone-blue {
+  --tone: #2563eb;
+  --tone-bg: #eff6ff;
+  --tone-ring: rgba(37, 99, 235, 0.16);
+}
+
+.file-state__icon.tone-rose {
+  --tone: #e11d48;
+  --tone-bg: #fff1f2;
+  --tone-ring: rgba(225, 29, 72, 0.16);
+}
+
+.file-state__icon.tone-slate {
+  --tone: #64748b;
+  --tone-bg: #f8fafc;
+}
+
+.file-state__title {
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.file-state__desc {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.file-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.file-state__primary,
+.file-state__ghost {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-state__primary {
+  color: #ffffff;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 4px 10px -2px rgba(249, 115, 22, 0.3);
+}
+
+.file-state__primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -2px rgba(249, 115, 22, 0.4);
+}
+
+.file-state__ghost {
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.file-state__ghost:hover {
+  color: #ea580c;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: #fff7ed;
+}
+
+/* ===== 分页 ===== */
+.file-pagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 2px;
+  border-top: 1px solid #f8fafc;
+}
+
+.file-pagination__total {
+  color: #94a3b8;
+  font-size: 12px;
+  justify-self: start;
+}
+
+.file-pagination__total strong {
+  color: #475569;
+  font-weight: 700;
+}
+
+.file-pagination__pages {
+  justify-self: center;
+}
+
+.file-pagination__pages :deep(.el-pager li) {
+  min-width: 30px;
+  height: 30px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.file-pagination__pages :deep(.el-pager li:hover) {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.file-pagination__pages :deep(.el-pager li.is-active) {
+  color: #ffffff;
+  background: #f97316;
+  box-shadow: 0 3px 8px -2px rgba(249, 115, 22, 0.45);
+}
+
+.file-pagination__pages :deep(.btn-prev),
+.file-pagination__pages :deep(.btn-next) {
+  min-width: 30px;
+  height: 30px;
+  color: #64748b;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.file-pagination__pages :deep(.btn-prev:hover),
+.file-pagination__pages :deep(.btn-next:hover) {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.file-pagination__size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  justify-self: end;
+}
+
+.file-size-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  border-radius: 8px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.file-size-select select {
+  height: 100%;
+  padding: 0 26px 0 9px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.file-size-select svg {
+  position: absolute;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+@media (max-width: 1200px) {
+  .file-grid.is-grid,
+  .file-skeleton-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .file-banner {
+    min-height: 220px;
+    padding: 24px 26px;
+  }
+
+  .file-banner__note {
+    display: none;
+  }
+
+  .file-banner::before {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 58%, rgba(255, 255, 255, 0.55) 100%);
+  }
+}
+
+@media (max-width: 900px) {
+  .file-grid.is-grid,
+  .file-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .file-banner {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+
+  .file-banner__title {
+    font-size: 23px;
+  }
+
+  .file-banner__desc {
+    font-size: 12px;
+  }
+
+  .file-banner__features {
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .file-feature {
+    padding: 5px 9px 5px 6px;
+    font-size: 11px;
+  }
+
+  .file-filter {
+    padding: 14px;
+  }
+
+  .file-filter__row {
+    align-items: stretch;
+  }
+
+  .filter-field {
+    flex: 1 1 100%;
+  }
+
+  .file-select {
+    flex: 1;
+    width: auto;
+  }
+
+  .file-list-panel {
+    padding: 16px 14px 0;
+  }
+
+  .file-list-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .file-list-tools {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .file-grid.is-grid,
+  .file-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .file-pagination__total,
+  .file-pagination__size {
+    justify-self: auto;
+  }
+
+  .file-pagination__pages {
+    order: -1;
+    width: 100%;
+  }
+}
+
+/* ===== 当前身份平铺按钮（筛选行） ===== */
+.identity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.identity-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.identity-btn:hover {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.4);
+  background: #fff7ed;
+}
+
+.identity-btn.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
 }
 </style>
 

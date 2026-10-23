@@ -7,6 +7,7 @@ import { onMounted, watch } from 'vue'
 import { useArchiveForm } from '@/composables/useArchiveForm'
 import type { GaokaoArchiveVO } from '@/api/gaokao'
 import ProvincePicker from './ProvincePicker.vue'
+import { useProvinceLock } from '@/composables/useProvinceLock'
 
 const props = defineProps<{
   /** 当前档案（来自导航栏 canonical 源），变化时回填卡片 */
@@ -19,6 +20,9 @@ const emit = defineEmits<{
   /** 档案字段变化（保存后），携带最新档案，父组件据此同步导航栏 chip */
   (e: 'change', archive: GaokaoArchiveVO | null): void
 }>()
+
+// 省份锁定：登录用户保存过档案后不可再改（游客永不锁定）
+const { provinceLocked } = useProvinceLock()
 
 const {
   form,
@@ -83,7 +87,12 @@ async function onMockFill() {
       <div class="gk-row">
         <div class="gk-item">
           <label class="gk-label">高考省份</label>
-          <ProvincePicker v-model="form.gaokaoProvince" variant="form" placeholder="北京" />
+          <ProvincePicker
+            v-model="form.gaokaoProvince"
+            variant="form"
+            placeholder="北京"
+            :disabled="provinceLocked"
+          />
         </div>
         <div class="gk-item">
           <label class="gk-label">高考年份</label>
