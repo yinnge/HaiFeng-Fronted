@@ -255,13 +255,13 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
             clearable
             style="width: 260px"
           >
-            <el-option v-for="item in HIGH_STAGE_OPTIONS" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in HIGH_STAGE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="标签">
+        <el-form-item label="模块">
           <el-input
             v-model="formData.tag"
-            placeholder="如：备考指南 / 就业辅导（可选）"
+            placeholder="选词填空/语文作文（可选）"
             clearable
             style="width: 260px"
           />

@@ -44,7 +44,7 @@
 - **双层结构**：`DefaultLayout` 在 `AppHeader` 上方仅首页(`route.path==='/'`)渲染 `TopToolBar`（工具/账号层，sticky top:0 z-60，常驻不收起）；旧 `AppHeader` 接 `:top-offset`（首页 64、其余 0）紧贴其下。滚动时 AppHeader 抽屉式收起、TopToolBar 留顶（错层）。
 - **账号区分布（2026-10-22 定稿）**：新导航 TopToolBar（仅首页）与旧导航 AppHeader（**仅非首页** `v-if="!isHome"`）都带 铃铛+头像（铃铛在头像左）；`UserAvatar` 触发区只显示头像+身份标签（无用户名），未登录渲染 `user-avatar-login-btn`（验证时勿用 `.user-avatar-wrapper` 选择器，未登录会误判 false）。
 - **旧导航 AppHeader 去 logo**：最左侧 logo 已删除（仅删除该 logo，不影响内容分类导航）；`logoMain` 引用已移除。
-- **搜索 `GlobalSearchBox`**：**已去掉模块筛选按钮**（原 高考/中考/考公/考研/英语四六级 作用域删除）——搜索本质是「实体+资讯」全站查，模块筛选只作用于资讯组、很鸡肋，故移除。现为**纯胶囊**：放大镜+输入框+⌘K，`width:100%; max-width:360px; flex:1` 可随导航收缩；聚焦橙描边+光晕。下拉=院校/城市/专业/资讯 分组（资讯走 `searchArticle(null,kw)` 全模块）。点选跳 `/university/:id` `/city/:id` `/major/:id` `/gaokao/article/:id`。**待补**：非高考资讯详情无通用路由（仅 `/gaokao/article/:id` 写死高考模块），需补通用 `/article/:id` + 后端 id 查询。
+- **搜索 `GlobalSearchBox`**：**已去掉模块筛选按钮**（原 高考/中考/考公/考研/英语四六级 作用域删除）——搜索本质是「实体」全站查，模块筛选只作用于资讯组、很鸡肋，故移除。现为**纯胶囊**：放大镜+输入框+⌘K，`width:100%; max-width:360px; flex:1` 可随导航收缩；聚焦橙描边+光晕。下拉=**院校/城市/专业** 三分组，点选跳 `/university/:id` `/city/:id` `/major/:id`。**资讯组已于 2026-10-24 移除**：原 `/gaokao/article/:id` 详情页已删除（gaokao 资讯整页删除），home 资讯改由首页 `ArticleListDialog`/`ArticleDetailDialog` 承担（`searchArticle` 仍保留在 `@/api/search` 供 home 用）。
 - **⚠️ 布局坑：flex 链要靠 `flex:1` 传递宽度，不能用 `width:100%`**（新导航实测）：`tt-center`(grid 1fr 轨道) → `.gs-root` → `.gs-panel` → `.gs-input-wrap`。中间两层若只写 `width:100%` **不会撑满**（flex item 的 width:100% 不等于 grow），实测 875px 轨道下 panel 仍停在内容宽 282px。**必须逐级 `flex:1; min-width:0`**，末端 `.gs-input-wrap` 再 `flex:1; max-width:360px`。
 - **新导航栅格（2026-10-21 定稿）**：`grid-template-columns: auto minmax(0,1fr) auto; gap:24px`。品牌(内容宽) | 搜索(弹性可缩、**靠左不居中**) | 功能区(内容宽，**永不挤压**)。旧 `1fr auto 1fr` 会让右侧 1fr 装不下 662px 内容，`justify-content:flex-end` 把溢出**往左推**盖住搜索框（实测 1366px 重叠 157px）——已根治，OVERLAP=0。
 - **新导航响应式**：链接 gap 24→16px（≤1400px 再降到 12px）；副标题 ≤1199px 隐藏；搜索框 ≤1099px 收为图标按钮（GlobalSearchBox 的 mql 断点已从 1023 改到 **1099**）。实测 1920/1440/1366/1280 均无重叠、无横向溢出。
@@ -89,3 +89,10 @@ admin `main.ts` 已注册 `setSessionExpiredHandler`（非可关闭弹窗+重定
 - 登录用户：**第一次保存档案**时弹框「省份确认之后不可再更改，是否继续？」；确认入库后省份锁定（导航栏 ProvincePicker 与 ArchiveDialog/ArchiveQuickForm 的高考省份全部 disabled），后端 `saveArchive` 也会拒绝省份变更。
 - 锁定状态单例：`composables/useProvinceLock.ts`（`provinceLocked`），由 `utils/gaokaoArchive.ts` 的 `loadArchiveSmart`/`saveArchiveSmart` 同步；判断口径：**已登录 + 服务端已有档案**（含游客档案迁移入库后）。
 - 新增/改动档案保存时注意：`saveArchiveSmart` 返回值已改为 `{ toServer, canceled }`，取消确认框时 `canceled=true` 不算保存成功。
+
+## ★ 规则：资料页（FileLoadPage）面向人群筛选 = 单一 `stageFilter`（2026-10-24 重构）
+- 资料页「面向人群」筛选统一为**单一 `stageFilter` 状态** + `STAGE_FILTER_OPTIONS`（label/value 映射：C端显示"真题/政策解读"，传后端值"资料/政策解读"，避免旧数据迁移）。初中/高中/大学三专栏配置了 STAGE_FILTER_OPTIONS → 渲染平铺按钮行（含"全部"）；考公/考研/研究生为固定人群（`props.stage`/`route.query.stage`）。
+- `effectiveStage` = 配置了 STAGE_FILTER_OPTIONS 的专栏返回 `stageFilter.value`；其余返回 `props.stage || route.query.stage`。列表请求 `applicableStage = effectiveStage.value`。
+- **URL 深链预选**：`route.query.stage` 经 `syncFromQuery()` 校验（须在 STAGE_FILTER_OPTIONS 内）后设 `stageFilter` 并高亮对应子导航项（如 `/gaokao?tab=highfile&stage=高考资料` → 「高考真题」选中查询；`/middle?stage=中考资料` → 「中考真题」）。`watch(route.query.stage)` 触发同步；非法值忽略回落默认。
+- 旧的「身份下拉模式」（identity/identityFilter/activeSection）已废弃：高中资料原 `highfile`(身份) 与 `zhenti`(高考资料) 两分支合并为 `highfile` + stage 深链；ArchiveBar「高考真题/高考政策解读」改为深链 `/gaokao?tab=highfile&stage=高考资料/高考政策解读`。
+- 右上角导航栏（ArchiveBar 省份/身份）与资料查询已无耦合；后续导航栏要绑其他功能不影响资料列表。

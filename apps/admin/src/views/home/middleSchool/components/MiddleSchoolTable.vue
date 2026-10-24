@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FileLoadListVO } from '@/types/home/fileload'
+import { stageLabel } from '@/types/home/fileload'
 
 defineProps<{
   data: FileLoadListVO[]
@@ -54,7 +55,7 @@ const formatSize = (bytes: number) => {
         </el-table-column>
         <el-table-column prop="applicableStage" label="适合人群" width="110" align="center">
           <template #default="{ row }">
-            <span v-if="row.applicableStage" class="tag-pill stage-pill">{{ row.applicableStage }}</span>
+            <span v-if="row.applicableStage" class="tag-pill stage-pill">{{ stageLabel(row.applicableStage) }}</span>
             <span v-else class="dim-text">-</span>
           </template>
         </el-table-column>

@@ -80,15 +80,15 @@ const tagFilter = ref('')
 
 /**
  * 页内子导航栏配置（按受众）。仅配置了的专栏才渲染导航栏，其余专栏（高中/大学/考公/考研/研究生）
- * 沿用原「导航栏下拉 + query.stage」模式，行为不变。后续高中/大学照此加一条配置即可。
- * - identity：跟随右侧身份切换（初中资料）
- * - fixed：固定面向人群，不随身份变化（中考真题固定查「中考资料」）
+ * 沿用原「导航栏下拉 + query.stage」模式，行为不变。
+ * - filter：点击切到对应「面向人群」预设（设置 stageFilter 并查询），如「中考真题」固定查「中考资料」
  * - soon：敬请期待占位
  */
 interface StageNavSection {
   key: string
   label: string
-  mode: 'identity' | 'fixed' | 'soon'
+  mode: 'filter' | 'soon'
+  /** filter 模式下选中的「面向人群」值（对应后端 applicableStage） */
   stage?: string
 }
 
@@ -102,16 +102,50 @@ interface StageNavConfig {
   sections: StageNavSection[]
 }
 
+/**
+ * 面向人群筛选按钮（标签 ↔ 值 映射）：
+ * - 展示「真题 / 政策解读」，回传后端仍是「资料 / 政策解读」（与 admin 端一致，避免旧数据迁移）；
+ * - 列表由后端按 applicableStage 精确过滤，前端只负责标签展示与值透传。
+ */
+interface StageFilterOption {
+  label: string
+  value: string
+}
+
+const STAGE_FILTER_OPTIONS: Partial<Record<FileLoadAudience, StageFilterOption[]>> = {
+  middle: [
+    { label: '初一', value: '初一' },
+    { label: '初二', value: '初二' },
+    { label: '初三', value: '初三' },
+    { label: '中考真题', value: '中考资料' },
+    { label: '中考政策解读', value: '中考政策解读' },
+  ],
+  high: [
+    { label: '高一', value: '高一' },
+    { label: '高二', value: '高二' },
+    { label: '高三', value: '高三' },
+    { label: '高考真题', value: '高考资料' },
+    { label: '高考政策解读', value: '高考政策解读' },
+  ],
+  college: [
+    { label: '大一', value: '大一' },
+    { label: '大二', value: '大二' },
+    { label: '大三', value: '大三' },
+    { label: '大四', value: '大四' },
+  ],
+}
+
 const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
   middle: {
     label: '初中模块',
     identities: ['初一', '初二', '初三'],
     defaultIdentity: '初三',
     sections: [
-      { key: 'files', label: '初中资料', mode: 'identity' },
-      // 中考真题固定查「中考资料」，与右侧身份无关（身份控件仍展示可切换，只是查询不受影响）
-      { key: 'zhenti', label: '中考真题', mode: 'fixed', stage: '中考资料' },
-      { key: 'news', label: '初中资讯', mode: 'soon' },
+      { key: 'files', label: '初中资料', mode: 'filter', stage: '初三' },
+      // 中考真题：固定查「中考资料」，展示别名「真题」
+      { key: 'zhenti', label: '中考真题', mode: 'filter', stage: '中考资料' },
+      // 原「初中资讯」占位项改为「中考政策解读」，选中即按该面向人群过滤
+      { key: 'policy', label: '中考政策解读', mode: 'filter', stage: '中考政策解读' },
       { key: 'quiz', label: '在线练题', mode: 'soon' },
       { key: 'career', label: '初中生涯规划', mode: 'soon' },
     ],
@@ -121,7 +155,7 @@ const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
     identities: ['大一', '大二', '大三', '大四'],
     defaultIdentity: '大一',
     sections: [
-      { key: 'files', label: '大学资料', mode: 'identity' },
+      { key: 'files', label: '大学资料', mode: 'filter', stage: '大一' },
       { key: 'news', label: '大学资讯', mode: 'soon' },
       { key: 'career', label: '大学生涯规划', mode: 'soon' },
     ],
@@ -130,103 +164,77 @@ const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
 
 const stageNav = computed(() => STAGE_NAV_CONFIG[props.audience] || null)
 
-/** 当前激活的目录项 key */
+/** 当前激活的目录项 key（仅用于子导航高亮；筛选值统一由 stageFilter 驱动） */
 const activeSection = ref('files')
-/** 当前身份（初一/初二/初三 / 大一~大四，初中/大学专栏右上角下拉 + 筛选按钮共用，双向同步） */
-const identity = ref(STAGE_NAV_CONFIG[props.audience]?.defaultIdentity || '')
 
 /**
- * 高中专栏：页内「当前身份」平铺按钮的选中值。与右上角档案身份（ArchiveBar / 高考档案表）完全分离，
- * 仅此处独立驱动「高中资料」查询，互不影响。
+ * 当前选中的「面向人群」筛选值（对应后端 applicableStage；空串 = 全部）。
+ * 标签展示「真题 / 政策解读」，值透传「资料 / 政策解读」（见 STAGE_FILTER_OPTIONS）。
+ * 初中/高中/大学专栏均由此单一状态驱动查询；考公/考研/研究生等单一人群专栏无此筛选行。
  */
-const identityFilter = ref(props.initialIdentity || props.identityOptions?.[0] || '')
+const stageFilter = ref('')
 
-/** 是否处于「高中身份独立模式」（传入 identityOptions 即视为高中专栏） */
-const isHighIdentityMode = computed(() => !!props.identityOptions?.length)
-/** 当前身份平铺按钮的可选项：高中取传入的 identityOptions，初中/大学取 stageNav.identities */
-const identityButtonOptions = computed<string[]>(() =>
-  props.identityOptions?.length ? props.identityOptions : (stageNav.value?.identities ?? []),
+/** 默认选中值：初中默认初三、大学默认大一、高中默认传入身份（与档案身份分离） */
+function initStageFilter() {
+  if (props.audience === 'middle') {
+    stageFilter.value = STAGE_NAV_CONFIG.middle?.defaultIdentity || ''
+  } else if (props.audience === 'college') {
+    stageFilter.value = STAGE_NAV_CONFIG.college?.defaultIdentity || ''
+  } else if (props.audience === 'high') {
+    stageFilter.value = props.initialIdentity || props.identityOptions?.[0] || ''
+  } else {
+    stageFilter.value = ''
+  }
+}
+
+/** 面向人群筛选按钮可选项（含标签/值映射）；无则专栏不渲染筛选行 */
+const stageFilterOptions = computed<StageFilterOption[] | null>(
+  () => STAGE_FILTER_OPTIONS[props.audience] ?? null,
 )
-/** 是否渲染「当前身份」平铺按钮行：高中专栏恒显示；初中/大学仅「资料」子目录(identity 模式)显示，真题(fixed)不显示 */
-const showIdentityFilter = computed(() => {
-  if (isHighIdentityMode.value) return true
-  const nav = stageNav.value
-  if (!nav) return false
-  const sec = nav.sections.find((s) => s.key === activeSection.value)
-  return sec?.mode === 'identity'
-})
-/** 当前选中的身份（空串='全部'）：高中用 identityFilter，初中/大学用 identity */
-const currentIdentity = computed(() => (isHighIdentityMode.value ? identityFilter.value : identity.value))
+
+/** 是否渲染「面向人群」平铺按钮行：配置了 STAGE_FILTER_OPTIONS 的专栏才显示 */
+const showStageFilter = computed(() => !!STAGE_FILTER_OPTIONS[props.audience])
 
 /**
  * 生效的面向人群（接口 applicableStage）：
- * - 高中专栏（传了 identityOptions）：由页内身份平铺按钮独立驱动（与右上角档案身份分离）；
- * - 有页内导航栏（初中/大学）：由当前目录项决定 —— identity 跟随身份 / fixed 固定人群 / soon 不带筛选；
- * - 无页内导航栏：路由 props.stage（考公/考研/研究生单一人群专栏）优先，其次 query.stage。
+ * - 配置了 STAGE_FILTER_OPTIONS 的专栏（初中/高中/大学）：由页内 stageFilter 驱动；
+ * - 其它专栏（考公/考研/研究生单一人群）：沿用路由 props.stage，其次 query.stage。
  */
 const effectiveStage = computed(() => {
-  if (isHighIdentityMode.value) return identityFilter.value
-  const nav = stageNav.value
-  if (!nav) return props.stage || (route.query.stage as string) || ''
-  const sec = nav.sections.find((s) => s.key === activeSection.value)
-  if (!sec) return ''
-  if (sec.mode === 'identity') return identity.value
-  if (sec.mode === 'fixed') return sec.stage || ''
-  return ''
+  if (STAGE_FILTER_OPTIONS[props.audience]) return stageFilter.value
+  return props.stage || (route.query.stage as string) || ''
 })
 
-/** 目录项点击：占位项只弹提示，其余切目录（列表由 watch(effectiveStage) 统一触发重拉） */
+/** 子导航目录点击：placeholder 弹提示；filter 预设切到对应「面向人群」并查询 */
 function onSectionClick(sec: StageNavSection) {
   if (sec.mode === 'soon') {
     ElMessage.info(`「${sec.label}」敬请期待`)
     return
   }
   activeSection.value = sec.key
+  if (sec.stage) stageFilter.value = sec.stage
+}
+
+/** 面向人群筛选按钮点击：选中即按该人群过滤（全部=清空 stageFilter，由 watch(effectiveStage) 重查） */
+function onStageFilterClick(val: string) {
+  stageFilter.value = val
 }
 
 /**
- * 身份切换（下拉框）：
- * - 停留在「初中资料」时，身份直接决定查询人群（effectiveStage 变化 → watch 自动重拉）；
- * - 停留在「中考真题」等固定人群目录时，查询不变，仍按产品要求强制重发一次接口；
- * - 不重置当前目录，用户不会因为切身份被弹回「初中资料」。
- * 同时把身份同步到 URL（刷新/分享可保持）。
+ * URL 深链回填：/middle?stage=中考政策解读、/gaokao?tab=highfile&stage=高考政策解读 等
+ * 将 stageFilter 预设为对应「面向人群」值并高亮对应子导航项；无效值忽略，回落到默认。
  */
-function onIdentityChange(val: string) {
-  identity.value = val
-  currentPage.value = 1
-  const q = { ...route.query }
-  if (val) q.stage = val
-  else delete q.stage
-  void router.replace({ path: route.path, query: q })
-  fetchList(true)
-}
-
-/**
- * 当前身份平铺按钮点击：
- * - 高中专栏（分离模式）：仅更新页内 identityFilter，由 watch(effectiveStage) 自动重拉；右上角档案身份不变；
- * - 初中/大学专栏（一致模式）：走 onIdentityChange，同步右上角下拉 + URL。
- */
-function onIdentityButtonClick(val: string) {
-  if (isHighIdentityMode.value) {
-    identityFilter.value = val
-    currentPage.value = 1
-  } else {
-    onIdentityChange(val)
-  }
-}
-
-/** 进入页面/切换受众时按 URL 回填目录与身份（兼容旧链接 /middle?stage=中考资料） */
 function syncFromQuery() {
   const nav = stageNav.value
-  if (!nav) return
-  const s = route.query.stage as string
-  const fixedHit = nav.sections.find((x) => x.mode === 'fixed' && x.stage === s)
-  if (fixedHit) {
-    activeSection.value = fixedHit.key
+  const s = (route.query.stage as string) || ''
+  if (s && STAGE_FILTER_OPTIONS[props.audience]?.some((o) => o.value === s)) {
+    stageFilter.value = s
+    const hit = nav?.sections.find((x) => x.stage === s && x.mode === 'filter')
+    if (hit) activeSection.value = hit.key
     return
   }
+  // 无有效深链：回到默认目录与默认人群
   activeSection.value = 'files'
-  identity.value = s === '' ? '' : (s && nav.identities.includes(s) ? s : nav.defaultIdentity)
 }
 
 const subjectOptions = ref<string[]>([])
@@ -289,7 +297,7 @@ const bannerTitleParts = computed(() => {
 
 const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value))
 
-/** 拉取学科/标签的去重值（用于下拉），失败不阻塞列表 */
+/** 拉取学科/模块的去重值（用于渲染筛选按钮组），失败不阻塞列表 */
 async function fetchOptions() {
   try {
     const [sub, t] = await Promise.all([
@@ -400,6 +408,20 @@ function onFilterChange() {
   fetchList()
 }
 
+/** 学科按钮点击（单选）：点哪个查哪个；「全部」= 不带学科条件 */
+function onSubjectClick(val: string) {
+  if (subjectFilter.value === val) return
+  subjectFilter.value = val
+  onFilterChange()
+}
+
+/** 模块按钮点击（单选，对应后端 tag 字段）：「全部」= 不带模块条件 */
+function onTagClick(val: string) {
+  if (tagFilter.value === val) return
+  tagFilter.value = val
+  onFilterChange()
+}
+
 function resetFilters() {
   subjectFilter.value = ''
   tagFilter.value = ''
@@ -474,6 +496,7 @@ const barTop = computed(() => (headerHidden.value ? 0 : stickyTop.value))
 onMounted(async () => {
   measureHeader()
   window.addEventListener('resize', measureHeader)
+  initStageFilter()
   syncFromQuery()
   // 防止非老师通过 URL（?teacher=1）直入教师专属而跳变：已登录但非老师则回退到高中视图
   if (teacherMode.value && userStore.isLoggedIn()) {
@@ -496,6 +519,7 @@ watch(() => props.audience, () => {
   tagFilter.value = ''
   currentPage.value = 1
   teacherMode.value = false
+  initStageFilter()
   syncFromQuery()
   fetchOptions()
   fetchList()
@@ -540,19 +564,6 @@ watch(effectiveStage, () => {
           </button>
         </div>
 
-        <!-- 右侧身份切换（下拉框）：资料目录按身份查；固定人群目录（如中考真题）也可切换，查询保持不变 -->
-        <div class="stage-identity">
-          <span class="stage-identity-label">当前身份</span>
-          <el-select
-            :model-value="identity"
-            class="stage-identity-select"
-            popper-class="stage-identity-popper"
-            @update:model-value="onIdentityChange"
-          >
-            <el-option label="全部" value="" />
-            <el-option v-for="opt in stageNav.identities" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-        </div>
       </div>
     </nav>
 
@@ -652,78 +663,15 @@ watch(effectiveStage, () => {
           </button>
         </div>
 
-        <div class="file-filter__row">
-          <div class="filter-field">
-            <span class="filter-label">学科</span>
-            <el-select
-              v-model="subjectFilter"
-              placeholder="全部学科"
-              clearable
-              class="file-select"
-              @change="onFilterChange"
-            >
-              <template #prefix>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
-                </svg>
-              </template>
-              <el-option v-for="o in subjectOptions" :key="o" :label="o" :value="o" />
-            </el-select>
-          </div>
-
-          <div class="filter-field">
-            <span class="filter-label">标签</span>
-            <el-select
-              v-model="tagFilter"
-              placeholder="全部标签"
-              clearable
-              class="file-select"
-              @change="onFilterChange"
-            >
-              <template #prefix>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M20.6 13.4 12 22a2 2 0 0 1-2.8 0L3 15.8V3h12.8l5.8 5.8a2 2 0 0 1 0 2.8Z" />
-                  <circle cx="8.5" cy="8.5" r="1.3" />
-                </svg>
-              </template>
-              <el-option v-for="o in tagOptions" :key="o" :label="o" :value="o" />
-            </el-select>
-          </div>
-
-          <button
-            v-if="hasActiveFilter"
-            type="button"
-            class="filter-clear"
-            @click="resetFilters"
-          >
-            清除筛选
-          </button>
-        </div>
-
-        <!-- 当前身份：平铺按钮（初中/大学与右上角下拉双向同步；高中独立分离；空串=全部） -->
-        <div v-if="showIdentityFilter" class="file-identity">
-          <span class="filter-label">当前身份</span>
-          <div class="file-identity__buttons">
-            <button
-              v-for="opt in identityButtonOptions"
-              :key="opt"
-              type="button"
-              class="identity-btn"
-              :class="{ 'is-active': currentIdentity === opt }"
-              @click="onIdentityButtonClick(opt)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="8" r="3.5" />
-                <path d="M5 20c.7-3.3 3.5-5 7-5s6.3 1.7 7 5" />
-              </svg>
-              {{ opt }}
-            </button>
+        <!-- ① 面向人群（初中/高中/大学「资料」目录；标签展示真题/政策解读，值透传资料/政策解读）
+             「全部」置首，红边高亮；其它人群选中为橙色渐变 -->
+        <div v-if="showStageFilter" class="file-filter__row">
+          <div class="file-filter__buttons">
             <button
               type="button"
-              class="identity-btn"
-              :class="{ 'is-active': currentIdentity === '' }"
-              @click="onIdentityButtonClick('')"
+              class="filter-pill filter-pill--all"
+              :class="{ 'is-active': stageFilter === '' }"
+              @click="onStageFilterClick('')"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="9" cy="8" r="3.2" />
@@ -731,6 +679,88 @@ watch(effectiveStage, () => {
                 <path d="M16 5.2a3.2 3.2 0 0 1 0 6M18.4 15.4c2 .5 3.2 1.9 3.6 4.1" />
               </svg>
               全部
+            </button>
+            <button
+              v-for="opt in stageFilterOptions"
+              :key="opt.value"
+              type="button"
+              class="filter-pill"
+              :class="{ 'is-active': stageFilter === opt.value }"
+              @click="onStageFilterClick(opt.value)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5 20c.7-3.3 3.5-5 7-5s6.3 1.7 7 5" />
+              </svg>
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ② 学科（选项由后端动态返回去重值） -->
+        <div v-if="subjectOptions.length" class="file-filter__row">
+          <div class="file-filter__buttons">
+            <button
+              type="button"
+              class="filter-pill filter-pill--all"
+              :class="{ 'is-active': subjectFilter === '' }"
+              @click="onSubjectClick('')"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7.5" height="7.5" rx="1.8" />
+                <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8" />
+                <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8" />
+                <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8" />
+              </svg>
+              全部
+            </button>
+            <button
+              v-for="o in subjectOptions"
+              :key="o"
+              type="button"
+              class="filter-pill"
+              :class="{ 'is-active': subjectFilter === o }"
+              @click="onSubjectClick(o)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+              </svg>
+              {{ o }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ③ 模块（原「标签」，选项由后端动态返回去重值） -->
+        <div v-if="tagOptions.length" class="file-filter__row">
+          <div class="file-filter__buttons">
+            <button
+              type="button"
+              class="filter-pill filter-pill--all"
+              :class="{ 'is-active': tagFilter === '' }"
+              @click="onTagClick('')"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7.5" height="7.5" rx="1.8" />
+                <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8" />
+                <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8" />
+                <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8" />
+              </svg>
+              全部
+            </button>
+            <button
+              v-for="o in tagOptions"
+              :key="o"
+              type="button"
+              class="filter-pill"
+              :class="{ 'is-active': tagFilter === o }"
+              @click="onTagClick(o)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20.6 13.4 12 22a2 2 0 0 1-2.8 0L3 15.8V3h12.8l5.8 5.8a2 2 0 0 1 0 2.8Z" />
+                <circle cx="8.5" cy="8.5" r="1.3" />
+              </svg>
+              {{ o }}
             </button>
           </div>
         </div>
@@ -843,7 +873,7 @@ watch(effectiveStage, () => {
               </svg>
             </span>
             <p class="file-state__title">暂无符合条件的资料</p>
-            <p class="file-state__desc">试试更换学科或标签，或重置筛选条件</p>
+            <p class="file-state__desc">试试更换学科或模块，或重置筛选条件</p>
             <div class="file-state__actions">
               <button v-if="hasActiveFilter" type="button" class="file-state__primary" @click="resetFilters">重置筛选</button>
               <button type="button" class="file-state__ghost" @click="onRefresh">刷新试试</button>
@@ -1318,99 +1348,79 @@ watch(effectiveStage, () => {
   background: #fff7ed;
 }
 
+/* ===== 筛选行：纯按钮行（无行首标题），三行依次为 当前身份 / 学科 / 模块 ===== */
 .file-filter__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
   padding-top: 12px;
 }
 
-.filter-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.filter-label {
-  flex-shrink: 0;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.file-select {
-  width: 200px;
-}
-
-.file-select :deep(.el-select__wrapper) {
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
-  transition: box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.file-select :deep(.el-select__wrapper.is-hovering) {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #cbd5e1;
-}
-
-.file-select :deep(.el-select__wrapper.is-focused) {
-  background: #ffffff;
-  box-shadow:
-    inset 0 0 0 1.5px #f97316,
-    0 0 0 3px rgba(249, 115, 22, 0.12);
-}
-
-.file-select :deep(.el-select__prefix) {
-  margin-right: 4px;
-  color: #94a3b8;
-}
-
-.file-select :deep(.el-select__prefix svg) {
-  width: 15px;
-  height: 15px;
-}
-
-.file-select :deep(.el-select__placeholder) {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.filter-clear {
-  padding: 6px 10px;
-  color: #94a3b8;
-  font-size: 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-clear:hover {
-  color: #e11d48;
-  background: #fff1f2;
-}
-
-.file-identity {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+/* 行与行之间用极淡分隔线，避免无标题时行与行糊在一起 */
+.file-filter__row + .file-filter__row {
   margin-top: 12px;
-  padding-top: 12px;
   border-top: 1px solid #f8fafc;
 }
 
-.file-identity__buttons {
+.file-filter__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== 筛选药丸按钮 ===== */
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.filter-pill svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.filter-pill:hover {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.4);
+  background: #fff7ed;
+}
+
+/* 具体项选中：品牌橙渐变填充（与原身份按钮一致） */
+.filter-pill.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+/* 「全部」：丹霞红描边（常态可见），选中转红底白字 */
+.filter-pill--all {
+  color: #e11d48;
+  background: #fff;
+  border: 1.5px solid rgba(225, 29, 72, 0.5);
+}
+
+.filter-pill--all:hover {
+  color: #e11d48;
+  background: #fff1f2;
+  border-color: #e11d48;
+}
+
+.filter-pill--all.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #e11d48, #fb7185);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
 }
 
 /* ===== 文件列表面板 ===== */
@@ -1941,19 +1951,6 @@ watch(effectiveStage, () => {
     padding: 14px;
   }
 
-  .file-filter__row {
-    align-items: stretch;
-  }
-
-  .filter-field {
-    flex: 1 1 100%;
-  }
-
-  .file-select {
-    flex: 1;
-    width: auto;
-  }
-
   .file-list-panel {
     padding: 16px 14px 0;
   }
@@ -1993,39 +1990,7 @@ watch(effectiveStage, () => {
 }
 
 /* ===== 当前身份平铺按钮（筛选行） ===== */
-.identity-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.identity-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.identity-btn:hover {
-  color: #f97316;
-  border-color: rgba(249, 115, 22, 0.4);
-  background: #fff7ed;
-}
-
-.identity-btn.is-active {
-  color: #fff;
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
-}
+/* 已统一为 .filter-pill 药丸体系（见上方「筛选药丸按钮」），此处不再保留旧样式 */
 </style>
 
 <style>

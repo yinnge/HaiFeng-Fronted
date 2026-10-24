@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { searchUniversity, searchCity, searchMajor, searchArticle } from '@/api/search'
-import type { SearchItem, BizArticleSearchItem } from '@/types/search'
+import { searchUniversity, searchCity, searchMajor } from '@/api/search'
+import type { SearchItem } from '@/types/search'
 
 const router = useRouter()
 
@@ -15,12 +15,12 @@ const panelRef = ref<HTMLElement | null>(null)
 
 interface Seg { text: string; hit: boolean }
 interface ResultItem { id: string; name: string; sub?: string; segments: Seg[] }
-interface ResultGroup { type: 'university' | 'city' | 'major' | 'article'; label: string; items: ResultItem[] }
+interface ResultGroup { type: 'university' | 'city' | 'major'; label: string; items: ResultItem[] }
 
 const groups = ref<ResultGroup[]>([])
 const loading = ref(false)
 
-/* 高亮：院校/城市/专业按关键字子串；资讯用后端返回的命中区间 */
+/* 高亮：院校/城市/专业按关键字子串 */
 function segmentsFromKeyword(text: string, kw: string): Seg[] {
   if (!kw) return [{ text, hit: false }]
   const lower = text.toLowerCase()
@@ -35,22 +35,6 @@ function segmentsFromKeyword(text: string, kw: string): Seg[] {
   }
   if (cursor < text.length) out.push({ text: text.slice(cursor), hit: false })
   return out.length ? out : [{ text, hit: false }]
-}
-
-function segmentsFromSpans(text: string, spans?: { start: number; end: number }[]): Seg[] {
-  if (!spans || !spans.length) return [{ text, hit: false }]
-  const sorted = [...spans].sort((a, b) => a.start - b.start)
-  const out: Seg[] = []
-  let cursor = 0
-  for (const s of sorted) {
-    const start = Math.max(0, Math.min(s.start, text.length))
-    const end = Math.max(start, Math.min(s.end, text.length))
-    if (start > cursor) out.push({ text: text.slice(cursor, start), hit: false })
-    out.push({ text: text.slice(start, end), hit: true })
-    cursor = end
-  }
-  if (cursor < text.length) out.push({ text: text.slice(cursor), hit: false })
-  return out
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -68,11 +52,10 @@ async function runSearch() {
   }
   loading.value = true
   try {
-    const [u, c, m, a] = await Promise.allSettled([
+    const [u, c, m] = await Promise.allSettled([
       searchUniversity(kw),
       searchCity(kw),
       searchMajor(kw),
-      searchArticle(null, kw),
     ])
     const next: ResultGroup[] = []
     if (u.status === 'fulfilled') {
@@ -105,21 +88,7 @@ async function runSearch() {
         })
       }
     }
-    if (a.status === 'fulfilled') {
-      const list = (a.value.data.data || []) as BizArticleSearchItem[]
-      if (list.length) {
-        next.push({
-          type: 'article',
-          label: '资讯',
-          items: list.map((it) => ({
-            id: String(it.id),
-            name: it.title,
-            sub: it.columnName || undefined,
-            segments: segmentsFromSpans(it.title, it.highlight),
-          })),
-        })
-      }
-    }
+    // 资讯组已移除：原详情页 /gaokao/article/:id 已删除；home 资讯由首页 ArticleListDialog 独立承担
     groups.value = next
     showDropdown.value = focused.value
   } finally {
@@ -135,8 +104,7 @@ function go(item: ResultItem, type: ResultGroup['type']) {
   const base =
     type === 'university' ? '/university/'
     : type === 'city' ? '/city/'
-    : type === 'major' ? '/major/'
-    : '/gaokao/article/'
+    : '/major/'
   router.push(base + item.id)
 }
 

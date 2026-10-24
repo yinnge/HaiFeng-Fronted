@@ -89,11 +89,13 @@ defineExpose({ openDialog, applyArchive })
 
 // ===== 中部页面目录 =====
 const navItems: BarNavItem[] = [
-  { key: 'zhenti', label: '高考真题', to: '/gaokao?tab=zhenti' },
+  // 高考真题：跳转「高中资料」并预选「高考资料」（展示真题、传值资料，与后台一致）
+  { key: 'zhenti', label: '高考真题', to: '/gaokao?tab=highfile&stage=高考资料' },
   // 「高中生涯规划」尚无独立页，占位项（无 to → 点击提示敬请期待）
   { key: 'highcareer', label: '高中生涯规划' },
   { key: 'volunteer', label: '高考志愿', to: '/gaokao', hot: true },
-  { key: 'articles', label: '高中资讯', to: '/gaokao/articles' },
+  // 原「高中资讯」整页删除，此处改为「高考政策解读」，跳转「高中资料」并预选该面向人群
+  { key: 'policy', label: '高考政策解读', to: '/gaokao?tab=highfile&stage=高考政策解读' },
   { key: 'toolkit', label: '高考百宝箱', to: '/gaokao/toolkit' },
 ]
 
@@ -101,17 +103,31 @@ const navItems: BarNavItem[] = [
 const allNavItems = computed<BarNavItem[]>(() => [...(props.extraItems || []), ...navItems])
 
 /**
- * 高亮判定：path + query 双校验。
- * - 高考真题 to='/gaokao?tab=zhenti'：仅当 path=/gaokao 且 tab=zhenti 时高亮；
- * - 高考志愿 to='/gaokao'（无 query）：仅当 path=/gaokao 且无 tab 时高亮（tab=zhenti 时不亮，避免两个同时高亮）。
+ * 高亮判定：path + tab + stage 三重校验。
+ * - 高考真题 to='/gaokao?tab=highfile&stage=高考资料'：tab=highfile 且 stage=高考资料 时高亮；
+ * - 高考政策解读 to='...&stage=高考政策解读'：tab=highfile 且 stage=高考政策解读 时高亮；
+ * - 高考志愿 to='/gaokao'（无 query）：仅当无 tab、无 stage 时高亮（避免与其它项双高亮）。
  */
 function isActive(item: BarNavItem) {
   if (!item.to) return false
   const [path, query] = item.to.split('?')
   if (route.path !== path) return false
-  if (!query) return !route.query.tab
-  const target = new URLSearchParams(query).get('tab')
-  return target === (route.query.tab as string | undefined)
+  const target = new URLSearchParams(query)
+  const tTab = target.get('tab')
+  const tStage = target.get('stage')
+  // tab 校验
+  if (tTab) {
+    if (tTab !== (route.query.tab as string | undefined)) return false
+  } else if (route.query.tab) {
+    // 该项无 tab 约束（如「高中资料」），但当前已带 tab → 不高亮，避免与真题/政策解读双高亮
+    return false
+  }
+  // stage 校验（真题 / 政策解读 各自独立高亮）
+  if (tStage) {
+    return tStage === (route.query.stage as string | undefined)
+  }
+  // 无 stage 约束：仅当当前也未带 stage 时高亮（如「高中资料」默认态）
+  return !route.query.stage
 }
 
 function onNavClick(item: BarNavItem) {

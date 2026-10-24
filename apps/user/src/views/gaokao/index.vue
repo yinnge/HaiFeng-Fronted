@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getGaokaoArticlePage, type GaokaoArticleListVO } from '@/api/article'
 import type { GaokaoArchiveVO } from '@/api/gaokao'
 import { scrollToHash } from '@/utils/navAnchor'
 import ArchiveBar from '@/components/gaokao/ArchiveBar.vue'
@@ -14,9 +13,9 @@ const route = useRoute()
 
 /**
  * 高考模块子视图切换（由 ArchiveBar 的目录项经路由 query 驱动）：
- * - 'highfile' → 内联渲染「高中资料」FileLoadPage（audience=high + applicableStage=当前身份）；
- * - 'zhenti'  → 内联渲染 FileLoadPage（与 /high 完全相同：audience=high + applicableStage=高考资料），不跳新页面；
- * - 其它/缺省 → 高考志愿 landing（Hero + 特殊通道 + 资讯 + 直通考院）。
+ * - 'highfile' → 内联渲染「高中资料」FileLoadPage（audience=high + applicableStage=当前身份；
+ *                高考真题入口复用同一 tab 并携带 stage=高考资料 预选）；
+ * - 其它/缺省 → 高考志愿 landing（Hero + 特殊通道 + 直通考院）。
  */
 const activeTab = computed(() => (route.query.tab as string) || 'volunteer')
 
@@ -27,14 +26,12 @@ const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } 
 // ===== 高考档案：展示/编辑统一由共享吸附条组件（ArchiveBar）负责，
 // 本页只接收事件更新展示数据并联动资讯区 =====
 const displayForm = ref<GaokaoArchiveVO | null>(null)
-const hasArchive = computed(() => !!displayForm.value?.gaokaoProvince)
 
 const archiveBarRef = ref<InstanceType<typeof ArchiveBar> | null>(null)
 
 // 档案变化（初始加载 / 省份下拉切换 / 弹窗保存）：更新展示 + 按新省份刷新资讯
 function onArchiveChange(archive: GaokaoArchiveVO | null) {
   displayForm.value = archive
-  void fetchNews()
 }
 
 // 档案保存成功（模拟填报）：跳转专业组查询
@@ -51,7 +48,7 @@ function onCardChange(archive: GaokaoArchiveVO | null) {
 // ===== 首页 Hero 轮播 =====
 interface HeroSlide {
   img: string
-  action: 'dialog' | 'zhenti'
+  action: 'dialog' | 'link'
   title: string
   sub: string
 }
@@ -64,7 +61,7 @@ const heroSlides: HeroSlide[] = [
   },
   {
     img: `${import.meta.env.BASE_URL}img_2.png`,
-    action: 'zhenti',
+    action: 'link',
     title: '高考真题资料',
     sub: '历年真题与解析，备考更有底气',
   },
@@ -94,45 +91,13 @@ function goSlide(i: number) {
   activeSlide.value = i
   startCarousel()
 }
-// 轮播图点击：图1 弹出档案弹窗；图2 跳转高考真题（内联 FileLoadPage）
+// 轮播图点击：图1 弹出档案弹窗；图2 跳转高考真题资料（highfile + 预选高考资料）
 function onSlideClick(i: number) {
   if (heroSlides[i].action === 'dialog') {
     archiveBarRef.value?.openDialog()
   } else {
-    void router.push('/gaokao?tab=zhenti')
+    void router.push('/gaokao?tab=highfile&stage=高考资料')
   }
-}
-
-// ===== 热点资讯：按档案省份精准查询，首页仅展示 4 条 =====
-const newsLoading = ref(false)
-const newsList = ref<GaokaoArticleListVO[]>([])
-
-async function fetchNews() {
-  if (!displayForm.value?.gaokaoProvince) return
-  newsLoading.value = true
-  try {
-    // 后端分页 size 下限为 10（BasePageQueryDTO 强约束），首页只展示 4 条，本地截断
-    const res = await getGaokaoArticlePage({
-      province: displayForm.value.gaokaoProvince,
-      page: 1,
-      size: 10,
-    })
-    newsList.value = res.data.data.records.slice(0, 4)
-  } catch {
-    // 资讯拉取失败不打断主流程
-  } finally {
-    newsLoading.value = false
-  }
-}
-
-// 查看资讯详情（从高考志愿 landing 进入，标记来源便于详情页「返回高考志愿」）
-function goNewsDetail(id: string) {
-  router.push({ path: `/gaokao/article/${id}`, query: { from: 'gaokao' } })
-}
-
-// 查看更多资讯（跳转资讯列表页）
-function goArticles() {
-  router.push('/gaokao/articles')
 }
 
 // 特殊通道为低频路径，landing 仅保留单行入口，5 类通道卡片移至 /gaokao/special
@@ -233,13 +198,6 @@ async function initPage() {
         :initial-identity="highIdentity"
         title="高中资料"
       />
-      <!-- 高考真题：内联复用 /high 文件列表（原模原样，仅入口位置不同），不跳新页面 -->
-      <FileLoadPage
-        v-else-if="activeTab === 'zhenti'"
-        audience="high"
-        stage="高考资料"
-        title="高考真题"
-      />
       <template v-else>
       <div class="container mx-auto px-6 pb-16 relative">
           <div class="max-w-5xl mx-auto min-h-[200px]">
@@ -321,41 +279,7 @@ async function initPage() {
             </span>
           </button>
 
-          <!-- 热点资讯：按档案省份推送，仅展示 4 条，查看更多跳资讯列表页 -->
-          <div class="mt-12 mb-5 flex items-center justify-between gap-4">
-            <h3 class="border-l-[4px] border-sem-blue pl-3 text-xl font-bold text-gray-800">热点资讯</h3>
-            <button class="news-more-btn" @click="goArticles">
-              查看更多
-              <svg class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6.5 3.5 11 8l-4.5 4.5" />
-              </svg>
-            </button>
-          </div>
-
-          <div v-if="hasArchive" v-loading="newsLoading" class="min-h-[120px]">
-            <div v-if="newsList.length" class="grid grid-cols-1 gap-x-10 gap-y-2.5 md:grid-cols-2">
-              <button
-                v-for="item in newsList"
-                :key="item.id"
-                class="news-item"
-                :title="item.summary || item.title"
-                @click="goNewsDetail(item.id)"
-              >
-                <span class="news-dot" aria-hidden="true"></span>
-                <span class="news-title">{{ item.title }}</span>
-              </button>
-            </div>
-            <p v-else-if="!newsLoading" class="py-8 text-center text-sm text-gray-400">本省暂无已发布的资讯</p>
-          </div>
-          <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-surface-border bg-white px-5 py-4 text-sm text-gray-500">
-            填写高考档案后，将按你的省份推送热点资讯
-            <button class="news-empty-btn" @click="archiveBarRef?.openDialog()">
-              去填写档案
-              <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6.5 3.5 11 8l-4.5 4.5" />
-              </svg>
-            </button>
-          </div>
+          <!-- 热点资讯区块已移除：gaokao 资讯系统整页删除，home 资讯由首页 ArticleListDialog 承担 -->
         </div>
       </div>
 
@@ -394,105 +318,6 @@ async function initPage() {
 
 <style scoped>
 /* ===== 档案吸附条样式已抽取至共享组件 components/gaokao/ArchiveBar.vue ===== */
-
-/* ===== 资讯空态引导按钮 ===== */
-.news-empty-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 16px;
-  background: var(--brand-orange);
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.24);
-  transition: all 0.25s ease;
-}
-
-.news-empty-btn:hover {
-  background: var(--brand-orange-dark);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-  transform: translateY(-1px);
-}
-
-.news-empty-btn:active {
-  transform: scale(0.97);
-}
-
-/* ===== 热点资讯 ===== */
-.news-more-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 16px;
-  background: #fff;
-  color: var(--sem-blue);
-  border: 1px solid var(--neutral-border-strong);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.news-more-btn:hover {
-  background: var(--sem-blue-bg);
-  color: var(--sem-blue);
-  border-color: var(--sem-blue-soft);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
-  transform: translateY(-1px);
-}
-
-.news-more-btn:active {
-  transform: scale(0.97);
-}
-
-.news-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 8px 6px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.2s ease;
-}
-
-.news-item:hover {
-  background: var(--sem-blue-bg);
-}
-
-.news-item:hover .news-title {
-  color: var(--sem-blue);
-}
-
-.news-dot {
-  width: 6px;
-  height: 6px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--sem-blue);
-}
-
-.news-title {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  flex: 1;
-  min-width: 0;
-  color: #374151;
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: left;
-  transition: color 0.2s ease;
-}
 
 /* ===== 直通考院 ===== */
 .exams-section {

@@ -21,11 +21,14 @@ const recharge = useRechargeDialog()
 
 const memberTypeLabel = computed(() => {
   if (!props.memberInfo) return ''
+  // 教师身份独立于 member_type，由管理员授予，优先展示
+  if (props.memberInfo.teacher) return '教师'
   return MemberTypeLabel[props.memberInfo.memberType] || '普通用户'
 })
 
 const memberTypeTagType = computed(() => {
   if (!props.memberInfo) return 'info'
+  if (props.memberInfo.teacher) return 'warning'
   return MemberTypeTag[props.memberInfo.memberType] || 'info'
 })
 
