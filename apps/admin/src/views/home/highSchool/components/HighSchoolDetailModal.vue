@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FileLoadDetailVO } from '@/types/home/fileload'
+import { stageLabel } from '@/types/home/fileload'
 
 const props = defineProps<{
   visible: boolean
@@ -95,7 +96,7 @@ const handleClose = () => {
             <span v-else class="dim-text">-</span>
           </el-descriptions-item>
           <el-descriptions-item label="适合人群">
-            <span v-if="detailData.applicableStage" class="tag-pill stage-pill">{{ detailData.applicableStage }}</span>
+            <span v-if="detailData.applicableStage" class="tag-pill stage-pill">{{ stageLabel(detailData.applicableStage) }}</span>
             <span v-else class="dim-text">-</span>
           </el-descriptions-item>
           <el-descriptions-item label="标签">

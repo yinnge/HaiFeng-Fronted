@@ -248,10 +248,10 @@ const dialogTitle = () => (props.mode === 'upload' ? '上传文件' : '修改文
           <span class="dim-text">{{ CIVIL_SERVICE_STAGE }}</span>
           <span class="storage-badge">固定</span>
         </el-form-item>
-        <el-form-item label="标签">
+        <el-form-item label="学科对应模块">
           <el-input
             v-model="formData.tag"
-            placeholder="如：备考指南 / 就业辅导（可选）"
+            placeholder="选词填空/语文作文（可选）"
             clearable
             style="width: 260px"
           />

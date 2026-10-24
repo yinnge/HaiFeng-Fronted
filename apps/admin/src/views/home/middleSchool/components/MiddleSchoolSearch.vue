@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import type { FileLoadQueryDTO } from '@/types/home/fileload'
+import { stageLabel } from '@/types/home/fileload'
 import { getFileLoadStages, getFileLoadSubjects, getFileLoadTags } from '@/api/home/fileload'
 import type { FileTargetAudience } from '@/types/home/fileload'
 
@@ -102,7 +103,7 @@ onMounted(fetchOptions)
             clearable
             style="width: 130px"
           >
-            <el-option v-for="item in stageOptions" :key="item" :label="item" :value="item" />
+            <el-option v-for="item in stageOptions" :key="item" :label="stageLabel(item)" :value="item" />
           </el-select>
         </el-form-item>
         <el-form-item label="标签">

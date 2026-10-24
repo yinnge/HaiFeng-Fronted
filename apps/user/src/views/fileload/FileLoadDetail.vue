@@ -340,9 +340,9 @@ onMounted(load)
               <p class="text-sm text-gray-600 leading-relaxed">{{ detail.description }}</p>
             </div>
 
-            <!-- 标签 -->
+            <!-- 模块（原「标签」） -->
             <div v-if="detail.tag" class="rounded-xl bg-white border border-gray-100 p-4">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">标签</div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">模块</div>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   class="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs text-orange-600 border border-orange-100"

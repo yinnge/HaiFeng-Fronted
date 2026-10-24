@@ -25,6 +25,8 @@ const avatarInitial = computed(() => {
 const hasAvatar = computed(() => !!userInfo.value?.avatar)
 
 const memberTypeLabel = computed(() => {
+  // 教师身份独立于 member_type，由管理员授予，优先展示
+  if (userInfo.value?.teacher) return '教师'
   if (!userInfo.value?.memberType) return '普通用户'
   return MemberTypeLabel[userInfo.value.memberType] || '普通用户'
 })

@@ -136,18 +136,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '强基数据详情', requiresAuth: true },
   },
   {
-    path: '/gaokao/articles',
-    name: 'GaokaoArticles',
-    component: () => import('@/views/gaokao/Articles.vue'),
-    meta: { title: '热点资讯' },
-  },
-  {
-    path: '/gaokao/article/:id',
-    name: 'GaokaoArticleDetail',
-    component: () => import('@/views/gaokao/ArticleDetail.vue'),
-    meta: { title: '资讯详情' },
-  },
-  {
     path: '/gaokao/toolkit',
     name: 'GaokaoToolkit',
     component: () => import('@/views/gaokao/Toolkit.vue'),
