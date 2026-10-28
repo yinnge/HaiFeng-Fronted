@@ -202,7 +202,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
   gap: 1.5rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 1024px) {

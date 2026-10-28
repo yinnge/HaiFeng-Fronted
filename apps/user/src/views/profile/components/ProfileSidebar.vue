@@ -130,16 +130,22 @@ async function handleCopyInviteCode() {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  height: 100%;
 }
 
+/* 三卡 flex:1 均分侧栏高度，与左栏卡片底部对齐 */
 .side-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: #ffffff;
   border-radius: 1rem;
   border: 1px solid rgba(15, 23, 42, 0.05);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.02),
     0 4px 20px -2px rgba(15, 23, 42, 0.04);
-  padding: 1.25rem;
+  padding: 1.5rem;
   transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -162,13 +168,13 @@ async function handleCopyInviteCode() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
   text-align: center;
 }
 
 .overview-icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
 }
 
 .icon-amber { color: #f59e0b; }
@@ -177,15 +183,15 @@ async function handleCopyInviteCode() {
 .icon-orange { color: #f97316; }
 
 .overview-label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #9ca3af;
 }
 
 .overview-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
+  padding: 0.1875rem 0.625rem;
+  font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9999px;
   white-space: nowrap;
@@ -208,7 +214,7 @@ async function handleCopyInviteCode() {
 }
 
 .overview-num {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #2563eb;
   font-variant-numeric: tabular-nums;
@@ -216,7 +222,7 @@ async function handleCopyInviteCode() {
 }
 
 .overview-unit {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #9ca3af;
   margin-left: 0.125rem;
@@ -227,23 +233,23 @@ async function handleCopyInviteCode() {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .side-card-icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
   flex-shrink: 0;
 }
 
 .side-card-title {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
 }
 
 .side-card-desc {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #9ca3af;
   margin-top: 0.125rem;
 }
@@ -260,8 +266,8 @@ async function handleCopyInviteCode() {
   min-width: 0;
   display: flex;
   align-items: center;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.9375rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
@@ -273,7 +279,7 @@ async function handleCopyInviteCode() {
 
 .copy-btn {
   flex-shrink: 0;
-  width: 2.5rem;
+  width: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -286,8 +292,8 @@ async function handleCopyInviteCode() {
 }
 
 .copy-btn svg {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .copy-btn:hover {
@@ -332,10 +338,10 @@ async function handleCopyInviteCode() {
 
 .account-tile {
   border-radius: 0.75rem;
-  padding: 0.875rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3125rem;
 }
 
 .tile-green {
@@ -349,7 +355,7 @@ async function handleCopyInviteCode() {
 }
 
 .account-tile-label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #6b7280;
 }
@@ -363,14 +369,14 @@ async function handleCopyInviteCode() {
 }
 
 .account-tile-value {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
 }
 
 .account-tile-note {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: #9ca3af;
 }
 </style>
