@@ -248,14 +248,15 @@ watch(detail, (d) => {
   animateNumber('recommend', d.recommendationRate ?? 0)
 })
 
-// ===== Hero logo：imageUrl，无图回退校名首字 =====
+// ===== Hero logo：carouselImages[0] 为 logo（数据组约定），无图回退校名首字 =====
+const heroLogo = computed(() => detail.value?.carouselImages?.[0] || '')
 const heroLogoText = computed(() => (detail.value?.name || '').slice(0, 1))
 
-// ===== 院校介绍右侧缩略图：轮播第 2 张，无则第 1 张，再无则渐变兜底 =====
-const introThumb = computed(() => {
-  const imgs = detail.value?.carouselImages || []
-  return imgs[1] || imgs[0] || ''
-})
+// ===== Hero 背景轮播：carouselImages[1..]（下标 0 是 logo，不进轮播） =====
+const heroSlides = computed(() => detail.value?.carouselImages?.slice(1) || [])
+
+// ===== 院校介绍右侧缩略图：取第一张背景图（carouselImages[1]），无则渐变兜底 =====
+const introThumb = computed(() => detail.value?.carouselImages?.[1] || '')
 
 // ===== 排行榜 key → 中文名 + 缩写 + 简称（纯展示映射，未知 key 兜底）=====
 const rankingMeta: Record<string, { name: string; abbr: string; short: string }> = {
@@ -288,9 +289,9 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
         <template v-else-if="detail">
           <!-- ===== 沉浸式 Hero：轮播背景 + logo 圆标 + 信息叠加层 ===== -->
           <section class="hero relative rounded-2xl overflow-hidden shadow-card mb-6">
-            <template v-if="detail.carouselImages?.length">
+            <template v-if="heroSlides.length">
               <el-carousel height="380px" indicator-position="none" arrow="always" class="hero-carousel">
-                <el-carousel-item v-for="(img, idx) in detail.carouselImages" :key="idx">
+                <el-carousel-item v-for="(img, idx) in heroSlides" :key="idx">
                   <img :src="img" :alt="`${detail.name} ${idx + 1}`" class="h-full w-full object-cover" />
                 </el-carousel-item>
               </el-carousel>
@@ -300,11 +301,11 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
             <!-- 渐隐遮罩，保证文字可读 -->
             <div class="hero-mask" />
 
-            <!-- 左上 logo 圆标 -->
+            <!-- 左上 logo 圆标（carouselImages[0]） -->
             <div class="hero-logo absolute left-6 top-6 z-10">
               <img
-                v-if="detail.imageUrl"
-                :src="detail.imageUrl"
+                v-if="heroLogo"
+                :src="heroLogo"
                 :alt="detail.name"
                 class="h-16 w-16 rounded-full object-contain bg-white shadow-lg p-1.5"
               />
