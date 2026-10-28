@@ -75,7 +75,12 @@ function handleAvatarClick() {
     <div class="user-info">
       <div class="user-name-row">
         <span class="user-name">{{ memberInfo?.username || '用户' }}</span>
-        <span class="member-tag">{{ memberTypeLabel }}</span>
+        <span class="member-tag">
+          <svg class="member-tag-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9.05 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.366-2.446a1 1 0 00-1.176 0l-3.366 2.446c-.784.57-1.838-.197-1.539-1.118l1.286-3.957a1 1 0 00-.363-1.118L2.075 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.05 2.927z" />
+          </svg>
+          {{ memberTypeLabel }}
+        </span>
       </div>
       <div class="user-phone">
         <svg class="phone-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -86,8 +91,7 @@ function handleAvatarClick() {
       <div class="user-meta-row">
         <span v-if="memberTypeLabel !== '普通用户'" class="vip-pill">
           <svg class="vip-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M3 5.5A1.5 1.5 0 014.5 4h11A1.5 1.5 0 0117 5.5v9a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 14.5v-9z" opacity=".12" />
-            <path d="M10 6.2l1.45 2.94 3.25.47-2.35 2.29.55 3.23L10 13.59l-2.9 1.54.55-3.23-2.35-2.29 3.25-.47L10 6.2z" />
+            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
           </svg>
           {{ memberTypeLabel }}权益生效中
         </span>
@@ -271,12 +275,18 @@ function handleAvatarClick() {
 .member-tag {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   padding: 0.1875rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: white;
   background: linear-gradient(135deg, #f97316, #fb923c);
   border-radius: 9999px;
+}
+
+.member-tag-icon {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .user-phone {
@@ -314,6 +324,7 @@ function handleAvatarClick() {
   }
 }
 
+/* 权益生效：翡翠绿（正向/生效语义），与到期时间竖线分隔 */
 .vip-pill {
   display: inline-flex;
   align-items: center;
@@ -321,22 +332,24 @@ function handleAvatarClick() {
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid rgba(5, 150, 105, 0.2);
   border-radius: 9999px;
 }
 
 .vip-icon {
   width: 0.875rem;
   height: 0.875rem;
-  color: #f59e0b;
+  color: #10b981;
 }
 
 .user-expire {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(15, 23, 42, 0.12);
   color: #9ca3af;
   font-size: 0.75rem;
 }
@@ -392,6 +405,7 @@ function handleAvatarClick() {
 
 /* 升级按钮 */
 .upgrade-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -407,11 +421,29 @@ function handleAvatarClick() {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
   white-space: nowrap;
   align-self: center;
+  overflow: hidden;
+}
+
+/* 光泽扫过动效 */
+.upgrade-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
 }
 
 .upgrade-btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.03);
   box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
+}
+
+.upgrade-btn:hover::after {
+  left: 130%;
 }
 
 .upgrade-btn:active {

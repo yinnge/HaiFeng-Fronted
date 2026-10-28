@@ -237,8 +237,20 @@ onMounted(() => {
     </div>
 
     <!-- 卡片列表 -->
-    <div v-loading="loading" :key="listKey" class="card-list">
-      <div v-if="tableData.length === 0 && !loading" class="empty-state">
+    <div :key="listKey" class="card-list">
+      <template v-if="loading">
+        <div v-for="n in 4" :key="n" class="notification-skeleton">
+          <div class="sk-row">
+            <div class="sk-avatar"></div>
+            <div class="sk-lines">
+              <div class="sk-line sk-short"></div>
+              <div class="sk-line sk-long"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+      <div v-if="tableData.length === 0" class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
         </svg>
@@ -253,6 +265,14 @@ onMounted(() => {
       >
         <div class="card-top">
           <div class="card-top-left">
+            <span
+              class="card-type-icon"
+              :class="'type-' + (NotificationTypeTag[item.notificationType as keyof typeof NotificationTypeTag] || 'info')"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.243 5.234a.75.75 0 00.515 1.076 32.91 32.91 0 003.256.508 3.5 3.5 0 106.954 0 32.903 32.903 0 003.256-.508.75.75 0 00.515-1.076A11.185 11.185 0 0116 8a6 6 0 00-6-6zM8.75 15.5a1.5 1.5 0 013 0 .75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75z" />
+              </svg>
+            </span>
             <el-tag
               :type="NotificationTypeTag[item.notificationType as keyof typeof NotificationTypeTag] || 'info'"
               size="small"
@@ -276,22 +296,32 @@ onMounted(() => {
             <button
               v-if="!item.isRead"
               class="card-action-btn card-action-btn-primary"
+              title="标为已读"
               @click="handleMarkSingleRead(item)"
             >
-              标为已读
+              <svg viewBox="0 0 20 20" fill="currentColor" class="action-glyph">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
             </button>
             <button
               class="card-action-btn card-action-btn-success"
+              title="查看"
               @click="handleViewDetail(item)"
             >
-              查看
+              <svg viewBox="0 0 20 20" fill="currentColor" class="action-glyph">
+                <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                <path fill-rule="evenodd" d="M.664 10C1.66 5.94 5.618 3 10 3s8.34 2.94 9.336 7c-.996 4.06-4.954 7-9.336 7s-8.34-2.94-9.336-7zM10 13.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" clip-rule="evenodd" />
+              </svg>
             </button>
-            <button class="card-action-btn card-action-btn-danger" @click="handleDelete(item)">
-              删除
+            <button class="card-action-btn card-action-btn-danger" title="删除" @click="handleDelete(item)">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="action-glyph">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
             </button>
           </div>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- 分页 -->
@@ -388,31 +418,36 @@ onMounted(() => {
   font-size: 0.85rem;
   font-weight: 500;
   border-radius: 9999px;
+  border: 1px solid transparent;
+  background: white;
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
+/* 次要按钮：白底 + 描边，避免开局即两个大色块 */
 .action-btn-primary {
-  background: linear-gradient(135deg, #f5a54a, #e8722a);
-  color: white;
-  box-shadow: 0 2px 8px rgba(232, 114, 42, 0.25);
+  color: #e8722a;
+  border-color: rgba(249, 115, 22, 0.35);
+  background: white;
 }
 
 .action-btn-primary:hover {
-  background: linear-gradient(135deg, #e8722a, #d4661a);
-  box-shadow: 0 4px 12px rgba(232, 114, 42, 0.35);
+  color: #ea580c;
+  border-color: #e8722a;
+  background: #fff7ed;
   transform: translateY(-1px);
 }
 
 .action-btn-danger {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: white;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+  background: white;
 }
 
 .action-btn-danger:hover {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+  border-color: #dc2626;
+  background: #fef2f2;
   transform: translateY(-1px);
 }
 
@@ -522,6 +557,60 @@ onMounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
+/* 列表骨架屏 */
+.notification-skeleton {
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sk-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.sk-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  flex-shrink: 0;
+}
+
+.sk-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sk-line {
+  height: 0.75rem;
+  border-radius: 9999px;
+}
+
+.sk-short {
+  width: 35%;
+}
+
+.sk-long {
+  width: 75%;
+}
+
+.sk-avatar,
+.sk-line {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e9eef5 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .empty-icon {
   width: 3rem;
   height: 3rem;
@@ -551,8 +640,8 @@ onMounted(() => {
 }
 
 .notification-card.is-unread {
-  border-left: 3px solid #f5a54a;
-  background: linear-gradient(135deg, #fffbf7, #fff7ed);
+  border-left: 4px solid #f97316;
+  background: #fff7ed;
 }
 
 .card-top {
@@ -560,6 +649,39 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
+}
+
+/* 类型图标色块：按通知类型语义着色 */
+.card-type-icon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+}
+
+.card-type-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.card-type-icon.type-info {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.card-type-icon.type-success {
+  background: #ecfdf5;
+  color: #059669;
+}
+.card-type-icon.type-warning {
+  background: #fffbeb;
+  color: #d97706;
+}
+.card-type-icon.type-danger {
+  background: #fef2f2;
+  color: #e11d48;
 }
 
 .unread-badge {
@@ -623,12 +745,21 @@ onMounted(() => {
 }
 
 .card-action-btn {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
   border-radius: 9999px;
+  border: none;
+  background: transparent;
   transition: all 0.15s ease;
   cursor: pointer;
+}
+
+.action-glyph {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .card-action-btn-primary {

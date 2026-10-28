@@ -47,23 +47,29 @@ async function handleCopyInviteCode() {
     <div class="side-card">
       <div class="overview-grid">
         <div class="overview-tile tile-blue">
-          <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 8.2l4.1 2.8L12 4.5l4.9 6.5L21 8.2l-1.6 9.1a1.6 1.6 0 01-1.58 1.32H6.18a1.6 1.6 0 01-1.58-1.32L3 8.2zm3.2 3.1a1.3 1.3 0 100 2.6 1.3 1.3 0 000-2.6zm11.6 0a1.3 1.3 0 100 2.6 1.3 1.3 0 000-2.6z" />
-          </svg>
+          <span class="overview-icon-chip">
+            <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 8.2l4.1 2.8L12 4.5l4.9 6.5L21 8.2l-1.6 9.1a1.6 1.6 0 01-1.58 1.32H6.18a1.6 1.6 0 01-1.58-1.32L3 8.2zm3.2 3.1a1.3 1.3 0 100 2.6 1.3 1.3 0 000-2.6zm11.6 0a1.3 1.3 0 100 2.6 1.3 1.3 0 000-2.6z" />
+            </svg>
+          </span>
           <div class="overview-label">会员状态</div>
           <span class="overview-pill" :class="isVip ? 'pill-blue' : 'pill-gray'">{{ memberStatusLabel }}</span>
         </div>
         <div class="overview-tile tile-green">
-          <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd" d="M12 1.8l6.3 2.56c.55.22.9.75.9 1.35v5.32c0 4.01-2.64 7.68-6.74 8.68a1.18 1.18 0 01-.92 0C7.44 18.71 4.8 15.04 4.8 11.03V5.71c0-.6.35-1.13.9-1.35L12 1.8zm3.12 6.48a.9.9 0 00-1.44-1.08l-2.82 3.6-1.92-1.92a.9.9 0 10-1.27 1.27l2.62 2.62a.9.9 0 001.36-.1l3.47-4.39z" clip-rule="evenodd" />
-          </svg>
+          <span class="overview-icon-chip">
+            <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" d="M12 1.8l6.3 2.56c.55.22.9.75.9 1.35v5.32c0 4.01-2.64 7.68-6.74 8.68a1.18 1.18 0 01-.92 0C7.44 18.71 4.8 15.04 4.8 11.03V5.71c0-.6.35-1.13.9-1.35L12 1.8zm3.12 6.48a.9.9 0 00-1.44-1.08l-2.82 3.6-1.92-1.92a.9.9 0 10-1.27 1.27l2.62 2.62a.9.9 0 001.36-.1l3.47-4.39z" clip-rule="evenodd" />
+            </svg>
+          </span>
           <div class="overview-label">账号状态</div>
           <span class="overview-pill pill-green">正常</span>
         </div>
         <div class="overview-tile tile-blue">
-          <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1.8l3.12 6.32 6.98 1.02-5.05 4.92 1.19 6.96L12 17.68l-6.24 3.34 1.19-6.96L1.9 9.14l6.98-1.02L12 1.8z" />
-          </svg>
+          <span class="overview-icon-chip">
+            <svg class="overview-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1.8l3.12 6.32 6.98 1.02-5.05 4.92 1.19 6.96L12 17.68l-6.24 3.34 1.19-6.96L1.9 9.14l6.98-1.02L12 1.8z" />
+            </svg>
+          </span>
           <div class="overview-label">收藏院校</div>
           <div class="overview-num">
             {{ profile?.favoriteCount || 0 }}<span class="overview-unit">所</span>
@@ -75,9 +81,17 @@ async function handleCopyInviteCode() {
     <!-- 我的邀请 -->
     <div class="side-card invite-card">
       <div class="side-card-header">
-        <svg class="side-card-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3.4 2.6a1 1 0 00-1.32 1.2l2.13 6.74a1 1 0 00.72.68l6.53 1.55a.4.4 0 010 .78l-6.53 1.55a1 1 0 00-.72.68L2.08 22.5a1 1 0 001.32 1.2l18.2-8.34a1.3 1.3 0 000-2.36L3.4 2.6z" transform="scale(0.86) translate(2 -0.8)" />
-        </svg>
+        <span class="side-card-icon-chip chip-orange">
+          <svg class="side-card-icon" viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="planeGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f97316" />
+                <stop offset="100%" stop-color="#fb923c" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#planeGrad)" d="M3.4 2.6a1 1 0 00-1.32 1.2l2.13 6.74a1 1 0 00.72.68l6.53 1.55a.4.4 0 010 .78l-6.53 1.55a1 1 0 00-.72.68L2.08 22.5a1 1 0 001.32 1.2l18.2-8.34a1.3 1.3 0 000-2.36L3.4 2.6z" transform="scale(0.86) translate(2 -0.8)" />
+          </svg>
+        </span>
         <div>
           <div class="side-card-title">我的邀请</div>
           <div class="side-card-desc">分享给好友，一起规划未来</div>
@@ -100,9 +114,11 @@ async function handleCopyInviteCode() {
     <!-- 账户概览 -->
     <div class="side-card">
       <div class="side-card-header">
-        <svg class="side-card-icon icon-amber" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M4 3h2.5v18H4a1.5 1.5 0 01-1.5-1.5v-15A1.5 1.5 0 014 3zm5 0h11a1.5 1.5 0 011.5 1.5v15a1.5 1.5 0 01-1.5 1.5H9V3zm2.5 5.25a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-6zm0 3.5a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-6zm0 3.5a.75.75 0 000 1.5h3.5a.75.75 0 000-1.5h-3.5z" />
-        </svg>
+        <span class="side-card-icon-chip chip-amber">
+          <svg class="side-card-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 3h2.5v18H4a1.5 1.5 0 01-1.5-1.5v-15A1.5 1.5 0 014 3zm5 0h11a1.5 1.5 0 011.5 1.5v15a1.5 1.5 0 01-1.5 1.5H9V3zm2.5 5.25a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-6zm0 3.5a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-6zm0 3.5a.75.75 0 000 1.5h3.5a.75.75 0 000-1.5h-3.5z" />
+          </svg>
+        </span>
         <div class="side-card-title">账户概览</div>
         <button class="detail-link" @click="emit('view-commission')">
           查看详情
@@ -138,16 +154,16 @@ async function handleCopyInviteCode() {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  height: 100%;
+  /* 桌面端吸顶：与左栏高度解耦，滚动长列表时右栏保持可见 */
+  position: sticky;
+  top: 88px;
 }
 
-/* 三卡 flex:1 均分侧栏高度，与左栏卡片底部对齐 */
+/* 侧栏卡片按自身内容自然排布，不再被拉伸；极浅渐变底增加质感 */
 .side-card {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%);
   border-radius: 1rem;
   border: 1px solid rgba(15, 23, 42, 0.05);
   box-shadow:
@@ -155,6 +171,14 @@ async function handleCopyInviteCode() {
     0 4px 20px -2px rgba(15, 23, 42, 0.04);
   padding: 1.5rem;
   transition: all 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* 移动端单栏堆叠：取消吸顶，随文档流正常排列 */
+@media (max-width: 1024px) {
+  .profile-sidebar {
+    position: static;
+    top: auto;
+  }
 }
 
 .side-card:hover {
@@ -193,9 +217,26 @@ async function handleCopyInviteCode() {
 }
 
 .overview-icon {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
   color: #3b82f6;
+}
+
+/* 柔光图标底座：圆角方块浅底 + 居中图标 */
+.overview-icon-chip {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.06);
+}
+
+.tile-green .overview-icon-chip {
+  background: #ecfdf5;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.06);
 }
 
 .tile-green .overview-icon {
@@ -258,14 +299,31 @@ async function handleCopyInviteCode() {
   margin-bottom: 1.25rem;
 }
 
-.side-card-icon {
-  width: 1.75rem;
-  height: 1.75rem;
+.side-card-icon-chip {
+  width: 2.75rem;
+  height: 2.75rem;
   flex-shrink: 0;
-  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.06);
 }
 
-.icon-amber {
+.chip-orange {
+  background: #fff7ed;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.08);
+}
+
+.chip-amber {
+  background: #fff7ed;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.06);
+}
+
+.side-card-icon {
+  width: 1.5rem;
+  height: 1.5rem;
   color: #f97316;
 }
 
@@ -311,8 +369,8 @@ async function handleCopyInviteCode() {
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
   color: #374151;
-  background: #f9fafb;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(135deg, #fffbf5, #fff7ed);
+  border: 1px dashed #fdba74;
   border-radius: 0.625rem;
 }
 
@@ -384,12 +442,12 @@ async function handleCopyInviteCode() {
 }
 
 .tile-green {
-  background: #ecfdf5;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
   border: 1px solid rgba(5, 150, 105, 0.12);
 }
 
 .tile-amber {
-  background: #fff7ed;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
   border: 1px solid rgba(249, 115, 22, 0.14);
 }
 

@@ -117,7 +117,9 @@ onMounted(() => {
                     账号安全
                   </span>
                 </template>
-                <AccountInfo :member-info="memberInfo" @refresh="handleRefresh" />
+                <div class="tab-pane-anim" :key="activeTab">
+                  <AccountInfo :member-info="memberInfo" @refresh="handleRefresh" />
+                </div>
               </el-tab-pane>
               <el-tab-pane name="profile">
                 <template #label>
@@ -128,7 +130,9 @@ onMounted(() => {
                     个人资料
                   </span>
                 </template>
-                <ProfileForm :profile="profile" @refresh="handleRefresh" />
+                <div class="tab-pane-anim" :key="activeTab">
+                  <ProfileForm :profile="profile" @refresh="handleRefresh" />
+                </div>
               </el-tab-pane>
               <el-tab-pane name="commission">
                 <template #label>
@@ -139,7 +143,9 @@ onMounted(() => {
                     佣金提现
                   </span>
                 </template>
-                <CommissionPanel />
+                <div class="tab-pane-anim" :key="activeTab">
+                  <CommissionPanel />
+                </div>
               </el-tab-pane>
               <el-tab-pane name="notification">
                 <template #label>
@@ -150,7 +156,9 @@ onMounted(() => {
                     消息通知
                   </span>
                 </template>
-                <NotificationPanel @refresh="userStore.fetchUserInfo()" />
+                <div class="tab-pane-anim" :key="activeTab">
+                  <NotificationPanel @refresh="userStore.fetchUserInfo()" />
+                </div>
               </el-tab-pane>
             </el-tabs>
           </el-card>
@@ -202,7 +210,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
   gap: 1.5rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 @media (max-width: 1024px) {
@@ -257,6 +265,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
   gap: 1.5rem;
+  align-items: start;
 }
 
 @media (max-width: 1024px) {
@@ -311,7 +320,7 @@ onMounted(() => {
 .profile-tabs :deep(.el-tabs__item) {
   font-weight: 500;
   font-size: 0.95rem;
-  color: #6b7280;
+  color: #64748b;
   padding: 0 1.25rem;
   height: 40px;
   line-height: 40px;
@@ -346,8 +355,8 @@ onMounted(() => {
 }
 
 .profile-tabs :deep(.el-tabs__item:hover) {
-  color: #e8722a;
-  background: #fff7ed;
+  color: #1f2937;
+  background: #f8fafc;
 }
 
 .profile-tabs :deep(.el-tabs__item.is-active),
@@ -355,5 +364,22 @@ onMounted(() => {
   color: #ffffff;
   background: linear-gradient(135deg, #f97316, #fb923c);
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+/* Tab 切换内容区：淡入 + 轻微上移进场 */
+.tab-pane-anim {
+  animation: tabFadeIn 0.25s ease both;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

@@ -172,7 +172,7 @@ async function handleSave() {
     <!-- 基本信息 -->
     <div class="form-section">
       <div class="section-header">
-        <div class="section-icon-base">
+        <div class="section-icon-base icon-orange">
           <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
           </svg>
@@ -213,7 +213,7 @@ async function handleSave() {
     <div class="section-divider"></div>
     <div class="form-section">
       <div class="section-header">
-        <div class="section-icon-base">
+        <div class="section-icon-base icon-blue">
           <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
           </svg>
@@ -365,6 +365,21 @@ async function handleSave() {
   justify-content: center;
   background: #fff7ed;
   border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+/* 分组语义色：基本信息=橙，教育背景=蓝 */
+.section-icon-base.icon-orange {
+  background: #fff7ed;
+}
+.section-icon-base.icon-orange .section-icon {
+  color: #f97316;
+}
+.section-icon-base.icon-blue {
+  background: #eff6ff;
+}
+.section-icon-base.icon-blue .section-icon {
+  color: #2563eb;
 }
 
 .section-icon {
@@ -388,8 +403,8 @@ async function handleSave() {
 
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.18) 30%, rgba(249, 115, 22, 0.18) 70%, transparent);
-  margin: 0.5rem 1.5rem 1.5rem;
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.06) 30%, rgba(15, 23, 42, 0.06) 70%, transparent);
+  margin: 0.25rem 1.5rem 1.5rem;
 }
 
 .form-grid {
@@ -427,11 +442,11 @@ async function handleSave() {
 .save-btn:hover {
   background: linear-gradient(135deg, #e8722a, #d4661a);
   box-shadow: 0 6px 16px rgba(232, 114, 42, 0.35);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 
 .save-btn:active {
-  transform: translateY(0);
+  transform: scale(0.99);
 }
 
 .btn-icon {
@@ -448,20 +463,28 @@ async function handleSave() {
 :deep(.el-input__wrapper),
 :deep(.el-textarea__inner) {
   border-radius: 0.5rem;
+  background-color: #f8fafc;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
   transition: all 0.2s ease;
 }
 
 :deep(.el-input__wrapper:hover),
 :deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px #d1d5db inset;
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
 }
 
 :deep(.el-input__wrapper.is-focus),
 :deep(.el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px #e8722a inset;
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 1px #e8722a inset,
+    0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
 :deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #e8722a inset;
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 1px #e8722a inset,
+    0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 </style>
