@@ -155,8 +155,11 @@ function handleImageTypeChange(type: string) {
 
 onMounted(async () => {
   await fetchOverview()
+  // 深链支持：?cat=gallery 等直接打开对应栏目（院校详情页「校园风光」入口），无参数时行为不变
+  const catKey = route.query.cat as string
+  const target = categories.find(c => c.key === catKey && (!c.requiresPro || isPro.value))
   // 默认展示「基础生存类」（categories[0].key === 'survival'，requiresPro=false 不会被拦）
-  handleCategoryClick(categories[0])
+  handleCategoryClick(target || categories[0])
 })
 </script>
 

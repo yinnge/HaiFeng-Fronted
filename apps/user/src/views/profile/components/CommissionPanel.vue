@@ -140,7 +140,7 @@ loadCommission()
               <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
             </svg>
           </div>
-          <div class="stat-value">¥{{ commission.commissionBalance.toFixed(2) }}</div>
+          <div class="stat-value" :class="{ 'is-negative': commission.commissionBalance < 0 }">¥{{ commission.commissionBalance.toFixed(2) }}</div>
           <div class="stat-label">可提现余额</div>
         </div>
         <div class="stat-card stat-card-orange">
@@ -233,7 +233,11 @@ loadCommission()
             :class="['withdraw-amount-card', { 'withdraw-amount-card-active': withdrawAmount === 50, 'withdraw-amount-card-disabled': !canWithdraw50 }]"
             @click="canWithdraw50 && (withdrawAmount = 50)"
           >
-            <span class="withdraw-amount-icon">💰</span>
+            <span class="withdraw-amount-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </span>
             <span class="withdraw-amount-num">¥50</span>
             <span class="withdraw-amount-desc">标准提现</span>
           </div>
@@ -241,7 +245,12 @@ loadCommission()
             :class="['withdraw-amount-card', { 'withdraw-amount-card-active': withdrawAmount === 100, 'withdraw-amount-card-disabled': !canWithdraw100 }]"
             @click="canWithdraw100 && (withdrawAmount = 100)"
           >
-            <span class="withdraw-amount-icon">💎</span>
+            <span class="withdraw-amount-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                <path d="M12 7v10M9 10h6M9 14h6" />
+              </svg>
+            </span>
             <span class="withdraw-amount-num">¥100</span>
             <span class="withdraw-amount-desc">大额提现</span>
           </div>
@@ -329,11 +338,13 @@ loadCommission()
 }
 
 .stat-card {
+  position: relative;
   border-radius: 0.75rem;
   padding: 1.5rem 1.25rem;
   text-align: center;
   border: 1px solid transparent;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .stat-card:hover {
@@ -348,6 +359,7 @@ loadCommission()
 
 .stat-card-green .stat-icon {
   color: #16a34a;
+  background: rgba(16, 163, 74, 0.12);
 }
 
 .stat-card-green .stat-value {
@@ -361,6 +373,7 @@ loadCommission()
 
 .stat-card-orange .stat-icon {
   color: #ea580c;
+  background: rgba(234, 88, 12, 0.12);
 }
 
 .stat-card-orange .stat-value {
@@ -374,28 +387,43 @@ loadCommission()
 
 .stat-card-blue .stat-icon {
   color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
 }
 
 .stat-card-blue .stat-value {
   color: #2563eb;
 }
 
+/* 顶部小图标角标（父子角标锚定构图） */
 .stat-icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: 0 auto 0.5rem;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
 }
 
 .stat-icon svg {
-  width: 100%;
-  height: 100%;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   line-height: 1.2;
   margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+/* 负数余额：丹霞红警示 */
+.stat-value.is-negative {
+  color: #e11d48 !important;
 }
 
 .stat-label {
@@ -424,7 +452,7 @@ loadCommission()
 .withdraw-btn:hover {
   background: linear-gradient(135deg, #e8722a, #d4661a) !important;
   box-shadow: 0 6px 16px rgba(232, 114, 42, 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.02);
 }
 
 /* 已邀请人数 */
@@ -451,10 +479,27 @@ loadCommission()
   gap: 0.5rem;
 }
 
+.invite-count-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .invite-count-icon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.invite-count-icon svg {
   width: 1.25rem;
   height: 1.25rem;
-  color: #e8722a;
 }
 
 .invite-count-label {
@@ -483,36 +528,51 @@ loadCommission()
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
+/* 信息块统一：柔光图标座 + 标题（去橙条，降通胀） */
 .section-header {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  background: linear-gradient(135deg, #f5a54a, #e8722a);
-  margin: 0;
+  gap: 0.625rem;
+  padding: 1.25rem 1.25rem 0.75rem;
 }
 
 .section-icon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.section-icon svg {
   width: 1.125rem;
   height: 1.125rem;
-  color: white;
 }
 
 .section-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: white;
+  color: #1f2937;
 }
 
 .section-content {
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1.25rem 1.25rem;
 }
 
-/* 邀请码行 */
+/* 邀请码行：卡券风格（虚线描边 + 浅橙底） */
 .invite-code-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #fffbf5, #fff7ed);
+  border: 1px dashed #fdba74;
+  border-radius: 0.75rem;
 }
 
 .invite-code-text {
@@ -663,7 +723,24 @@ loadCommission()
 }
 
 .withdraw-amount-icon {
-  font-size: 1.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.withdraw-amount-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.withdraw-amount-card-active .withdraw-amount-icon {
+  background: rgba(232, 114, 42, 0.18);
+  color: #e8722a;
 }
 
 .withdraw-amount-num {

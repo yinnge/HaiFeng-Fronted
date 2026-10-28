@@ -171,12 +171,17 @@ async function handleSave() {
   <div class="profile-form">
     <!-- 基本信息 -->
     <div class="form-section">
-      <h3 class="section-title">
-        <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        基本信息
-      </h3>
+      <div class="section-header">
+        <div class="section-icon-base icon-orange">
+          <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="section-title">基本信息</h3>
+          <p class="section-desc">完善个人信息，获得更好的服务体验</p>
+        </div>
+      </div>
       <div class="form-grid">
         <el-form-item label="邮箱">
           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="100" />
@@ -207,12 +212,17 @@ async function handleSave() {
     <!-- 教育背景 -->
     <div class="section-divider"></div>
     <div class="form-section">
-      <h3 class="section-title">
-        <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-        </svg>
-        教育背景
-      </h3>
+      <div class="section-header">
+        <div class="section-icon-base icon-blue">
+          <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="section-title">教育背景</h3>
+          <p class="section-desc">完善教育信息，匹配更精准的推荐内容</p>
+        </div>
+      </div>
       <div class="form-grid">
         <el-form-item label="省份">
           <el-select v-model="form.province" placeholder="请选择省份" filterable class="w-full">
@@ -338,29 +348,63 @@ async function handleSave() {
   margin-bottom: 1.5rem;
 }
 
-.section-title {
-  display: inline-flex;
+/* 分组头：柔光图标座 + 标题 + 说明文案（原型样式） */
+.section-header {
+  display: flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 0.375rem 0.75rem;
-  background: linear-gradient(135deg, #f5a54a, #e8722a);
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  color: white;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-icon-base {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff7ed;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+/* 分组语义色：基本信息=橙，教育背景=蓝 */
+.section-icon-base.icon-orange {
+  background: #fff7ed;
+}
+.section-icon-base.icon-orange .section-icon {
+  color: #f97316;
+}
+.section-icon-base.icon-blue {
+  background: #eff6ff;
+}
+.section-icon-base.icon-blue .section-icon {
+  color: #2563eb;
 }
 
 .section-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  color: white;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #f97316;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.section-desc {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.125rem;
 }
 
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #f5a54a 30%, #e8722a 70%, transparent);
-  margin: 0.5rem 1.5rem 1.5rem;
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.06) 30%, rgba(15, 23, 42, 0.06) 70%, transparent);
+  margin: 0.25rem 1.5rem 1.5rem;
 }
 
 .form-grid {
@@ -398,11 +442,11 @@ async function handleSave() {
 .save-btn:hover {
   background: linear-gradient(135deg, #e8722a, #d4661a);
   box-shadow: 0 6px 16px rgba(232, 114, 42, 0.35);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 
 .save-btn:active {
-  transform: translateY(0);
+  transform: scale(0.99);
 }
 
 .btn-icon {
@@ -419,20 +463,28 @@ async function handleSave() {
 :deep(.el-input__wrapper),
 :deep(.el-textarea__inner) {
   border-radius: 0.5rem;
+  background-color: #f8fafc;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
   transition: all 0.2s ease;
 }
 
 :deep(.el-input__wrapper:hover),
 :deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px #d1d5db inset;
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
 }
 
 :deep(.el-input__wrapper.is-focus),
 :deep(.el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px #e8722a inset;
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 1px #e8722a inset,
+    0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
 :deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #e8722a inset;
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 1px #e8722a inset,
+    0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 </style>

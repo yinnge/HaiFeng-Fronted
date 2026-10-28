@@ -34,17 +34,17 @@ export const navItems: NavItem[] = [
     ],
   },
 
-  /* ---------------- 高中专栏（已整体并入「高考志愿填报」模块） ---------------- */
+  /* ---------------- 高中专栏 ---------------- */
   {
     id: 'high',
     label: '高中专栏',
-    // 顶层点击：跳转高考模块主页（/gaokao landing，即「高中模块」内联页）。
-    // 用 mod=high 作「来源标记」：带此标记时由「高中专栏」高亮，否则由「高考志愿填报」高亮，
-    // 保证同一时间只有一条橙色下划线。
-    route: '/gaokao?mod=high',
+    // 顶层点击：直接跳转独立的高中资料页 /high（FileLoadPage，audience=high，
+    // 带高一/高二/高三身份切换，与初中专栏 /middle 同构）。
+    // 不再经 /gaokao?mod=high 进高考模块。
+    route: '/high',
     subItems: [
-      // 二级「高中资料」：跳转 /gaokao 内联的「高中资料」视图（tab=highfile），同样带 mod=high 来源标记
-      { label: '高中资料', route: '/gaokao?tab=highfile&mod=high' },
+      // 「高中资料」与顶层同目标：/high 独立资料页
+      { label: '高中资料', route: '/high' },
       { label: '练题系统' },
       // 「高中生涯规划」尚无独立页，点击提示「正在开发中」
       { label: '高中生涯规划' },

@@ -7,13 +7,18 @@ export interface CompetitionListVO {
   updatedAt: string
 }
 
+export interface CompetitionBasicInfoItem {
+  title: string
+  content: string
+}
+
 export interface CompetitionDetailVO {
   id: string
   compName: string
   compLevel: string | null
   registrationTime: string | null
   detailId: string
-  basicInfo: Record<string, any>
+  basicInfo: CompetitionBasicInfoItem[]
   awards: string[]
   background: string | null
   purposes: string[]
@@ -35,7 +40,7 @@ export interface CompetitionQueryDTO {
 }
 
 export interface CompetitionDetailDTO {
-  basicInfo?: Record<string, any>
+  basicInfo?: CompetitionBasicInfoItem[]
   awards?: string[]
   background?: string
   purposes?: string[]
@@ -55,4 +60,12 @@ export interface CompetitionAddDTO {
 
 export interface CompetitionUpdateDTO extends CompetitionAddDTO {
   id: string
+}
+
+export interface ImportResultVO {
+  total: number
+  success: number
+  failed: number
+  updated: number
+  errors: string[]
 }

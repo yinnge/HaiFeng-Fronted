@@ -41,7 +41,7 @@ const loading = ref(false)
 const list = ref<FileLoadListVO[]>([])
 const total = ref(0)
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(12)
 const loadError = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 
@@ -52,7 +52,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'latest', label: '最新发布' },
   { value: 'name', label: '名称排序' },
 ]
-const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100]
+const PAGE_SIZE_OPTIONS = [12, 24, 36, 58, 110]
 const listSectionRef = ref<HTMLElement | null>(null)
 
 const sortedList = computed(() => {

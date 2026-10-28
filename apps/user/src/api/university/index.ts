@@ -3,6 +3,7 @@ import type { R, PageResult } from '@haifeng/shared'
 import type {
   UniversityListVO,
   UniversityQueryDTO,
+  UniversityStatsVO,
   UniversityDetailVO,
   GuideOverviewVO,
   GuideCategoryVO,
@@ -20,6 +21,13 @@ const PREFIX = '/api/v1/app/university'
 
 export const getUniversityList = (params: UniversityQueryDTO) =>
   request.get<R<PageResult<UniversityListVO>>>(`${PREFIX}/list`, { params })
+
+/** 院校统计概览（985/211/双一流/本科数量），免登录，不受列表筛选影响 */
+export const getUniversityStats = () => request.get<R<UniversityStatsVO>>(`${PREFIX}/stats`)
+
+/** 招生类型筛选下拉选项（t_special_channel，is_active=true，按 sort_order 升序） */
+export const getSpecialChannelOptions = () =>
+  request.get<R<ChannelOptionVO[]>>(`${PREFIX}/special-channel-options`)
 
 export const getUniversityDetail = (id: string) =>
   request.get<R<UniversityDetailVO>>(`${PREFIX}/${id}/detail`)

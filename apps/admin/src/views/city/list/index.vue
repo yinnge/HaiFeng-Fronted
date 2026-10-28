@@ -52,6 +52,7 @@ const formData = reactive<Record<string, any>>({
   keyCollegeCount: null,
   residentPopulation: null,
   gdp: null,
+  coverImageUrl: '',
 })
 
 const detailForm = reactive<Record<string, any>>({
@@ -196,6 +197,7 @@ const resetForm = () => {
   formData.keyCollegeCount = null
   formData.residentPopulation = null
   formData.gdp = null
+  formData.coverImageUrl = ''
   detailForm.area = null
   detailForm.subtitle = ''
   detailForm.cityLevel = ''
@@ -234,6 +236,7 @@ const fillForm = (d: CityDetailVO) => {
   formData.keyCollegeCount = d.keyCollegeCount
   formData.residentPopulation = d.residentPopulation
   formData.gdp = d.gdp
+  formData.coverImageUrl = d.coverImageUrl || ''
 }
 
 const fillDetailForm = (d: CityDetailVO) => {
@@ -308,6 +311,7 @@ const saveBasic = async (): Promise<boolean> => {
     if (formData.keyCollegeCount !== null) data.keyCollegeCount = formData.keyCollegeCount
     if (formData.residentPopulation !== null) data.residentPopulation = formData.residentPopulation
     if (formData.gdp !== null) data.gdp = formData.gdp
+    if (formData.coverImageUrl) data.coverImageUrl = formData.coverImageUrl
 
     let res: any
     if (dialogMode.value === 'add') {
@@ -643,6 +647,12 @@ onMounted(() => {
         <el-table-column prop="province" label="省份" width="120" />
         <el-table-column prop="collegeCount" label="高校数量" width="100" align="center" />
         <el-table-column prop="keyCollegeCount" label="重点高校" width="100" align="center" />
+        <el-table-column label="背景图" width="96" align="center">
+          <template #default="{ row }">
+            <el-image v-if="row.coverImageUrl" :src="row.coverImageUrl" :preview-src-list="[row.coverImageUrl]" fit="cover" style="width:58px;height:40px;border-radius:6px" />
+            <span v-else class="muted-text">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="residentPopulation" label="常住人口(万)" width="120" align="right" />
         <el-table-column prop="isDeleted" label="状态" width="80" align="center">
           <template #default="{ row }">
@@ -690,6 +700,10 @@ onMounted(() => {
             <el-descriptions-item label="重点高校数量">{{ detailData.keyCollegeCount ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="常住人口(万)">{{ detailData.residentPopulation ?? '-' }}</el-descriptions-item>
             <el-descriptions-item label="GDP(亿元)">{{ detailData.gdp ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="城市背景图" :span="2">
+              <el-image v-if="detailData.coverImageUrl" :src="detailData.coverImageUrl" :preview-src-list="[detailData.coverImageUrl]" fit="cover" style="width:180px;height:100px;border-radius:8px" />
+              <span v-else class="muted-text">—</span>
+            </el-descriptions-item>
             <el-descriptions-item label="状态" :span="2">
               <span class="status-pill" :class="detailData.isDeleted ? 'status-disabled' : 'status-active'">
                 {{ statusLabel(detailData.isDeleted) }}
@@ -776,6 +790,20 @@ onMounted(() => {
                   <el-col :span="12">
                     <el-form-item label="GDP(亿元)">
                       <el-input-number controls-position="right" v-model="formData.gdp" :min="0" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="24">
+                    <el-form-item label="城市背景图">
+                      <el-input v-model="formData.coverImageUrl" placeholder="请输入背景图URL（对应Excel导入列「城市背景图」）" maxlength="500" clearable />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="formData.coverImageUrl">
+                  <el-col :span="24">
+                    <el-form-item label="图片预览">
+                      <el-image :src="formData.coverImageUrl" :preview-src-list="[formData.coverImageUrl]" fit="cover" style="width:180px;height:100px;border-radius:8px;border:1px solid #fed7aa" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -1584,6 +1612,10 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.muted-text {
+  color: #9ca3af;
 }
 
 .status-active {

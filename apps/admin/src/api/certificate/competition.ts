@@ -6,6 +6,7 @@ import type {
   CompetitionQueryDTO,
   CompetitionAddDTO,
   CompetitionUpdateDTO,
+  ImportResultVO,
 } from '@/types/certificate/competition'
 
 const PREFIX = '/api/v1/admin/competition'
@@ -40,4 +41,28 @@ export const hardDeleteCompetition = (id: string) => {
 
 export const batchDeleteCompetition = (ids: number[]) => {
   return request.post<R<void>>(`${PREFIX}/batch/delete`, { ids })
+}
+
+/**
+ * 批量导入竞赛主表（单文件，逐个上传；后端返回 ImportResultVO）。
+ */
+export const importCompetitionMain = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<ImportResultVO>>(`${PREFIX}/import/main`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+}
+
+/**
+ * 批量导入竞赛详情（单文件，逐个上传；要求竞赛名称已存在于主表）。
+ */
+export const importCompetitionDetail = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<ImportResultVO>>(`${PREFIX}/import/detail`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
 }

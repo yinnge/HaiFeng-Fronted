@@ -1,286 +1,66 @@
+# 城市库页面优化提示词
 
-## 任务
+## 一、背景说明
+当前页面（图1）与设计原型（图2）差距较大：整体是"橙色通胀"的单调平铺列表，缺少数据可视化模块、排行榜模块、快捷工具模块，城市卡片无封面图、无等级角标、无数字锚点，色彩使用违反全局设计规范。请按以下要求重构页面。
 
-1. 优化前端主页面的导航矩阵
-2. 删除原来的：<div data-v-0ef3d734="" class="section-head reveal-left revealed"></div>
+**后端接口位置**：`D:\exeProject\ideaProjects\Project-HaiFeng\haifeng-app\src\main\java\com\haifeng\app\controller\city\CityController.java`（分页列表、排行榜 `/rank`、数据概览 `/stats` 三个接口均已就绪，直接对接即可，无需改动后端）。
 
+---
 
-+---------------------------------------------------------------------------------------+
-| [LOGO] |
-| 海枫未来规划院 | 
-| 描述 |   
-+---------------------------------------------------------------------------------------+
-| | |
-| [ 规划专栏矩阵 - 8 列 ] | [ 动态速递 - 4 列 ] |
-| | |
-| +-------------------+-----------------+ | +-------------------------------------+ |
-| | 01 初中专栏 | 02 高中专栏 | | | 规划院公告 [查看全部 ↗] | |
-| | 学业奠基与升学指导| 科目选修与生涯规划| | +-------------------------------------+ |
-| +-------------------+-----------------+ | | [政策] 2026新高考志愿投档规则要点 【时间】| |
-| | 03 高考志愿填报 | 04 大学专栏 ||
-| | 院校位次与专业精选| 学分绩点与成长发展| | +-------------------------------------+ |
-| +-------------------+-----------------+ | | [资讯] 四六级核心备考节点安排发布 【时间】| |
-| | 05 英语练习 | 06 考研专栏 | | | 10-18 | |
-| | 中考到考研英语在线练习| 择校初试与复试规划| | +-------------------------------------+ |
-| +-------------------+-----------------+ | | [招录] 国家公务员招考报名重点解析 【时间】| |
-| | 07 考公专栏 | 08 研究生专栏 | | | 10-15 | |
-| | 国考省考选岗精算 | 学术科研与文献开题| | +-------------------------------------+ |
-| +-------------------+-----------------+ | | [就业] 秋招头部企业网申通道汇编 【时间】| |
-| | 09 博士专栏 | 10 就业信息专栏 | | | 10-12 | |
-| | 申博流程与顶刊发表| 行业风向与名企直通| | +-------------------------------------+ |
-| +-------------------+-----------------+ | |
-+---------------------------------------------------------------------------------------+
+## 二、整体布局重构（三栏式信息架构）
 
-### 前端注意点
-1. LOGO + 网站名 要居中，LOGO是动态的动画，之前主页实现过，复用即可。
-2. 可以看到前端针对于导航栏的布局方案：（8:4 分栏，左侧专栏矩阵+右侧公告栏），这个架构肯定会导致右边的消息空余，根据左边专栏的长度来确定公告列表最多展示几条数据。
+### 1. Hero 区域（顶部横幅）
+- 左侧：标题"城市信息大全·为你的未来选择提供参考" + 副标题说明文案 + 4 个场景入口胶囊按钮（高校资源/经济发展/产业结构/生活配套），分别用**晴空蓝/翡翠绿/品牌橙/丹霞红**四色图标底座区分，不要再全部用橙色边框。
+- 右侧：放置一张真实城市天际线配图（如上海外滩），搭配手写体风格标语"更好的城市，成就更好的你"，提升页面质感，替代当前纯色块背景。
+- 背景改为白色/浅灰过渡，去掉当前大面积暖杏色背景导致的"偏黄发闷"观感。
 
-### 接口实现
-#### 全周期规划专栏
-1. 这个点击专栏之后直接跳转页面即可。查看：D:\SelfCompany\Project-HaiFeng-fronted\apps\user\src\config\navigation.ts。里面的一级目录有对应的跳转。【注意：“英语练习” 跳转到 “英语四六级”】
+### 2. 搜索筛选区
+- 搜索框、省份下拉、地区下拉、搜索按钮、重置按钮同一行排布，输入框与下拉框使用冷灰底 `#F8FAFC` + `1px solid #E2E8F0`，搜索按钮使用品牌橙实心胶囊（唯一的强橙色强调按钮）。
+- 地区快捷筛选 Tab（全部地区/华北/华东/...）做成胶囊组，当前选中项用品牌橙高亮，其余为浅灰底描边，不要用满屏橙色边框卡片包裹整个搜索区（当前问题：整个搜索容器被粗橙色圆角描边包裹，视觉臃肿）。
+- 字段映射：对接 `CityQueryDTO`（`cityName`模糊搜索、`province`精确、`region`精确、`sortBy`排序白名单），分页参数走 `BasePageQueryDTO`。
 
-#### 公告专栏
-1. 已对接好公告的接口，删除之前主页的公告信息：<section data-v-0ef3d734="" class="section-wrapper section-alt grain-overlay"><div data-v-0ef3d734="" class="section-container reveal revealed"></section>。
-2. 主页只展示：类型，标题名，时间;标题名太长超过一定字符改为：...省略;类型字段用：【】包裹。
+### 3. 主体区域：左侧列表 + 右侧信息栏（二八分栏，当前页面完全没有这个右栏，需新增）
 
+#### 左侧（约 70% 宽度）：热门城市列表
+- 标题区："热门城市推荐"（或根据搜索态切换为"城市列表"）+ 右侧显示"共 N 个城市"（来自分页接口 `total`）+ 排序下拉（默认排序/高校数量/重点院校/GDP/人口，对应 `sortBy` 枚举 `college|keyCollege|gdp|population`）。
+- **卡片重构（核心）**：每张卡片改为"图片卡"形态，而非当前纯文字卡片：
+   - 顶部使用 `coverImageUrl` 渲染封面图（16:9 比例，圆角 `12px` 顶部，`overflow:hidden`），若字段为空显示默认渐变占位图，**不要**裸露空白。
+   - 图片左上角叠加 `01/02/03...` 序号圆形徽标（白边 `2px solid #FFFFFF`，品牌橙底，按细节②规范吸附在角标位置），用于强调"推荐排名/序号"。
+   - 图片右上角叠加 `cityLevel` 字段的语义胶囊标签（直辖市/省会城市/地级市/县级市），颜色分流：直辖市用丹霞红、省会城市用晴空蓝、地级市用翡翠绿、县级市用向日葵黄，替代当前所有卡片统一用浅橙色标签（如"华东大学""四川省下辖地级市"这种拼接显示混乱、长度不受控的问题，当前文案疑似把简介和标签字段混在一起了，需要按"地区徽标用`region`、城市等级徽标用`cityLevel`"分离展示）。
+   - 卡片主体：城市名 `cityName`（一级标题色 `#0F172A`，18px/700）+ 省份·地区信息行（`province` | `region`，四级辅助文字色）。
+   - 数据行：高校数 `collegeCount`（蓝色图标+数字） 、重点院校 `keyCollegeCount`（黄色星标图标+数字）、常住人口 `residentPopulation`（万）、GDP `gdp`（亿元），四个数据点两行两列排布，图标统一线性 SVG，严禁 emoji。
+   - **防御性渲染**：`collegeCount`/`keyCollegeCount` 为 `0` 或 `null` 时显示"数据统计中"，不要直接显示"0 所"；`cityIntro` 为空时显示"暂无城市介绍"（当前已有此逻辑，保留并统一样式为浅灰斜体小字）。
+   - 底部："查看详情 →" 链接，默认深灰色 `#334155`，Hover 时变品牌橙并右移 2px（当前已基本符合，保留）。
+   - 卡片外框去掉当前生硬的橙色矩形直角感，采用全局规范的"发丝边 + 弥散阴影 + Hover 微浮起"效果，圆角统一 `16px`。
+- 列表为 2×N 栅格（参考原型 4 列或响应式 3/2 列），不要用当前的单行横向拉伸卡片铺满整行的布局，信息密度过低。
 
-一、整体布局结构
-你导航栏的主色调是橙色+白底+细下划线激活态，风格偏简洁商务。首页主体建议保持同样的"留白感"，不要让卡片区显得拥挤。
+#### 右侧（约 30% 宽度，新增模块，当前页面完全缺失）
+1. **城市数据概览卡**：对接 `/stats` 接口，展示"全国城市数""全国高校数""全国常住人口""全国GDP总量"四个核心指标，采用 2×2 小方块矩阵，每个数字用不同主题色（橙/蓝/绿/黄分流，参考原型），右上角"查看更多"链接。
+2. **城市排行榜卡**：对接 `/rank?metric=xxx&limit=5` 接口，顶部 4 个 Tab 切换指标（高校数量/重点院校/GDP排名/人口排名，对应 `college|keyCollege|gdp|population`），下方 Top5 列表，每行：排名圆形徽标（1-3名用金/银/铜色，其余用灰色）+ 城市名 + 横向进度条（按数值占比渲染宽度，使用品牌橙渐变填充）+ 数值，右上角"查看全部"跳转到列表页并带上对应 `sortBy` 参数。
+3. **快捷工具卡**：2×2 图标矩阵，按以下需求**替换**原型中的"院校对比/产业分析/就业前景/AI智能推荐"为：
+   - **企业查询**：点击跳转 `/enterprise`
+   - **行业分析**：点击跳转 `/industry`
+   - **就业前景**：点击跳转 `/employment/civil`
+   - **AI智能分析**：点击弹出 Modal 提示"敬请期待"（使用轻量 Dialog 组件，不走路由）
+     每个工具项：图标 + 文字，采用冷灰蓝底 `#F8FAFC` 方块（`border-radius:12px`），图标线性风格分别用蓝/绿/黄/紫色区分，Hover 时轻微上浮+阴影。
 
-CSS
+---
 
-.homepage-main {
-max-width: 1280px;
-margin: 32px auto;
-display: grid;
-grid-template-columns: 2fr 1fr;  /* 约等于 8:4 */
-gap: 24px;
-padding: 0 24px;
-}
-关键优化点：
+## 三、色彩与质感规范（必须遵守，替换当前"全屏橙色"问题）
 
-整体背景建议用浅灰色 #F5F6FA，卡片区用白底+轻阴影，形成"卡片浮在底色上"的层次感（而不是白底卡片+白底背景，容易糊成一片）
-顶部 Logo 区和导航栏之间、导航栏和主体内容之间，建议都留 32-40px 的呼吸间距，避免贴得太紧
-二、规划专栏矩阵（8列区域）优化
-1. 卡片内部布局：建议用"横向"而非"纵向"
-   因为这个区域较宽（整行的2/3），每张卡片本身也会比较宽，如果图标在上、文字在下（纵向堆叠），会显得卡片内部空间利用率低、显得空。建议改成左右结构：
+1. 当前页面问题：标题图标底、搜索框外框、城市列表标题底、所有标签全部是同一种橙色实心/描边，视觉疲劳且廉价。必须按全局色彩体系重新分配：
+   - 品牌橙仅保留在：主搜索按钮、序号徽标、一级场景入口中最多 1 个强调位。
+   - 场景入口四个胶囊按钮分别用蓝/绿/橙/红图标区分（高校资源-蓝、经济发展-绿、产业结构-橙、生活配套-红）。
+   - 城市等级/地区标签按前述语义分流着色，不要统一橙色。
+2. 卡片边框由当前的"硬橙色描边 + 直角观感"改为"发丝边 `1px solid rgba(15,23,42,0.05)` + 双层弥散阴影 + Hover 微浮起+淡橙光晕"。
+3. 文字色阶统一使用 Slate 体系：标题 `#0F172A`、次级 `#1E293B`、正文 `#475569`、辅助 `#64748B/#94A3B8`。
+4. 所有图标使用线性 SVG（`stroke-width 1.75~2`），禁止 emoji。
 
-text
+---
 
-┌─────────────────────────────────┐
-│ [图标]   01  初中专栏              │
-│          学业奠基与升学指导         │
-└─────────────────────────────────┘
-HTML
-
-<a href="/junior" class="plan-card">
-  <div class="plan-card__icon">🎒</div>
-  <div class="plan-card__body">
-    <div class="plan-card__title">
-      <span class="plan-card__num">01</span> 初中专栏
-    </div>
-    <div class="plan-card__desc">学业奠基与升学指导</div>
-  </div>
-  <div class="plan-card__arrow">→</div>
-</a>
-CSS
-
-.plan-card {
-display: flex;
-align-items: center;
-gap: 16px;
-padding: 20px;
-background: #fff;
-border-radius: 12px;
-border: 1px solid #EFEFEF;
-transition: all .25s ease;
-}
-.plan-card:hover {
-transform: translateY(-4px);
-box-shadow: 0 8px 24px rgba(255, 122, 0, 0.12);
-border-color: #FF7A00;
-}
-.plan-card__icon {
-width: 48px; height: 48px;
-display: flex; align-items: center; justify-content: center;
-background: #FFF4E8;
-border-radius: 10px;
-font-size: 22px;
-}
-.plan-card__num {
-color: #FF7A00;
-font-weight: 600;
-margin-right: 4px;
-}
-.plan-card__title { font-size: 16px; font-weight: 600; color: #222; }
-.plan-card__desc { font-size: 13px; color: #888; margin-top: 4px; }
-.plan-card__arrow {
-margin-left: auto;
-color: #CCC;
-transition: transform .2s;
-}
-.plan-card:hover .plan-card__arrow {
-color: #FF7A00;
-transform: translateX(4px);
-}
-2. 图标建议（给每个专栏配专属icon，提升辨识度）
-   专栏	建议图标意象
-   初中专栏	书包 / 台灯
-   高中专栏	书本 / 生涯规划罗盘
-   高考志愿填报	旗帜 / 地图定位
-   大学专栏	校徽 / 学士帽
-   英语练习	对话气泡 / ABC
-   考研专栏	放大镜 / 奖杯
-   考公专栏	天平 / 政府楼
-   研究生专栏	显微镜 / 文献
-   博士专栏	博士帽 / 期刊
-   就业信息专栏	公文包 / 握手
-   统一用线性图标（outline风格），颜色跟随hover状态变橙色，平时用深灰色，风格会比emoji更专业。推荐用 iconfont / Phosphor Icons / Remix Icon 这类图标库。
-
-3. 编号样式小优化
-   数字"01、02..."建议做成小圆角徽标而不是纯文字前缀，视觉上更精致：
-
-CSS
-
-.plan-card__num-badge {
-display: inline-flex;
-width: 20px; height: 20px;
-background: #FF7A00;
-color: #fff;
-border-radius: 4px;
-font-size: 11px;
-align-items: center;
-justify-content: center;
-}
-4. 网格排布
-   你原方案是 2列×5行，这个密度刚好（10个卡片不多不少）。CSS：
-
-CSS
-
-.plan-grid {
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 16px;
-}
-三、动态速递（公告栏）优化
-1. 头部结构
-   HTML
-
-<div class="notice-panel">
-  <div class="notice-panel__header">
-    <h3>规划院公告</h3>
-    <a href="/notices" class="notice-panel__more">查看全部 ↗</a>
-  </div>
-  <ul class="notice-list">
-    <li class="notice-item">
-      <span class="tag tag--policy">政策</span>
-      <p class="notice-item__title">2026新高考志愿投档规则要点</p>
-      <span class="notice-item__date">10-20</span>
-    </li>
-    ...
-  </ul>
-</div>
-2. 标签分类配色（强烈建议加，信息一眼可辨）
-CSS
-
-.tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-right: 6px; }
-.tag--policy { background: #FFF1E6; color: #FF7A00; }  /* 政策-橙 */
-.tag--news   { background: #E8F3FF; color: #2E7DFF; }  /* 资讯-蓝 */
-.tag--exam   { background: #E9F9EE; color: #16A34A; }  /* 招录-绿 */
-.tag--job    { background: #F3E8FF; color: #9333EA; }  /* 就业-紫 */
-3. 单条公告排版建议
-   现在的 ASCII 图里标题和日期是上下两行，建议改成同一行、左右分布，更紧凑、更像资讯列表：
-
-text
-
-[政策] 2026新高考志愿投档规则要点 ............ 10-20
-CSS
-
-.notice-item {
-display: flex;
-align-items: center;
-padding: 12px 0;
-border-bottom: 1px dashed #EEE;
-cursor: pointer;
-}
-.notice-item__title {
-flex: 1;
-font-size: 14px;
-color: #333;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-margin: 0 8px;
-}
-.notice-item__date {
-font-size: 12px;
-color: #999;
-flex-shrink: 0;
-}
-.notice-item:hover .notice-item__title {
-color: #FF7A00;
-}
-这样每条公告标题过长会自动省略号截断，不会撑破布局。
-
-4. 头部"查看全部"按钮细节
-   CSS
-
-.notice-panel__header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding-bottom: 12px;
-border-bottom: 2px solid #FF7A00;
-margin-bottom: 8px;
-}
-.notice-panel__more {
-font-size: 12px;
-color: #999;
-}
-.notice-panel__more:hover { color: #FF7A00; }
-用橙色底边线强调标题区，和导航栏的橙色激活下划线风格呼应，形成视觉统一。
-
-5. 补充建议：可以加"最新"红点提醒
-   最新一条公告前加一个小红点或"NEW"徽章，增强时效感：
-
-HTML
-
-<li class="notice-item">
-  <span class="dot-new"></span>
-  <span class="tag tag--policy">政策</span>
-  ...
-</li>
-四、与导航栏的视觉一致性检查
-你截图里导航栏的特点：
-
-橙色品牌色（logo火焰图标 + 首页激活态）
-字体偏细、间距宽松、无多余装饰
-激活项有橙色下划线
-建议首页主体也统一遵循：
-
-所有可点击元素（卡片hover、查看全部、公告hover）统一用同一个橙色 #FF7A00（具体取你logo火焰的颜色值）
-字体粗细保持一致：标题 600，正文 400，不要出现多种字重混用
-圆角统一：建议统一用 8px 或 12px，不要卡片是12px、标签是4px、按钮又是20px，太随意
-五、响应式适配
-屏幕宽度	处理方式
-桌面端 (>1024px)	8:4 两栏布局，卡片矩阵2列
-平板端 (768-1024px)	公告栏移到专栏矩阵下方，各占一行，卡片矩阵仍2列
-移动端 (<768px)	导航栏收起为汉堡菜单；卡片矩阵改为单列；公告栏单列紧跟其后
-CSS
-
-@media (max-width: 1024px) {
-.homepage-main { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
-.plan-grid { grid-template-columns: 1fr; }
-}
-六、总结优化清单（按优先级）
-优先级	优化项
-高	卡片内部改横向布局（图标+文字左右排），提升空间利用率
-高	公告每条标题超长做省略号截断，避免撑破右侧栏
-高	公告类型加彩色标签（政策/资讯/招录/就业分色）
-中	整体背景改浅灰，卡片白底+阴影，增加层次感
-中	10个专栏统一配专属线性图标
-中	hover态统一：卡片上浮+橙色描边，公告标题变橙色
-低	最新公告加小红点/NEW标记
-低	响应式断点处理（平板/手机)
+## 四、交互与数据细节补充
+- 搜索区"地区"快捷 Tab 与下拉框"地区"选择需联动同步（二选一生效即可，避免冲突）。
+- 排序下拉切换时需透传 `sortBy` 参数重新请求分页接口。
+- 卡片点击整体可跳转详情页（不仅限"查看详情"文字），提升可点击热区。
+- 列表为空/加载中/异常三态需有对应的 Empty/Skeleton/Error 组件，当前页面无相关状态处理。
+- 右侧排行榜与数据概览模块首屏即请求，不依赖搜索条件，独立于左侧列表数据流。

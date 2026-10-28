@@ -11,7 +11,10 @@ import { MemberType } from '@haifeng/shared'
 const recharge = useRechargeDialog()
 const props = defineProps<{
   universityId: string
+  /** 预览模式：详情页板块只展示前 3 条，隐藏筛选/分页 */
+  preview?: boolean
 }>()
+const emit = defineEmits<{ (e: 'total', v: number): void }>()
 
 const userStore = useUserStore()
 
@@ -21,6 +24,9 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const activeDegree = ref('')
+
+/** 预览模式切片 */
+const shownList = computed(() => (props.preview ? list.value.slice(0, 3) : list.value))
 
 const isPro = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
 
@@ -43,6 +49,7 @@ async function fetchList() {
     })
     list.value = res.data.data.records
     total.value = res.data.data.total
+    emit('total', total.value)
   } catch (e: any) {
     ElMessage.error(e?.message || '获取考研专业失败')
   } finally {
@@ -74,8 +81,8 @@ onMounted(() => {
 <template>
   <div class="min-h-[200px]">
     <template v-if="isPro">
-      <!-- Degree sub-buttons -->
-      <div class="mb-4 flex gap-3">
+      <!-- Degree sub-buttons（预览模式隐藏） -->
+      <div v-if="!preview" class="mb-4 flex gap-3">
         <button
           v-for="opt in degreeOptions" :key="opt.value"
           class="rounded-lg px-5 py-2 text-sm font-medium transition-all"
@@ -89,9 +96,9 @@ onMounted(() => {
       </div>
 
       <div v-loading="loading">
-        <div v-if="list.length" class="space-y-2">
+        <div v-if="shownList.length" class="space-y-2">
           <div
-            v-for="item in list" :key="item.id"
+            v-for="item in shownList" :key="item.id"
             class="flex items-center justify-between rounded-xl bg-gray-50 px-5 py-3 hover:bg-orange-50/50 transition-colors cursor-pointer"
             @click="showDetail(item.id)"
           >
@@ -107,7 +114,7 @@ onMounted(() => {
         <div v-else-if="!loading" class="py-12 text-center text-gray-400">暂无考研专业数据</div>
       </div>
 
-      <div v-if="total > pageSize" class="mt-4 flex justify-center">
+      <div v-if="!preview && total > pageSize" class="mt-4 flex justify-center">
         <el-pagination
           background small layout="prev, pager, next"
           :total="total" :page-size="pageSize" :current-page="currentPage"

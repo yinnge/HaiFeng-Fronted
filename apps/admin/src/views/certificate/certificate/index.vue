@@ -4,6 +4,8 @@ import { ref, reactive, onMounted } from 'vue'
 
 import { ElMessageBox, ElMessage } from 'element-plus'
 
+import { UploadFilled, InfoFilled } from '@element-plus/icons-vue'
+
 import {
 
   getCertificatePage,
@@ -24,6 +26,8 @@ import {
 
   batchUpdateCertificateStatus,
 
+  importCertificate,
+
 } from '@/api/certificate/certificate'
 
 import type {
@@ -37,6 +41,8 @@ import type {
   CertificateAddDTO,
 
   CertificateUpdateDTO,
+
+  ImportResultVO,
 
 } from '@/types/certificate/certificate'
 
@@ -654,6 +660,87 @@ onMounted(() => {
 
 })
 
+
+
+// ==================== 批量导入 ====================
+
+const importDialogVisible = ref(false)
+
+const importFiles = ref<File[]>([])
+
+const importLoading = ref(false)
+
+const importResultVisible = ref(false)
+
+const importResult = ref<ImportResultVO | null>(null)
+
+
+
+const openImportDialog = () => {
+  importFiles.value = []
+  importResult.value = null
+  importDialogVisible.value = true
+}
+
+
+
+const handleImportChange = (_uploadFile: any, fileList: any[]) => {
+  importFiles.value = fileList.map((f) => f.raw).filter(Boolean) as File[]
+}
+
+
+
+const handleImportRemove = (_uploadFile: any, fileList: any[]) => {
+  importFiles.value = fileList.map((f) => f.raw).filter(Boolean) as File[]
+}
+
+
+
+const handleImportSubmit = async () => {
+  if (importFiles.value.length === 0) {
+    ElMessage.warning('请先选择要导入的 Excel 文件')
+    return
+  }
+  importLoading.value = true
+  let total = 0
+  let success = 0
+  let failed = 0
+  let updated = 0
+  const allErrors: string[] = []
+  try {
+    for (const file of importFiles.value) {
+      try {
+        const res = await importCertificate(file)
+        if (res.data.code === 200 && res.data.data) {
+          const r = res.data.data
+          total += r.total ?? 0
+          success += r.success ?? 0
+          failed += r.failed ?? 0
+          updated += r.updated ?? 0
+          if (r.errors && r.errors.length) allErrors.push(...r.errors)
+        } else {
+          failed++
+          allErrors.push(`${file.name}：${res.data.msg || '导入失败'}`)
+        }
+      } catch (e: any) {
+        failed++
+        allErrors.push(`${file.name}：${e?.message || '导入失败'}`)
+      }
+    }
+    importResult.value = { total, success, failed, updated, errors: allErrors }
+    importDialogVisible.value = false
+    importResultVisible.value = true
+    fetchData()
+    if (failed === 0) {
+      ElMessage.success(`导入完成，成功 ${success} 条`)
+    } else {
+      ElMessage.warning(`导入完成：${success} 条成功，${failed} 个文件/批次失败`)
+    }
+  } finally {
+    importLoading.value = false
+  }
+}
+
 </script>
 
 
@@ -824,6 +911,10 @@ onMounted(() => {
       <div class="action-left">
 
         <el-button class="btn-primary" @click="openDialog('add')">+ 新增证书</el-button>
+
+        <el-button class="btn-outline" @click="openImportDialog">
+          <el-icon style="margin-right: 4px"><UploadFilled /></el-icon>批量导入
+        </el-button>
 
       </div>
 
@@ -1185,6 +1276,94 @@ onMounted(() => {
 
       </template>
 
+    </el-dialog>
+
+
+
+    <!-- 批量导入 -->
+
+    <el-dialog
+      v-model="importDialogVisible"
+      title="批量导入证书"
+      width="560px"
+      :close-on-click-modal="false"
+      class="import-dialog"
+    >
+      <div class="import-tip">
+        <el-icon class="it-icon"><InfoFilled /></el-icon>
+        <span>支持多选 .xlsx / .xls 文件，将逐个上传导入。Excel 列头须为：证书名称、证书分类、证书等级、适用专业、报名时间、考试时间、考试费用、证书简介、报考条件、考试安排、官方网站（<b>证书名称</b>为必填，单次最多 2000 行/文件）。</span>
+      </div>
+
+      <el-upload
+        drag
+        multiple
+        :auto-upload="false"
+        :show-file-list="true"
+        accept=".xlsx,.xls"
+        :on-change="handleImportChange"
+        :on-remove="handleImportRemove"
+      >
+        <el-icon class="el-icon--upload" style="font-size: 48px"><UploadFilled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip">仅支持 .xlsx / .xls 格式，可一次选择多个文件</div>
+        </template>
+      </el-upload>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button class="exit-btn" @click="importDialogVisible = false">取消</el-button>
+          <el-button class="save-btn" :disabled="importLoading || importFiles.length === 0" @click="handleImportSubmit">
+            {{ importLoading ? '导入中...' : '开始导入' }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+
+
+    <!-- 导入结果 -->
+
+    <el-dialog
+      v-model="importResultVisible"
+      title="导入结果"
+      width="620px"
+      class="import-result-dialog"
+    >
+      <div v-if="importResult" class="import-result">
+        <div class="result-cards">
+          <div class="result-card">
+            <div class="rc-num">{{ importResult.total }}</div>
+            <div class="rc-label">总计</div>
+          </div>
+          <div class="result-card success">
+            <div class="rc-num">{{ importResult.success }}</div>
+            <div class="rc-label">成功</div>
+          </div>
+          <div class="result-card updated">
+            <div class="rc-num">{{ importResult.updated }}</div>
+            <div class="rc-label">补齐</div>
+          </div>
+          <div class="result-card failed">
+            <div class="rc-num">{{ importResult.failed }}</div>
+            <div class="rc-label">失败</div>
+          </div>
+        </div>
+
+        <div v-if="importResult.errors && importResult.errors.length" class="result-errors">
+          <div class="re-title">错误明细（最多显示 50 条）</div>
+          <ul class="re-list">
+            <li v-for="(e, i) in importResult.errors.slice(0, 50)" :key="i">{{ e }}</li>
+          </ul>
+        </div>
+        <el-empty v-else description="全部导入成功，无错误" :image-size="60" />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button class="save-btn" @click="importResultVisible = false">关闭</el-button>
+        </span>
+      </template>
     </el-dialog>
 
   </div>
@@ -1674,5 +1853,160 @@ onMounted(() => {
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ===== 批量导入弹窗 ===== */
+.import-dialog :deep(.el-dialog),
+.import-result-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.import-dialog :deep(.el-dialog__header),
+.import-result-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid rgba(249,115,22,0.15);
+  padding: 20px 24px;
+  margin: 0;
+}
+.import-dialog :deep(.el-dialog__title),
+.import-result-dialog :deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.import-dialog :deep(.el-dialog__body),
+.import-result-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+.import-dialog :deep(.el-dialog__footer),
+.import-result-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding: 16px 24px;
+}
+
+.import-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #FFF7ED, #FFEDD5);
+  border: 1px solid rgba(249,115,22,0.18);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #9A3412;
+}
+.import-tip .it-icon {
+  font-size: 16px;
+  margin-top: 2px;
+  color: #EA580C;
+  flex-shrink: 0;
+}
+.import-tip b {
+  color: #C2410C;
+}
+
+.import-dialog :deep(.el-upload),
+.import-dialog :deep(.el-upload-dragger) {
+  width: 100%;
+}
+.import-dialog :deep(.el-upload-dragger) {
+  padding: 28px 16px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(249,115,22,0.4);
+  background: rgba(255,247,237,0.4);
+  transition: all .25s ease;
+}
+.import-dialog :deep(.el-upload-dragger:hover) {
+  border-color: #F97316;
+  background: rgba(255,247,237,0.7);
+}
+.import-dialog :deep(.el-upload__text) {
+  color: #6b7280;
+  font-size: 14px;
+}
+.import-dialog :deep(.el-upload__text em) {
+  color: #F97316;
+  font-style: normal;
+  font-weight: 600;
+}
+.import-dialog :deep(.el-icon--upload) {
+  color: #F97316;
+}
+.import-dialog :deep(.el-upload-list__item) {
+  border-radius: 8px;
+  transition: all .2s ease;
+}
+
+/* ===== 导入结果弹窗 ===== */
+.import-result .result-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.import-result .result-card {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 16px 8px;
+  text-align: center;
+}
+.import-result .result-card .rc-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+.import-result .result-card .rc-label {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.import-result .result-card.success {
+  background: #ECFDF5;
+  border-color: rgba(5,150,105,0.2);
+}
+.import-result .result-card.success .rc-num {
+  color: #059669;
+}
+.import-result .result-card.updated {
+  background: #EFF6FF;
+  border-color: rgba(37,99,235,0.2);
+}
+.import-result .result-card.updated .rc-num {
+  color: #2563EB;
+}
+.import-result .result-card.failed {
+  background: #FEF2F2;
+  border-color: rgba(220,38,38,0.2);
+}
+.import-result .result-card.failed .rc-num {
+  color: #DC2626;
+}
+
+.import-result .result-errors {
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.import-result .result-errors .re-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.import-result .result-errors .re-list {
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding-left: 18px;
+}
+.import-result .result-errors .re-list li {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: #DC2626;
+  word-break: break-all;
 }
 </style>

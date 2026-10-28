@@ -5,7 +5,8 @@ import { getDepartmentPage } from '@/api/university/department'
 import type { DepartmentListVO } from '@/types/university/department'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{ universityId: string }>()
+const props = defineProps<{ universityId: string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'total', v: number): void }>()
 const router = useRouter()
 
 const loading = ref(false)
@@ -14,6 +15,9 @@ const total = ref(0)
 const page = ref(1)
 const size = ref(10)
 const activeType = ref('')
+
+/** 预览模式：详情页板块只展示前 6 条（2×3） */
+const shownList = computed(() => (props.preview ? filteredList.value.slice(0, 6) : filteredList.value))
 
 const deptTypes = computed(() => {
   const types = new Set(list.value.map(item => item.departmentType))
@@ -31,6 +35,7 @@ async function fetchList() {
     const res = await getDepartmentPage(props.universityId, { page: page.value, size: size.value })
     list.value = res.data.data.records
     total.value = res.data.data.total
+    emit('total', total.value)
     if (!activeType.value && deptTypes.value.length) {
       activeType.value = deptTypes.value[0]
     }
@@ -58,7 +63,8 @@ onMounted(fetchList)
 
 <template>
   <div>
-    <div class="flex flex-wrap gap-3 mb-6">
+    <!-- 类型筛选（预览模式隐藏） -->
+    <div v-if="!preview" class="flex flex-wrap gap-3 mb-6">
       <button
         v-for="type in deptTypes" :key="type"
         class="rounded-lg px-4 py-2 text-sm font-medium transition-all border"
@@ -72,9 +78,9 @@ onMounted(fetchList)
     </div>
 
     <div v-loading="loading" class="min-h-[120px]">
-      <div v-if="filteredList.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-if="shownList.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          v-for="item in filteredList" :key="item.id"
+          v-for="item in shownList" :key="item.id"
           class="rounded-xl bg-white p-5 shadow-md border border-gray-100 cursor-pointer hover:shadow-lg hover:border-orange-200 transition-all"
           @click="goDetail(item)"
         >
@@ -85,7 +91,7 @@ onMounted(fetchList)
       <p v-else-if="!loading" class="py-12 text-center text-gray-400">暂无院系数据</p>
     </div>
 
-    <div v-if="total > size" class="mt-6 flex justify-center">
+    <div v-if="!preview && total > size" class="mt-6 flex justify-center">
       <el-pagination background layout="prev, pager, next" :total="total" :page-size="size" :current-page="page" @current-change="onPageChange" />
     </div>
   </div>

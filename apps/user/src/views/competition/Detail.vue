@@ -250,16 +250,16 @@ onMounted(() => {
           <!-- Right column (sticky) -->
           <div class="space-y-6 lg:sticky lg:top-24">
             <!-- Basic Info -->
-            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.05 }" v-if="detail.basicInfo && Object.keys(detail.basicInfo).length">
+            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.05 }" v-if="detail.basicInfo && detail.basicInfo.length">
               <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
                 <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>
                   基本信息
                 </div>
                 <div class="space-y-3 text-sm">
-                  <div v-for="(val, key) in detail.basicInfo" :key="key" class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
-                    <span class="text-gray-400 shrink-0">{{ key }}</span>
-                    <span class="text-gray-700 font-medium break-all text-right ml-4">{{ String(val) }}</span>
+                  <div v-for="(item, i) in detail.basicInfo" :key="i" class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
+                    <span class="text-gray-400 shrink-0">{{ item.title }}</span>
+                    <span class="text-gray-700 font-medium break-all text-right ml-4">{{ item.content }}</span>
                   </div>
                 </div>
               </section>

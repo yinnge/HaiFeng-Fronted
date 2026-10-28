@@ -7,6 +7,7 @@ export interface CityListVO {
   residentPopulation: number
   isDeleted: boolean
   createdAt: string
+  coverImageUrl?: string
 }
 
 export interface CityDetailVO {
@@ -19,6 +20,7 @@ export interface CityDetailVO {
   keyCollegeCount: number
   residentPopulation: number
   gdp: number
+  coverImageUrl?: string
   isDeleted: boolean
   createdAt: string
   updatedAt: string
@@ -70,6 +72,7 @@ export interface CityAddDTO {
   keyCollegeCount?: number
   residentPopulation?: number
   gdp?: number
+  coverImageUrl?: string
   area?: number
   subtitle?: string
   cityLevel?: string
@@ -108,6 +111,7 @@ export interface CityUpdateDTO {
   keyCollegeCount?: number
   residentPopulation?: number
   gdp?: number
+  coverImageUrl?: string
 }
 
 export interface CityDetailUpdateDTO {
