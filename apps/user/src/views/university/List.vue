@@ -10,8 +10,10 @@ import type {
 } from '@/types/university'
 import { ProvinceOptions } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
+import { useExpertContact } from '@/composables/useExpertContact'
 
 const router = useRouter()
+const expertContact = useExpertContact()
 
 // ==================== 会话级状态持久化 ====================
 // 保存/恢复查询条件与页码，从详情页返回时继续上次浏览位置
@@ -252,14 +254,14 @@ const statItems = computed(() => [
 ])
 
 async function loadSidebar() {
-  // 后端分页 size 下限 10，取前 4 条即可（列表默认 sort_order DESC）
+  // 后端分页 size 下限 10，取前 6 条即可（列表默认 sort_order DESC）
   const [statsRes, recommendRes] = await Promise.allSettled([
     getUniversityStats(),
     getUniversityList({ page: 1, size: 10 }),
   ])
   if (statsRes.status === 'fulfilled') stats.value = statsRes.value.data.data
   if (recommendRes.status === 'fulfilled') {
-    recommendList.value = (recommendRes.value.data.data.records ?? []).slice(0, 4)
+    recommendList.value = (recommendRes.value.data.data.records ?? []).slice(0, 6)
   }
 }
 
@@ -305,9 +307,9 @@ function goRecommendDetail(id: string) {
   router.push(`/university/${id}`)
 }
 
-/** 咨询入口：暂未开放 */
+/** 咨询入口：复用全局专家咨询弹框（DefaultLayout 已挂载 ExpertContactDialog） */
 function handleConsult() {
-  ElMessage.info('敬请期待')
+  expertContact.open()
 }
 
 // ==================== 图片加载失败兜底 ====================
@@ -348,7 +350,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <main class="flex-1 w-full max-w-[1520px] mx-auto px-4 sm:px-6 py-8">
       <div class="univ-page-flow">
         <!-- ==================== Hero 横幅 + 集成搜索筛选卡 ==================== -->
         <section class="hero-banner rounded-[20px] px-6 sm:px-10 pt-9 pb-8" :style="heroStyle">
@@ -483,7 +485,7 @@ onMounted(async () => {
           <!-- 左侧主列表 -->
           <div class="flex-1 min-w-0 w-full">
             <!-- 骨架屏 -->
-            <div v-if="loading && list.length === 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div v-if="loading && list.length === 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1400px]:grid-cols-4 gap-5">
               <div v-for="i in 6" :key="i" class="univ-card !cursor-default">
                 <div class="h-[120px] skeleton rounded-none" />
                 <div class="px-4 pb-4 pt-9 relative">
@@ -501,7 +503,7 @@ onMounted(async () => {
             </div>
 
             <!-- 卡片网格 -->
-            <div v-else-if="list.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div v-else-if="list.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1400px]:grid-cols-4 gap-5">
               <TransitionGroup name="list">
                 <article
                   v-for="(item, index) in list"
@@ -510,11 +512,11 @@ onMounted(async () => {
                   :style="{ animationDelay: `${index * 60}ms` }"
                   @click="goDetail(item.id)"
                 >
-                  <!-- ① 封面图区 -->
+                  <!-- ① 封面图区（数据约定：背景/封面图存 imageUrl） -->
                   <div class="relative h-[120px] overflow-hidden">
                     <img
-                      v-if="item.coverImage && !coverErrors.has(item.id)"
-                      :src="item.coverImage"
+                      v-if="item.imageUrl && !coverErrors.has(item.id)"
+                      :src="item.imageUrl"
                       :alt="item.name"
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       @error="handleCoverError(item.id)"
@@ -532,13 +534,13 @@ onMounted(async () => {
 
                   <!-- ② 内容信息区 -->
                   <div class="relative px-4 pt-9 pb-4">
-                    <!-- 骑缝 logo -->
+                    <!-- 骑缝 logo（数据约定：logo 存 coverImage，即详情轮播首图） -->
                     <div
                       class="absolute -top-7 left-4 w-14 h-14 rounded-full bg-white border-[3px] border-white shadow-[0_4px_12px_rgba(15,23,42,0.12)] overflow-hidden flex items-center justify-center"
                     >
                       <img
-                        v-if="item.imageUrl && !logoErrors.has(item.id)"
-                        :src="item.imageUrl"
+                        v-if="item.coverImage && !logoErrors.has(item.id)"
+                        :src="item.coverImage"
                         :alt="item.name"
                         class="h-full w-full object-contain"
                         @error="handleLogoError(item.id)"
@@ -690,7 +692,7 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- 热门院校推荐（sort_order 前 4） -->
+            <!-- 热门院校推荐（sort_order 前 6） -->
             <div class="side-card p-5">
               <div class="flex items-center gap-2 mb-4">
                 <svg class="w-4 h-4 text-[#e11d48]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -708,8 +710,8 @@ onMounted(async () => {
                 >
                   <div class="w-10 h-10 rounded-full bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
                     <img
-                      v-if="rec.imageUrl && !logoErrors.has(`rec-${rec.id}`)"
-                      :src="rec.imageUrl"
+                      v-if="(rec.coverImage || rec.imageUrl) && !logoErrors.has(`rec-${rec.id}`)"
+                      :src="rec.coverImage || rec.imageUrl"
                       :alt="rec.name"
                       class="h-full w-full object-contain"
                       @error="handleLogoError(`rec-${rec.id}`)"
