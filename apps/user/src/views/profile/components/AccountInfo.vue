@@ -129,12 +129,14 @@ async function handleSavePassword() {
   <div class="account-info">
     <!-- 账号信息卡片 -->
     <div class="info-card">
-      <h3 class="card-title">
-        <svg class="card-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        账号信息
-      </h3>
+      <div class="section-header">
+        <div class="section-icon-base">
+          <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h3 class="card-title">账号信息</h3>
+      </div>
       <el-form :model="form" class="account-form">
         <el-form-item label="用户名">
           <el-input v-model="form.username" placeholder="请输入用户名" maxlength="50" />
@@ -157,12 +159,14 @@ async function handleSavePassword() {
 
     <!-- 安全设置卡片 -->
     <div class="info-card">
-      <h3 class="card-title">
-        <svg class="card-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-        </svg>
-        安全设置
-      </h3>
+      <div class="section-header">
+        <div class="section-icon-base">
+          <svg class="section-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h3 class="card-title">安全设置</h3>
+      </div>
       <div class="setting-list">
         <div class="setting-row">
           <div class="setting-info">
@@ -269,23 +273,35 @@ async function handleSavePassword() {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-.card-title {
-  display: inline-flex;
+.section-header {
+  display: flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 0.375rem 0.75rem;
-  background: linear-gradient(135deg, #f5a54a, #e8722a);
-  border-radius: 6px;
+  gap: 0.75rem;
   margin-bottom: 1rem;
-  color: white;
 }
 
-.card-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  color: white;
+.section-icon-base {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff7ed;
+  border-radius: 0.75rem;
+}
+
+.section-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #f97316;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .account-form {
