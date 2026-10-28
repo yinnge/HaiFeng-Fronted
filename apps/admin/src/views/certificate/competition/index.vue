@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { UploadFilled, InfoFilled } from '@element-plus/icons-vue'
 import {
   getCompetitionPage,
   getCompetitionDetail,
@@ -10,6 +11,8 @@ import {
   softDeleteCompetition,
   hardDeleteCompetition,
   batchDeleteCompetition,
+  importCompetitionMain,
+  importCompetitionDetail,
 } from '@/api/certificate/competition'
 import type {
   CompetitionListVO,
@@ -17,6 +20,7 @@ import type {
   CompetitionQueryDTO,
   CompetitionAddDTO,
   CompetitionUpdateDTO,
+  ImportResultVO,
 } from '@/types/certificate/competition'
 
 const loading = ref(false)
@@ -57,8 +61,8 @@ const newGuideContent = ref('')
 const newAwardDispTitle = ref('')
 const newAwardDispContent = ref('')
 
-const basicInfoKey = ref('')
-const basicInfoValue = ref('')
+const basicInfoTitle = ref('')
+const basicInfoContent = ref('')
 
 const fetchData = async () => {
   loading.value = true
@@ -136,18 +140,14 @@ const addAwardDisp = () => {
 }
 const removeAwardDisp = (i: number) => { formData.detail?.awardsDisplay?.splice(i, 1) }
 const addBasicInfo = () => {
-  if (basicInfoKey.value.trim()) {
+  if (basicInfoTitle.value.trim() && basicInfoContent.value.trim()) {
     if (!formData.detail) formData.detail = {}
-    if (!formData.detail.basicInfo) formData.detail.basicInfo = {}
-    formData.detail.basicInfo[basicInfoKey.value.trim()] = basicInfoValue.value.trim()
-    basicInfoKey.value = ''; basicInfoValue.value = ''
+    if (!formData.detail.basicInfo) formData.detail.basicInfo = []
+    formData.detail.basicInfo.push({ title: basicInfoTitle.value.trim(), content: basicInfoContent.value.trim() })
+    basicInfoTitle.value = ''; basicInfoContent.value = ''
   }
 }
-const removeBasicInfo = (key: string) => {
-  if (formData.detail?.basicInfo) {
-    delete formData.detail.basicInfo[key]
-  }
-}
+const removeBasicInfo = (i: number) => { formData.detail?.basicInfo?.splice(i, 1) }
 
 // 提交前把输入框中"待添加"的值自动落入 formData.detail，防止漏点"添加"导致数据静默丢失
 const flushPendingDetailInputs = () => {
@@ -166,7 +166,7 @@ const resetFormData = () => {
   formData.compLevel = ''
   formData.registrationTime = ''
   formData.detail = {
-    basicInfo: {},
+    basicInfo: [],
     awards: [],
     background: '',
     purposes: [],
@@ -197,7 +197,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.compLevel = d.compLevel || ''
         formData.registrationTime = d.registrationTime || ''
         formData.detail = {
-          basicInfo: d.basicInfo || {},
+          basicInfo: d.basicInfo || [],
           awards: d.awards || [],
           background: d.background || '',
           purposes: d.purposes || [],
@@ -364,6 +364,87 @@ const handleBatchDelete = async () => {
   }
 }
 
+// ==================== 批量导入（主表 / 详情表） ====================
+
+const importDialogVisible = ref(false)
+
+const importMode = ref<'main' | 'detail'>('main')
+
+const importFiles = ref<File[]>([])
+
+const importLoading = ref(false)
+
+const importResultVisible = ref(false)
+
+const importResult = ref<ImportResultVO | null>(null)
+
+
+const openImportDialog = (mode: 'main' | 'detail') => {
+  importMode.value = mode
+  importFiles.value = []
+  importResult.value = null
+  importDialogVisible.value = true
+}
+
+
+const handleImportChange = (_uploadFile: any, fileList: any[]) => {
+  importFiles.value = fileList.map((f) => f.raw).filter(Boolean) as File[]
+}
+
+
+const handleImportRemove = (_uploadFile: any, fileList: any[]) => {
+  importFiles.value = fileList.map((f) => f.raw).filter(Boolean) as File[]
+}
+
+
+const handleImportSubmit = async () => {
+  if (importFiles.value.length === 0) {
+    ElMessage.warning('请先选择要导入的 Excel 文件')
+    return
+  }
+  importLoading.value = true
+  let total = 0
+  let success = 0
+  let failed = 0
+  let updated = 0
+  const allErrors: string[] = []
+  try {
+    for (const file of importFiles.value) {
+      try {
+        const res = importMode.value === 'main'
+          ? await importCompetitionMain(file)
+          : await importCompetitionDetail(file)
+        if (res.data.code === 200 && res.data.data) {
+          const r = res.data.data
+          total += r.total ?? 0
+          success += r.success ?? 0
+          failed += r.failed ?? 0
+          updated += r.updated ?? 0
+          if (r.errors && r.errors.length) allErrors.push(...r.errors)
+        } else {
+          failed++
+          allErrors.push(`${file.name}：${res.data.msg || '导入失败'}`)
+        }
+      } catch (e: any) {
+        failed++
+        allErrors.push(`${file.name}：${e?.message || '导入失败'}`)
+      }
+    }
+    importResult.value = { total, success, failed, updated, errors: allErrors }
+    importDialogVisible.value = false
+    importResultVisible.value = true
+    fetchData()
+    if (failed === 0) {
+      ElMessage.success(`导入完成，成功 ${success} 条`)
+    } else {
+      ElMessage.warning(`导入完成：${success} 条成功，${failed} 个文件/批次失败`)
+    }
+  } finally {
+    importLoading.value = false
+  }
+}
+
+
 onMounted(() => { fetchData() })
 </script>
 
@@ -423,6 +504,14 @@ onMounted(() => { fetchData() })
       <button class="custom-btn add-btn" @click="openDialog('add')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <span>新增竞赛</span>
+      </button>
+      <button class="custom-btn import-btn" @click="openImportDialog('main')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>导入主表</span>
+      </button>
+      <button class="custom-btn import-btn" @click="openImportDialog('detail')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>导入详情</span>
       </button>
       <button class="custom-btn danger-btn" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
         <span>批量删除</span>
@@ -494,10 +583,10 @@ onMounted(() => { fetchData() })
 
           <el-collapse>
             <el-collapse-item title="基本信息" name="basicInfo">
-              <div v-if="detailData.basicInfo && Object.keys(detailData.basicInfo).length > 0">
+              <div v-if="detailData.basicInfo && detailData.basicInfo.length > 0">
                 <el-descriptions :column="2" border>
-                  <el-descriptions-item v-for="(val, key) in detailData.basicInfo" :key="key" :label="key">
-                    {{ val }}
+                  <el-descriptions-item v-for="(item, i) in detailData.basicInfo" :key="i" :label="item.title">
+                    {{ item.content }}
                   </el-descriptions-item>
                 </el-descriptions>
               </div>
@@ -586,13 +675,13 @@ onMounted(() => { fetchData() })
                 <!-- basicInfo -->
                 <el-form-item label="基本信息">
                   <div class="flex gap-2 mb-2">
-                    <el-input v-model="basicInfoKey" placeholder="字段" style="width: 150px" />
-                    <el-input v-model="basicInfoValue" placeholder="字段" style="width: 200px" @keyup.enter="addBasicInfo" />
+                    <el-input v-model="basicInfoTitle" placeholder="标题，如：主办方" style="width: 150px" />
+                    <el-input v-model="basicInfoContent" placeholder="内容" style="width: 200px" @keyup.enter="addBasicInfo" />
                     <el-button type="primary" @click="addBasicInfo">添加</el-button>
                   </div>
-                  <div v-if="formData.detail?.basicInfo && Object.keys(formData.detail.basicInfo).length > 0" class="flex flex-wrap gap-1">
-                    <el-tag v-for="(val, key) in formData.detail.basicInfo" :key="key" closable @close="removeBasicInfo(key)">
-                      {{ key }}: {{ val }}
+                  <div v-if="formData.detail?.basicInfo && formData.detail.basicInfo.length > 0" class="flex flex-wrap gap-1">
+                    <el-tag v-for="(item, i) in formData.detail.basicInfo" :key="i" closable @close="removeBasicInfo(i)">
+                      {{ item.title }}: {{ item.content }}
                     </el-tag>
                   </div>
                 </el-form-item>
@@ -692,6 +781,93 @@ onMounted(() => { fetchData() })
         <button v-if="dialogMode !== 'detail'" class="dialog-confirm-btn" @click="handleSubmit">
           确定
         </button>
+      </template>
+    </el-dialog>
+
+    <!-- 批量导入（主表 / 详情表） -->
+    <el-dialog
+      v-model="importDialogVisible"
+      :title="importMode === 'main' ? '批量导入竞赛主表' : '批量导入竞赛详情'"
+      width="560px"
+      :close-on-click-modal="false"
+      class="import-dialog"
+    >
+      <div class="import-tip">
+        <el-icon class="it-icon" style="color:#F97316"><InfoFilled /></el-icon>
+        <span v-if="importMode === 'main'">
+          支持多选 .xlsx / .xls 文件，将逐个上传导入。主表 Excel 须包含 sheet「竞赛主表」，列头为：<b>竞赛名称</b>、竞赛级别、报名时间（竞赛名称为必填，其余选填）。
+        </span>
+        <span v-else>
+          支持多选 .xlsx / .xls 文件，将逐个上传导入。详情表 Excel 须包含 sheet「竞赛次表、基本信息、竞赛规则、参赛流程指南、奖项设置展示」，各 sheet 均以 <b>竞赛名称</b> 关联主表（竞赛名称须已存在于主表，否则整批回滚）。
+        </span>
+      </div>
+
+      <el-upload
+        drag
+        multiple
+        :auto-upload="false"
+        :show-file-list="true"
+        accept=".xlsx,.xls"
+        :on-change="handleImportChange"
+        :on-remove="handleImportRemove"
+      >
+        <el-icon class="el-icon--upload" style="font-size: 48px; color: #F97316"><UploadFilled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip">仅支持 .xlsx / .xls 格式，可一次选择多个文件</div>
+        </template>
+      </el-upload>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <button class="dialog-cancel-btn" @click="importDialogVisible = false">取消</button>
+          <button class="dialog-confirm-btn" :disabled="importLoading || importFiles.length === 0" @click="handleImportSubmit">
+            {{ importLoading ? '导入中...' : '开始导入' }}
+          </button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 导入结果 -->
+    <el-dialog
+      v-model="importResultVisible"
+      title="导入结果"
+      width="620px"
+      class="import-result-dialog"
+    >
+      <div v-if="importResult" class="import-result">
+        <div class="result-cards">
+          <div class="result-card">
+            <div class="rc-num">{{ importResult.total }}</div>
+            <div class="rc-label">总计</div>
+          </div>
+          <div class="result-card success">
+            <div class="rc-num">{{ importResult.success }}</div>
+            <div class="rc-label">成功</div>
+          </div>
+          <div class="result-card updated">
+            <div class="rc-num">{{ importResult.updated }}</div>
+            <div class="rc-label">补齐</div>
+          </div>
+          <div class="result-card failed">
+            <div class="rc-num">{{ importResult.failed }}</div>
+            <div class="rc-label">失败</div>
+          </div>
+        </div>
+
+        <div v-if="importResult.errors && importResult.errors.length" class="result-errors">
+          <div class="re-title">错误明细（最多显示 50 条）</div>
+          <ul class="re-list">
+            <li v-for="(e, i) in importResult.errors.slice(0, 50)" :key="i">{{ e }}</li>
+          </ul>
+        </div>
+        <el-empty v-else description="全部导入成功，无错误" :image-size="60" />
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <button class="dialog-confirm-btn" @click="importResultVisible = false">关闭</button>
+        </span>
       </template>
     </el-dialog>
   </div>
@@ -1194,5 +1370,132 @@ onMounted(() => { fetchData() })
 }
 .dialog-confirm-btn:active {
   transform: translateY(0);
+}
+
+/* 导入按钮 */
+.import-btn {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: #F97316;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+.import-btn:hover:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+}
+
+/* 导入弹窗 */
+.import-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+  margin-bottom: 0;
+}
+.import-dialog :deep(.el-dialog__title) {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.import-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(249, 115, 22, 0.06);
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 16px;
+}
+.import-tip .it-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.import-tip b {
+  color: #EA580C;
+}
+
+.import-dialog :deep(.el-upload-dragger) {
+  border-radius: 12px;
+}
+.import-dialog :deep(.el-upload__tip) {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* 导入结果 */
+.import-result-dialog :deep(.el-dialog__header) {
+  border-bottom: 2px solid #F97316;
+  padding-bottom: 16px;
+  margin-bottom: 0;
+}
+.import-result-dialog :deep(.el-dialog__title) {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.result-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.result-card {
+  background: #f9fafb;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 16px 8px;
+  text-align: center;
+  border-top: 3px solid #9ca3af;
+}
+.result-card.success {
+  border-top-color: #10b981;
+  background: #ecfdf5;
+}
+.result-card.updated {
+  border-top-color: #2563eb;
+  background: #eff6ff;
+}
+.result-card.failed {
+  border-top-color: #ef4444;
+  background: #fef2f2;
+}
+.rc-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+.rc-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.result-errors {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.re-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin-bottom: 8px;
+}
+.re-list {
+  margin: 0;
+  padding-left: 18px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.re-list li {
+  font-size: 12px;
+  color: #7f1d1d;
+  line-height: 1.7;
 }
 </style>

@@ -1,5 +1,6 @@
 import request from '@haifeng/shared/utils/request'
 import type { R, PageResult } from '@haifeng/shared'
+import type { ImportResultVO } from '@/types/certificate/certificate'
 import type {
   CertificateListVO,
   CertificateDetailVO,
@@ -44,4 +45,16 @@ export const batchDeleteCertificate = (ids: number[]) => {
 
 export const batchUpdateCertificateStatus = (ids: number[], isDeleted: boolean) => {
   return request.put<R<void>>(`${PREFIX}/batch/status`, { ids, isDeleted })
+}
+
+/**
+ * 批量导入证书（EasyExcel，单文件上传；多文件由前端逐个调用）
+ */
+export const importCertificate = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<ImportResultVO>>(`${PREFIX}/import`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
 }

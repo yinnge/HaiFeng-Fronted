@@ -34,12 +34,17 @@ export interface CompetitionListVO {
   registrationTime: string
 }
 
+export interface CompetitionBasicInfoItem {
+  title: string
+  content: string
+}
+
 export interface CompetitionDetailVO {
   id: string
   competitionId: string
   compName?: string
   compLevel?: string
-  basicInfo: Record<string, any> | null
+  basicInfo: CompetitionBasicInfoItem[] | null
   awards: string[] | null
   background: string | null
   purposes: string[] | null

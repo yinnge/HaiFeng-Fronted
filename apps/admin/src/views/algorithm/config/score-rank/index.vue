@@ -216,16 +216,39 @@ const handleToggleStatus = async (row: ScoreRankListVO) => {
   }
 }
 
+const handleDelete = async (row: ScoreRankListVO) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除该一分一段记录吗？此操作不可恢复！`, '提示', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    const res = await deleteScoreRank(row.id)
+    if (res.data.code === 200) {
+      ElMessage.success('删除成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '删除失败')
+    }
+  } catch {
+    // cancel
+  }
+}
+
 const handleBatchDelete = async () => {
   if (selectedIds.value.length === 0) {
-    ElMessage.warning('请先选择要禁用的记录')
+    ElMessage.warning('请先选择要删除的记录')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要禁用选中的 ${selectedIds.value.length} 条记录吗？`, '提示')
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条记录吗？此操作不可恢复！`, '提示', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
     const res = await batchDeleteScoreRank(selectedIds.value)
     if (res.data.code === 200) {
-      ElMessage.success('批量禁用成功')
+      ElMessage.success('批量删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
@@ -348,7 +371,7 @@ onMounted(() => {
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        批量禁用
+        批量删除
       </button>
       <div class="action-bar-spacer" />
       <button type="button" class="refresh-btn" @click="fetchData">
@@ -390,7 +413,7 @@ onMounted(() => {
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="230" align="center" fixed="right">
+          <el-table-column label="操作" width="280" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-group">
                 <button type="button" class="action-btn action-detail" @click="openDialog('detail', row.id)">详情</button>
@@ -402,6 +425,7 @@ onMounted(() => {
                 >
                   {{ row.isDeleted ? '启用' : '禁用' }}
                 </button>
+                <button type="button" class="action-btn action-delete" @click="handleDelete(row)">删除</button>
               </div>
             </template>
           </el-table-column>

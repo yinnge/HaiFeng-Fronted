@@ -55,3 +55,11 @@ export interface CertificateAddDTO {
 export interface CertificateUpdateDTO extends CertificateAddDTO {
   id: string
 }
+
+export interface ImportResultVO {
+  total: number
+  success: number
+  failed: number
+  updated: number
+  errors: string[]
+}
