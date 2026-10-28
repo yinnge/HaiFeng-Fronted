@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { Component } from 'vue'
 import { getUniversityDetail, getCampusGallery } from '@/api/university'
 import type { UniversityDetailVO, GalleryItemVO } from '@/types/university'
 import { ElMessage } from 'element-plus'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
 import DepartmentTab from '@/components/university/DepartmentTab.vue'
 import SubjectEvaluationTab from '@/components/university/SubjectEvaluationTab.vue'
@@ -21,13 +22,15 @@ const detail = ref<UniversityDetailVO | null>(null)
 const universityId = computed(() => route.params.id as string)
 
 // ===== 六大板块：纵向平铺，每块预览前 N 条，「查看全部」开右侧抽屉 =====
-const sections: { key: string; label: string; desc: string; previewCount: number }[] = [
-  { key: 'laboratory', label: '重点实验室', desc: '科研平台与实验资源', previewCount: 4 },
-  { key: 'postgrad', label: '考研专业', desc: '硕士招生专业目录', previewCount: 3 },
-  { key: 'department', label: '院系设置', desc: '院系与教学单位', previewCount: 6 },
-  { key: 'evaluation', label: '学科评估', desc: '教育部学科评估结果', previewCount: 4 },
-  { key: 'channel', label: '特殊招生通道', desc: '强基/综评等特殊类型', previewCount: 3 },
-  { key: 'admission', label: '历年录取数据', desc: '专业组分数与位次', previewCount: 5 },
+// 顺序按需求文档：历年录取数据 → 学科评估 → 考研专业 → 重点实验室 → 院系设置 → 特殊招生通道
+// anchor 为吸顶二级导航的锚点 ID；strong = 核心决策信息（导航加粗 + 橙点强调）
+const sections: { key: string; label: string; anchor: string; strong: boolean; previewCount: number }[] = [
+  { key: 'admission', label: '历年录取数据', anchor: 'admission-data', strong: true, previewCount: 5 },
+  { key: 'evaluation', label: '学科评估', anchor: 'discipline', strong: true, previewCount: 4 },
+  { key: 'postgrad', label: '考研专业', anchor: 'postgraduate', strong: false, previewCount: 3 },
+  { key: 'laboratory', label: '重点实验室', anchor: 'lab', strong: false, previewCount: 4 },
+  { key: 'department', label: '院系设置', anchor: 'department', strong: false, previewCount: 6 },
+  { key: 'channel', label: '特殊招生通道', anchor: 'admission-channel', strong: false, previewCount: 3 },
 ]
 
 const sectionComponents: Record<string, Component> = {
@@ -39,8 +42,14 @@ const sectionComponents: Record<string, Component> = {
   admission: AdmissionGroupTab,
 }
 
-/** 各板块总数（由 Tab 组件 @total 上报） */
+/** 各板块总数（由 Tab 组件 @total 上报；undefined = 尚未加载完成，不参与隐藏判断） */
 const sectionTotals = reactive<Record<string, number>>({})
+
+/** 空模块判断：total 已上报且为 0 才隐藏（未加载/未请求如非 VIP 不隐藏，保留 VIP 引导卡）。
+ *  「历年录取数据」为核心高频模块，始终保留（空数据时 Tab 内部展示空状态）。 */
+function isSectionHidden(key: string) {
+  return key !== 'admission' && sectionTotals[key] === 0
+}
 
 // ===== 「查看全部」右侧抽屉（占约 1/4 屏，窄屏自动加宽） =====
 const drawerVisible = ref(false)
@@ -70,6 +79,91 @@ async function fetchGallery() {
   }
 }
 
+// ===== 吸顶二级导航（Sticky Sub-Nav）+ ScrollSpy =====
+// 吸附偏移：动态测量全局导航栏高度（写法对齐 FileLoadPage.stage-nav）；
+// 全局头部滚动收起时 top 收为 0，填补空隙。
+const { hidden: headerHidden } = useAutoHideHeader()
+const stickyTop = ref(64)
+
+function measureHeader() {
+  const h = document.querySelector('.app-header')?.getBoundingClientRect().height
+  if (h && h > 0) stickyTop.value = Math.round(h)
+}
+
+const barTop = computed(() => (headerHidden.value ? 0 : stickyTop.value))
+
+/** 锚点滚动定位余量 = 吸顶子导航高度 + 呼吸间距（配合 scroll-margin-top 防遮挡） */
+const anchorOffset = computed(() => barTop.value + 56)
+
+/** 可用导航项：概况 + 未隐藏的板块（导航渲染与 ScrollSpy 目标都基于它动态生成） */
+const navItems = computed(() => {
+  const items = [{ anchor: 'overview', label: '概况', strong: false }]
+  for (const sec of sections) {
+    if (isSectionHidden(sec.key)) continue
+    items.push({ anchor: sec.anchor, label: sec.label, strong: sec.strong })
+  }
+  return items
+})
+
+const activeAnchor = ref('')
+
+/** 统一跳转方法：导航项与右侧栏「查看历年数据」共用 */
+function scrollToSection(anchor: string) {
+  activeAnchor.value = anchor // 点击立即高亮，滚动过程中由 observer 接管
+  document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+let spyObserver: IntersectionObserver | null = null
+
+/** ScrollSpy：模块进入视口中上部（rootMargin -45%/-50% 的中部带）判定为当前模块 */
+function setupSpy() {
+  spyObserver?.disconnect()
+  spyObserver = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) activeAnchor.value = e.target.id
+      }
+    },
+    { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
+  )
+  nextTick(() => {
+    if (!spyObserver) return
+    for (const it of navItems.value) {
+      const el = document.getElementById(it.anchor)
+      if (el) spyObserver.observe(el)
+    }
+  })
+}
+
+// 页尾兜底：滚到底时强制高亮最后一项（最后模块可能进不了中部带）
+function onWinScroll() {
+  const doc = document.documentElement
+  if (window.innerHeight + window.scrollY >= doc.scrollHeight - 40) {
+    const last = navItems.value[navItems.value.length - 1]
+    if (last) activeAnchor.value = last.anchor
+  }
+}
+
+// 激活项变化时，移动端横向导航条自动把高亮项滚到可视区中间
+watch(activeAnchor, () => {
+  nextTick(() => {
+    document.querySelector('.sub-nav-item.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+  })
+})
+
+// 吸附状态：sentinel（子导航正上方 1px 元素）滚出视口顶 → 已吸附，切换入场动画/阴影
+const navStuck = ref(false)
+let stuckObserver: IntersectionObserver | null = null
+const navSentinel = ref<HTMLElement | null>(null)
+
+// 数据/可用模块变化后：重建 ScrollSpy 观察目标 + 重挂吸附哨兵（两者都在 detail 渲染后才存在）
+watch([navItems, detail], () => {
+  setupSpy()
+  nextTick(() => {
+    if (navSentinel.value) stuckObserver?.observe(navSentinel.value)
+  })
+})
+
 function goGallery() {
   router.push(`/university/${universityId.value}/guide?cat=gallery`)
 }
@@ -84,11 +178,6 @@ function goMajor() {
 
 function goBack() {
   router.push('/university')
-}
-
-/** 升学参考卡：平滑滚动到「历年录取数据」板块 */
-function scrollToAdmission() {
-  document.getElementById('sec-admission')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 async function fetchDetail() {
@@ -111,6 +200,22 @@ async function fetchDetail() {
 onMounted(() => {
   fetchDetail()
   fetchGallery()
+  measureHeader()
+  window.addEventListener('resize', measureHeader)
+  window.addEventListener('scroll', onWinScroll, { passive: true })
+  stuckObserver = new IntersectionObserver(
+    ([entry]) => {
+      navStuck.value = !entry.isIntersecting
+    },
+    { threshold: 0 },
+  )
+})
+
+onBeforeUnmount(() => {
+  spyObserver?.disconnect()
+  stuckObserver?.disconnect()
+  window.removeEventListener('resize', measureHeader)
+  window.removeEventListener('scroll', onWinScroll)
 })
 
 // ===== 亮点数字滚动计数（纯展示动效，不触碰业务逻辑）=====
@@ -293,12 +398,33 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
             </div>
           </section>
 
-          <!-- ===== 主体：左内容流 + 右侧栏（移动端侧栏下沉） ===== -->
-          <div class="flex flex-col lg:flex-row gap-6 items-start">
+        <!-- 吸附哨兵：滚出视口顶 → 子导航进入吸附态（切换入场动画/阴影） -->
+        <div ref="navSentinel" class="h-px" aria-hidden="true" />
+
+        <!-- ===== 吸顶二级导航：概况/六大板块锚点（移动端横向滑动） ===== -->
+        <nav class="sub-nav" :class="{ 'is-stuck': navStuck }" :style="{ top: `${barTop}px` }">
+          <div class="sub-nav-inner">
+            <button
+              v-for="it in navItems"
+              :key="it.anchor"
+              class="sub-nav-item"
+              :class="{ 'is-active': activeAnchor === it.anchor, 'is-strong': it.strong }"
+              @click="scrollToSection(it.anchor)"
+            >
+              <span v-if="it.strong" class="strong-dot" aria-hidden="true" />
+              {{ it.label }}
+            </button>
+          </div>
+        </nav>
+
+        <!-- ===== 主体：左内容流 + 右侧栏（移动端侧栏下沉） ===== -->
+        <div class="flex flex-col lg:flex-row gap-6 items-start mt-6">
             <!-- 左侧内容流 -->
             <div class="flex-1 min-w-0 space-y-6 w-full">
-              <!-- 详细信息 -->
-              <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
+              <!-- 概况：基本信息 + 排行榜 + 院校介绍（吸顶导航「概况」锚点） -->
+              <div id="overview" :style="{ scrollMarginTop: `${anchorOffset}px` }" class="space-y-6">
+                <!-- 详细信息 -->
+                <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
                 <div class="flex items-center gap-3 mb-5">
                   <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
                   <h3 class="text-xl font-bold text-gray-800">详细信息</h3>
@@ -395,15 +521,17 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                     <img v-if="introThumb" :src="introThumb" :alt="detail.name" class="h-full w-full object-cover" />
                   </div>
                 </div>
-              </section>
+                </section>
+              </div>
 
-              <!-- 六大板块：纵向平铺 -->
-              <section
-                v-for="sec in sections"
-                :id="`sec-${sec.key}`"
-                :key="sec.key"
-                class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white scroll-mt-24"
-              >
+              <!-- 六大板块：纵向平铺（空数据模块整体不渲染，导航项同步隐藏） -->
+              <template v-for="sec in sections" :key="sec.key">
+                <section
+                  v-if="!isSectionHidden(sec.key)"
+                  :id="sec.anchor"
+                  :style="{ scrollMarginTop: `${anchorOffset}px` }"
+                  class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white"
+                >
                 <div class="flex items-center justify-between mb-5">
                   <div class="flex items-center gap-3">
                     <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
@@ -423,7 +551,8 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                   preview
                   @total="(v: number) => (sectionTotals[sec.key] = v)"
                 />
-              </section>
+                </section>
+              </template>
             </div>
 
             <!-- 右侧栏（lg 起吸顶，移动端下沉到内容后） -->
@@ -453,7 +582,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
               <div class="side-card">
                 <h4 class="side-title mb-2">升学参考</h4>
                 <p class="text-xs text-gray-500 leading-relaxed mb-3">查看该校近 5 年各专业组录取分数、位次与选科要求，辅助精准定位。</p>
-                <button class="side-btn w-full" @click="scrollToAdmission">
+                <button class="side-btn w-full" @click="scrollToSection('admission-data')">
                   查看历年数据
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -740,6 +869,98 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 /* ===== 介绍缩略图兜底 ===== */
 .intro-thumb {
   animation: fadeUp 0.55s ease both;
+}
+
+/* ===== 吸顶二级导航（样式基调对齐 FileLoadPage.stage-nav） ===== */
+.sub-nav {
+  position: sticky;
+  z-index: 40;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  transition: top 0.3s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.sub-nav.is-stuck {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  animation: navDrop 0.2s ease;
+}
+@keyframes navDrop {
+  from { opacity: 0.55; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.sub-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+  -ms-overflow-style: none;
+}
+.sub-nav-inner::-webkit-scrollbar {
+  display: none; /* WebKit 隐藏滚动条 */
+}
+.sub-nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+.sub-nav-item:hover {
+  color: #e8722a;
+  background: rgba(232, 114, 42, 0.08);
+}
+/* 核心决策项：字重加粗 + 品牌橙 4px 圆点 */
+.sub-nav-item.is-strong {
+  font-weight: 700;
+}
+.strong-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #f97316;
+  flex-shrink: 0;
+}
+/* 激活项：品牌橙文字 + 3px 橙色短指示条 */
+.sub-nav-item.is-active {
+  color: #f97316;
+  font-weight: 700;
+}
+.sub-nav-item.is-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: #f97316;
+}
+@media (max-width: 767px) {
+  .sub-nav-inner {
+    padding: 6px 8px;
+  }
+  .sub-nav-item {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
 }
 
 /* ===== 关键帧 ===== */
