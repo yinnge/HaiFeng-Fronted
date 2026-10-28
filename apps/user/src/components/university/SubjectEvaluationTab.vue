@@ -4,7 +4,8 @@ import { getGradeStats, getSubjectEvaluationPage } from '@/api/university/subjec
 import type { GradeStatVO, SubjectEvaluationVO } from '@/types/university/subject-evaluation'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{ universityId: string }>()
+const props = defineProps<{ universityId: string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'total', v: number): void }>()
 
 const loading = ref(false)
 const stats = ref<GradeStatVO[]>([])
@@ -13,6 +14,9 @@ const total = ref(0)
 const page = ref(1)
 const size = ref(10)
 const activeGrade = ref('')
+
+/** 预览模式：详情页板块只展示前 4 条 */
+const shownList = computed(() => (props.preview ? filteredList.value.slice(0, 4) : filteredList.value))
 
 const sortedGrades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-']
 
@@ -39,6 +43,7 @@ async function fetchList() {
     const res = await getSubjectEvaluationPage(props.universityId, { page: page.value, size: size.value })
     list.value = res.data.data.records
     total.value = res.data.data.total
+    emit('total', total.value)
   } catch (e: any) {
     ElMessage.error(e?.message || '获取学科评估列表失败')
   } finally {
@@ -68,7 +73,8 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3 mb-6">
+    <!-- 等级筛选（预览模式隐藏） -->
+    <div v-if="!preview" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3 mb-6">
       <button
         v-for="grade in sortedGrades" :key="grade"
         class="rounded-xl p-3 text-center transition-all border cursor-pointer"
@@ -83,9 +89,9 @@ onMounted(() => {
     </div>
 
     <div v-loading="loading" class="min-h-[120px]">
-      <div v-if="filteredList.length" class="space-y-3">
+      <div v-if="shownList.length" class="space-y-3">
         <div
-          v-for="item in filteredList" :key="item.disciplineCode"
+          v-for="item in shownList" :key="item.disciplineCode"
           class="rounded-xl bg-white p-4 shadow-sm border border-gray-100 flex items-center justify-between"
         >
           <div>
@@ -110,7 +116,7 @@ onMounted(() => {
       <p v-else-if="!loading" class="py-12 text-center text-gray-400">{{ activeGrade ? `暂无 ${activeGrade} 等级学科数据` : '暂无学科评估数据' }}</p>
     </div>
 
-    <div v-if="total > size" class="mt-6 flex justify-center">
+    <div v-if="!preview && total > size" class="mt-6 flex justify-center">
       <el-pagination background layout="prev, pager, next" :total="total" :page-size="size" :current-page="page" @current-change="onPageChange" />
     </div>
   </div>

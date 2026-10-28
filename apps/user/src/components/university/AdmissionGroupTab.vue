@@ -11,7 +11,8 @@ import type { AdmissionGroupListVO, AdmissionGroupQueryDTO } from '@/types/unive
 
 const recharge = useRechargeDialog()
 const router = useRouter()
-const props = defineProps<{ universityId: string }>()
+const props = defineProps<{ universityId: string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'total', v: number): void }>()
 const userStore = useUserStore()
 
 const loading = ref(false)
@@ -19,6 +20,9 @@ const list = ref<AdmissionGroupListVO[]>([])
 const total = ref(0)
 const page = ref(1)
 const size = ref(12)
+
+/** 预览模式：详情页板块只展示前 5 条 */
+const shownList = computed(() => (props.preview ? list.value.slice(0, 5) : list.value))
 
 const province = ref('')
 const batch = ref('')
@@ -41,6 +45,7 @@ async function fetchList() {
     const res = await getAdmissionGroupPage(props.universityId, params)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    emit('total', total.value)
   } catch (e: any) {
     if (e?.response?.status === 403) {
       list.value = []
@@ -123,8 +128,8 @@ onMounted(() => {
 
     <!-- VIP 用户可见内容 -->
     <template v-else>
-      <!-- 搜索栏 -->
-      <div class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-5 shadow-md border border-gray-100">
+      <!-- 搜索栏（预览模式隐藏） -->
+      <div v-if="!preview" class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-5 shadow-md border border-gray-100">
         <div class="w-44">
           <label class="block text-sm font-medium text-gray-600 mb-1.5">招生省份</label>
           <el-select v-model="province" placeholder="全部" clearable filterable class="w-full" @change="handleSearch">
@@ -163,9 +168,9 @@ onMounted(() => {
 
       <!-- 卡片列表 2列 -->
       <div v-loading="loading" class="min-h-[200px]">
-        <div v-if="list.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-if="shownList.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div
-            v-for="item in list"
+            v-for="item in shownList"
             :key="item.id"
             class="rounded-2xl bg-white p-5 shadow-lg border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all"
           >
@@ -213,8 +218,8 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 分页 -->
-      <div v-if="total > size" class="mt-6 flex justify-center">
+      <!-- 分页（预览模式隐藏） -->
+      <div v-if="!preview && total > size" class="mt-6 flex justify-center">
         <el-pagination
           background
           layout="total, sizes, prev, pager, next"

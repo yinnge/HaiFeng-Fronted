@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { getUniversityChannels, getChannelOptions } from '@/api/university'
 import { ProvinceOptions } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
 import type { ChannelListVO, ChannelOptionVO, ChannelQueryDTO } from '@/types/university'
 
-const props = defineProps<{ universityId: string }>()
+const props = defineProps<{ universityId: string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'total', v: number): void }>()
 
 const loading = ref(false)
 const list = ref<ChannelListVO[]>([])
 const total = ref(0)
 const page = ref(1)
 const size = ref(12)
+
+/** 预览模式：详情页板块只展示前 3 条 */
+const shownList = computed(() => (props.preview ? list.value.slice(0, 3) : list.value))
 
 const channelName = ref('')
 const regionTag = ref('')
@@ -36,6 +40,7 @@ async function fetchList() {
     const res = await getUniversityChannels(props.universityId, params)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    emit('total', total.value)
   } catch (e: any) {
     ElMessage.error(e?.message || '获取通道数据失败')
   } finally {
@@ -74,8 +79,8 @@ onMounted(() => {
 
 <template>
   <div>
-    <!-- 搜索栏 -->
-    <div class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-5 shadow-md border border-gray-100">
+    <!-- 搜索栏（预览模式隐藏） -->
+    <div v-if="!preview" class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-5 shadow-md border border-gray-100">
       <div class="min-w-[200px] flex-1">
         <label class="block text-sm font-medium text-gray-600 mb-1.5">通道名称</label>
         <el-select
@@ -116,9 +121,9 @@ onMounted(() => {
 
     <!-- 卡片列表 3列 -->
     <div v-loading="loading" class="min-h-[200px]">
-      <div v-if="list.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="shownList.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          v-for="item in list"
+          v-for="item in shownList"
           :key="item.channelCode"
           class="rounded-2xl bg-white p-5 shadow-lg border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all"
         >
@@ -137,8 +142,8 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 分页 -->
-    <div v-if="total > size" class="mt-6 flex justify-center">
+    <!-- 分页（预览模式隐藏） -->
+    <div v-if="!preview && total > size" class="mt-6 flex justify-center">
       <el-pagination
         background
         layout="total, sizes, prev, pager, next"
