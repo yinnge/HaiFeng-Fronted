@@ -108,11 +108,35 @@ const onMoreInstitutions = () => { ElMessage.info('机构列表页开发中，�
 // ===== Scroll Reveal =====
 let revealObserver: IntersectionObserver | null = null
 
+// 入场动画收尾：动画跑完后补 is-settled，
+// 让 .reveal 的 will-change 归还 auto —— 否则整段 section（首页矩阵 10 张卡）
+// 会长期停留在合成层里，被位图化重采样后 1px 描边糊成 2px 灰雾、文字发虚。
+// 详见 assets/styles/index.css 中 .reveal 段落的说明。
+const settleReveal = (el: Element) => {
+  el.classList.add('is-settled')
+}
+
+const revealElement = (el: Element) => {
+  el.classList.add('revealed')
+  const onEnd = (e: Event) => {
+    const evt = e as TransitionEvent
+    if (evt.target !== el || evt.propertyName !== 'filter') return
+    el.removeEventListener('transitionend', onEnd)
+    settleReveal(el)
+  }
+  el.addEventListener('transitionend', onEnd)
+  // 兜底：减弱动效 / 元素被隐藏导致 transitionend 不触发时也能收尾
+  window.setTimeout(() => {
+    el.removeEventListener('transitionend', onEnd)
+    settleReveal(el)
+  }, 1200)
+}
+
 const initScrollReveal = () => {
   revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('revealed')
+        revealElement(entry.target)
       }
     })
   }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' })
@@ -122,7 +146,7 @@ const initScrollReveal = () => {
     // 对已在视口内的元素立即 reveal，避免 observer 未触发导致永久模糊
     const rect = el.getBoundingClientRect()
     if (rect.top < window.innerHeight && rect.bottom > 0) {
-      el.classList.add('revealed')
+      revealElement(el)
     } else {
       revealObserver!.observe(el)
     }
@@ -496,7 +520,9 @@ onUnmounted(() => {
 
 .reveal-left.revealed {
   opacity: 1;
-  transform: translateX(0);
+  /* 用 none 而非 translateX(0)：平移归零后仍写成 transform 会让元素保留变换节点，
+     叠加上层 .reveal 的合成层容易把子级描边/文字一起揉糊 */
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

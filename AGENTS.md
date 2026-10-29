@@ -189,17 +189,83 @@
 
 ---
 
-## 六、 改动前自检 Checklist
+## 六、 解决文字毛边 / 描边发糊 / 模糊问题
 
-每次新增或修改页面/组件前，必须逐条核对：
+> 这一节是「页面看起来糊」的固定排查与写法规范。凡遇到**文字发虚、1px 描边糊成灰雾、hover 瞬间出现毛边再变清晰**，先按本节判据走，不要先去怀疑字体、字号或配色。
 
-- [ ] **【容器细节】** 卡片是否已去掉亮橙色硬边框与 `border-image`，改用纯白底 + `1px` 极浅冷灰发丝边 + 柔和弥散阴影？
-- [ ] **【角标构图】** 序号 `01-10` 是否已做成圆形角标吸附在图标底座左上角，而非独立色块与标题水平挤压？
-- [ ] **【四色分流】** 页面是否合理运用了晴空蓝（选科/资讯/学术）、丹霞红（热门/急招/预警）、向日葵黄（荣誉/公办/日历）、翡翠绿（实证/招录），避免了满屏同一种橙色？
-- [ ] **【标签形态】** 行内说明标签与公告分类是否已改为 `6px` 微圆角矩形（而非全部做成千篇一律的橙色药丸）？
-- [ ] **【列表与配平】** 公告列表是否已去掉 `【】` 括号与底部 `dashed` 虚线，并加上了底部浅灰收口条与右栏下半区工具模块配平？
-- [ ] **【防御渲染】** 列表与卡片中的计数（如专业数）是否已做 `> 0` 判断，杜绝页面出现 `0 个专业`？
-- [ ] **【工程红线】** 分页 `pageSize` 是否在 `[10, 100]` 区间？错误捕获是否包含 `err.message`？就业枚举是否对齐 DB CHECK？
+### 1. 两种典型现象（几乎都是同一个根因）
+
+- **现象 A（稳态模糊）**：平时文字/描边就发虚，hover 或点击后突然变清晰，移开又糊。
+- **现象 B（动画帧模糊）**：hover 放大/回弹的**过程中**边缘有毛边闪烁，动画停下来才稳定清晰。
+
+判据：只要出现「静止时糊 + 交互后变清楚」，**99% 是 `transform` / `filter` 让元素脱离了「直接栅格化」路径，被当成位图参与合成与重采样**，与字体文件、`font-weight` 无关。
+
+### 2. 原理（一句话版）
+
+浏览器对非合成内容是**按最终像素位置直接矢量绘制**的（Chrome 还会把 border/background 的边吸附到整数设备像素，即 pixel snapping）。一旦元素被提升为**合成层**（`transform` / `filter` / `will-change` / `opacity<1` / `backdrop-filter` 都会触发），它的整棵子树先被渲染成一张**位图**，再按「层偏移」贴到屏幕上。此时：
+
+1. 位图不再做 pixel snapping，1px 发丝边会被摊成 2px 半透明灰雾；
+2. 若层的位置落在**分数像素**上（居中容器、`2fr/1fr` 栅格、`33.33%` 宽度都会产生，如 395.33px），位图还要做**双线性重采样**，文字一并模糊；
+3. `scale()` 缩放动画期间浏览器为保证帧率会用 GPU 插值这张位图，动画停下才按最终精度重新栅格化一次 → 现象 B。
+
+### 3. 本项目铁律（写动画/卡片时必须遵守）
+
+- **铁律 1｜稳态必须退出合成层**：入场动画（`.reveal` 一类）结束后，`filter` 必须归 `none`（**不是 `blur(0)`**，`blur(0)` 仍然是一条过滤链，元素依旧是合成层），`transform` 归 `none`，`will-change` 归 `auto`。
+  - 参考实现：`apps/user/src/assets/styles/index.css` 的 `.reveal` / `.reveal.revealed` / `.reveal.revealed.is-settled`，配 `apps/user/src/views/home/index.vue` 的 `revealElement()`（`transitionend` + 1200ms 兜底后再打 `is-settled`）。**勿回退成 `filter: blur(0)` + 常驻 `will-change`**。
+- **铁律 2｜含文字 / 含细描边的容器，禁止用 `scale()` 做强调**：改用 `translateY()` 位移 + `box-shadow` / `border-color` / 文字颜色深化。`scale` 只允许用于**纯装饰层**（纯色/渐变块、无文字）。
+  - 反例：序号徽标 `01-10` 在图标底座内，给底座写 `hover { transform: scale(1.04) }` 会把序号文字一起送进位图插值 → 序号发虚。
+  - `:active` 按压反馈也不要 `scale(0.99)`，用「阴影收拢 + `translateY(0)`」表达。
+- **铁律 3｜`will-change` 只能临时挂**：只加在确实高频动画的元素上，动画结束必须撤回 `auto`；**严禁**写在会长期存在的容器类上（一个 `will-change: transform` 会让整块 section 永久位图化）。
+- **铁律 4｜字号取整**：`rem` 换算后应落在整数 px（`0.8125rem = 13px` ✅ / `0.82rem = 13.12px` ❌），分数 px 字号在 1x 屏上天然发虚。
+- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。
+
+### 4. 排查动作（30 秒定位，先量后改）
+
+用浏览器控制台或 playwright 直接读**祖先链**的计算样式，别靠肉眼猜：
+
+```js
+// 把 el 换成你觉得糊的那张卡片 / 那段文字
+let el = document.querySelector('.plan-card')
+while (el && el !== document.documentElement) {
+  const s = getComputedStyle(el)
+  if (s.filter !== 'none' || s.willChange !== 'auto' ||
+      (s.transform !== 'none' && s.transform !== 'matrix(1, 0, 0, 1, 0, 0)') ||
+      s.backdropFilter !== 'none') {
+    console.warn('可疑合成层:', el.className, {
+      filter: s.filter, willChange: s.willChange, transform: s.transform, backdrop: s.backdropFilter,
+    })
+  }
+  el = el.parentElement
+}
+// 再看几何是否落在分数像素（是否会被重采样）
+document.querySelector('.plan-card').getBoundingClientRect()
+```
+
+判定表：
+
+| 读到的值 | 结论 |
+|---|---|
+| `filter: blur(0)` | **错误写法**，仍是过滤链 → 改 `none` |
+| `will-change` 含 transform/filter 且元素已静止 | 合成层常驻 → 动画结束后撤 `auto` |
+| `transform` 非 `none` 且动画已结束 | 同上，归 `none` |
+| 祖先有 `scale()` / `backdrop-filter` | 整棵子树被位图化，挪走或去掉 |
+| 元素宽度为 `395.33px` 这类小数 | 位图必被重采样，优先消灭上层合成层 |
+
+### 5. 图片糊 ≠ 文字糊（单独排查，别混为一谈）
+
+若糊的是**图片/封面图**而不是文字与描边，走上层合成层没用，查这三条：
+
+- 原图分辨率 < 实际显示尺寸的 **2 倍**（如原图 800px 却显示 1200px 宽）→ 换高分辨率图或压缩显示尺寸；
+- 容器用 `object-fit: cover`（配 `width/height: 100%`），**不要**用 CSS 强行拉伸图片固有宽高；
+- 图片若在 `scale()` 动画里，动画期间同样会位图插值 → 按铁律 2 处理。
+
+### 6. 已根治案例
+
+- **首页「矩阵视图」卡片描边糊 + 文字发虚（2026-10-29 根治）**
+  - 真凶：`index.css` 的 `.reveal.revealed` 只写 `filter: blur(0)`，且 `.reveal` 常驻 `will-change: transform, opacity, filter`；`.reveal` 挂在 `HomePathwaySection.vue` 的 `.section-container` 上 → 整个 5×2 矩阵（10 张 `.plan-card`）被永久位图化。
+  - 加重因素：`.home-plan-grid` 的 `minmax(0,2fr)/minmax(320px,1fr)` + 矩阵 `repeat(2, minmax(0,1fr))` → 实读卡片宽 **395.328125px**，1x 屏（dpr=1）下 1px 描边被重采样成灰雾。
+  - 修复：稳态 `filter/transform: none` + `is-settled{will-change:auto}`；移除 `.plan-card__icon` 的 `hover scale` 与 `:active scale`；字号取整（13px / 9px）；`html` 补 `text-rendering: optimizeLegibility` 与 `-webkit-font-smoothing: antialiased`。
+  - 验证：`#pathway .section-container` → `filter: none / will-change: auto / transform: none`。
 
 ---
 
@@ -213,3 +279,5 @@
 - ❌ **严禁**在公告列表中使用中文方括号 `【公告】` 及老旧的 `dashed` 虚线分割
 - ❌ **严禁**在页面上使用任何 Emoji 图标（必须使用线性 SVG 图标）
 - ❌ **严禁**删除 `index.css` 中根治 Element Plus 弹窗抖动的 `scrollbar-gutter: stable` 与 `width: 100% !important` 补丁
+- ❌ **严禁**把入场动画的稳态写成 `filter: blur(0)` 或让 `will-change` 常驻（见第六节铁律 1，会让整块容器永久位图化 → 描边糊、文字虚）
+- ❌ **严禁**给含文字或含序号徽标的容器写 `hover/active { transform: scale() }`（见第六节铁律 2）

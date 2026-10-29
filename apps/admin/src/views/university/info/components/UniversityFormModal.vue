@@ -44,7 +44,7 @@ const formData = reactive<UniversityFormData>({
   category: '', majorCount: 0, educationLevel: '', nature: '',
   recommendationRate: undefined, recommendationYear: undefined,
   hasDoctorate: false, hasMaster: false, department: '',
-  tags: [], famousUnion: '', imageUrl: '', introduction: '',
+  tags: [], famousUnion: '', imageUrl: '', introduction: '', sortOrder: 0,
 })
 
 const detailFormData = reactive<UniversityDetailFormData>({
@@ -73,7 +73,7 @@ watch(
           hasDoctorate: form.hasDoctorate ?? false, hasMaster: form.hasMaster ?? false,
           department: form.department || '', tags: form.tags || [],
           famousUnion: form.famousUnion || '', imageUrl: form.imageUrl || '',
-          introduction: form.introduction || '',
+          introduction: form.introduction || '', sortOrder: form.sortOrder ?? 0,
         })
         if (detail) {
           Object.assign(detailFormData, {
@@ -93,7 +93,7 @@ watch(
           category: '', majorCount: 0, educationLevel: '', nature: '',
           recommendationRate: undefined, recommendationYear: undefined,
           hasDoctorate: false, hasMaster: false, department: '',
-          tags: [], famousUnion: '', imageUrl: '', introduction: '',
+          tags: [], famousUnion: '', imageUrl: '', introduction: '', sortOrder: 0,
         })
         Object.assign(detailFormData, {
           address: '', admissionPhone: '', website: '',
@@ -231,6 +231,18 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
             </el-form-item>
             <el-form-item label="知名联盟">
               <el-input v-model="formData.famousUnion" placeholder="如：C9、华东五校" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="排序权重">
+              <div class="sort-order-row">
+                <el-input-number
+                  v-model="formData.sortOrder"
+                  :min="0"
+                  :max="9999"
+                  controls-position="right"
+                  style="width: 200px"
+                />
+                <span class="sort-order-tip">数值越大，C 端院校列表展示越靠前</span>
+              </div>
             </el-form-item>
             <el-form-item label="院校图片">
               <div class="image-url-row">
@@ -414,6 +426,9 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
 }
 .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
 .submit-btn:active { transform: translateY(0); }
+
+.sort-order-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.sort-order-tip { font-size: 13px; color: #9ca3af; }
 
 .carousel-images-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .carousel-image-row { display: flex; align-items: center; gap: 8px; }

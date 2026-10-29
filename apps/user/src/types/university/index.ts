@@ -18,7 +18,7 @@ export interface UniversityQueryDTO extends BasePageQuery {
   channelCode?: string
 }
 
-/** 与后端 UniversityListVO 对齐：coverImage=详情轮播首图（可为 null，前端占位）；content=简介全文（前端截断） */
+/** 与后端 UniversityListVO 对齐：imageUrl=院校 logo；coverImage=详情轮播首图（可为 null，前端占位）；content=简介全文（前端截断） */
 export interface UniversityListVO {
   id: string
   name: string
@@ -70,6 +70,7 @@ export interface UniversityDetailVO {
   department: string
   tags: string[]
   famousUnion: string
+  imageUrl?: string
 }
 
 export interface GuideOverviewVO {

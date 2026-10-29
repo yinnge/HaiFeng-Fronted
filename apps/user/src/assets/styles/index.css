@@ -63,6 +63,10 @@ html {
   /* 视口级滚动条占位：固定定位元素（右侧悬浮导航）锚定视口，
      必须在此保留 stable gutter，弹窗锁滚动时视口宽度不变 → 不抖动。 */
   scrollbar-gutter: stable;
+  /* 全站文字抗锯齿底线（DESIGN.md 方案3）：非 Retina 屏下显著减少发虚 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -380,6 +384,16 @@ body.el-popup-parent--hidden {
 
 
 /* ============ Scroll Reveal 动画（IntersectionObserver 驱动） ============ */
+/* ⚠️ 关键：稳态必须彻底退出合成层与过滤链。
+   历史 Bug（首页「矩阵视图」卡片描边糊、文字发虚的真凶）：
+   .revealed 原先只写 filter: blur(0) —— 这仍然声明了一条过滤链，元素依旧被
+   提升为独立合成层；再叠加常驻的 will-change: transform/opacity/filter，
+   整个 .section-container（含 10 张矩阵卡）被永久位图化。
+   合成层按「层位图 + 分数像素偏移」参与合成（.section-container 居中 +
+   2fr/1fr 栅格 → 卡片宽 397.33px 之类），位图被双线性重采样：
+     1px 发丝描边 → 摊成 2px 灰雾；文字 → 失去次像素/整数像素对齐而发虚。
+   修复：稳态 filter 用 none（不是 blur(0)）、transform 用 none、
+   will-change 归还 auto，让浏览器回到「非合成内容像素对齐」路径。 */
 .reveal {
   opacity: 0;
   transform: translateY(40px);
@@ -391,8 +405,26 @@ body.el-popup-parent--hidden {
 }
 .reveal.revealed {
   opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
+  transform: none;
+  filter: none;
+}
+
+/* 动画收尾后由 JS（home/index.vue initScrollReveal）给元素打上 is-settled，
+   把 will-change 一并归还 auto；即使 JS 未执行，上面的 filter/transform: none
+   已足以退出过滤链，不依赖此条。 */
+.reveal.revealed.is-settled {
+  will-change: auto;
+}
+
+/* 尊重系统「减弱动态效果」：直接静态呈现，且不残留任何合成层 */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+    will-change: auto;
+  }
 }
 
 /* Staggered delays for children */

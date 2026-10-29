@@ -85,6 +85,7 @@ const handleClose = () => {
                 <span v-else class="dim-text">-</span>
               </el-descriptions-item>
               <el-descriptions-item label="知名联盟">{{ detailData.famousUnion || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="排序权重">{{ detailData.sortOrder ?? '-' }}</el-descriptions-item>
               <el-descriptions-item label="状态">
                 <span class="status-pill" :class="detailData.status === 1 ? 'status-on' : 'status-off'">
                   {{ statusLabel(detailData.status) }}

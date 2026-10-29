@@ -121,7 +121,7 @@ const handleDetailClose = () => { detailData.value = null }
 const handleAdd = () => {
   formMode.value = 'add'
   currentId.value = null
-  initialForm.value = { name: '', nameEn: '', provinceName: '', cityName: '', region: '华东', category: '' }
+  initialForm.value = { name: '', nameEn: '', provinceName: '', cityName: '', region: '华东', category: '', sortOrder: 0 }
   initialDetail.value = null as unknown as UniversityDetailFormData
   formVisible.value = true
 }
@@ -145,7 +145,7 @@ const handleEdit = async (id: string) => {
         hasDoctorate: d.hasDoctorate, hasMaster: d.hasMaster,
         department: d.department || '', tags: d.tags || [],
         famousUnion: d.famousUnion || '', imageUrl: d.imageUrl || '',
-        introduction: d.introduction || '',
+        introduction: d.introduction || '', sortOrder: d.sortOrder ?? 0,
       }
       initialDetail.value = {
         address: d.address || '', admissionPhone: d.admissionPhone || '',
