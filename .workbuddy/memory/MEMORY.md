@@ -17,6 +17,7 @@
 - **前端多端共享 localStorage token key 撞车（2026-08-25 真因）**：admin('/admin/')→`haifeng_admin_access_token`，user('/')→`haifeng_access_token`。出现「用户不存在/403+重登即好+本地正常生产炸+通知列表空」先怀疑此，而非后端 tokenVersion。改 shared 后必须 `pnpm --filter @haifeng/shared build`。
 - **EP select/number 控件对齐（2026-10-20）**：`.el-select__selected-item` 会拉回隐藏输入框占行，规则只能挂 `.el-select__placeholder`；el-input-number 须显式 `.el-input{width:100%;min-width:0}`。EP 内部布局问题直接 playwright 测 DOM 勿盲改。
 - **tokenVersion/VIP 实时（2026-08-25）**：会员权益授予/变更不得 bump tokenVersion（只安全事件才 bump）。VIP 实时靠 `AuthAspect.checkVip` 回退 DB。
+- **入场动画必须「退出合成层」（2026-10-29，勿回退）**：`.reveal.revealed` 只写 `filter: blur(0)` + 常驻 `will-change` 会让整块容器永久位图化，在分数像素宽度（如 `.plan-card` 395.33px）下被双线性重采样 → **1px 发丝描边糊成 2px 灰雾、文字发虚**（首页矩阵视图曾中招）。规范：稳态用 `filter: none` / `transform: none`，`transitionend` 后补 `.is-settled{will-change:auto}`。另：含文字容器禁止 `hover: scale()`（含序号徽标），`active` 也只用阴影/位移表达。
 
 ## ★ 业务规则（2026-10-23 起）
 - **游客档案/专业组查询**：游客填档案仅 localStorage(key `haifeng:guest-gaokao-archive`)；`Groups.vue` 用 `guestArchiveParams` 上行，已登录不传。`request.ts`：401 仅「有 token」算过期，游客无 token 直接 reject 原始 msg，禁弹「登录已过期」。

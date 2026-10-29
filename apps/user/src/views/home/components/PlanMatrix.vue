@@ -164,7 +164,12 @@ const items = columns.map(c => ({
 }
 
 .plan-card:active {
-  transform: translateY(0) scale(0.99);
+  /* 按压反馈不再用 scale：整卡含标题文字，缩放走合成层位图插值会让文字瞬间发虚
+     （DESIGN.md 方案1）。改用阴影收拢表达按压感。 */
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 4px 12px -4px rgba(15, 23, 42, 0.08);
   transition-duration: 0.1s;
 }
 
@@ -187,11 +192,17 @@ const items = columns.map(c => ({
   box-shadow:
     inset 0 1px 2px rgba(255, 255, 255, 0.8),
     0 1px 3px var(--accent-ring);
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  /* 只过渡阴影：图标底座内含「01-10」序号文字，不能做 transform 动画 */
+  transition: box-shadow 0.28s ease;
 }
 
+/* 强调改为「光环加深」，不做 scale：
+   序号文字在底座内，任何缩放/位移都会让它进入合成层位图插值 → 序号发虚
+   （对应 DESIGN.md 方案1：含文字的容器不要用 scale 做强调）。 */
 .plan-card:hover .plan-card__icon {
-  transform: scale(1.04);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    0 2px 8px -1px var(--accent-ring);
 }
 
 .plan-card__glyph,
@@ -245,7 +256,8 @@ const items = columns.map(c => ({
   border: 2px solid #ffffff;
   background: var(--accent);
   color: #ffffff;
-  font-size: 0.58rem;
+  /* 0.5625rem = 9px 整数像素，避免 0.58rem(9.28px) 在序号块里发虚 */
+  font-size: 0.5625rem;
   font-weight: 800;
   line-height: 1;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.16);
@@ -286,7 +298,9 @@ const items = columns.map(c => ({
 }
 
 .plan-card__desc {
-  font-size: 0.82rem;
+  /* 字号取整数 px（0.8125rem = 13px）：0.82rem = 13.12px 会带来分数像素字形，
+     描边/文字在 1x 屏上更容易看起来发虚 */
+  font-size: 0.8125rem;
   color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
