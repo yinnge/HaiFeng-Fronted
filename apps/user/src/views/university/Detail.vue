@@ -248,15 +248,15 @@ watch(detail, (d) => {
   animateNumber('recommend', d.recommendationRate ?? 0)
 })
 
-// ===== Hero logo：carouselImages[0] 为 logo（数据组约定），无图回退校名首字 =====
-const heroLogo = computed(() => detail.value?.carouselImages?.[0] || '')
+// ===== Hero logo：imageUrl 为院校 logo，无图回退校名首字 =====
+const heroLogo = computed(() => detail.value?.imageUrl || '')
 const heroLogoText = computed(() => (detail.value?.name || '').slice(0, 1))
 
-// ===== Hero 背景轮播：carouselImages[1..]（下标 0 是 logo，不进轮播） =====
-const heroSlides = computed(() => detail.value?.carouselImages?.slice(1) || [])
+// ===== Hero 背景轮播：carouselImages 全部图片，从第 0 张开始 =====
+const heroSlides = computed(() => detail.value?.carouselImages || [])
 
-// ===== 院校介绍右侧缩略图：取第一张背景图（carouselImages[1]），无则渐变兜底 =====
-const introThumb = computed(() => detail.value?.carouselImages?.[1] || '')
+// ===== 院校介绍右侧缩略图：取第一张轮播图，无则渐变兜底 =====
+const introThumb = computed(() => detail.value?.carouselImages?.[0] || '')
 
 // ===== 排行榜 key → 中文名 + 缩写 + 简称（纯展示映射，未知 key 兜底）=====
 const rankingMeta: Record<string, { name: string; abbr: string; short: string }> = {
@@ -301,7 +301,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
             <!-- 渐隐遮罩，保证文字可读 -->
             <div class="hero-mask" />
 
-            <!-- 左上 logo 圆标（carouselImages[0]） -->
+            <!-- 左上 logo 圆标（imageUrl） -->
             <div class="hero-logo absolute left-6 top-6 z-10">
               <img
                 v-if="heroLogo"

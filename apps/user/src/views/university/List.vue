@@ -512,11 +512,11 @@ onMounted(async () => {
                   :style="{ animationDelay: `${index * 60}ms` }"
                   @click="goDetail(item.id)"
                 >
-                  <!-- ① 封面图区（数据约定：背景/封面图存 imageUrl） -->
+                  <!-- ① 封面图区（数据约定：coverImage=详情轮播首图） -->
                   <div class="relative h-[120px] overflow-hidden">
                     <img
-                      v-if="item.imageUrl && !coverErrors.has(item.id)"
-                      :src="item.imageUrl"
+                      v-if="item.coverImage && !coverErrors.has(item.id)"
+                      :src="item.coverImage"
                       :alt="item.name"
                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       @error="handleCoverError(item.id)"
@@ -534,13 +534,13 @@ onMounted(async () => {
 
                   <!-- ② 内容信息区 -->
                   <div class="relative px-4 pt-9 pb-4">
-                    <!-- 骑缝 logo（数据约定：logo 存 coverImage，即详情轮播首图） -->
+                    <!-- 骑缝 logo（数据约定：imageUrl=院校 logo） -->
                     <div
                       class="absolute -top-7 left-4 w-14 h-14 rounded-full bg-white border-[3px] border-white shadow-[0_4px_12px_rgba(15,23,42,0.12)] overflow-hidden flex items-center justify-center"
                     >
                       <img
-                        v-if="item.coverImage && !logoErrors.has(item.id)"
-                        :src="item.coverImage"
+                        v-if="item.imageUrl && !logoErrors.has(item.id)"
+                        :src="item.imageUrl"
                         :alt="item.name"
                         class="h-full w-full object-contain"
                         @error="handleLogoError(item.id)"
@@ -710,8 +710,8 @@ onMounted(async () => {
                 >
                   <div class="w-10 h-10 rounded-full bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
                     <img
-                      v-if="(rec.coverImage || rec.imageUrl) && !logoErrors.has(`rec-${rec.id}`)"
-                      :src="rec.coverImage || rec.imageUrl"
+                      v-if="rec.imageUrl && !logoErrors.has(`rec-${rec.id}`)"
+                      :src="rec.imageUrl"
                       :alt="rec.name"
                       class="h-full w-full object-contain"
                       @error="handleLogoError(`rec-${rec.id}`)"
