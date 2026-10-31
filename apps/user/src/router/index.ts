@@ -222,7 +222,18 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/university/:id/guide',
     name: 'UniversityGuide',
-    component: () => import('@/views/university/Guide.vue'),
+    redirect: (to) => {
+      const cat = Array.isArray(to.query.cat) ? to.query.cat[0] : to.query.cat
+      const { cat: _cat, ...query } = to.query
+      return {
+        path: `/university/${String(to.params.id)}`,
+        query: {
+          ...query,
+          tab: cat === 'gallery' ? 'gallery' : 'guide',
+        },
+        hash: to.hash,
+      }
+    },
     meta: { title: '适应指南', requiresAuth: true },
   },
   {

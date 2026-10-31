@@ -1,5 +1,6 @@
 export interface CityListVO {
   id: string
+  sortOrder?: number
   cityName: string
   province: string
   collegeCount: number
@@ -12,6 +13,7 @@ export interface CityListVO {
 
 export interface CityDetailVO {
   id: string
+  sortOrder?: number
   cityName: string
   province: string
   region: string
@@ -65,6 +67,7 @@ export interface CityQueryDTO {
 
 export interface CityAddDTO {
   cityName: string
+  sortOrder?: number
   province: string
   region: string
   cityIntro?: string
@@ -104,6 +107,7 @@ export interface CityAddDTO {
 
 export interface CityUpdateDTO {
   cityName?: string
+  sortOrder?: number
   province?: string
   region?: string
   cityIntro?: string

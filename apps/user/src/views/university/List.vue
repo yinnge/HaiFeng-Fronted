@@ -137,6 +137,26 @@ const HOT_TAGS: HotTag[] = [
 const hotExpanded = ref(true)
 const visibleHotTags = computed(() => (hotExpanded.value ? HOT_TAGS : HOT_TAGS.slice(0, 6)))
 
+/** 渲染序列：在字段分组交界处（tag / nature / category）插入竖向分隔杠，
+ *  直观表达「跨组可组合、组内单选」——985/211/双一流可多选，性质/类别单选 */
+const displayHotItems = computed(() => {
+  const items: { tag: HotTag; dividerBefore: boolean }[] = []
+  let prevKind = ''
+  for (const t of visibleHotTags.value) {
+    const dividerBefore = !!prevKind && t.kind !== prevKind
+    items.push({ tag: t, dividerBefore })
+    prevKind = t.kind
+  }
+  return items
+})
+
+/** 悬停提示：说明该筛选维度是否支持多选 */
+function pillTitle(t: HotTag) {
+  if (t.kind === 'tag') return '支持多选：985 / 211 / 双一流 可同时选中'
+  if (t.kind === 'nature') return '单选：公办 / 民办 / 中外合作 只能选其一'
+  return '单选：院校类别只能选其一'
+}
+
 // ==================== 语义色映射（985=丹霞红 211=晴空蓝 双一流=翡翠绿） ====================
 const TAG_COLOR_CLASS: Record<string, string> = {
   '985': 'is-rose',
@@ -433,15 +453,20 @@ onMounted(async () => {
             <!-- 第二行：热门筛选标签组 -->
             <div class="mt-4 pt-4 border-t border-gray-100 flex items-start gap-3">
               <span class="shrink-0 pt-[5px] text-xs font-semibold text-gray-400">热门筛选：</span>
-              <div class="flex-1 flex flex-wrap gap-2">
-                <button
-                  v-for="t in visibleHotTags"
-                  :key="`${t.kind}-${t.value}`"
-                  :class="hotPillClass(t)"
-                  @click="toggleHotTag(t)"
-                >
-                  {{ t.label }}
-                </button>
+              <div class="flex-1 flex flex-wrap items-center gap-2">
+                <template v-for="(item, i) in displayHotItems" :key="i">
+                  <span v-if="item.dividerBefore" class="hot-divider" aria-hidden="true"></span>
+                  <button
+                    :class="hotPillClass(item.tag)"
+                    :title="pillTitle(item.tag)"
+                    @click="toggleHotTag(item.tag)"
+                  >
+                    <svg v-if="isHotActive(item.tag)" class="hot-check" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 10.5l3.5 3.5L15 6.5" />
+                    </svg>
+                    {{ item.tag.label }}
+                  </button>
+                </template>
               </div>
               <div class="shrink-0 flex items-center gap-3 pt-[3px]">
                 <button
@@ -874,6 +899,7 @@ onMounted(async () => {
 .hot-pill {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 5px 14px;
   border-radius: 9999px;
   font-size: 13px;
@@ -888,8 +914,23 @@ onMounted(async () => {
   color: #ea580c;
   background: #fff7ed;
 }
+/* 选中态：语义色描边环 + ✓ 勾选 + 加粗 + 微阴影，确保一眼可辨 */
 .hot-pill.hot-on {
   font-weight: 700;
+  box-shadow: inset 0 0 0 1.5px currentColor, 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+.hot-check {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+/* 字段分组竖向分隔杠：标签组｜性质组｜类别组 */
+.hot-divider {
+  align-self: center;
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+  margin: 0 2px;
 }
 
 /* ===== 统计卡（右侧栏） ===== */

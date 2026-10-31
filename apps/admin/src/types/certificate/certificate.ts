@@ -1,5 +1,6 @@
 export interface CertificateListVO {
   id: string
+  sortOrder?: number
   certName: string
   category: string | null
   certLevel: string | null
@@ -13,6 +14,7 @@ export interface CertificateListVO {
 
 export interface CertificateDetailVO {
   id: string
+  sortOrder?: number
   certName: string
   category: string | null
   certLevel: string | null
@@ -40,6 +42,7 @@ export interface CertificateQueryDTO {
 
 export interface CertificateAddDTO {
   certName: string
+  sortOrder?: number
   category?: string
   certLevel?: string
   applicableMajor?: string

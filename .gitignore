@@ -76,4 +76,7 @@ docs/superpowers/
 **/components.d.ts
 /apps/admin/src/components.d.ts
 
+# 界面原型
+/apps/user/public/picture/*
+
 AGENTS.md

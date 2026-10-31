@@ -5,6 +5,8 @@ import type { Component } from 'vue'
 import { getUniversityDetail, getCampusGallery } from '@/api/university'
 import type { UniversityDetailVO, GalleryItemVO } from '@/types/university'
 import { ElMessage } from 'element-plus'
+import { MemberType } from '@haifeng/shared'
+import { useUserStore } from '@/store'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
 import DepartmentTab from '@/components/university/DepartmentTab.vue'
@@ -12,18 +14,152 @@ import SubjectEvaluationTab from '@/components/university/SubjectEvaluationTab.v
 import PostgradMajorForUniversityTab from '@/components/major/PostgradMajorForUniversityTab.vue'
 import ChannelTab from '@/components/university/ChannelTab.vue'
 import AdmissionGroupTab from '@/components/university/AdmissionGroupTab.vue'
+import CampusGalleryTab from '@/components/university/CampusGalleryTab.vue'
+import Guide from './Guide.vue'
+
+type TabKey = 'overview' | 'postgrad' | 'guide' | 'gallery'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 const loading = ref(false)
 const detail = ref<UniversityDetailVO | null>(null)
+const detailError = ref(false)
 
 const universityId = computed(() => route.params.id as string)
+const isVip = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
+
+// ===== 四大 Tab：院校概况 / 可报考研专业 / 院校适应指南 / 校园风光 =====
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'overview', label: '院校概况' },
+  { key: 'postgrad', label: '可报考研专业' },
+  { key: 'guide', label: '院校适应指南' },
+  { key: 'gallery', label: '校园风光' },
+]
+
+const TAB_ICONS: Record<TabKey, string[]> = {
+  overview: [
+    'M4 21h16',
+    'M6 21V9l6-4 6 4v12',
+    'M9 21v-4h6v4',
+    'M9.5 11.5h.01',
+    'M14.5 11.5h.01',
+  ],
+  postgrad: [
+    'M22 9L12 5 2 9l10 4 10-4z',
+    'M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4',
+    'M22 9v4',
+  ],
+  guide: [
+    'M4 19.5A2.5 2.5 0 016.5 17H20',
+    'M4 19.5V5a2 2 0 012-2h12a2 2 0 012 2v12H6.5A2.5 2.5 0 004 19.5z',
+    'M8 7h8',
+  ],
+  gallery: [
+    'M3 5h18v14H3z',
+    'M8 11a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+    'M21 15l-5-5L7 19',
+  ],
+}
+
+function resolveTab(): TabKey {
+  const raw = route.query.tab
+  const tab = Array.isArray(raw) ? raw[0] : raw
+  if (tab === 'overview' || tab === 'postgrad' || tab === 'guide' || tab === 'gallery') {
+    return tab
+  }
+  const rawCat = route.query.cat
+  const cat = Array.isArray(rawCat) ? rawCat[0] : rawCat
+  return cat === 'gallery' ? 'gallery' : 'overview'
+}
+
+const initialTab = resolveTab()
+const activeTab = ref<TabKey>(initialTab)
+const postgradMounted = ref(initialTab === 'postgrad')
+const guideMounted = ref(initialTab === 'guide')
+const galleryMounted = ref(initialTab === 'gallery')
+const scrollPositions: Partial<Record<TabKey, number>> = {}
+
+function ensureMounted(tab: TabKey) {
+  if (tab === 'postgrad') postgradMounted.value = true
+  if (tab === 'guide') guideMounted.value = true
+  if (tab === 'gallery') galleryMounted.value = true
+}
+
+function updateQuery(tab: TabKey) {
+  const query = { ...route.query }
+  delete query.cat
+  if (tab === 'overview') {
+    delete query.tab
+  } else {
+    query.tab = tab
+  }
+
+  const rawCurrent = route.query.tab
+  const currentTab = Array.isArray(rawCurrent) ? rawCurrent[0] : rawCurrent
+  const targetTab = tab === 'overview' ? undefined : tab
+  if (currentTab === targetTab && !route.query.cat) return
+
+  router.replace({ path: route.path, query })
+}
+
+function scrollToTabBar() {
+  nextTick(() => {
+    const el = tabBarRef.value
+    if (!el) return
+    const top = window.scrollY + el.getBoundingClientRect().top - barTop.value
+    if (window.scrollY <= top) return
+    window.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
+  })
+}
+
+function switchTab(tab: TabKey, updateRoute = true) {
+  if (activeTab.value === tab) {
+    if (updateRoute) updateQuery(tab)
+    scrollToTabBar()
+    return
+  }
+
+  scrollPositions[activeTab.value] = window.scrollY
+  activeTab.value = tab
+  ensureMounted(tab)
+  if (updateRoute) updateQuery(tab)
+
+  nextTick(() => {
+    const saved = scrollPositions[tab]
+    if (typeof saved === 'number') {
+      window.scrollTo({ top: saved, behavior: 'auto' })
+    } else {
+      scrollToTabBar()
+    }
+  })
+}
+
+function applyRouteTab() {
+  const tab = resolveTab()
+  if (tab === activeTab.value) {
+    if (route.query.cat === 'gallery') updateQuery(tab)
+    return
+  }
+  switchTab(tab, false)
+  updateQuery(tab)
+}
+
+watch(
+  () => [route.query.tab, route.query.cat],
+  () => applyRouteTab(),
+)
+
+watch(activeTab, (tab) => {
+  if (tab !== 'overview') return
+  nextTick(() => {
+    setupSpy()
+    measureHeader()
+  })
+})
 
 // ===== 六大板块：纵向平铺，每块预览前 N 条，「查看全部」开右侧抽屉 =====
-// 顺序按需求文档：历年录取数据 → 学科评估 → 考研专业 → 重点实验室 → 院系设置 → 特殊招生通道
-// anchor 为吸顶二级导航的锚点 ID；strong = 核心决策信息（导航加粗 + 橙点强调）
 const sections: { key: string; label: string; anchor: string; strong: boolean; previewCount: number }[] = [
   { key: 'admission', label: '历年录取数据', anchor: 'admission-data', strong: true, previewCount: 5 },
   { key: 'evaluation', label: '学科评估', anchor: 'discipline', strong: true, previewCount: 4 },
@@ -45,18 +181,16 @@ const sectionComponents: Record<string, Component> = {
 /** 各板块总数（由 Tab 组件 @total 上报；undefined = 尚未加载完成，不参与隐藏判断） */
 const sectionTotals = reactive<Record<string, number>>({})
 
-/** 空模块判断：total 已上报且为 0 才隐藏（未加载/未请求如非 VIP 不隐藏，保留 VIP 引导卡）。
- *  「历年录取数据」为核心高频模块，始终保留（空数据时 Tab 内部展示空状态）。 */
 function isSectionHidden(key: string) {
   return key !== 'admission' && sectionTotals[key] === 0
 }
 
-// ===== 「查看全部」右侧抽屉（占约 1/4 屏，窄屏自动加宽） =====
+// ===== 「查看全部」右侧抽屉 =====
 const drawerVisible = ref(false)
 const drawerKey = ref('')
 const drawerSize = ref('25%')
 
-const drawerTitle = computed(() => sections.find(s => s.key === drawerKey.value)?.label || '查看全部')
+const drawerTitle = computed(() => sections.find((s) => s.key === drawerKey.value)?.label || '查看全部')
 
 function openSection(key: string) {
   drawerSize.value = window.innerWidth < 1024 ? '92%' : '25%'
@@ -64,38 +198,59 @@ function openSection(key: string) {
   drawerVisible.value = true
 }
 
-// ===== 右侧栏：校园风光（图册前 6 张，更多跳 Guide 校园图册） =====
+// ===== 概况右侧栏：校园风光 =====
 const galleryList = ref<GalleryItemVO[]>([])
 
 async function fetchGallery() {
   if (!universityId.value) return
   try {
-    // 后端分页 size 下限 10，取回后前端切 6 张
     const res = await getCampusGallery(universityId.value, { page: 1, size: 10 })
     galleryList.value = (res.data.data.records ?? []).slice(0, 6)
   } catch {
-    // 图册加载失败不阻塞主内容
     galleryList.value = []
   }
 }
 
-// ===== 吸顶二级导航（Sticky Sub-Nav）+ ScrollSpy =====
-// 吸附偏移：动态测量全局导航栏高度（写法对齐 FileLoadPage.stage-nav）；
-// 全局头部滚动收起时 top 收为 0，填补空隙。
+// ===== 吸顶层级：AppHeader → TabBar → 概况二级导航 =====
 const { hidden: headerHidden } = useAutoHideHeader()
 const stickyTop = ref(64)
+const tabsHeight = ref(56)
+const tabBarRef = ref<HTMLElement | null>(null)
+const subNavRef = ref<HTMLElement | null>(null)
+const tabsStuck = ref(false)
+const subNavStuck = ref(false)
 
 function measureHeader() {
-  const h = document.querySelector('.app-header')?.getBoundingClientRect().height
-  if (h && h > 0) stickyTop.value = Math.round(h)
+  const headerHeight = document.querySelector('.app-header')?.getBoundingClientRect().height
+  if (headerHeight && headerHeight > 0) stickyTop.value = Math.round(headerHeight)
+
+  const tabHeight = tabBarRef.value?.getBoundingClientRect().height
+  if (tabHeight && tabHeight > 0) tabsHeight.value = Math.round(tabHeight)
+
+  updateStickiness()
 }
 
 const barTop = computed(() => (headerHidden.value ? 0 : stickyTop.value))
+const overviewSubNavTop = computed(() => barTop.value + tabsHeight.value)
+const anchorOffset = computed(() => overviewSubNavTop.value + 56)
+const overviewRailTop = computed(() => overviewSubNavTop.value + 64)
+const guideStickyTop = computed(() => barTop.value + tabsHeight.value + 16)
 
-/** 锚点滚动定位余量 = 吸顶子导航高度 + 呼吸间距（配合 scroll-margin-top 防遮挡） */
-const anchorOffset = computed(() => barTop.value + 56)
+function updateStickiness() {
+  const bar = tabBarRef.value
+  tabsStuck.value = !!bar && bar.getBoundingClientRect().top <= barTop.value + 0.5
 
-/** 可用导航项：概况 + 未隐藏的板块（导航渲染与 ScrollSpy 目标都基于它动态生成） */
+  if (activeTab.value !== 'overview') {
+    subNavStuck.value = false
+    return
+  }
+  const sub = subNavRef.value
+  subNavStuck.value = !!sub && sub.getBoundingClientRect().top <= overviewSubNavTop.value + 0.5
+}
+
+watch([barTop, overviewSubNavTop], () => updateStickiness())
+
+// ===== 概况二级导航 + ScrollSpy =====
 const navItems = computed(() => {
   const items = [{ anchor: 'overview', label: '概况', strong: false }]
   for (const sec of sections) {
@@ -105,38 +260,38 @@ const navItems = computed(() => {
   return items
 })
 
-const activeAnchor = ref('')
+const activeAnchor = ref('overview')
 
-/** 统一跳转方法：导航项与右侧栏「查看历年数据」共用 */
 function scrollToSection(anchor: string) {
-  activeAnchor.value = anchor // 点击立即高亮，滚动过程中由 observer 接管
+  activeAnchor.value = anchor
   document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 let spyObserver: IntersectionObserver | null = null
 
-/** ScrollSpy：模块进入视口中上部（rootMargin -45%/-50% 的中部带）判定为当前模块 */
 function setupSpy() {
   spyObserver?.disconnect()
   spyObserver = new IntersectionObserver(
     (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) activeAnchor.value = e.target.id
+      for (const entry of entries) {
+        if (entry.isIntersecting) activeAnchor.value = entry.target.id
       }
     },
     { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
   )
   nextTick(() => {
     if (!spyObserver) return
-    for (const it of navItems.value) {
-      const el = document.getElementById(it.anchor)
+    for (const item of navItems.value) {
+      const el = document.getElementById(item.anchor)
       if (el) spyObserver.observe(el)
     }
   })
 }
 
-// 页尾兜底：滚到底时强制高亮最后一项（最后模块可能进不了中部带）
 function onWinScroll() {
+  updateStickiness()
+  if (activeTab.value !== 'overview') return
+
   const doc = document.documentElement
   if (window.innerHeight + window.scrollY >= doc.scrollHeight - 40) {
     const last = navItems.value[navItems.value.length - 1]
@@ -144,34 +299,20 @@ function onWinScroll() {
   }
 }
 
-// 激活项变化时，移动端横向导航条自动把高亮项滚到可视区中间
 watch(activeAnchor, () => {
   nextTick(() => {
-    document.querySelector('.sub-nav-item.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+    document
+      .querySelector('.sub-nav-item.is-active')
+      ?.scrollIntoView({ inline: 'center', block: 'nearest' })
   })
 })
 
-// 吸附状态：sentinel（子导航正上方 1px 元素）滚出视口顶 → 已吸附，切换入场动画/阴影
-const navStuck = ref(false)
-let stuckObserver: IntersectionObserver | null = null
-const navSentinel = ref<HTMLElement | null>(null)
-
-// 数据/可用模块变化后：重建 ScrollSpy 观察目标 + 重挂吸附哨兵（两者都在 detail 渲染后才存在）
 watch([navItems, detail], () => {
   setupSpy()
-  nextTick(() => {
-    if (navSentinel.value) stuckObserver?.observe(navSentinel.value)
-  })
+  nextTick(() => measureHeader())
 })
 
-function goGallery() {
-  router.push(`/university/${universityId.value}/guide?cat=gallery`)
-}
-
-function goGuide() {
-  router.push(`/university/${universityId.value}/guide`)
-}
-
+// ===== 路由跳转 =====
 function goMajor() {
   router.push('/major')
 }
@@ -187,10 +328,12 @@ async function fetchDetail() {
     return
   }
   loading.value = true
+  detailError.value = false
   try {
     const res = await getUniversityDetail(id)
     detail.value = res.data.data
   } catch (e: any) {
+    detailError.value = true
     ElMessage.error(e?.message || '获取院校详情失败')
   } finally {
     loading.value = false
@@ -200,25 +343,19 @@ async function fetchDetail() {
 onMounted(() => {
   fetchDetail()
   fetchGallery()
-  measureHeader()
+  updateQuery(activeTab.value)
+  nextTick(() => measureHeader())
   window.addEventListener('resize', measureHeader)
   window.addEventListener('scroll', onWinScroll, { passive: true })
-  stuckObserver = new IntersectionObserver(
-    ([entry]) => {
-      navStuck.value = !entry.isIntersecting
-    },
-    { threshold: 0 },
-  )
 })
 
 onBeforeUnmount(() => {
   spyObserver?.disconnect()
-  stuckObserver?.disconnect()
   window.removeEventListener('resize', measureHeader)
   window.removeEventListener('scroll', onWinScroll)
 })
 
-// ===== 亮点数字滚动计数（纯展示动效，不触碰业务逻辑）=====
+// ===== 亮点数字滚动计数 =====
 const scoreAnim = reactive({
   history: 0,
   science: 0,
@@ -248,17 +385,15 @@ watch(detail, (d) => {
   animateNumber('recommend', d.recommendationRate ?? 0)
 })
 
-// ===== Hero logo：imageUrl 为院校 logo，无图回退校名首字 =====
+// ===== 身份区：logo / 封面 =====
 const heroLogo = computed(() => detail.value?.imageUrl || '')
 const heroLogoText = computed(() => (detail.value?.name || '').slice(0, 1))
-
-// ===== Hero 背景轮播：carouselImages 全部图片，从第 0 张开始 =====
-const heroSlides = computed(() => detail.value?.carouselImages || [])
-
-// ===== 院校介绍右侧缩略图：取第一张轮播图，无则渐变兜底 =====
 const introThumb = computed(() => detail.value?.carouselImages?.[0] || '')
+const identityCover = computed(
+  () => detail.value?.carouselImages?.[0] || introThumb.value || '',
+)
 
-// ===== 排行榜 key → 中文名 + 缩写 + 简称（纯展示映射，未知 key 兜底）=====
+// ===== 排行榜展示映射 =====
 const rankingMeta: Record<string, { name: string; abbr: string; short: string }> = {
   qs: { name: 'QS 世界大学排名', abbr: 'QS', short: 'QS 世界大学' },
   ruanke: { name: '软科中国大学排名', abbr: '软', short: '软科中国大学' },
@@ -271,351 +406,444 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 <template>
   <div class="min-h-screen flex flex-col">
     <main class="flex-1 w-full max-w-[1520px] mx-auto px-4 sm:px-6 py-8">
-      <!-- 全局透底规则只打 main 直接子层，内容统一包在 flow 层内自持背景 -->
       <div class="univ-page-flow">
         <!-- 骨架屏 -->
         <template v-if="loading && !detail">
-          <div class="rounded-2xl overflow-hidden mb-6">
-            <div class="skeleton w-full h-[360px] rounded-2xl" />
+          <div class="identity-skeleton">
+            <div class="skeleton h-10 w-28 rounded-lg" />
+            <div class="flex gap-4 mt-5">
+              <div class="skeleton h-[68px] w-[68px] rounded-2xl" />
+              <div class="flex-1 space-y-3">
+                <div class="skeleton h-8 w-64 rounded-lg" />
+                <div class="skeleton h-4 w-40 rounded-lg" />
+                <div class="skeleton h-4 w-80 rounded-lg" />
+              </div>
+              <div class="skeleton h-[132px] w-[220px] rounded-xl hidden md:block" />
+            </div>
           </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="skeleton h-[58px] rounded-xl mt-5" />
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             <div v-for="i in 4" :key="i" class="skeleton h-20 rounded-xl" />
           </div>
-          <div class="space-y-6">
+          <div class="space-y-6 mt-6">
             <div v-for="i in 3" :key="i" class="h-40 skeleton rounded-2xl" />
           </div>
         </template>
 
         <template v-else-if="detail">
-          <!-- ===== 沉浸式 Hero：轮播背景 + logo 圆标 + 信息叠加层 ===== -->
-          <section class="hero relative rounded-2xl overflow-hidden shadow-card mb-6">
-            <template v-if="heroSlides.length">
-              <el-carousel height="380px" indicator-position="none" arrow="always" class="hero-carousel">
-                <el-carousel-item v-for="(img, idx) in heroSlides" :key="idx">
-                  <img :src="img" :alt="`${detail.name} ${idx + 1}`" class="h-full w-full object-cover" />
-                </el-carousel-item>
-              </el-carousel>
-            </template>
-            <div v-else class="hero-fallback" />
-
-            <!-- 渐隐遮罩，保证文字可读 -->
-            <div class="hero-mask" />
-
-            <!-- 左上 logo 圆标（imageUrl） -->
-            <div class="hero-logo absolute left-6 top-6 z-10">
-              <img
-                v-if="heroLogo"
-                :src="heroLogo"
-                :alt="detail.name"
-                class="h-16 w-16 rounded-full object-contain bg-white shadow-lg p-1.5"
-              />
-              <span v-else class="h-16 w-16 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-2xl font-bold text-brand-orange">
-                {{ heroLogoText }}
-              </span>
-            </div>
-
-            <!-- 叠加信息层 -->
-            <div class="hero-info">
-              <h1 class="hero-name">{{ detail.name }}</h1>
-              <p v-if="detail.nameEn" class="hero-name-en">{{ detail.nameEn }}</p>
-
-              <div v-if="detail.tags?.length" class="hero-tags">
-                <span v-for="tag in detail.tags" :key="tag" class="hero-tag">{{ tag }}</span>
-              </div>
-
-              <p
-                v-if="[detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).length"
-                class="hero-meta"
-              >
-                {{ [detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).join(' · ') }}
-              </p>
-
-              <div class="hero-actions">
-                <button class="hero-btn-ghost" @click="goBack">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  返回院校库
-                </button>
-                <button class="hero-btn-solid" @click="goGuide">
-                  查看适应指南
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <!-- ===== 亮点统计卡（带图标，空数据显示"数据持续整理中"） ===== -->
-          <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card">
-              <div class="stat-icon bg-orange-50 text-orange-500">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p class="stat-label">历史组分数线</p>
-                <p v-if="detail.historyGroupScore" class="stat-value">{{ scoreAnim.history }}</p>
-                <p v-else class="stat-empty">数据持续整理中</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon bg-sky-50 text-sky-500">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div>
-                <p class="stat-label">物理组分数线</p>
-                <p v-if="detail.scienceGroupScore" class="stat-value">{{ scoreAnim.science }}</p>
-                <p v-else class="stat-empty">数据持续整理中</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon bg-emerald-50 text-emerald-500">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p class="stat-label">推荐率</p>
-                <p v-if="detail.recommendationRate" class="stat-value">{{ scoreAnim.recommend }}%</p>
-                <p v-else class="stat-empty">数据持续整理中</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon bg-violet-50 text-violet-500">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <div>
-                <p class="stat-label">专业数</p>
-                <p v-if="detail.majorCount" class="stat-value">{{ scoreAnim.majors }}</p>
-                <p v-else class="stat-empty">数据持续整理中</p>
-              </div>
-            </div>
-          </section>
-
-        <!-- 吸附哨兵：滚出视口顶 → 子导航进入吸附态（切换入场动画/阴影） -->
-        <div ref="navSentinel" class="h-px" aria-hidden="true" />
-
-        <!-- ===== 吸顶二级导航：概况/六大板块锚点（移动端横向滑动） ===== -->
-        <nav class="sub-nav" :class="{ 'is-stuck': navStuck }" :style="{ top: `${barTop}px` }">
-          <div class="sub-nav-inner">
-            <button
-              v-for="it in navItems"
-              :key="it.anchor"
-              class="sub-nav-item"
-              :class="{ 'is-active': activeAnchor === it.anchor, 'is-strong': it.strong }"
-              @click="scrollToSection(it.anchor)"
-            >
-              <span v-if="it.strong" class="strong-dot" aria-hidden="true" />
-              {{ it.label }}
+          <!-- ===== 白色紧凑身份区 ===== -->
+          <section class="identity-card">
+            <button class="identity-back" @click="goBack">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 12H5M11 18l-6-6 6-6" />
+              </svg>
+              返回院校库
             </button>
-          </div>
-        </nav>
 
-        <!-- ===== 主体：左内容流 + 右侧栏（移动端侧栏下沉） ===== -->
-        <div class="flex flex-col lg:flex-row gap-6 items-start mt-6">
-            <!-- 左侧内容流 -->
-            <div class="flex-1 min-w-0 space-y-6 w-full">
-              <!-- 概况：基本信息 + 排行榜 + 院校介绍（吸顶导航「概况」锚点） -->
-              <div id="overview" :style="{ scrollMarginTop: `${anchorOffset}px` }" class="space-y-6">
-                <!-- 详细信息 -->
-                <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
-                <div class="flex items-center gap-3 mb-5">
-                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                  <h3 class="text-xl font-bold text-gray-800">详细信息</h3>
+            <div class="identity-row">
+              <div class="identity-logo">
+                <img
+                  v-if="heroLogo"
+                  :src="heroLogo"
+                  :alt="detail.name"
+                  class="h-full w-full object-contain p-1.5"
+                />
+                <span v-else class="identity-logo__text">{{ heroLogoText }}</span>
+              </div>
+
+              <div class="identity-info">
+                <div class="identity-name-row">
+                  <h1>{{ detail.name }}</h1>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3.5 text-sm">
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">所属联盟</span>
-                    <span class="text-gray-700 font-medium">{{ detail.famousUnion || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">博士点</span>
-                    <span class="text-gray-700 font-medium">{{ detail.hasDoctorate ? '有' : '无' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">硕士点</span>
-                    <span class="text-gray-700 font-medium">{{ detail.hasMaster ? '有' : '无' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-brand shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">学历层次</span>
-                    <span class="text-gray-700 font-medium">{{ detail.educationLevel || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">主管部门</span>
-                    <span class="text-gray-700 font-medium">{{ detail.department || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">地址</span>
-                    <span class="text-gray-700">{{ detail.address || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">招生电话</span>
-                    <span class="text-gray-700">{{ detail.admissionPhone || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">官网</span>
-                    <a v-if="detail.website" :href="detail.website" target="_blank" class="text-brand-orange hover:underline truncate">{{ detail.website }}</a>
-                    <span v-else class="text-gray-700">-</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">推荐年份</span>
-                    <span class="text-gray-700 font-medium">{{ detail.recommendationYear ?? '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">出国比例</span>
-                    <span class="text-gray-700">{{ detail.abroadRate || '-' }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="dot-gray shrink-0" />
-                    <span class="text-gray-400 w-20 shrink-0">男女比例</span>
-                    <span class="text-gray-700 font-medium">{{ detail.genderRatio || '-' }}</span>
-                  </div>
+                <p v-if="detail.nameEn" class="identity-en">{{ detail.nameEn }}</p>
+
+                <div v-if="detail.tags?.length" class="identity-tags">
+                  <span
+                    v-for="(tag, index) in detail.tags"
+                    :key="tag"
+                    class="identity-tag"
+                    :class="`identity-tag--tone-${index % 4}`"
+                  >
+                    {{ tag }}
+                  </span>
                 </div>
 
-                <!-- 排行榜 -->
-                <div v-if="detail.rankings && Object.keys(detail.rankings).length" class="mt-5 pt-4 border-t border-gray-100/80">
-                  <div class="flex items-center gap-2 mb-3">
-                    <div class="w-1 h-3.5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                    <p class="text-sm font-semibold text-gray-700">排行榜</p>
-                  </div>
-                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    <div v-for="(val, key) in detail.rankings" :key="key" class="rounded-lg bg-gray-50 border border-gray-100 px-2 py-3 text-center">
-                      <el-tooltip :content="rankingMeta[key]?.name || key" placement="top">
-                        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-brand-gold-light text-white text-xs font-bold cursor-help shadow-md">{{ rankingMeta[key]?.abbr || key.slice(0, 1).toUpperCase() }}</span>
-                      </el-tooltip>
-                      <p class="mt-1.5 text-xs text-gray-700 leading-snug min-h-[28px] flex items-center justify-center">{{ rankingMeta[key]?.short || rankingMeta[key]?.name || key }}</p>
-                      <div class="mt-1 flex items-baseline justify-center gap-0.5">
-                        <span class="text-xl font-bold text-brand-orange tabular-nums">{{ val }}</span>
-                        <span class="text-xs text-gray-400">名</span>
+                <p
+                  v-if="[detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).length"
+                  class="identity-meta"
+                >
+                  {{ [detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).join(' · ') }}
+                </p>
+              </div>
+
+              <button class="identity-cover" @click="switchTab('gallery')">
+                <img
+                  v-if="identityCover"
+                  :src="identityCover"
+                  :alt="`${detail.name}校园风光`"
+                  class="h-full w-full object-cover"
+                />
+                <span v-else class="identity-cover__fallback">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="2" />
+                    <circle cx="8.5" cy="9.5" r="1.5" />
+                    <path d="M21 15l-4.5-4.5L9 18" />
+                  </svg>
+                </span>
+                <span class="identity-cover__mask">校园风光</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- ===== 四大 Tab（吸顶） ===== -->
+          <nav
+            ref="tabBarRef"
+            class="detail-tabs"
+            :class="{ 'is-stuck': tabsStuck }"
+            :style="{ top: `${barTop}px` }"
+          >
+            <div class="detail-tabs__inner">
+              <button
+                v-for="tab in TABS"
+                :key="tab.key"
+                class="detail-tab"
+                :class="{ 'is-active': activeTab === tab.key }"
+                @click="switchTab(tab.key)"
+              >
+                <svg
+                  class="detail-tab__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path v-for="(d, index) in TAB_ICONS[tab.key]" :key="index" :d="d" />
+                </svg>
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
+          </nav>
+
+          <!-- ===== 院校概况 ===== -->
+          <section v-show="activeTab === 'overview'" class="tab-panel">
+            <!-- 亮点统计卡 -->
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              <div class="stat-card">
+                <div class="stat-icon bg-orange-50 text-orange-500">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="stat-label">历史组分数线</p>
+                  <p v-if="detail.historyGroupScore" class="stat-value">{{ scoreAnim.history }}</p>
+                  <p v-else class="stat-empty">数据持续整理中</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon bg-sky-50 text-sky-500">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="stat-label">物理组分数线</p>
+                  <p v-if="detail.scienceGroupScore" class="stat-value">{{ scoreAnim.science }}</p>
+                  <p v-else class="stat-empty">数据持续整理中</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon bg-emerald-50 text-emerald-500">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="stat-label">推荐率</p>
+                  <p v-if="detail.recommendationRate" class="stat-value">{{ scoreAnim.recommend }}%</p>
+                  <p v-else class="stat-empty">数据持续整理中</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon bg-violet-50 text-violet-500">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="stat-label">专业数</p>
+                  <p v-if="detail.majorCount" class="stat-value">{{ scoreAnim.majors }}</p>
+                  <p v-else class="stat-empty">数据持续整理中</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- 概况二级导航 -->
+            <nav
+              ref="subNavRef"
+              class="sub-nav"
+              :class="{ 'is-stuck': subNavStuck }"
+              :style="{ top: `${overviewSubNavTop}px` }"
+            >
+              <div class="sub-nav-inner">
+                <button
+                  v-for="it in navItems"
+                  :key="it.anchor"
+                  class="sub-nav-item"
+                  :class="{ 'is-active': activeAnchor === it.anchor, 'is-strong': it.strong }"
+                  @click="scrollToSection(it.anchor)"
+                >
+                  <span v-if="it.strong" class="strong-dot" aria-hidden="true" />
+                  {{ it.label }}
+                </button>
+              </div>
+            </nav>
+
+            <!-- 主体：左内容流 + 右侧栏 -->
+            <div class="flex flex-col lg:flex-row gap-6 items-start mt-6">
+              <div class="flex-1 min-w-0 space-y-6 w-full">
+                <div id="overview" :style="{ scrollMarginTop: `${anchorOffset}px` }" class="space-y-6">
+                  <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
+                    <div class="flex items-center gap-3 mb-5">
+                      <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                      <h3 class="text-xl font-bold text-gray-800">详细信息</h3>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3.5 text-sm">
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">所属联盟</span>
+                        <span class="text-gray-700 font-medium">{{ detail.famousUnion || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-brand shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">博士点</span>
+                        <span class="text-gray-700 font-medium">{{ detail.hasDoctorate ? '有' : '无' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-brand shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">硕士点</span>
+                        <span class="text-gray-700 font-medium">{{ detail.hasMaster ? '有' : '无' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-brand shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">学历层次</span>
+                        <span class="text-gray-700 font-medium">{{ detail.educationLevel || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">主管部门</span>
+                        <span class="text-gray-700 font-medium">{{ detail.department || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">地址</span>
+                        <span class="text-gray-700">{{ detail.address || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">招生电话</span>
+                        <span class="text-gray-700">{{ detail.admissionPhone || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">官网</span>
+                        <a v-if="detail.website" :href="detail.website" target="_blank" class="text-brand-orange hover:underline truncate">{{ detail.website }}</a>
+                        <span v-else class="text-gray-700">-</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">推荐年份</span>
+                        <span class="text-gray-700 font-medium">{{ detail.recommendationYear ?? '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">出国比例</span>
+                        <span class="text-gray-700">{{ detail.abroadRate || '-' }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="dot-gray shrink-0" />
+                        <span class="text-gray-400 w-20 shrink-0">男女比例</span>
+                        <span class="text-gray-700 font-medium">{{ detail.genderRatio || '-' }}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </section>
 
-              <!-- 院校介绍（右侧缩略图） -->
-              <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                  <h3 class="text-xl font-bold text-gray-800">院校介绍</h3>
+                    <div v-if="detail.rankings && Object.keys(detail.rankings).length" class="mt-5 pt-4 border-t border-gray-100/80">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-1 h-3.5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                        <p class="text-sm font-semibold text-gray-700">排行榜</p>
+                      </div>
+                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                        <div v-for="(val, key) in detail.rankings" :key="key" class="rounded-lg bg-gray-50 border border-gray-100 px-2 py-3 text-center">
+                          <el-tooltip :content="rankingMeta[key]?.name || key" placement="top">
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-brand-gold-light text-white text-xs font-bold cursor-help shadow-md">{{ rankingMeta[key]?.abbr || key.slice(0, 1).toUpperCase() }}</span>
+                          </el-tooltip>
+                          <p class="mt-1.5 text-xs text-gray-700 leading-snug min-h-[28px] flex items-center justify-center">{{ rankingMeta[key]?.short || rankingMeta[key]?.name || key }}</p>
+                          <div class="mt-1 flex items-baseline justify-center gap-0.5">
+                            <span class="text-xl font-bold text-brand-orange tabular-nums">{{ val }}</span>
+                            <span class="text-xs text-gray-400">名</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white">
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                      <h3 class="text-xl font-bold text-gray-800">院校介绍</h3>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-6">
+                      <p class="flex-1 text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
+                      <div class="w-full md:w-[260px] shrink-0 h-[170px] rounded-xl overflow-hidden intro-thumb bg-gradient-to-br from-orange-100 via-amber-50 to-sky-50">
+                        <img v-if="introThumb" :src="introThumb" :alt="detail.name" class="h-full w-full object-cover" />
+                      </div>
+                    </div>
+                  </section>
                 </div>
-                <div class="flex flex-col md:flex-row gap-6">
-                  <p class="flex-1 text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
-                  <div class="w-full md:w-[260px] shrink-0 h-[170px] rounded-xl overflow-hidden intro-thumb bg-gradient-to-br from-orange-100 via-amber-50 to-sky-50">
-                    <img v-if="introThumb" :src="introThumb" :alt="detail.name" class="h-full w-full object-cover" />
-                  </div>
-                </div>
-                </section>
+
+                <template v-for="sec in sections" :key="sec.key">
+                  <section
+                    v-if="!isSectionHidden(sec.key)"
+                    :id="sec.anchor"
+                    :style="{ scrollMarginTop: `${anchorOffset}px` }"
+                    class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white"
+                  >
+                    <div class="flex items-center justify-between mb-5">
+                      <div class="flex items-center gap-3">
+                        <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
+                        <h3 class="text-xl font-bold text-gray-800">{{ sec.label }}</h3>
+                        <span v-if="sectionTotals[sec.key]" class="count-pill">{{ sectionTotals[sec.key] }} 个</span>
+                      </div>
+                      <button class="view-all-btn" @click="openSection(sec.key)">
+                        查看全部
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                    <component
+                      :is="sectionComponents[sec.key]"
+                      :university-id="universityId"
+                      preview
+                      @total="(v: number) => (sectionTotals[sec.key] = v)"
+                    />
+                  </section>
+                </template>
               </div>
 
-              <!-- 六大板块：纵向平铺（空数据模块整体不渲染，导航项同步隐藏） -->
-              <template v-for="sec in sections" :key="sec.key">
-                <section
-                  v-if="!isSectionHidden(sec.key)"
-                  :id="sec.anchor"
-                  :style="{ scrollMarginTop: `${anchorOffset}px` }"
-                  class="detail-card rounded-2xl p-6 shadow-card border border-gray-100/60 bg-white"
-                >
-                <div class="flex items-center justify-between mb-5">
-                  <div class="flex items-center gap-3">
-                    <div class="w-1 h-5 rounded-full bg-gradient-to-b from-brand-orange to-brand-orange-light" />
-                    <h3 class="text-xl font-bold text-gray-800">{{ sec.label }}</h3>
-                    <span v-if="sectionTotals[sec.key]" class="count-pill">{{ sectionTotals[sec.key] }} 个</span>
+              <aside
+                class="w-full lg:w-[290px] shrink-0 space-y-5 lg:sticky"
+                :style="{ top: `${overviewRailTop}px` }"
+              >
+                <div class="side-card">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="side-title">校园风光</h4>
+                    <button class="side-more" @click="switchTab('gallery')">查看更多 →</button>
                   </div>
-                  <button class="view-all-btn" @click="openSection(sec.key)">
-                    查看全部
+                  <div v-if="galleryList.length" class="grid grid-cols-3 gap-1.5">
+                    <div
+                      v-for="(img, idx) in galleryList"
+                      :key="idx"
+                      class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
+                      @click="switchTab('gallery')"
+                    >
+                      <img :src="img.imageUrl" :alt="`校园风光 ${idx + 1}`" class="h-full w-full object-cover transition-opacity duration-300 hover:opacity-85" />
+                    </div>
+                  </div>
+                  <div v-else class="grid grid-cols-3 gap-1.5">
+                    <div v-for="i in 6" :key="i" class="aspect-square rounded-lg bg-gradient-to-br from-orange-50 to-sky-50 animate-pulse" />
+                  </div>
+                </div>
+
+                <div class="side-card">
+                  <h4 class="side-title mb-2">升学参考</h4>
+                  <p class="text-xs text-gray-500 leading-relaxed mb-3">查看该校近 5 年各专业组录取分数、位次与选科要求，辅助精准定位。</p>
+                  <button class="side-btn w-full" @click="scrollToSection('admission-data')">
+                    查看历年数据
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                     </svg>
                   </button>
                 </div>
-                <component
-                  :is="sectionComponents[sec.key]"
-                  :university-id="universityId"
-                  preview
-                  @total="(v: number) => (sectionTotals[sec.key] = v)"
-                />
-                </section>
-              </template>
+
+                <div class="side-card">
+                  <h4 class="side-title mb-2">专业探索</h4>
+                  <p class="text-xs text-gray-500 leading-relaxed mb-3">浏览全国高校专业目录，了解专业内涵、就业方向与开设院校。</p>
+                  <button class="side-btn w-full" @click="goMajor">
+                    查看专业目录
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="side-card side-card-guide">
+                  <h4 class="side-title mb-2">入学适应指南</h4>
+                  <p class="text-xs text-gray-500 leading-relaxed mb-3">生存、学业、社交、安全、生活五大维度，帮你快速适应大学生活。</p>
+                  <button class="side-btn side-btn-solid w-full" @click="switchTab('guide')">前往查看</button>
+                </div>
+              </aside>
             </div>
+          </section>
 
-            <!-- 右侧栏（lg 起吸顶，移动端下沉到内容后） -->
-            <aside class="w-full lg:w-[290px] shrink-0 space-y-5 lg:sticky lg:top-24">
-              <!-- 校园风光 -->
-              <div class="side-card">
-                <div class="flex items-center justify-between mb-3">
-                  <h4 class="side-title">校园风光</h4>
-                  <button class="side-more" @click="goGallery">查看更多 →</button>
-                </div>
-                <div v-if="galleryList.length" class="grid grid-cols-3 gap-1.5">
-                  <div
-                    v-for="(img, idx) in galleryList"
-                    :key="idx"
-                    class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
-                    @click="goGallery"
-                  >
-                    <img :src="img.imageUrl" :alt="`校园风光 ${idx + 1}`" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-                <div v-else class="grid grid-cols-3 gap-1.5">
-                  <div v-for="i in 6" :key="i" class="aspect-square rounded-lg bg-gradient-to-br from-orange-50 to-sky-50 animate-pulse" />
-                </div>
+          <!-- ===== 可报考研专业 ===== -->
+          <section v-show="activeTab === 'postgrad'" class="tab-panel">
+            <div class="tab-head">
+              <div>
+                <h2>可报考研专业</h2>
+                <p>查看该校硕士研究生招生专业、学位类型与考试科目信息。</p>
               </div>
+            </div>
+            <div class="tab-card">
+              <PostgradMajorForUniversityTab v-if="postgradMounted" :university-id="universityId" />
+            </div>
+          </section>
 
-              <!-- 升学参考 -->
-              <div class="side-card">
-                <h4 class="side-title mb-2">升学参考</h4>
-                <p class="text-xs text-gray-500 leading-relaxed mb-3">查看该校近 5 年各专业组录取分数、位次与选科要求，辅助精准定位。</p>
-                <button class="side-btn w-full" @click="scrollToSection('admission-data')">
-                  查看历年数据
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </button>
-              </div>
+          <!-- ===== 院校适应指南 ===== -->
+          <section v-show="activeTab === 'guide'" class="tab-panel">
+            <Guide
+              v-if="guideMounted"
+              :university-id="universityId"
+              :university-name="detail.name"
+              :is-vip="isVip"
+              :sticky-top="guideStickyTop"
+              @open-gallery="switchTab('gallery')"
+              @open-overview="switchTab('overview')"
+            />
+          </section>
 
-              <!-- 专业探索 -->
-              <div class="side-card">
-                <h4 class="side-title mb-2">专业探索</h4>
-                <p class="text-xs text-gray-500 leading-relaxed mb-3">浏览全国高校专业目录，了解专业内涵、就业方向与开设院校。</p>
-                <button class="side-btn w-full" @click="goMajor">
-                  查看专业目录
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-              </div>
+          <!-- ===== 校园风光 ===== -->
+          <section v-show="activeTab === 'gallery'" class="tab-panel">
+            <CampusGalleryTab
+              v-if="galleryMounted"
+              :university-id="universityId"
+              :university-name="detail.name"
+            />
+          </section>
+        </template>
 
-              <!-- 适应指南 -->
-              <div class="side-card side-card-guide">
-                <h4 class="side-title mb-2">入学适应指南</h4>
-                <p class="text-xs text-gray-500 leading-relaxed mb-3">生存、学业、社交、安全、生活五大维度，帮你快速适应大学生活。</p>
-                <button class="side-btn side-btn-solid w-full" @click="goGuide">前往查看</button>
-              </div>
-            </aside>
-          </div>
+        <template v-else-if="detailError">
+          <section class="detail-error">
+            <span class="detail-error__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 8v4M12 16h.01" />
+                <path d="M10.3 3.6L2.6 17a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z" />
+              </svg>
+            </span>
+            <h2>院校信息加载失败</h2>
+            <p>请检查网络后重试，或稍后再来查看。</p>
+            <div class="detail-error__actions">
+              <button class="detail-error__primary" @click="fetchDetail">重新加载</button>
+              <button class="detail-error__ghost" @click="goBack">返回院校库</button>
+            </div>
+          </section>
         </template>
       </div>
     </main>
 
-    <!-- ===== 「查看全部」右侧抽屉（完整列表，含筛选/分页） ===== -->
     <el-drawer v-model="drawerVisible" :title="drawerTitle" :size="drawerSize" destroy-on-close>
       <component
         v-if="drawerKey"
@@ -628,91 +856,286 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 </template>
 
 <style scoped>
-/* ===== 沉浸式 Hero ===== */
-.hero {
-  height: 380px;
-  animation: fadeUp 0.55s ease both;
+/* ===== 白色紧凑身份区 ===== */
+.identity-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 18px;
+  padding: 16px 22px 20px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 6px 24px -10px rgba(15, 23, 42, 0.06);
 }
-.hero-carousel {
-  height: 100%;
-}
-.hero-fallback {
-  height: 100%;
-  background: linear-gradient(135deg, #e8722a 0%, #f5a54a 100%);
-}
-.hero-mask {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(22, 14, 6, 0.72) 0%, rgba(22, 14, 6, 0.35) 40%, rgba(22, 14, 6, 0) 68%);
-  pointer-events: none;
-}
-.hero-info {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1.5rem 2rem;
-}
-.hero-name {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.2;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
-}
-.hero-name-en {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.72);
-  margin-top: 2px;
-}
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-.hero-tag {
-  padding: 2px 10px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(2px);
-  color: #ffffff;
+
+.identity-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
   font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
 }
-.hero-meta {
-  margin-top: 0.5rem;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+
+.identity-back:hover {
+  background: #f8fafc;
+  color: #ea580c;
 }
-.hero-actions {
+
+.identity-row {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  align-items: flex-start;
+  gap: 18px;
+  margin-top: 6px;
 }
-.hero-btn-ghost,
-.hero-btn-solid {
-  padding: 0.55rem 1.1rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
+
+.identity-logo {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: all 0.2s ease;
-}
-.hero-btn-ghost {
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  color: #ffffff;
-}
-.hero-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-.hero-btn-solid {
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
+  border-radius: 18px;
   background: #ffffff;
-  color: #e8722a;
-  font-weight: 500;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06) inset;
+  overflow: hidden;
 }
-.hero-btn-solid:hover {
-  background: #fff4e6;
+
+.identity-logo__text {
+  font-size: 28px;
+  font-weight: 800;
+  color: #f97316;
+}
+
+.identity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.identity-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.identity-name-row h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.identity-en {
+  margin-top: 3px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.identity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.identity-tag {
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.identity-tag--tone-0 {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.identity-tag--tone-1 {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.identity-tag--tone-2 {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.identity-tag--tone-3 {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.identity-meta {
+  margin-top: 9px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.identity-cover {
+  position: relative;
+  overflow: hidden;
+  width: 220px;
+  height: 132px;
+  flex: 0 0 220px;
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 60%, #fff7ed 100%);
+  cursor: pointer;
+}
+
+.identity-cover__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(37, 99, 235, 0.32);
+}
+
+.identity-cover__fallback svg {
+  width: 38px;
+  height: 38px;
+}
+
+.identity-cover__mask {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.52);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.identity-cover:hover .identity-cover__mask {
+  background: rgba(234, 88, 12, 0.82);
+}
+
+.identity-skeleton {
+  padding: 16px 22px 20px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+/* ===== TabBar ===== */
+.detail-tabs {
+  position: sticky;
+  z-index: 40;
+  top: 64px;
+  margin-top: 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  transition: top 0.3s ease, box-shadow 0.2s ease;
+}
+
+.detail-tabs.is-stuck {
+  box-shadow: 0 6px 18px -14px rgba(15, 23, 42, 0.24);
+}
+
+.detail-tabs__inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.detail-tabs__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.detail-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 15px 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.detail-tab:hover {
+  color: #ea580c;
+}
+
+.detail-tab.is-active {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.detail-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #f97316;
+}
+
+.detail-tab__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.tab-panel {
+  padding-top: 20px;
+}
+
+/* ===== 考研 / 指南等通用面板 ===== */
+.tab-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 2px 14px;
+}
+
+.tab-head h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.tab-head p {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.tab-card {
+  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
 }
 
 /* ===== 亮点统计卡 ===== */
@@ -872,10 +1295,10 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
   animation: fadeUp 0.55s ease both;
 }
 
-/* ===== 吸顶二级导航（样式基调对齐 FileLoadPage.stage-nav） ===== */
+/* ===== 概况吸顶二级导航 ===== */
 .sub-nav {
   position: sticky;
-  z-index: 40;
+  z-index: 35;
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.05);
@@ -900,11 +1323,11 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
   gap: 2px;
   padding: 8px 12px;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+  scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .sub-nav-inner::-webkit-scrollbar {
-  display: none; /* WebKit 隐藏滚动条 */
+  display: none;
 }
 .sub-nav-item {
   position: relative;
@@ -927,7 +1350,6 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
   color: #e8722a;
   background: rgba(232, 114, 42, 0.08);
 }
-/* 核心决策项：字重加粗 + 品牌橙 4px 圆点 */
 .sub-nav-item.is-strong {
   font-weight: 700;
 }
@@ -938,7 +1360,6 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
   background: #f97316;
   flex-shrink: 0;
 }
-/* 激活项：品牌橙文字 + 3px 橙色短指示条 */
 .sub-nav-item.is-active {
   color: #f97316;
   font-weight: 700;
@@ -954,15 +1375,6 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
   border-radius: 2px;
   background: #f97316;
 }
-@media (max-width: 767px) {
-  .sub-nav-inner {
-    padding: 6px 8px;
-  }
-  .sub-nav-item {
-    padding: 6px 10px;
-    font-size: 13px;
-  }
-}
 
 /* ===== 关键帧 ===== */
 @keyframes fadeUp {
@@ -971,30 +1383,176 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 }
 
 /* ===== 响应式 ===== */
+@media (max-width: 1023px) {
+  .identity-cover {
+    display: none;
+  }
+
+  .identity-name-row h1 {
+    font-size: 24px;
+  }
+
+  .identity-logo {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+    border-radius: 15px;
+  }
+
+  .identity-logo__text {
+    font-size: 23px;
+  }
+}
+
 @media (max-width: 767px) {
-  .hero {
-    height: 300px;
+  .identity-card {
+    padding: 14px 16px 18px;
   }
-  .hero-logo {
-    left: 1rem;
-    top: 1rem;
+
+  .identity-row {
+    gap: 12px;
   }
-  .hero-info {
-    padding: 1rem 1.25rem;
+
+  .identity-name-row h1 {
+    font-size: 21px;
   }
-  .hero-name {
-    font-size: 1.5rem;
+
+  .identity-tag {
+    font-size: 10px;
+    padding: 2px 7px;
   }
+
+  .detail-tab {
+    padding: 13px 12px;
+    font-size: 13px;
+  }
+
+  .detail-tab.is-active::after {
+    left: 12px;
+    right: 12px;
+  }
+
+  .detail-tab__icon {
+    display: none;
+  }
+
   .stat-value {
     font-size: 20px;
   }
+
   .stat-card {
     padding: 0.85rem 1rem;
     gap: 0.6rem;
   }
+
   .stat-icon {
     width: 36px;
     height: 36px;
   }
+
+  .sub-nav-inner {
+    padding: 6px 8px;
+  }
+
+  .sub-nav-item {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .tab-card {
+    padding: 14px;
+  }
+
+  .tab-head h2 {
+    font-size: 20px;
+  }
+}
+
+/* ===== 详情加载失败 ===== */
+.detail-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 48px 24px;
+  border: 1px solid rgba(225, 29, 72, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 8px 28px -12px rgba(15, 23, 42, 0.08);
+}
+
+.detail-error__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.detail-error__icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.detail-error h2 {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.detail-error p {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.detail-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.detail-error__primary,
+.detail-error__ghost {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.detail-error__primary {
+  border: none;
+  background: linear-gradient(90deg, #f97316, #ea580c);
+  color: #ffffff;
+  box-shadow: 0 6px 16px -8px rgba(234, 88, 12, 0.55);
+}
+
+.detail-error__primary:hover {
+  background: linear-gradient(90deg, #ea580c, #c2410c);
+}
+
+.detail-error__ghost {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+}
+
+.detail-error__ghost:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  background: #fff7ed;
+  color: #ea580c;
 }
 </style>

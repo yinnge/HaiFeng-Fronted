@@ -57,6 +57,7 @@ const formData = reactive<PostgradMajorAddDTO>({
   crossExamDifficulty: '',
   crossExamDescription: '',
   crossExamFactors: [],
+  sortOrder: undefined,
 })
 
 const fetchData = async () => {
@@ -112,6 +113,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     formData.crossExamDifficulty = ''
     formData.crossExamDescription = ''
     formData.crossExamFactors = []
+    formData.sortOrder = undefined
     detailData.value = null
   } else if (mode === 'edit' && id) {
     dialogTitle.value = '修改考研专业'
@@ -133,6 +135,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.crossExamDifficulty = d.crossExamDifficulty || ''
         formData.crossExamDescription = d.crossExamDescription || ''
         formData.crossExamFactors = d.crossExamFactors || []
+        formData.sortOrder = d.sortOrder ?? undefined
       }
     } catch (e: any) {
       ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败')
@@ -180,6 +183,7 @@ const handleSubmit = async () => {
       if (formData.crossExamDifficulty) data.crossExamDifficulty = formData.crossExamDifficulty
       if (formData.crossExamDescription) data.crossExamDescription = formData.crossExamDescription
       if (formData.crossExamFactors && formData.crossExamFactors.length > 0) data.crossExamFactors = formData.crossExamFactors
+      if (formData.sortOrder != null) data.sortOrder = formData.sortOrder
       res = await addPostgradMajor(data)
     } else if (dialogMode.value === 'edit' && currentId.value) {
       const data: PostgradMajorUpdateDTO = {
@@ -197,6 +201,7 @@ const handleSubmit = async () => {
       if (formData.crossExamDifficulty) data.crossExamDifficulty = formData.crossExamDifficulty
       if (formData.crossExamDescription) data.crossExamDescription = formData.crossExamDescription
       if (formData.crossExamFactors && formData.crossExamFactors.length > 0) data.crossExamFactors = formData.crossExamFactors
+      if (formData.sortOrder != null) data.sortOrder = formData.sortOrder
       res = await updatePostgradMajor(currentId.value, data)
     } else {
       return
@@ -494,6 +499,9 @@ onMounted(() => { fetchData() })
             </el-form-item>
             <el-form-item label="学科门类" required>
               <el-input v-model="formData.disciplineCategory" placeholder="如：工学、理学" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="排序权重">
+              <el-input-number v-model="formData.sortOrder" :min="0" controls-position="right" />
             </el-form-item>
             <el-form-item label="热门程度">
               <el-select v-model="formData.popularity" placeholder="请选择" clearable style="width: 140px">

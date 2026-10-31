@@ -47,6 +47,7 @@ const formData = reactive<CompetitionAddDTO>({
   compName: '',
   compLevel: '',
   registrationTime: '',
+  sortOrder: undefined,
 })
 
 // Dynamic list helpers for detail sub-fields
@@ -165,6 +166,7 @@ const resetFormData = () => {
   formData.compName = ''
   formData.compLevel = ''
   formData.registrationTime = ''
+  formData.sortOrder = undefined
   formData.detail = {
     basicInfo: [],
     awards: [],
@@ -196,6 +198,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.compName = d.compName
         formData.compLevel = d.compLevel || ''
         formData.registrationTime = d.registrationTime || ''
+        formData.sortOrder = d.sortOrder ?? undefined
         formData.detail = {
           basicInfo: d.basicInfo || [],
           awards: d.awards || [],
@@ -244,6 +247,7 @@ const handleSubmit = async () => {
       const data: CompetitionAddDTO = { compName: formData.compName }
       if (formData.compLevel) data.compLevel = formData.compLevel
       if (formData.registrationTime) data.registrationTime = formData.registrationTime
+      if (formData.sortOrder != null) data.sortOrder = formData.sortOrder
       if (formData.detail && Object.keys(formData.detail).length > 0) {
         const detail: any = {}
         for (const key of Object.keys(formData.detail) as (keyof typeof formData.detail)[]) {
@@ -259,6 +263,7 @@ const handleSubmit = async () => {
       const data: CompetitionUpdateDTO = { id: currentId.value, compName: formData.compName }
       if (formData.compLevel) data.compLevel = formData.compLevel
       if (formData.registrationTime) data.registrationTime = formData.registrationTime
+      if (formData.sortOrder != null) data.sortOrder = formData.sortOrder
       if (formData.detail && Object.keys(formData.detail).length > 0) {
         const detail: any = {}
         for (const key of Object.keys(formData.detail) as (keyof typeof formData.detail)[]) {
@@ -667,6 +672,9 @@ onMounted(() => { fetchData() })
             </el-form-item>
             <el-form-item label="报名时间">
               <el-input v-model="formData.registrationTime" placeholder="如：每年6月9月" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="排序权重">
+              <el-input-number v-model="formData.sortOrder" :min="0" controls-position="right" />
             </el-form-item>
 
             <!-- 折叠detail 字段 -->
