@@ -2,10 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getFileLoadDetail, getFileLoadNetdisk } from '@/api/fileload'
-import type { FileLoadDetailVO, FileLoadAudience, NetdiskInfoVO } from '@/types/fileload'
+import { getFileLoadDetail, getFileLoadNetdisk, getFileLoadList } from '@/api/fileload'
+import type {
+  FileLoadDetailVO,
+  FileLoadAudience,
+  NetdiskInfoVO,
+  FileLoadListVO,
+} from '@/types/fileload'
 import { useUserStore } from '@/store'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
+import FileRelatedList from './components/FileRelatedList.vue'
+import FileQuickNav from './components/FileQuickNav.vue'
 
 const props = defineProps<{
   /** 后端接口受众：middle=初中 / high=高中 / college=大学 / civil-service=考公 / postgrad-exam=考研 / graduate=研究生 */
@@ -18,6 +26,7 @@ const recharge = useRechargeDialog()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const { hidden: headerHidden } = useAutoHideHeader()
 
 const loading = ref(false)
 const previewLoading = ref(false)
@@ -37,6 +46,13 @@ const netdiskLoading = ref(false)
 const netdiskInfo = ref<NetdiskInfoVO | null>(null)
 const copied = ref(false)
 
+/* ---------------- 相关推荐 / 排行榜 ---------------- */
+const RELATED_LIMIT = 6
+/** 后端 BasePageQueryDTO 约束 size ∈ [10,100]，故统一请求 10 条再前端截取 */
+const RELATED_FETCH_SIZE = 10
+const related = ref<FileLoadListVO[]>([])
+const relatedLoading = ref(false)
+
 const pageTitle = computed(() => props.title || (props.audience === 'middle' ? '初中专栏' : props.audience === 'high' ? '高中专栏' : props.audience === 'college' ? '大学专栏' : props.audience === 'civil-service' ? '考公专栏' : props.audience === 'postgrad-exam' ? '考研专栏' : '研究生专栏'))
 const audienceLabelMap: Record<FileLoadAudience, string> = {
   middle: '初中专栏',
@@ -47,6 +63,9 @@ const audienceLabelMap: Record<FileLoadAudience, string> = {
   graduate: '研究生专栏',
 }
 const audienceLabel = computed(() => audienceLabelMap[props.audience] || '初中专栏')
+
+/** 右侧栏吸顶偏移：顶部导航收起时贴到 8px，否则让出导航高度 */
+const asideTop = computed(() => (headerHidden.value ? 8 : 76))
 
 async function load() {
   const id = route.params.id
@@ -62,6 +81,7 @@ async function load() {
     previewLoading.value = !!res.data.data?.previewUrl
     vipBlocked.value = false
     teacherForbidden.value = false
+    await loadRelated()
   } catch (e: any) {
     const msg = e?.message || '获取文件详情失败'
     // 教师专属详情要求老师身份，非老师访问返回教师权限不足 → 友好拦截
@@ -96,6 +116,57 @@ async function load() {
     }
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 相关推荐 / 排行榜：复用现有列表接口，无需后端新增接口。
+ * 匹配优先级（始终排除当前文件，取 6 条）：
+ *   1) applicableStage + subject 双条件 AND
+ *   2) 降级为仅 applicableStage
+ *   3) 再降级为本专栏最新文件补足
+ */
+async function loadRelated() {
+  const d = detail.value
+  if (!d) return
+  relatedLoading.value = true
+  const picked: FileLoadListVO[] = []
+  const push = (rows?: FileLoadListVO[]) => {
+    for (const r of rows || []) {
+      if (r.id === d.id) continue
+      if (picked.some((p) => p.id === r.id)) continue
+      if (picked.length >= RELATED_LIMIT) break
+      picked.push(r)
+    }
+  }
+  try {
+    const base = { page: 1, size: RELATED_FETCH_SIZE }
+    if (d.applicableStage && d.subject) {
+      const res = await getFileLoadList(
+        props.audience,
+        { ...base, applicableStage: d.applicableStage, subject: d.subject },
+        isTeacher.value,
+      )
+      push(res.data.data?.records)
+    }
+    if (picked.length < RELATED_LIMIT && d.applicableStage) {
+      const res = await getFileLoadList(
+        props.audience,
+        { ...base, applicableStage: d.applicableStage },
+        isTeacher.value,
+      )
+      push(res.data.data?.records)
+    }
+    if (picked.length < RELATED_LIMIT) {
+      const res = await getFileLoadList(props.audience, base, isTeacher.value)
+      push(res.data.data?.records)
+    }
+    related.value = picked
+  } catch {
+    // 推荐区为增强信息，失败时保留已取到的部分，不打断详情页主流程
+    related.value = picked
+  } finally {
+    relatedLoading.value = false
   }
 }
 
@@ -172,13 +243,12 @@ function handleDownload() {
   document.body.removeChild(a)
 }
 
-function handleOpenNew() {
-  const url = detail.value?.previewUrl
-  if (!url) {
-    ElMessage.warning('该文件类型暂不支持在线预览')
-    return
-  }
-  window.open(url, '_blank', 'noopener')
+/** 相关推荐点击：跳到同专栏下的对应详情（教师身份透传） */
+function openRelated(item: FileLoadListVO) {
+  router.push({
+    path: `/${props.audience}/${item.id}`,
+    query: isTeacher.value ? { teacher: '1' } : {},
+  })
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -201,221 +271,246 @@ function formatDate(time?: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** 按文件类型返回图标与配色 */
-function fileTypeMeta(fileType?: string): { label: string; badge: string; iconBg: string } {
-  const t = (fileType || '').toLowerCase()
-  if (t === 'pdf') return { label: 'PDF', badge: 'bg-red-100 text-red-600', iconBg: 'from-red-500 to-rose-400' }
-  if (t === 'doc' || t === 'docx') return { label: 'Word', badge: 'bg-blue-100 text-blue-600', iconBg: 'from-blue-500 to-sky-400' }
-  if (t === 'xls' || t === 'xlsx') return { label: 'Excel', badge: 'bg-green-100 text-green-600', iconBg: 'from-green-500 to-emerald-400' }
-  if (t === 'ppt' || t === 'pptx') return { label: 'PPT', badge: 'bg-orange-100 text-orange-600', iconBg: 'from-orange-500 to-amber-400' }
-  if (t === 'jpg' || t === 'jpeg' || t === 'png' || t === 'gif' || t === 'bmp') return { label: '图片', badge: 'bg-purple-100 text-purple-600', iconBg: 'from-purple-500 to-violet-400' }
-  if (t === 'txt') return { label: '文本', badge: 'bg-gray-100 text-gray-600', iconBg: 'from-gray-500 to-slate-400' }
-  return { label: (fileType || '文件').toUpperCase(), badge: 'bg-gray-100 text-gray-600', iconBg: 'from-gray-500 to-slate-400' }
-}
+/** 文件类型 → 封面占位配色（无封面图时使用类型图标块） */
+const fileMeta = computed(() => {
+  if (isNetdisk.value) return { label: '网盘', bg: '#eff6ff', fg: '#2563eb' }
+  const t = (detail.value?.fileType || '').toLowerCase()
+  if (t === 'pdf') return { label: 'PDF', bg: '#fff1f2', fg: '#e11d48' }
+  if (t === 'doc' || t === 'docx') return { label: 'Word', bg: '#eff6ff', fg: '#2563eb' }
+  if (t === 'xls' || t === 'xlsx') return { label: 'Excel', bg: '#ecfdf5', fg: '#059669' }
+  if (t === 'ppt' || t === 'pptx') return { label: 'PPT', bg: '#fff7ed', fg: '#ea580c' }
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(t)) return { label: '图片', bg: '#f5f3ff', fg: '#7c3aed' }
+  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(t)) return { label: '视频', bg: '#ecfdf5', fg: '#059669' }
+  if (t === 'txt') return { label: 'TXT', bg: '#f1f5f9', fg: '#64748b' }
+  return { label: (detail.value?.fileType || '文件').toUpperCase(), bg: '#f1f5f9', fg: '#64748b' }
+})
+
+/** 封面图：有 coverUrl 用图，否则渲染类型图标块 */
+const coverUrl = computed(() => detail.value?.coverUrl || '')
+
+/** 顶部标签：学科 / 模块 / 适用阶段 */
+const heroTags = computed(() => {
+  const tags: { text: string; bg: string; fg: string }[] = []
+  if (detail.value?.subject) tags.push({ text: detail.value.subject, bg: '#eff6ff', fg: '#2563eb' })
+  if (detail.value?.tag) tags.push({ text: detail.value.tag, bg: '#fffbeb', fg: '#d97706' })
+  if (detail.value?.applicableStage) tags.push({ text: detail.value.applicableStage, bg: '#ecfdf5', fg: '#059669' })
+  return tags
+})
+
+/** 文件元数据四项：大小 / 上传时间 / 类型 / 适用阶段 */
+const metaItems = computed(() => [
+  {
+    label: '文件大小',
+    value: isNetdisk.value
+      ? detail.value?.fileSize
+        ? formatSize(detail.value.fileSize)
+        : '网盘大文件'
+      : formatSize(detail.value?.fileSize),
+    icon: ['M4 6h16M4 12h16M4 18h10'],
+  },
+  {
+    label: '上传时间',
+    value: formatDate(detail.value?.createTime),
+    icon: ['M3 10h18M8 2v4M16 2v4M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z'],
+  },
+  {
+    label: '文件类型',
+    value: isNetdisk.value ? '百度网盘' : fileMeta.value.label,
+    icon: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z', 'M14 3v5h5'],
+  },
+  {
+    label: '适用阶段',
+    value: detail.value?.applicableStage || audienceLabel.value,
+    icon: ['M12 4 2 9l10 5 10-5Z', 'M6 11.5V17c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5'],
+  },
+])
 
 onMounted(load)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col">
-    <main class="container mx-auto px-6 py-8 flex-1">
-      <!-- 返回 + 标题 -->
-      <div class="mb-6 flex items-center gap-3 flex-wrap">
-        <button
-          class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 transition-all"
-          @click="goBack"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+  <div class="fd-wrap">
+    <main class="fd-main">
+      <!-- 返回 + 面包屑 -->
+      <nav class="fd-crumb" aria-label="面包屑">
+        <button type="button" class="fd-back" @click="goBack">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 19l-7-7 7-7" />
           </svg>
           返回{{ pageTitle }}
         </button>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-800">{{ pageTitle }} · 文件详情</h1>
-      </div>
+        <span class="fd-crumb-sep" aria-hidden="true">/</span>
+        <span class="fd-crumb-cur">文件详情</span>
+      </nav>
 
-      <div v-loading="loading" class="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-        <div v-if="detail" class="flex flex-col lg:flex-row gap-6">
-          <!-- 左：百度网盘资源 / iframe 内嵌预览 -->
-          <div class="flex-1 min-h-[700px] lg:min-h-[860px] rounded-xl border border-gray-100 overflow-hidden bg-[#F1F5F9] flex flex-col">
-            <template v-if="isNetdisk">
-              <div class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
-                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center shadow-xl shadow-blue-200">
-                  <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
+      <div v-loading="loading" class="fd-loading-host">
+        <div v-if="detail" class="fd-layout">
+          <!-- ===== 主内容区 ===== -->
+          <div class="fd-col-main">
+            <!-- 文件信息卡：封面 + 标题/标签/介绍/元数据 + 主操作 -->
+            <article class="fd-hero">
+              <div class="fd-hero-cover" :style="{ background: fileMeta.bg, color: fileMeta.fg }">
+                <img v-if="coverUrl" :src="coverUrl" :alt="detail.fileName" class="fd-hero-cover-img" />
+                <template v-else>
+                  <svg v-if="isNetdisk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M7 18a4 4 0 0 1-.9-7.9A5.5 5.5 0 0 1 16.9 9a4.5 4.5 0 0 1 .6 9H7Z" />
                   </svg>
-                </div>
-                <p class="text-base font-bold text-gray-800 break-all max-w-md">{{ detail.fileName }}</p>
-                <p class="text-sm text-gray-500 leading-relaxed max-w-md">
-                  该资源为百度网盘大文件。点击右侧「获取网盘链接」，复制分享链接与提取码后，前往百度网盘保存或下载。
-                </p>
-                <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
-                  <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-600 border border-blue-100">百度网盘存储</span>
-                  <span v-if="detail.applicableStage" class="rounded-full bg-amber-50 px-3 py-1 text-amber-600 border border-amber-100">{{ detail.applicableStage }}</span>
-                </div>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 3v5h5M9 13h6M9 17h4" />
+                  </svg>
+                </template>
+                <span class="fd-hero-badge">{{ fileMeta.label }}</span>
               </div>
-            </template>
-            <template v-else>
-              <div class="preview-iframe-wrapper relative w-full h-full min-h-[700px] lg:min-h-[860px] flex-1">
-                <div v-if="previewLoading" class="preview-skeleton absolute inset-0 flex items-center justify-center bg-[#F1F5F9]">
+
+              <div class="fd-hero-body">
+                <h1 class="fd-hero-title">{{ detail.fileName }}</h1>
+
+                <div v-if="heroTags.length" class="fd-hero-tags">
+                  <span
+                    v-for="t in heroTags"
+                    :key="t.text"
+                    class="fd-tag"
+                    :style="{ background: t.bg, color: t.fg }"
+                  >{{ t.text }}</span>
+                </div>
+
+                <p class="fd-hero-desc">{{ detail.description || '暂无简介，下载后可查看完整内容。' }}</p>
+
+                <ul class="fd-meta">
+                  <li v-for="m in metaItems" :key="m.label" class="fd-meta-item">
+                    <svg class="fd-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path v-for="(d, i) in m.icon" :key="i" :d="d" />
+                    </svg>
+                    <span class="fd-meta-label">{{ m.label }}</span>
+                    <span class="fd-meta-value">{{ m.value }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="fd-hero-cta">
+                <button
+                  v-if="isNetdisk"
+                  type="button"
+                  class="fd-cta fd-cta-blue"
+                  :disabled="netdiskLoading"
+                  @click="fetchNetdisk"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  {{ netdiskLoading ? '获取中…' : '获取网盘链接' }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="fd-cta"
+                  :disabled="!detail.downloadUrl"
+                  @click="handleDownload"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4-4 4m0 0-4-4m4 4V4" />
+                  </svg>
+                  立即下载
+                </button>
+                <p class="fd-cta-hint">
+                  {{ isNetdisk ? '旗舰版会员专属，含分享链接与提取码' : '保存至本地后查看完整内容' }}
+                </p>
+              </div>
+            </article>
+
+            <!-- 文件展示区：OSS 直接内嵌预览；网盘资源展示取码入口 -->
+            <section class="fd-viewer">
+              <header class="fd-viewer-head">
+                <h2 class="fd-viewer-title">{{ isNetdisk ? '网盘资源' : '文件预览' }}</h2>
+                <span class="fd-viewer-sub">{{ audienceLabel }}</span>
+              </header>
+
+              <!-- OSS：直接展示文件，不再有「文件预览 / 文件信息」tab -->
+              <div v-if="!isNetdisk" class="fd-frame">
+                <div v-if="previewLoading" class="fd-frame-skeleton">
                   <el-skeleton :rows="10" animated />
                 </div>
                 <iframe
                   v-if="detail.previewUrl"
                   :src="detail.previewUrl"
-                  class="absolute inset-0 w-full h-full border-0"
+                  class="fd-frame-iframe"
                   frameborder="0"
                   title="文件预览"
                   @load="previewLoading = false"
                 ></iframe>
-                <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
-                  <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+                <div v-else class="fd-frame-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
                   </svg>
-                  <p class="text-sm">该文件类型暂不支持在线预览</p>
-                  <p class="text-xs mt-1">请使用右侧「下载文件」按钮保存到本地查看</p>
+                  <p class="fd-frame-empty-title">该文件类型暂不支持在线预览</p>
+                  <p class="fd-frame-empty-sub">请点击右上角「立即下载」保存到本地查看</p>
                 </div>
               </div>
-            </template>
-          </div>
 
-          <!-- 右：元数据面板 -->
-          <aside class="w-full lg:w-[300px] shrink-0 flex flex-col gap-4">
-            <!-- 文件头部 -->
-            <div class="flex items-center gap-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 p-4 border border-gray-100">
-              <div
-                class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md"
-                :class="isNetdisk ? 'from-blue-500 to-sky-400 shadow-blue-200' : fileTypeMeta(detail.fileType).iconBg"
-              >
-                <svg v-if="isNetdisk" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 18a4 4 0 0 1-.9-7.9 5.5 5.5 0 0 1 10.8-1.5A4.5 4.5 0 0 1 17.5 18H7z" />
-                </svg>
-                <svg v-else class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z" />
-                </svg>
-              </div>
-              <div class="min-w-0">
-                <h3 class="text-base font-bold text-gray-800 break-all leading-snug">{{ detail.fileName }}</h3>
-                <span
-                  class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-white"
-                  :class="isNetdisk ? 'border border-blue-200 text-blue-600' : 'border border-orange-200 text-orange-600'"
+              <!-- 网盘：无文件可展示，给取码入口 + 说明 -->
+              <div v-else class="fd-netdisk">
+                <button
+                  type="button"
+                  class="fd-cta fd-cta-blue fd-netdisk-btn"
+                  :disabled="netdiskLoading"
+                  @click="fetchNetdisk"
                 >
-                  {{ isNetdisk ? '网盘' : fileTypeMeta(detail.fileType).label }}
-                </span>
-              </div>
-            </div>
-
-            <!-- 基础信息 -->
-            <div class="rounded-xl bg-white border border-gray-100 p-4 space-y-3">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">基础信息</div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-400">文件大小</span>
-                <span class="font-medium text-gray-700">{{ isNetdisk ? '网盘大文件' : formatSize(detail.fileSize) }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-400">上传时间</span>
-                <span class="font-medium text-gray-700">{{ formatDate(detail.createTime) }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-400">所属专栏</span>
-                <span class="font-medium text-gray-700">{{ audienceLabel }}</span>
-              </div>
-            </div>
-
-            <!-- 分类：学科 / 适用阶段 -->
-            <div v-if="detail.subject || detail.applicableStage" class="rounded-xl bg-white border border-gray-100 p-4 space-y-3">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">分类</div>
-              <div v-if="detail.subject" class="flex justify-between text-sm">
-                <span class="text-gray-400">学科</span>
-                <span class="font-medium text-gray-700">{{ detail.subject }}</span>
-              </div>
-              <div v-if="detail.applicableStage" class="flex justify-between text-sm">
-                <span class="text-gray-400">适用阶段</span>
-                <span class="font-medium text-gray-700">{{ detail.applicableStage }}</span>
-              </div>
-            </div>
-
-            <!-- 文档简介 -->
-            <div v-if="detail.description" class="rounded-xl bg-white border border-gray-100 p-4">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">文档简介</div>
-              <p class="text-sm text-gray-600 leading-relaxed">{{ detail.description }}</p>
-            </div>
-
-            <!-- 模块（原「标签」） -->
-            <div v-if="detail.tag" class="rounded-xl bg-white border border-gray-100 p-4">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">模块</div>
-              <div class="flex flex-wrap gap-1.5">
-                <span
-                  class="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs text-orange-600 border border-orange-100"
-                >
-                  {{ detail.tag }}
-                </span>
-              </div>
-            </div>
-
-            <!-- 声明 -->
-            <div class="rounded-xl bg-orange-50/50 border border-orange-100 p-4">
-              <p class="text-xs text-gray-500 leading-relaxed">
-                声明：文件由海枫未来规划院最终解释，如有侵权，请联系管理员。
-              </p>
-            </div>
-
-            <!-- 操作 -->
-            <div class="flex flex-col gap-3 mt-auto">
-              <button
-                v-if="isNetdisk"
-                class="rounded-full bg-gradient-to-r from-blue-500 to-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-200 hover:from-blue-600 hover:to-sky-600 transition-all disabled:opacity-50"
-                :disabled="netdiskLoading"
-                @click="fetchNetdisk"
-              >
-                <span class="inline-flex items-center justify-center gap-1.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                   {{ netdiskLoading ? '获取中…' : '获取网盘链接' }}
-                </span>
-              </button>
-              <template v-else>
-                <button
-                  class="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-200 hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50"
-                  :disabled="!detail.downloadUrl"
-                  @click="handleDownload"
-                >
-                  <span class="inline-flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    下载文件
-                  </span>
                 </button>
-                <button
-                  class="rounded-full border border-orange-300 bg-white px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-all disabled:opacity-50"
-                  :disabled="!detail.previewUrl"
-                  @click="handleOpenNew"
-                >
-                  <span class="inline-flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    新窗口打开
-                  </span>
-                </button>
-              </template>
-            </div>
+                <p class="fd-netdisk-text">
+                  该资源为百度网盘大文件。点击「获取网盘链接」，复制分享链接与提取码后，前往网盘保存或下载。
+                </p>
+              </div>
+            </section>
+
+            <!-- 温馨提示：置于文件展示区最下方 -->
+            <section class="fd-tip">
+              <span class="fd-tip-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </span>
+              <div class="fd-tip-body">
+                <h3 class="fd-tip-title">温馨提示</h3>
+                <p class="fd-tip-text">如果文件侵权，请联系管理员。</p>
+              </div>
+            </section>
+          </div>
+
+          <!-- ===== 右侧栏（吸顶） ===== -->
+          <aside class="fd-col-side" :style="{ top: asideTop + 'px' }">
+            <FileRelatedList
+              :variant="isNetdisk ? 'rank' : 'related'"
+              :items="related"
+              :loading="relatedLoading"
+              @open="openRelated"
+            />
+            <FileQuickNav
+              :audience="props.audience"
+              :title="isNetdisk ? '在线工具' : '快捷导航'"
+              :teacher="isTeacher"
+            />
           </aside>
         </div>
 
         <!-- 教师身份拦截空态 -->
-        <div v-else-if="teacherForbidden && !loading" class="py-20 text-center text-gray-400">
-          <p class="text-base font-semibold text-gray-700">您还不是教师身份</p>
-          <p class="text-sm mt-1">教师专属资料仅对老师身份开放，请联系管理员开通</p>
+        <div v-else-if="teacherForbidden && !loading" class="fd-state">
+          <p class="fd-state-title">您还不是教师身份</p>
+          <p class="fd-state-sub">教师专属资料仅对老师身份开放，请联系管理员开通</p>
         </div>
         <!-- VIP 拦截空态 -->
-        <div v-else-if="vipBlocked && !loading" class="py-20 text-center text-gray-400">
-          <p class="text-sm">查看文件详情需要旗舰版（VIP）会员</p>
+        <div v-else-if="vipBlocked && !loading" class="fd-state">
+          <p class="fd-state-sub">查看文件详情需要旗舰版（VIP）会员</p>
         </div>
         <!-- 其他空态 -->
-        <div v-else-if="!loading" class="py-20 text-center text-gray-400">暂无文件数据</div>
+        <div v-else-if="!loading" class="fd-state">
+          <p class="fd-state-sub">暂无文件数据</p>
+        </div>
       </div>
     </main>
 
@@ -482,3 +577,528 @@ onMounted(load)
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.fd-wrap {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fffdfa 0%, #fff7ed 45%, #f8fafc 100%);
+}
+
+.fd-main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 20px 56px;
+}
+
+/* ---------- 面包屑 ---------- */
+.fd-crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.fd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  background: #ffffff;
+  color: #ea580c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.fd-back:hover {
+  background: #fff7ed;
+  box-shadow: 0 4px 14px -6px rgba(249, 115, 22, 0.4);
+}
+
+.fd-back:active {
+  transform: translateY(1px);
+}
+
+.fd-back svg {
+  width: 15px;
+  height: 15px;
+}
+
+.fd-crumb-sep {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.fd-crumb-cur {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fd-loading-host {
+  min-height: 320px;
+}
+
+/* ---------- 两栏布局 ---------- */
+.fd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .fd-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+  }
+}
+
+.fd-col-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.fd-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .fd-col-side {
+    position: sticky;
+  }
+}
+
+/* ---------- 文件信息卡 ---------- */
+/* 移动端：纵向流式；≥768 才启用两栏栅格（避免 grid-area 在 flex 下失效） */
+.fd-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+
+@media (min-width: 768px) {
+  .fd-hero {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-areas:
+      'cover body'
+      'cta cta';
+    gap: 18px 20px;
+  }
+
+  .fd-hero-cover {
+    grid-area: cover;
+  }
+
+  .fd-hero-body {
+    grid-area: body;
+  }
+
+  .fd-hero-cta {
+    grid-area: cta;
+  }
+}
+
+@media (min-width: 1280px) {
+  .fd-hero {
+    grid-template-columns: 104px minmax(0, 1fr) 190px;
+    grid-template-areas: 'cover body cta';
+    align-items: start;
+  }
+}
+
+.fd-hero-cover {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 16px;
+  overflow: visible;
+}
+
+.fd-hero-cover > svg {
+  width: 46px;
+  height: 46px;
+}
+
+.fd-hero-cover-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+  display: block;
+}
+
+.fd-hero-badge {
+  position: absolute;
+  bottom: -6px;
+  left: -6px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: currentColor;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.fd-hero-body {
+  min-width: 0;
+}
+
+.fd-hero-title {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .fd-hero-title {
+    font-size: 24px;
+  }
+}
+
+.fd-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fd-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.fd-hero-desc {
+  margin-top: 12px;
+  max-width: 65ch;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.fd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #f1f5f9;
+  list-style: none;
+}
+
+.fd-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fd-meta-icon {
+  width: 14px;
+  height: 14px;
+  color: #cbd5e1;
+}
+
+.fd-meta-label {
+  color: #94a3b8;
+}
+
+.fd-meta-value {
+  color: #334155;
+  font-weight: 600;
+}
+
+/* ---------- 主操作按钮 ---------- */
+.fd-hero-cta {
+  grid-area: cta;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 1280px) {
+  .fd-hero-cta {
+    align-items: stretch;
+    padding-top: 4px;
+  }
+}
+
+.fd-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 22px -8px rgba(249, 115, 22, 0.6);
+  transition:
+    transform 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.22s ease,
+    filter 0.22s ease;
+}
+
+.fd-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(1.05);
+  box-shadow: 0 12px 28px -8px rgba(249, 115, 22, 0.7);
+}
+
+.fd-cta:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.fd-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.fd-cta:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.55);
+  outline-offset: 2px;
+}
+
+.fd-cta svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fd-cta-blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 8px 22px -8px rgba(37, 99, 235, 0.55);
+}
+
+.fd-cta-blue:hover:not(:disabled) {
+  box-shadow: 0 12px 28px -8px rgba(37, 99, 235, 0.65);
+}
+
+.fd-cta-hint {
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- 文件展示区 ---------- */
+.fd-viewer {
+  padding: 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+
+.fd-viewer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.fd-viewer-title {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.fd-viewer-sub {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fd-frame {
+  position: relative;
+  width: 100%;
+  min-height: 560px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+@media (min-width: 1024px) {
+  .fd-frame {
+    min-height: 720px;
+  }
+}
+
+.fd-frame-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #f8fafc;
+}
+
+.fd-frame-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.fd-frame-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px;
+  text-align: center;
+}
+
+.fd-frame-empty > svg {
+  width: 48px;
+  height: 48px;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.fd-frame-empty-title {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fd-frame-empty-sub {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* 网盘占位 */
+.fd-netdisk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 320px;
+  padding: 40px 24px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  text-align: center;
+}
+
+.fd-netdisk-btn {
+  padding: 13px 30px;
+}
+
+.fd-netdisk-text {
+  max-width: 46ch;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* ---------- 温馨提示 ---------- */
+.fd-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+}
+
+.fd-tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 2px 8px -4px rgba(37, 99, 235, 0.4);
+}
+
+.fd-tip-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.fd-tip-title {
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fd-tip-text {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ---------- 空态 ---------- */
+.fd-state {
+  padding: 80px 24px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  text-align: center;
+}
+
+.fd-state-title {
+  color: #334155;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fd-state-sub {
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+</style>

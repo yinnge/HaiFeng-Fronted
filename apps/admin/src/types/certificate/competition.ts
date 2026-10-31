@@ -1,5 +1,6 @@
 export interface CompetitionListVO {
   id: string
+  sortOrder?: number
   compName: string
   compLevel: string | null
   registrationTime: string | null
@@ -14,6 +15,7 @@ export interface CompetitionBasicInfoItem {
 
 export interface CompetitionDetailVO {
   id: string
+  sortOrder?: number
   compName: string
   compLevel: string | null
   registrationTime: string | null
@@ -53,6 +55,7 @@ export interface CompetitionDetailDTO {
 
 export interface CompetitionAddDTO {
   compName: string
+  sortOrder?: number
   compLevel?: string
   registrationTime?: string
   detail?: CompetitionDetailDTO

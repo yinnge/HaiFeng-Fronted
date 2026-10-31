@@ -1,5 +1,6 @@
 export interface IndustryListVO {
   id: string
+  sortOrder?: number
   industryName: string
   category: string
   talentTrend: string
@@ -10,6 +11,7 @@ export interface IndustryListVO {
 
 export interface IndustryDetailVO {
   id: string
+  sortOrder?: number
   industryName: string
   category: string
   iconClass: string
@@ -49,6 +51,7 @@ export interface IndustryQueryDTO {
 
 export interface IndustryAddDTO {
   industryName: string
+  sortOrder?: number
   category: string
   iconClass?: string
   description?: string
@@ -74,6 +77,7 @@ export interface IndustryAddDTO {
 
 export interface IndustryUpdateDTO {
   industryName?: string
+  sortOrder?: number
   category?: string
   iconClass?: string
   description?: string

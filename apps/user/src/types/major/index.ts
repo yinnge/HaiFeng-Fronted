@@ -9,6 +9,7 @@ export interface MajorListVO {
   parentCategory: string
   majorTags: string
   degreeAwarded: string
+  studyDuration?: string
   employmentRate: number
   salaryMin: number
   salaryMax: number
@@ -50,6 +51,17 @@ export interface MajorQueryDTO extends BasePageQuery {
   code?: string
   majorType?: string
   majorCategory?: string
+  /** 排序字段：综合(comprehensive, 默认) / 就业率(employmentRate) / 薪资水平(salaryMax) / 热度(sortOrder) */
+  sortBy?: 'comprehensive' | 'employmentRate' | 'salaryMax' | 'sortOrder'
+  sortOrder?: 'asc' | 'desc'
+  /** 就业率下限（百分比，例如 80 表示 80%） */
+  employmentRateMin?: number
+  /** 就业率上限（百分比） */
+  employmentRateMax?: number
+  /** 月薪下限（元/月） */
+  salaryMin?: number
+  /** 月薪上限（元/月） */
+  salaryMax?: number
 }
 
 export interface MajorRankingQueryDTO extends BasePageQuery {

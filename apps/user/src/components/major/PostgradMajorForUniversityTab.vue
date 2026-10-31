@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 import { getPostgradMajorsByUniversity } from '@/api/postgrad-major'
@@ -75,6 +75,10 @@ function onPageChange(page: number) {
 
 onMounted(() => {
   if (isPro.value) fetchList()
+})
+
+watch(isPro, (value) => {
+  if (value && !list.value.length && !loading.value) fetchList()
 })
 </script>
 

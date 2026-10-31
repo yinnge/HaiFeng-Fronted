@@ -61,6 +61,7 @@ const formData = reactive<MajorAddDTO>({
   salaryMin: undefined,
   salaryMax: undefined,
   description: '',
+  sortOrder: undefined,
 })
 
 const detailFormData = reactive<MajorDetailUpdateDTO>({
@@ -143,6 +144,7 @@ const buildBasicUpdateDto = (): MajorUpdateDTO => {
   if (formData.employmentRate != null) dto.employmentRate = formData.employmentRate
   if (formData.salaryMin != null) dto.salaryMin = formData.salaryMin
   if (formData.salaryMax != null) dto.salaryMax = formData.salaryMax
+  if (formData.sortOrder != null) dto.sortOrder = formData.sortOrder
   return dto
 }
 
@@ -221,6 +223,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
     formData.salaryMin = undefined
     formData.salaryMax = undefined
     formData.description = ''
+    formData.sortOrder = undefined
     // 详情 tab 也要一并清空，否则会残留上一次「修改」时回填的数据
     resetDetailForm()
     activeEditTab.value = 'basic'
@@ -247,6 +250,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.salaryMin = d.salaryMin ?? undefined
         formData.salaryMax = d.salaryMax ?? undefined
         formData.description = d.description || ''
+        formData.sortOrder = d.sortOrder ?? undefined
         // 专业详情
         detailFormData.courseCount = d.courseCount ?? undefined
         // 后端 VO 里 graduateScale 是 Integer（写入 DTO 却是 String），这里统一转成字符串再回填
@@ -309,6 +313,7 @@ const handleSubmit = async () => {
       if (formData.employmentRate != null) data.employmentRate = formData.employmentRate
       if (formData.salaryMin != null) data.salaryMin = formData.salaryMin
       if (formData.salaryMax != null) data.salaryMax = formData.salaryMax
+      if (formData.sortOrder != null) data.sortOrder = formData.sortOrder
       if (formData.description) data.description = formData.description
       const res = await addMajor(data)
       if (res.data.code !== 200) {
@@ -706,6 +711,9 @@ onMounted(() => { fetchData() })
                 </el-form-item>
                 <el-form-item label="薪资上限(元/月)">
                   <el-input-number v-model="formData.salaryMax" :min="0" controls-position="right" />
+                </el-form-item>
+                <el-form-item label="排序权重">
+                  <el-input-number v-model="formData.sortOrder" :min="0" controls-position="right" />
                 </el-form-item>
                 <el-form-item label="专业描述">
                   <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入专业描述" />

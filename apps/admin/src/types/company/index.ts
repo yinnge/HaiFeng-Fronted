@@ -1,5 +1,6 @@
 export interface EnterpriseListVO {
   id: string
+  sortOrder?: number
   cityName: string | null
   enterpriseName: string
   enterpriseNature: string
@@ -34,6 +35,7 @@ export interface PositionVO {
 
 export interface EnterpriseDetailVO {
   id: string
+  sortOrder?: number
   cityName: string | null
   enterpriseName: string
   enterpriseNature: string
@@ -64,6 +66,7 @@ export interface EnterpriseQueryDTO {
 
 export interface EnterpriseAddDTO {
   cityName?: string
+  sortOrder?: number
   enterpriseName: string
   enterpriseNature: string
   enterpriseType?: string
@@ -78,6 +81,7 @@ export interface EnterpriseAddDTO {
 
 export interface EnterpriseUpdateDTO {
   cityName?: string
+  sortOrder?: number
   enterpriseName: string
   enterpriseNature: string
   enterpriseType?: string

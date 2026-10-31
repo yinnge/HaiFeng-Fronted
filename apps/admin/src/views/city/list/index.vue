@@ -53,6 +53,7 @@ const formData = reactive<Record<string, any>>({
   residentPopulation: null,
   gdp: null,
   coverImageUrl: '',
+  sortOrder: null,
 })
 
 const detailForm = reactive<Record<string, any>>({
@@ -198,6 +199,7 @@ const resetForm = () => {
   formData.residentPopulation = null
   formData.gdp = null
   formData.coverImageUrl = ''
+  formData.sortOrder = null
   detailForm.area = null
   detailForm.subtitle = ''
   detailForm.cityLevel = ''
@@ -237,6 +239,7 @@ const fillForm = (d: CityDetailVO) => {
   formData.residentPopulation = d.residentPopulation
   formData.gdp = d.gdp
   formData.coverImageUrl = d.coverImageUrl || ''
+  formData.sortOrder = d.sortOrder ?? null
 }
 
 const fillDetailForm = (d: CityDetailVO) => {
@@ -312,6 +315,7 @@ const saveBasic = async (): Promise<boolean> => {
     if (formData.residentPopulation !== null) data.residentPopulation = formData.residentPopulation
     if (formData.gdp !== null) data.gdp = formData.gdp
     if (formData.coverImageUrl) data.coverImageUrl = formData.coverImageUrl
+    if (formData.sortOrder !== null && formData.sortOrder !== undefined) data.sortOrder = formData.sortOrder
 
     let res: any
     if (dialogMode.value === 'add') {
@@ -790,6 +794,13 @@ onMounted(() => {
                   <el-col :span="12">
                     <el-form-item label="GDP(亿元)">
                       <el-input-number controls-position="right" v-model="formData.gdp" :min="0" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="排序权重">
+                      <el-input-number controls-position="right" v-model="formData.sortOrder" :min="0" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                 </el-row>

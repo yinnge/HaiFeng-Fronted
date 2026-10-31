@@ -110,6 +110,8 @@ const formData = reactive<Record<string, any>>({
 
   investmentTrend: '',
 
+  sortOrder: null,
+
 })
 
 
@@ -354,6 +356,8 @@ const resetForm = () => {
 
   formData.investmentTrend = ''
 
+  formData.sortOrder = null
+
   resetDetailForm()
 
 }
@@ -409,6 +413,7 @@ const fillForm = (d: IndustryDetailVO) => {
   formData.talentTrend = d.talentTrend || ''
 
   formData.investmentTrend = d.investmentTrend || ''
+  formData.sortOrder = d.sortOrder ?? null
 
 }
 
@@ -557,6 +562,7 @@ const buildBasicData = () => {
   if (formData.talentTrend) data.talentTrend = formData.talentTrend
 
   if (formData.investmentTrend) data.investmentTrend = formData.investmentTrend
+  if (formData.sortOrder !== null && formData.sortOrder !== undefined) data.sortOrder = formData.sortOrder
 
   return data
 
@@ -1136,6 +1142,18 @@ onMounted(() => { fetchData() })
 
                       <el-input-number v-model="formData.investmentHeat" :min="0" :max="100" :precision="2" style="width: 100%" />
 
+                    </el-form-item>
+
+                  </el-col>
+
+                </el-row>
+
+                <el-row :gutter="20">
+
+                  <el-col :span="12">
+
+                    <el-form-item label="排序权重">
+                      <el-input-number v-model="formData.sortOrder" :min="0" style="width: 100%" />
                     </el-form-item>
 
                   </el-col>

@@ -116,6 +116,8 @@ const formData = reactive<CertificateAddDTO>({
 
   officialWebsite: '',
 
+  sortOrder: undefined,
+
 })
 
 
@@ -264,6 +266,8 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
 
     formData.officialWebsite = ''
 
+    formData.sortOrder = undefined
+
     detailData.value = null
 
   } else if (mode === 'edit' && id) {
@@ -301,6 +305,7 @@ const openDialog = async (mode: 'detail' | 'add' | 'edit', id?: string) => {
         formData.examArrangement = d.examArrangement || ''
 
         formData.officialWebsite = d.officialWebsite || ''
+        formData.sortOrder = d.sortOrder ?? undefined
 
       }
 
@@ -419,6 +424,7 @@ const handleSubmit = async () => {
       if (formData.examArrangement) data.examArrangement = formData.examArrangement
 
       if (formData.officialWebsite) data.officialWebsite = formData.officialWebsite
+      if (formData.sortOrder !== undefined && formData.sortOrder !== null) data.sortOrder = formData.sortOrder
 
       res = await addCertificate(data)
 
@@ -451,6 +457,7 @@ const handleSubmit = async () => {
       if (formData.examArrangement) data.examArrangement = formData.examArrangement
 
       if (formData.officialWebsite) data.officialWebsite = formData.officialWebsite
+      if (formData.sortOrder !== undefined && formData.sortOrder !== null) data.sortOrder = formData.sortOrder
 
       res = await updateCertificate(data)
 
@@ -1246,6 +1253,10 @@ const handleImportSubmit = async () => {
 
               <el-input v-model="formData.officialWebsite" placeholder="https://" maxlength="500" />
 
+            </el-form-item>
+
+            <el-form-item label="排序权重">
+              <el-input-number v-model="formData.sortOrder" :min="0" controls-position="right" />
             </el-form-item>
 
           </el-form>

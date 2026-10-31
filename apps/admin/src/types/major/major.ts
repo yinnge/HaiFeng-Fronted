@@ -1,5 +1,6 @@
 export interface MajorListVO {
   id: string
+  sortOrder?: number
   majorCode: string
   majorName: string
   disciplineName: string | null
@@ -12,6 +13,7 @@ export interface MajorListVO {
 
 export interface MajorDetailVO {
   id: string
+  sortOrder?: number
   majorCode: string
   majorName: string
   disciplineName: string | null
@@ -54,6 +56,7 @@ export interface MajorQueryDTO {
 
 export interface MajorAddDTO {
   majorCode: string
+  sortOrder?: number
   majorName: string
   majorType: string
   disciplineName?: string
@@ -71,6 +74,7 @@ export interface MajorAddDTO {
 /** 注意：后端 MajorUpdateDTO 没有 majorCode 字段（专业代码不可修改），前端不要下发 */
 export interface MajorUpdateDTO {
   majorName?: string
+  sortOrder?: number
   majorType?: string
   disciplineName?: string
   majorCategory?: string

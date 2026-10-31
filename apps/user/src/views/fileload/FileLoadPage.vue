@@ -31,6 +31,11 @@ const props = defineProps<{
   identityOptions?: string[]
   /** 身份筛选初始值（高中专栏默认取用户档案身份 highIdentity） */
   initialIdentity?: string
+  /**
+   * 是否内嵌于其它页面（如高考模块内联的「高中资料」tab）。
+   * 内嵌时由父级（ArchiveBar）提供目录切换，子页不再渲染自己的页内小导航栏，避免双导航。
+   */
+  embedded?: boolean
 }>()
 
 const router = useRouter()
@@ -160,9 +165,28 @@ const STAGE_NAV_CONFIG: Partial<Record<FileLoadAudience, StageNavConfig>> = {
       { key: 'career', label: '大学生涯规划', mode: 'soon' },
     ],
   },
+  high: {
+    label: '高中模块',
+    identities: ['高一', '高二', '高三'],
+    defaultIdentity: '高一',
+    sections: [
+      // 「高中资料」与顶层/高考模块内的「高中资料」同源：/high 独立资料页
+      { key: 'files', label: '高中资料', mode: 'filter', stage: '高一' },
+      // 高考真题：固定查「高考资料」，展示别名「高考真题」
+      { key: 'zhenti', label: '高考真题', mode: 'filter', stage: '高考资料' },
+      // 高考政策解读：选中即按该面向人群过滤
+      { key: 'policy', label: '高考政策解读', mode: 'filter', stage: '高考政策解读' },
+      { key: 'quiz', label: '练题系统', mode: 'soon' },
+      { key: 'career', label: '高中生涯规划', mode: 'soon' },
+    ],
+  },
 }
 
-const stageNav = computed(() => STAGE_NAV_CONFIG[props.audience] || null)
+// 内嵌模式（高考模块内联「高中资料」）由父级 ArchiveBar 提供目录切换，
+// 子页不再渲染页内小导航栏，避免与父级形成双导航条
+const stageNav = computed(() =>
+  props.embedded ? null : (STAGE_NAV_CONFIG[props.audience] || null),
+)
 
 /** 当前激活的目录项 key（仅用于子导航高亮；筛选值统一由 stageFilter 驱动） */
 const activeSection = ref('files')
@@ -174,17 +198,13 @@ const activeSection = ref('files')
  */
 const stageFilter = ref('')
 
-/** 默认选中值：初中默认初三、大学默认大一、高中默认传入身份（与档案身份分离） */
+/**
+ * 默认选中值：全部（空串）。
+ * 此前初中默认初三、大学默认大一、高中默认档案身份，现按需求统一默认「全部」，
+ * 由用户在「面向人群」筛选行自行选择具体年级/人群。
+ */
 function initStageFilter() {
-  if (props.audience === 'middle') {
-    stageFilter.value = STAGE_NAV_CONFIG.middle?.defaultIdentity || ''
-  } else if (props.audience === 'college') {
-    stageFilter.value = STAGE_NAV_CONFIG.college?.defaultIdentity || ''
-  } else if (props.audience === 'high') {
-    stageFilter.value = props.initialIdentity || props.identityOptions?.[0] || ''
-  } else {
-    stageFilter.value = ''
-  }
+  stageFilter.value = ''
 }
 
 /** 面向人群筛选按钮可选项（含标签/值映射）；无则专栏不渲染筛选行 */

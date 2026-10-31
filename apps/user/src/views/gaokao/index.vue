@@ -196,6 +196,7 @@ async function initPage() {
         audience="high"
         :identity-options="HIGH_IDENTITIES"
         :initial-identity="highIdentity"
+        :embedded="true"
         title="高中资料"
       />
       <template v-else>

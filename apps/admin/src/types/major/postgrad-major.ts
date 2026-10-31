@@ -1,5 +1,6 @@
 export interface PostgradMajorListVO {
   id: string
+  sortOrder?: number
   majorName: string
   majorCode: string
   degreeType: string
@@ -12,6 +13,7 @@ export interface PostgradMajorListVO {
 
 export interface PostgradMajorDetailVO {
   id: string
+  sortOrder?: number
   majorName: string
   majorCode: string
   degreeType: string
@@ -41,6 +43,7 @@ export interface PostgradMajorQueryDTO {
 
 export interface PostgradMajorAddDTO {
   majorName: string
+  sortOrder?: number
   majorCode: string
   degreeType: string
   disciplineCategory: string
@@ -57,6 +60,7 @@ export interface PostgradMajorAddDTO {
 
 export interface PostgradMajorUpdateDTO {
   majorName?: string
+  sortOrder?: number
   majorCode?: string
   degreeType?: string
   disciplineCategory?: string

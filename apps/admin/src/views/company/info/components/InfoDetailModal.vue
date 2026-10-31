@@ -49,6 +49,7 @@ const formData = ref<EnterpriseAddDTO>({
   mainBusiness: '',
   enterpriseIntro: '',
   recruitmentStatus: '招聘中',
+  sortOrder: undefined,
 })
 
 const dialogTitle = (() => {
@@ -286,6 +287,7 @@ watch(
           mainBusiness: '',
           enterpriseIntro: '',
           recruitmentStatus: '招聘中',
+          sortOrder: undefined,
         }
         pendingPositions.value = []
         editingPositionIndex.value = null
@@ -307,6 +309,7 @@ watch(
               mainBusiness: d.mainBusiness || '',
               enterpriseIntro: d.enterpriseIntro || '',
               recruitmentStatus: d.recruitmentStatus,
+              sortOrder: d.sortOrder ?? undefined,
             }
           }
         } catch (e: any) { ElMessage.error(e?.response?.data?.msg || e?.message || '获取详情失败') }
@@ -351,6 +354,7 @@ const handleSubmit = async () => {
     if (formData.value.mainBusiness) data.mainBusiness = formData.value.mainBusiness
     if (formData.value.enterpriseIntro) data.enterpriseIntro = formData.value.enterpriseIntro
     if (formData.value.recruitmentStatus) data.recruitmentStatus = formData.value.recruitmentStatus
+    if (formData.value.sortOrder !== undefined && formData.value.sortOrder !== null) data.sortOrder = formData.value.sortOrder
 
     let res: any
     if (props.mode === 'add') {
@@ -555,6 +559,9 @@ const handleClose = () => {
               </el-row>
               <el-form-item label="企业简介">
                 <el-input v-model="formData.enterpriseIntro" type="textarea" :rows="4" placeholder="请输入企业简介" />
+              </el-form-item>
+              <el-form-item label="排序权重">
+                <el-input-number v-model="formData.sortOrder" :min="0" controls-position="right" />
               </el-form-item>
             </el-form>
           </el-tab-pane>

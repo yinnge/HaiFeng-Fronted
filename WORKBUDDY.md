@@ -17,17 +17,17 @@
 - **现象**：触发弹窗（`el-dialog` / `ElMessageBox` / `el-drawer` / `el-image` 预览）时，右侧滚动条消失导致整页或顶部 `position: fixed` 悬浮导航左右位移约 6px。
 - **机制（element-plus 2.13.7）**：`useLockscreen` 弹窗打开时给 `body` 加 `el-popup-parent--hidden`（`overflow: hidden`），并内联写入 `body.style.width = calc(100% - 滚动条宽)`。
 - **正确根治方案（落地于 `apps/user/src/assets/styles/index.css`，严禁误删）**：
-    1. **`html { scrollbar-gutter: stable; }`**：根元素控制视口滚动槽，保证 `position: fixed` 悬浮导航在锁滚动前后零位移。
-    2. **`body { overflow-y: scroll; scrollbar-gutter: stable; }`**：永远显示 6px 细滚动条并预留稳定槽位。
-    3. **`body.el-popup-parent--hidden { width: 100% !important; }`**：用 `!important` 覆盖 Element Plus 内联的 `calc(100% - 滚动条宽)` 补偿，配合稳定 gutter 使锁滚动前后内容区宽度完全恒定。请勿以「早期错误版本」为由删除此条。
+  1. **`html { scrollbar-gutter: stable; }`**：根元素控制视口滚动槽，保证 `position: fixed` 悬浮导航在锁滚动前后零位移。
+  2. **`body { overflow-y: scroll; scrollbar-gutter: stable; }`**：永远显示 6px 细滚动条并预留稳定槽位。
+  3. **`body.el-popup-parent--hidden { width: 100% !important; }`**：用 `!important` 覆盖 Element Plus 内联的 `calc(100% - 滚动条宽)` 补偿，配合稳定 gutter 使锁滚动前后内容区宽度完全恒定。请勿以「早期错误版本」为由删除此条。
 
 ### 3. Admin 控制面板「系统信息」字段来源（跨端：后端 haifeng-admin）
 - **接口**：`GET /api/v1/admin/dashboard/overview` → `DashboardController.getDashboardOverview()` → `DashboardServiceImpl.getSystemInfo()`（`DashboardServiceImpl.java:109-126`）。
 - **`appVersion`**：读取 pom 版本（`spring-boot-maven-plugin` 已加 `build-info` goal，通过 `ObjectProvider<BuildProperties>` 注入，未生成时回退 `"1.0.0"`）。
 - **AI 配置两表设计（关键）**：
-    - `t_model_provider`（V24 迁移）是**服务商目录**（`api_key` / `base_url` / `model_name` / `provider_name` / `status`）。
-    - `system_settings`（单例 `id=1`）中的 `provider_name` / `model_name` 是**“当前选中”指针**，只能经 `updateProviderModel` 写入。**Dashboard 读的是 `system_settings` 的指针，不是目录表**。
-    - 前端在 `system/settings/components/ProviderCard.vue` 通过「设为当前模型」按钮调用 `updateProviderModel` 更新指针。
+  - `t_model_provider`（V24 迁移）是**服务商目录**（`api_key` / `base_url` / `model_name` / `provider_name` / `status`）。
+  - `system_settings`（单例 `id=1`）中的 `provider_name` / `model_name` 是**“当前选中”指针**，只能经 `updateProviderModel` 写入。**Dashboard 读的是 `system_settings` 的指针，不是目录表**。
+  - 前端在 `system/settings/components/ProviderCard.vue` 通过「设为当前模型」按钮调用 `updateProviderModel` 更新指针。
 
 ### 4. 后端分页参数硬约束（所有继承 BasePageQueryDTO 的接口通用）
 - **后端约束**：`haifeng-common/.../dto/common/BasePageQueryDTO.java` 中 `size` 字段带有 `@Min(10, "每页最小10条")` + `@Max(100, "每页最大100条")`，默认 10；`page` 为 `@Min(1)`。
@@ -37,8 +37,8 @@
 - **第一层（DTO `@Pattern`）**：后端 `haifeng-admin` 的 `dto/employment/**` 用 `@Pattern` 硬编码枚举（如公务员 `examType` 为 `国考|省考`；事业单位状态 `招聘中|已结束`、标签 `热门|无|急招`）。前端下拉选项必须一字不差。
 - **第二层（DB `CHECK` 约束——最终权威）**：迁移文件 V20~V23 建表含 `chk_xxx` 约束（军文职学历 `本科及以上/硕士及以上/博士`、状态 `进行中/已结束`；选调生类型 `定向/非定向/急需紧缺专业选调`；社区岗 + 社工证；公益岗类别带“类”；医疗 `妇幼保健院/未定级`；教师学科 `道德与法治`）。改选项前必须先核对 DB CHECK 与 DTO `@Pattern`。
 - **第三层（状态接口入参形态区分）**：
-    - 公务员/事业单位：`PATCH` 数字 `StatusDTO{ status }`（`0`=招聘中/报名中，`1`=已结束；公务员“即将开始”仅限创建/编辑表单设置，下拉操作栏不含第三态）。
-    - 军文职/选调生等其余模块：`PATCH` 字符串 `PositionStatusUpdateDTO{ positionStatus }`。
+  - 公务员/事业单位：`PATCH` 数字 `StatusDTO{ status }`（`0`=招聘中/报名中，`1`=已结束；公务员“即将开始”仅限创建/编辑表单设置，下拉操作栏不含第三态）。
+  - 军文职/选调生等其余模块：`PATCH` 字符串 `PositionStatusUpdateDTO{ positionStatus }`。
 - **必填校验对齐**：全部 12 个就业表单前端必填校验必须与后端 `AddDTO` 的 `@NotBlank(message = "...")` 严格对齐。
 
 ### 6. 已知坑：CORS 缺 PATCH / Axios 拦截器吞报错 / MP 逻辑删除
@@ -48,9 +48,9 @@
   const msg = err.response?.data?.msg || err.message || '操作失败';
   ```
 - **MyBatis-Plus 逻辑删除（`is_deleted`）铁律**：
-    - 全局配置了 `logic-delete-field: isDeleted`。MP 内置的 `updateById`、`update(entity/wrapper)`、`deleteById`、`selectPage` **全部会自动追加 `WHERE is_deleted=false`**，且 `updateById` 会自动忽略 `isDeleted` 字段。
-    - **禁用 = 软删除（`is_deleted=true`）**；**删除/批量删除 = 物理删除**（必须写自定义 `@Delete("DELETE FROM t_xxx WHERE id=#{id}")`）。
-    - **凡是查询含禁用记录（status 全部/已禁用）、或对已禁用记录执行更新/恢复状态的方法，一律使用 XML 或 `@Update` 自定义 SQL，严禁调用 MP 内置方法。**
+  - 全局配置了 `logic-delete-field: isDeleted`。MP 内置的 `updateById`、`update(entity/wrapper)`、`deleteById`、`selectPage` **全部会自动追加 `WHERE is_deleted=false`**，且 `updateById` 会自动忽略 `isDeleted` 字段。
+  - **禁用 = 软删除（`is_deleted=true`）**；**删除/批量删除 = 物理删除**（必须写自定义 `@Delete("DELETE FROM t_xxx WHERE id=#{id}")`）。
+  - **凡是查询含禁用记录（status 全部/已禁用）、或对已禁用记录执行更新/恢复状态的方法，一律使用 XML 或 `@Update` 自定义 SQL，严禁调用 MP 内置方法。**
 
 ---
 
@@ -116,10 +116,10 @@
 
 #### 细节 ③：标题旁语义化微胶囊（Semantic Micro-Tags）
 - 为避免 10 张矩阵卡片或列表项长相完全雷同，在主标题右侧 `gap: 8px` 处按业务属性挂载**小圆角矩形微标签（`border-radius: 6px`，`padding: 2px 7px`，`font-size: 11px`，`font-weight: 600`）**：
-    - 选科/学术类用**晴空蓝**（如 `3+1+2`、`申请考核`）；
-    - 焦点/冲刺类用**丹霞红**（如 `热门`、`冲刺`）；
-    - 测算/数据类用**翡翠绿**（如 `报录精算`、`实时同步`）；
-    - 赛事/荣誉类用**向日葵黄**（如 `国家级`、`公办`）。
+  - 选科/学术类用**晴空蓝**（如 `3+1+2`、`申请考核`）；
+  - 焦点/冲刺类用**丹霞红**（如 `热门`、`冲刺`）；
+  - 测算/数据类用**翡翠绿**（如 `报录精算`、`实时同步`）；
+  - 赛事/荣誉类用**向日葵黄**（如 `国家级`、`公办`）。
 
 #### 细节 ④：列表去分割线化与底部状态收口（Borderless List & Footer Bar）
 - **去虚线化**：公告或资讯列表项之间**严禁使用 `dashed` 虚线或粗实线分割**，统一使用 `gap: 10px~12px` 留白呼吸，配合单行 `padding: 6px 8px` 与 `border-radius: 8px` 的悬浮浅灰底色反馈。
@@ -142,26 +142,26 @@
 - **品牌标题**：主标题 `20px / 800 / #18181B`，字距 `-0.02em`；右侧目录链接采用圆角热区 + 底部 `16px` 短胶囊指示条。
 - **搜索框**：宽度 `clamp(260px, 22vw, 350px)`，高度 `38px`，全圆角胶囊 `border-radius: 9999px`，冷灰底 `#F8FAFC` + `1px solid #E2E8F0`，聚焦时平滑微展宽并带橙色柔光外环。
 - **智库数据看板条**：白底无框大圆角横幅（`border-radius: 18px`），左侧展示智库定位 + 翡翠绿 `实时同步` 胶囊，右侧横向并列核心大数字指标，数字色彩多元分流：
-    - 第一组（如 `10 大系统专栏`）：主数字用**海枫橙** `#F97316`；
-    - 第二组（如 `120+ 算法库`）：主数字用**深曜黑** `#0F172A`；
-    - 第三组（如 `200K+ 全国学子`）：主数字用**晴空蓝** `#2563EB`。
+  - 第一组（如 `10 大系统专栏`）：主数字用**海枫橙** `#F97316`；
+  - 第二组（如 `120+ 算法库`）：主数字用**深曜黑** `#0F172A`；
+  - 第三组（如 `200K+ 全国学子`）：主数字用**晴空蓝** `#2563EB`。
 
 ### 3. 标签与按钮的形态区分（终结“万物皆橙色药丸”）
 - **形态分级**：
-    1. **全圆角胶囊（`border-radius: 9999px`）**：**仅限用于**可点击的主次操作按钮（CTA）、顶部视图切换器（如 `全景决策图谱`）、状态在线徽标。
-    2. **微圆角矩形（`border-radius: 6px`）**：用于所有卡片标题旁的说明性标签（`3+1+2`、`热门`、`报录精算`）、公告分类短签（`政策`、`资讯`）、专业代码与学科标签。
-    3. **正圆角标（`border-radius: 50%`）**：用于吸附在图标左上角的序号 `01-10`。
+  1. **全圆角胶囊（`border-radius: 9999px`）**：**仅限用于**可点击的主次操作按钮（CTA）、顶部视图切换器（如 `全景决策图谱`）、状态在线徽标。
+  2. **微圆角矩形（`border-radius: 6px`）**：用于所有卡片标题旁的说明性标签（`3+1+2`、`热门`、`报录精算`）、公告分类短签（`政策`、`资讯`）、专业代码与学科标签。
+  3. **正圆角标（`border-radius: 50%`）**：用于吸附在图标左上角的序号 `01-10`。
 - **按钮色彩分级**：
-    - **一级主行动按钮（每屏不超过 1~2 个）**：海枫橙实心或微渐变（`#F97316` → `#EA580C`）+ 白字 + `border-radius: 12px` 或 `9999px`（如右栏「预约 1 对 1 首席升学规划师」）。
-    - **模块级切换/次要按钮**：白底或浅冷灰底 `#F8FAFC` + `1px solid #E2E8F0` + 深灰字 `#334155` + 内部精致 SVG 图标（如「全景决策图谱」按钮）。
-    - **辅助工具小卡**：采用清爽的冷灰蓝底 `#F8FAFC` + 左上角线性图标 + 右上角外链图标 `↗` + 底部翡翠绿/晴空蓝辅助说明小字（如「全周期日历」、「百宝箱查询矩阵」）。
+  - **一级主行动按钮（每屏不超过 1~2 个）**：海枫橙实心或微渐变（`#F97316` → `#EA580C`）+ 白字 + `border-radius: 12px` 或 `9999px`（如右栏「预约 1 对 1 首席升学规划师」）。
+  - **模块级切换/次要按钮**：白底或浅冷灰底 `#F8FAFC` + `1px solid #E2E8F0` + 深灰字 `#334155` + 内部精致 SVG 图标（如「全景决策图谱」按钮）。
+  - **辅助工具小卡**：采用清爽的冷灰蓝底 `#F8FAFC` + 左上角线性图标 + 右上角外链图标 `↗` + 底部翡翠绿/晴空蓝辅助说明小字（如「全周期日历」、「百宝箱查询矩阵」）。
 
 ### 4. 文字层级与图标规范
 - **四级文字色阶（Slate 体系）**：
-    - 一级标题/核心数字：`#0F172A` (`slate-900`)，`font-weight: 700~800`
-    - 二级卡片标题/导航文字：`#1E293B` (`slate-800`)，`font-weight: 600~700`
-    - 三级正文/列表标题：`#475569` (`slate-600`)
-    - 四级辅助描述/日期时间戳：`#64748B` (`slate-500`) 或 `#94A3B8` (`slate-400`)
+  - 一级标题/核心数字：`#0F172A` (`slate-900`)，`font-weight: 700~800`
+  - 二级卡片标题/导航文字：`#1E293B` (`slate-800`)，`font-weight: 600~700`
+  - 三级正文/列表标题：`#475569` (`slate-600`)
+  - 四级辅助描述/日期时间戳：`#64748B` (`slate-500`) 或 `#94A3B8` (`slate-400`)
 - **图标铁律**：全站统一使用精细线性 SVG 语义图标（`stroke-width="1.75"` 或 `"2"`），**严禁使用任何 Emoji 图标**。
 - **防御性数据渲染**：凡涉及数量统计字段（如院校卡片的 `major_count`），当值为 `0` 或 `null` 时，前端必须渲染为 `"专业数据整理中"`，**严禁直接渲染出 `"0 个专业"`**。
 
@@ -175,31 +175,97 @@
 
 ### 2. 表格、状态标签与操作按钮
 - **表格（`el-table`）**：
-    - 表头：清爽冷灰或极浅暖白背景 `#F8FAFC` + 深色粗体文字 `#1E293B` + 底部 `1px solid #E2E8F0` 分隔线（取代原先刺眼的 2px 亮橙底边框）。
-    - 行 Hover：`rgba(249, 115, 22, 0.03)` 或 `#F8FAFC`。
-    - 分页：隐藏所有记录的数据库原始 `id` 列；分页组件当前页使用海枫橙圆角高亮。
+  - 表头：清爽冷灰或极浅暖白背景 `#F8FAFC` + 深色粗体文字 `#1E293B` + 底部 `1px solid #E2E8F0` 分隔线（取代原先刺眼的 2px 亮橙底边框）。
+  - 行 Hover：`rgba(249, 115, 22, 0.03)` 或 `#F8FAFC`。
+  - 分页：隐藏所有记录的数据库原始 `id` 列；分页组件当前页使用海枫橙圆角高亮。
 - **多色语义状态标签（取代单一橙色药丸）**：
-    - **进行中 / 报名中 / 启用 / 正常**：翡翠绿底 `#ECFDF5` + `#059669` 文字 + `6px` 圆角。
-    - **即将开始 / 审核中 / 常规分类**：晴空蓝底 `#EFF6FF` + `#2563EB` 文字 + `6px` 圆角。
-    - **公办 / 国家级 / 重点推荐**：向日葵黄底 `#FFFBEB` + `#D97706` 文字 + `6px` 圆角。
-    - **热门 / 急招 / 预警**：丹霞红底 `#FFF1F2` + `#E11D48` 文字 + `6px` 圆角。
-    - **已结束 / 禁用 / 归档**：中性冷灰底 `#F1F5F9` + `#64748B` 文字 + `6px` 圆角。
+  - **进行中 / 报名中 / 启用 / 正常**：翡翠绿底 `#ECFDF5` + `#059669` 文字 + `6px` 圆角。
+  - **即将开始 / 审核中 / 常规分类**：晴空蓝底 `#EFF6FF` + `#2563EB` 文字 + `6px` 圆角。
+  - **公办 / 国家级 / 重点推荐**：向日葵黄底 `#FFFBEB` + `#D97706` 文字 + `6px` 圆角。
+  - **热门 / 急招 / 预警**：丹霞红底 `#FFF1F2` + `#E11D48` 文字 + `6px` 圆角。
+  - **已结束 / 禁用 / 归档**：中性冷灰底 `#F1F5F9` + `#64748B` 文字 + `6px` 圆角。
 - **弹窗（`el-dialog` / `ElMessageBox`）**：
-    - 圆角 `16px`，头部底部分隔线采用 `1px solid #F1F5F9`，配合四色语义图标（Info=晴空蓝、Warning=向日葵黄、Success=翡翠绿、Error=丹霞红）。
+  - 圆角 `16px`，头部底部分隔线采用 `1px solid #F1F5F9`，配合四色语义图标（Info=晴空蓝、Warning=向日葵黄、Success=翡翠绿、Error=丹霞红）。
 
 ---
 
-## 六、 改动前自检 Checklist
+## 六、 解决文字毛边 / 描边发糊 / 模糊问题
 
-每次新增或修改页面/组件前，必须逐条核对：
+> 这一节是「页面看起来糊」的固定排查与写法规范。凡遇到**文字发虚、1px 描边糊成灰雾、hover 瞬间出现毛边再变清晰**，先按本节判据走，不要先去怀疑字体、字号或配色。
 
-- [ ] **【容器细节】** 卡片是否已去掉亮橙色硬边框与 `border-image`，改用纯白底 + `1px` 极浅冷灰发丝边 + 柔和弥散阴影？
-- [ ] **【角标构图】** 序号 `01-10` 是否已做成圆形角标吸附在图标底座左上角，而非独立色块与标题水平挤压？
-- [ ] **【四色分流】** 页面是否合理运用了晴空蓝（选科/资讯/学术）、丹霞红（热门/急招/预警）、向日葵黄（荣誉/公办/日历）、翡翠绿（实证/招录），避免了满屏同一种橙色？
-- [ ] **【标签形态】** 行内说明标签与公告分类是否已改为 `6px` 微圆角矩形（而非全部做成千篇一律的橙色药丸）？
-- [ ] **【列表与配平】** 公告列表是否已去掉 `【】` 括号与底部 `dashed` 虚线，并加上了底部浅灰收口条与右栏下半区工具模块配平？
-- [ ] **【防御渲染】** 列表与卡片中的计数（如专业数）是否已做 `> 0` 判断，杜绝页面出现 `0 个专业`？
-- [ ] **【工程红线】** 分页 `pageSize` 是否在 `[10, 100]` 区间？错误捕获是否包含 `err.message`？就业枚举是否对齐 DB CHECK？
+### 1. 两种典型现象（几乎都是同一个根因）
+
+- **现象 A（稳态模糊）**：平时文字/描边就发虚，hover 或点击后突然变清晰，移开又糊。
+- **现象 B（动画帧模糊）**：hover 放大/回弹的**过程中**边缘有毛边闪烁，动画停下来才稳定清晰。
+
+判据：只要出现「静止时糊 + 交互后变清楚」，**99% 是 `transform` / `filter` 让元素脱离了「直接栅格化」路径，被当成位图参与合成与重采样**，与字体文件、`font-weight` 无关。
+
+### 2. 原理（一句话版）
+
+浏览器对非合成内容是**按最终像素位置直接矢量绘制**的（Chrome 还会把 border/background 的边吸附到整数设备像素，即 pixel snapping）。一旦元素被提升为**合成层**（`transform` / `filter` / `will-change` / `opacity<1` / `backdrop-filter` 都会触发），它的整棵子树先被渲染成一张**位图**，再按「层偏移」贴到屏幕上。此时：
+
+1. 位图不再做 pixel snapping，1px 发丝边会被摊成 2px 半透明灰雾；
+2. 若层的位置落在**分数像素**上（居中容器、`2fr/1fr` 栅格、`33.33%` 宽度都会产生，如 395.33px），位图还要做**双线性重采样**，文字一并模糊；
+3. `scale()` 缩放动画期间浏览器为保证帧率会用 GPU 插值这张位图，动画停下才按最终精度重新栅格化一次 → 现象 B。
+
+### 3. 本项目铁律（写动画/卡片时必须遵守）
+
+- **铁律 1｜稳态必须退出合成层**：入场动画（`.reveal` 一类）结束后，`filter` 必须归 `none`（**不是 `blur(0)`**，`blur(0)` 仍然是一条过滤链，元素依旧是合成层），`transform` 归 `none`，`will-change` 归 `auto`。
+  - 参考实现：`apps/user/src/assets/styles/index.css` 的 `.reveal` / `.reveal.revealed` / `.reveal.revealed.is-settled`，配 `apps/user/src/views/home/index.vue` 的 `revealElement()`（`transitionend` + 1200ms 兜底后再打 `is-settled`）。**勿回退成 `filter: blur(0)` + 常驻 `will-change`**。
+- **铁律 2｜含文字 / 含细描边的容器，禁止用 `scale()` 做强调**：改用 `translateY()` 位移 + `box-shadow` / `border-color` / 文字颜色深化。`scale` 只允许用于**纯装饰层**（纯色/渐变块、无文字）。
+  - 反例：序号徽标 `01-10` 在图标底座内，给底座写 `hover { transform: scale(1.04) }` 会把序号文字一起送进位图插值 → 序号发虚。
+  - `:active` 按压反馈也不要 `scale(0.99)`，用「阴影收拢 + `translateY(0)`」表达。
+- **铁律 3｜`will-change` 只能临时挂**：只加在确实高频动画的元素上，动画结束必须撤回 `auto`；**严禁**写在会长期存在的容器类上（一个 `will-change: transform` 会让整块 section 永久位图化）。
+- **铁律 4｜字号取整**：`rem` 换算后应落在整数 px（`0.8125rem = 13px` ✅ / `0.82rem = 13.12px` ❌），分数 px 字号在 1x 屏上天然发虚。
+- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。
+
+### 4. 排查动作（30 秒定位，先量后改）
+
+用浏览器控制台或 playwright 直接读**祖先链**的计算样式，别靠肉眼猜：
+
+```js
+// 把 el 换成你觉得糊的那张卡片 / 那段文字
+let el = document.querySelector('.plan-card')
+while (el && el !== document.documentElement) {
+  const s = getComputedStyle(el)
+  if (s.filter !== 'none' || s.willChange !== 'auto' ||
+      (s.transform !== 'none' && s.transform !== 'matrix(1, 0, 0, 1, 0, 0)') ||
+      s.backdropFilter !== 'none') {
+    console.warn('可疑合成层:', el.className, {
+      filter: s.filter, willChange: s.willChange, transform: s.transform, backdrop: s.backdropFilter,
+    })
+  }
+  el = el.parentElement
+}
+// 再看几何是否落在分数像素（是否会被重采样）
+document.querySelector('.plan-card').getBoundingClientRect()
+```
+
+判定表：
+
+| 读到的值 | 结论 |
+|---|---|
+| `filter: blur(0)` | **错误写法**，仍是过滤链 → 改 `none` |
+| `will-change` 含 transform/filter 且元素已静止 | 合成层常驻 → 动画结束后撤 `auto` |
+| `transform` 非 `none` 且动画已结束 | 同上，归 `none` |
+| 祖先有 `scale()` / `backdrop-filter` | 整棵子树被位图化，挪走或去掉 |
+| 元素宽度为 `395.33px` 这类小数 | 位图必被重采样，优先消灭上层合成层 |
+
+### 5. 图片糊 ≠ 文字糊（单独排查，别混为一谈）
+
+若糊的是**图片/封面图**而不是文字与描边，走上层合成层没用，查这三条：
+
+- 原图分辨率 < 实际显示尺寸的 **2 倍**（如原图 800px 却显示 1200px 宽）→ 换高分辨率图或压缩显示尺寸；
+- 容器用 `object-fit: cover`（配 `width/height: 100%`），**不要**用 CSS 强行拉伸图片固有宽高；
+- 图片若在 `scale()` 动画里，动画期间同样会位图插值 → 按铁律 2 处理。
+
+### 6. 已根治案例
+
+- **首页「矩阵视图」卡片描边糊 + 文字发虚（2026-10-29 根治）**
+  - 真凶：`index.css` 的 `.reveal.revealed` 只写 `filter: blur(0)`，且 `.reveal` 常驻 `will-change: transform, opacity, filter`；`.reveal` 挂在 `HomePathwaySection.vue` 的 `.section-container` 上 → 整个 5×2 矩阵（10 张 `.plan-card`）被永久位图化。
+  - 加重因素：`.home-plan-grid` 的 `minmax(0,2fr)/minmax(320px,1fr)` + 矩阵 `repeat(2, minmax(0,1fr))` → 实读卡片宽 **395.328125px**，1x 屏（dpr=1）下 1px 描边被重采样成灰雾。
+  - 修复：稳态 `filter/transform: none` + `is-settled{will-change:auto}`；移除 `.plan-card__icon` 的 `hover scale` 与 `:active scale`；字号取整（13px / 9px）；`html` 补 `text-rendering: optimizeLegibility` 与 `-webkit-font-smoothing: antialiased`。
+  - 验证：`#pathway .section-container` → `filter: none / will-change: auto / transform: none`。
 
 ---
 
@@ -213,3 +279,5 @@
 - ❌ **严禁**在公告列表中使用中文方括号 `【公告】` 及老旧的 `dashed` 虚线分割
 - ❌ **严禁**在页面上使用任何 Emoji 图标（必须使用线性 SVG 图标）
 - ❌ **严禁**删除 `index.css` 中根治 Element Plus 弹窗抖动的 `scrollbar-gutter: stable` 与 `width: 100% !important` 补丁
+- ❌ **严禁**把入场动画的稳态写成 `filter: blur(0)` 或让 `will-change` 常驻（见第六节铁律 1，会让整块容器永久位图化 → 描边糊、文字虚）
+- ❌ **严禁**给含文字或含序号徽标的容器写 `hover/active { transform: scale() }`（见第六节铁律 2）
