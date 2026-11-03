@@ -101,15 +101,15 @@ function updateQuery(tab: TabKey) {
   const targetTab = tab === 'overview' ? undefined : tab
   if (currentTab === targetTab && !route.query.cat) return
 
-  router.replace({ path: route.path, query })
+  router.replace({ path: route.path, hash: route.hash, query })
 }
 
-function scrollToTabBar() {
+function scrollToTabBar(force = false) {
   nextTick(() => {
     const el = tabBarRef.value
     if (!el) return
     const top = window.scrollY + el.getBoundingClientRect().top - barTop.value
-    if (window.scrollY <= top) return
+    if (!force && window.scrollY <= top) return
     window.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
   })
 }
@@ -131,7 +131,7 @@ function switchTab(tab: TabKey, updateRoute = true) {
     if (typeof saved === 'number') {
       window.scrollTo({ top: saved, behavior: 'auto' })
     } else {
-      scrollToTabBar()
+      scrollToTabBar(true)
     }
   })
 }
@@ -200,16 +200,40 @@ function openSection(key: string) {
 
 // ===== 概况右侧栏：校园风光 =====
 const galleryList = ref<GalleryItemVO[]>([])
+const galleryLoading = ref(false)
+const galleryError = ref(false)
+const galleryRequested = ref(false)
+let galleryRequestId = 0
 
 async function fetchGallery() {
-  if (!universityId.value) return
+  const id = universityId.value
+  if (!id) {
+    galleryList.value = []
+    galleryRequested.value = true
+    galleryLoading.value = false
+    return
+  }
+  if (galleryLoading.value) return
+  const requestId = ++galleryRequestId
+  galleryRequested.value = true
+  galleryLoading.value = true
+  galleryError.value = false
   try {
-    const res = await getCampusGallery(universityId.value, { page: 1, size: 10 })
+    const res = await getCampusGallery(id, { page: 1, size: 10 })
+    if (requestId !== galleryRequestId || id !== universityId.value) return
     galleryList.value = (res.data.data.records ?? []).slice(0, 6)
   } catch {
+    if (requestId !== galleryRequestId || id !== universityId.value) return
     galleryList.value = []
+    galleryError.value = true
+  } finally {
+    if (requestId === galleryRequestId) galleryLoading.value = false
   }
 }
+
+watch(activeTab, (tab) => {
+  if (tab === 'overview' && !galleryList.value.length) fetchGallery()
+})
 
 // ===== 吸顶层级：AppHeader → TabBar → 概况二级导航 =====
 const { hidden: headerHidden } = useAutoHideHeader()
@@ -262,9 +286,16 @@ const navItems = computed(() => {
 
 const activeAnchor = ref('overview')
 
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
 function scrollToSection(anchor: string) {
   activeAnchor.value = anchor
-  document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  document.getElementById(anchor)?.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block: 'start',
+  })
 }
 
 let spyObserver: IntersectionObserver | null = null
@@ -288,15 +319,30 @@ function setupSpy() {
   })
 }
 
-function onWinScroll() {
-  updateStickiness()
-  if (activeTab.value !== 'overview') return
+let scrollRaf = 0
+let resizeRaf = 0
 
-  const doc = document.documentElement
-  if (window.innerHeight + window.scrollY >= doc.scrollHeight - 40) {
-    const last = navItems.value[navItems.value.length - 1]
-    if (last) activeAnchor.value = last.anchor
-  }
+function onWinScroll() {
+  if (scrollRaf) return
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = 0
+    updateStickiness()
+    if (activeTab.value !== 'overview') return
+
+    const doc = document.documentElement
+    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 40) {
+      const last = navItems.value[navItems.value.length - 1]
+      if (last) activeAnchor.value = last.anchor
+    }
+  })
+}
+
+function onWindowResize() {
+  if (resizeRaf) return
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0
+    measureHeader()
+  })
 }
 
 watch(activeAnchor, () => {
@@ -321,9 +367,14 @@ function goBack() {
   router.push('/university')
 }
 
+let detailRequestId = 0
+
 async function fetchDetail() {
   const id = universityId.value
+  const requestId = ++detailRequestId
   if (!id) {
+    loading.value = false
+    detailError.value = true
     ElMessage.error('院校ID不存在')
     return
   }
@@ -331,28 +382,33 @@ async function fetchDetail() {
   detailError.value = false
   try {
     const res = await getUniversityDetail(id)
+    if (requestId !== detailRequestId || id !== universityId.value) return
     detail.value = res.data.data
   } catch (e: any) {
+    if (requestId !== detailRequestId || id !== universityId.value) return
     detailError.value = true
     ElMessage.error(e?.message || '获取院校详情失败')
   } finally {
-    loading.value = false
+    if (requestId === detailRequestId) loading.value = false
   }
 }
 
 onMounted(() => {
   fetchDetail()
-  fetchGallery()
+  if (activeTab.value === 'overview') fetchGallery()
   updateQuery(activeTab.value)
   nextTick(() => measureHeader())
-  window.addEventListener('resize', measureHeader)
+  window.addEventListener('resize', onWindowResize)
   window.addEventListener('scroll', onWinScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
   spyObserver?.disconnect()
-  window.removeEventListener('resize', measureHeader)
+  window.removeEventListener('resize', onWindowResize)
   window.removeEventListener('scroll', onWinScroll)
+  if (scrollRaf) cancelAnimationFrame(scrollRaf)
+  if (resizeRaf) cancelAnimationFrame(resizeRaf)
+  scoreGeneration++
 })
 
 // ===== 亮点数字滚动计数 =====
@@ -363,12 +419,16 @@ const scoreAnim = reactive({
   majors: 0,
 })
 
+let scoreGeneration = 0
+
 function animateNumber(key: keyof typeof scoreAnim, target: number) {
   const from = scoreAnim[key]
   if (from === target) return
+  const generation = scoreGeneration
   const duration = 700
   const start = performance.now()
   const step = (now: number) => {
+    if (generation !== scoreGeneration) return
     const p = Math.min((now - start) / duration, 1)
     const eased = 1 - Math.pow(1 - p, 3)
     scoreAnim[key] = Math.round(from + (target - from) * eased)
@@ -379,10 +439,42 @@ function animateNumber(key: keyof typeof scoreAnim, target: number) {
 
 watch(detail, (d) => {
   if (!d) return
+  scoreGeneration++
   animateNumber('history', d.historyGroupScore ?? 0)
   animateNumber('science', d.scienceGroupScore ?? 0)
   animateNumber('majors', d.majorCount ?? 0)
   animateNumber('recommend', d.recommendationRate ?? 0)
+})
+
+watch(universityId, (id, previous) => {
+  if (!id || id === previous) return
+
+  detailRequestId++
+  galleryRequestId++
+  detail.value = null
+  detailError.value = false
+  loading.value = false
+  galleryList.value = []
+  galleryRequested.value = false
+  galleryLoading.value = false
+  galleryError.value = false
+  drawerVisible.value = false
+  activeAnchor.value = 'overview'
+  tabsStuck.value = false
+  subNavStuck.value = false
+
+  for (const key of Object.keys(sectionTotals)) delete sectionTotals[key]
+  for (const key of Object.keys(scrollPositions) as TabKey[]) delete scrollPositions[key]
+
+  scoreGeneration++
+  scoreAnim.history = 0
+  scoreAnim.science = 0
+  scoreAnim.recommend = 0
+  scoreAnim.majors = 0
+
+  window.scrollTo({ top: 0, behavior: 'auto' })
+  fetchDetail()
+  if (activeTab.value === 'overview') fetchGallery()
 })
 
 // ===== 身份区：logo / 封面 =====
@@ -433,7 +525,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
         <template v-else-if="detail">
           <!-- ===== 白色紧凑身份区 ===== -->
           <section class="identity-card">
-            <button class="identity-back" @click="goBack">
+            <button type="button" class="identity-back" @click="goBack">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 12H5M11 18l-6-6 6-6" />
               </svg>
@@ -446,6 +538,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                   v-if="heroLogo"
                   :src="heroLogo"
                   :alt="detail.name"
+                  decoding="async"
                   class="h-full w-full object-contain p-1.5"
                 />
                 <span v-else class="identity-logo__text">{{ heroLogoText }}</span>
@@ -481,6 +574,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                   v-if="identityCover"
                   :src="identityCover"
                   :alt="`${detail.name}校园风光`"
+                  decoding="async"
                   class="h-full w-full object-cover"
                 />
                 <span v-else class="identity-cover__fallback">
@@ -506,8 +600,10 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
               <button
                 v-for="tab in TABS"
                 :key="tab.key"
+                type="button"
                 class="detail-tab"
                 :class="{ 'is-active': activeTab === tab.key }"
+                :aria-current="activeTab === tab.key ? 'page' : undefined"
                 @click="switchTab(tab.key)"
               >
                 <svg
@@ -698,7 +794,14 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                     <div class="flex flex-col md:flex-row gap-6">
                       <p class="flex-1 text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.introduction || '暂无详细介绍' }}</p>
                       <div class="w-full md:w-[260px] shrink-0 h-[170px] rounded-xl overflow-hidden intro-thumb bg-gradient-to-br from-orange-100 via-amber-50 to-sky-50">
-                        <img v-if="introThumb" :src="introThumb" :alt="detail.name" class="h-full w-full object-cover" />
+                        <img
+                          v-if="introThumb"
+                          :src="introThumb"
+                          :alt="detail.name"
+                          loading="lazy"
+                          decoding="async"
+                          class="h-full w-full object-cover"
+                        />
                       </div>
                     </div>
                   </section>
@@ -726,6 +829,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                     </div>
                     <component
                       :is="sectionComponents[sec.key]"
+                      :key="`${sec.key}-${universityId}`"
                       :university-id="universityId"
                       preview
                       @total="(v: number) => (sectionTotals[sec.key] = v)"
@@ -750,11 +854,23 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                       class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
                       @click="switchTab('gallery')"
                     >
-                      <img :src="img.imageUrl" :alt="`校园风光 ${idx + 1}`" class="h-full w-full object-cover transition-opacity duration-300 hover:opacity-85" />
+                      <img
+                        :src="img.imageUrl"
+                        :alt="`校园风光 ${idx + 1}`"
+                        loading="lazy"
+                        decoding="async"
+                        class="h-full w-full object-cover transition-opacity duration-300 hover:opacity-85"
+                      />
                     </div>
                   </div>
-                  <div v-else class="grid grid-cols-3 gap-1.5">
+                  <div v-else-if="galleryLoading || !galleryRequested" class="grid grid-cols-3 gap-1.5">
                     <div v-for="i in 6" :key="i" class="aspect-square rounded-lg bg-gradient-to-br from-orange-50 to-sky-50 animate-pulse" />
+                  </div>
+                  <div v-else class="side-empty">
+                    <span>暂无校园风光</span>
+                    <button v-if="galleryError" type="button" class="side-empty__retry" @click="fetchGallery">
+                      重新加载
+                    </button>
                   </div>
                 </div>
 
@@ -798,7 +914,11 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
               </div>
             </div>
             <div class="tab-card">
-              <PostgradMajorForUniversityTab v-if="postgradMounted" :university-id="universityId" />
+              <PostgradMajorForUniversityTab
+                v-if="postgradMounted"
+                :key="universityId"
+                :university-id="universityId"
+              />
             </div>
           </section>
 
@@ -806,6 +926,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
           <section v-show="activeTab === 'guide'" class="tab-panel">
             <Guide
               v-if="guideMounted"
+              :key="universityId"
               :university-id="universityId"
               :university-name="detail.name"
               :is-vip="isVip"
@@ -819,8 +940,10 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
           <section v-show="activeTab === 'gallery'" class="tab-panel">
             <CampusGalleryTab
               v-if="galleryMounted"
+              :key="universityId"
               :university-id="universityId"
               :university-name="detail.name"
+              @scroll-top="scrollToTabBar(true)"
             />
           </section>
         </template>
@@ -848,6 +971,7 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
       <component
         v-if="drawerKey"
         :is="sectionComponents[drawerKey]"
+        :key="`${drawerKey}-${universityId}`"
         :university-id="universityId"
         @total="(v: number) => (sectionTotals[drawerKey] = v)"
       />
@@ -856,6 +980,19 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 </template>
 
 <style scoped>
+.identity-back:focus-visible,
+.identity-cover:focus-visible,
+.detail-tab:focus-visible,
+.sub-nav-item:focus-visible,
+.view-all-btn:focus-visible,
+.side-more:focus-visible,
+.side-btn:focus-visible,
+.detail-error__primary:focus-visible,
+.detail-error__ghost:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
 /* ===== 白色紧凑身份区 ===== */
 .identity-card {
   background: #ffffff;
@@ -1263,6 +1400,36 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 }
 .side-more:hover {
   opacity: 0.75;
+}
+.side-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 12px;
+}
+.side-empty__retry {
+  padding: 4px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.side-empty__retry:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  color: #ea580c;
+}
+.side-empty__retry:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
 }
 .side-btn {
   display: inline-flex;

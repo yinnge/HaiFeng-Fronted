@@ -8,6 +8,8 @@ export interface FileLoadQueryDTO extends BasePageQuery {
   applicableStage?: string
   /** 标签筛选（可选） */
   tag?: string
+  /** 独立搜索关键词（可选）：命中文件名或简介，与学科/阶段/标签筛选 AND 叠加 */
+  keyword?: string
 }
 
 /** 文件列表 VO（对应后端 FileLoadListVO） */
