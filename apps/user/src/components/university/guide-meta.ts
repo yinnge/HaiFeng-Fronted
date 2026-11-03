@@ -65,6 +65,24 @@ export const GUIDE_GROUPS: Record<GuideGroupKey, GuideGroupMeta> = {
   },
 }
 
+/** 各模块详情区块的展示顺序（与后台 JSONB_FIELDS.subFields 保持一致） */
+export const GUIDE_SECTION_ORDER: Record<string, string[]> = {
+  campusFacilities: ['教学楼分布', '实验楼与图书馆', '宿舍区与食堂', '生活配套设施'],
+  dormitoryServices: ['水电费缴纳方式', '宿舍规章制度'],
+  campusTransportation: ['校内通勤方式', '校外交通情况'],
+  academicGuidance: ['专业培养方案说明', '选课系统说明'],
+  majorTransferGuidelines: ['基本申请条件', '申请时间与流程'],
+  majorTransferConstriction: ['限制类型', '具体限制说明'],
+  academicSupportResources: ['师资力量', '学习场所', '学业帮扶'],
+  studentOrganizations: ['官方组织', '社团类型'],
+  campusEvents: ['院校品牌活动', '学科与技能竞赛'],
+  classDormSocial: ['班级管理方式', '宿舍社交建议'],
+  financialAid: ['奖助学金政策', '勤工俭学岗位', '权益申诉渠道'],
+  campusSecurity: ['安全设施', '安全规则'],
+  healthServices: ['医保报销政策', '心理健康服务'],
+  lifeServices: ['校园生活服务', '医疗资源', '兼职实习资源'],
+}
+
 export const GUIDE_MODULES: GuideModuleMeta[] = [
   {
     key: 'campusFacilities',
@@ -361,7 +379,6 @@ export const GUIDE_TEXT = {
   moduleEmpty: '该模块内容整理中',
   guideEmpty: '该院校适应指南整理中',
   backToAll: '返回全部指南',
-  recorded: (n: number) => `已收录 ${n} 个模块内容`,
   itemCount: (n: number) => `${n} 项内容`,
   totalModules: (n: number) => `共 ${n} 个模块内容`,
   lockedTitle: '开通旗舰版解锁学业规划',

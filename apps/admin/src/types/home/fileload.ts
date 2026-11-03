@@ -68,7 +68,7 @@ export const HIGH_STAGE_OPTIONS: StageOption[] = [
 ]
 
 /** 大学适合人群（如有调整请告诉我） */
-export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四']
+export const COLLEGE_STAGE_OPTIONS = ['大一', '大二', '大三', '大四', '大五']
 
 /** 列表 VO */
 export interface FileLoadListVO {

@@ -83,6 +83,14 @@ const teacherForbidden = ref(false)
 const subjectFilter = ref('')
 const tagFilter = ref('')
 
+/** 独立搜索：keywordInput 为输入框实时值；keyword 为已提交的生效搜索词（点搜索/回车才生效） */
+const keywordInput = ref('')
+const keyword = ref('')
+/** 搜索框输入元素引用（供 Ctrl+K / Alt+K 快捷键聚焦） */
+const searchInputRef = ref<HTMLInputElement | null>(null)
+/** 是否 Mac 平台（决定快捷键提示与监听：Mac=Alt+K，其它=Ctrl+K） */
+const isMac = computed(() => /mac|iphone|ipad|ipod/i.test(navigator.userAgent))
+
 /**
  * 页内子导航栏配置（按受众）。仅配置了的专栏才渲染导航栏，其余专栏（高中/大学/考公/考研/研究生）
  * 沿用原「导航栏下拉 + query.stage」模式，行为不变。
@@ -137,6 +145,7 @@ const STAGE_FILTER_OPTIONS: Partial<Record<FileLoadAudience, StageFilterOption[]
     { label: '大二', value: '大二' },
     { label: '大三', value: '大三' },
     { label: '大四', value: '大四' },
+    { label: '大五', value: '大五' },
   ],
 }
 
@@ -315,7 +324,7 @@ const bannerTitleParts = computed(() => {
   return { main: bannerTitle.value, lead: '精选', accent: '学习资料' }
 })
 
-const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value))
+const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value || keyword.value))
 
 /** 拉取学科/模块的去重值（用于渲染筛选按钮组），失败不阻塞列表 */
 async function fetchOptions() {
@@ -345,7 +354,7 @@ let lastQueryKey = ''
 async function fetchList(force = false) {
   const queryKey = [
     props.audience, teacherMode.value, effectiveStage.value,
-    subjectFilter.value, tagFilter.value, currentPage.value, pageSize.value,
+    subjectFilter.value, tagFilter.value, keyword.value, currentPage.value, pageSize.value,
   ].join('|')
   if (!force && queryKey === lastQueryKey) return
   lastQueryKey = queryKey
@@ -361,6 +370,8 @@ async function fetchList(force = false) {
       // 面向人群由页内导航栏的目录/身份决定（无导航栏的专栏沿用路由 stage）；教师专属为独立数据集，不按阶段过滤
       applicableStage: teacherMode.value ? undefined : (effectiveStage.value || undefined),
       tag: tagFilter.value || undefined,
+      // 独立搜索关键词：命中文件名或简介，与上面三个筛选项 AND 叠加
+      keyword: keyword.value || undefined,
     }
     const res = await getFileLoadList(props.audience, params, teacherMode.value)
     list.value = res.data.data.records
@@ -416,6 +427,8 @@ async function toggleTeacher() {
   teacherMode.value = !teacherMode.value
   subjectFilter.value = ''
   tagFilter.value = ''
+  keywordInput.value = ''
+  keyword.value = ''
   currentPage.value = 1
   teacherForbidden.value = false
   fetchOptions()
@@ -427,6 +440,42 @@ function onFilterChange() {
   currentPage.value = 1
   fetchList()
 }
+
+/** 搜索：提交输入框内容为生效搜索词（点击搜索按钮 / 回车触发） */
+function onSearch() {
+  keyword.value = keywordInput.value.trim()
+  currentPage.value = 1
+  fetchList()
+}
+
+/** 清空搜索框（输入框 + 生效词）并重新查询 */
+function clearSearch() {
+  keywordInput.value = ''
+  keyword.value = ''
+  currentPage.value = 1
+  fetchList()
+}
+
+/** Ctrl+K（Win/Linux）/ Alt+K（Mac）聚焦搜索框 */
+function focusSearch() {
+  searchInputRef.value?.focus()
+  searchInputRef.value?.select()
+}
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if (e.key.toLowerCase() !== 'k') return
+  const trigger = isMac.value ? e.altKey : e.ctrlKey
+  if (trigger && !e.shiftKey && !e.metaKey) {
+    e.preventDefault()
+    focusSearch()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+})
 
 /** 学科按钮点击（单选）：点哪个查哪个；「全部」= 不带学科条件 */
 function onSubjectClick(val: string) {
@@ -445,6 +494,8 @@ function onTagClick(val: string) {
 function resetFilters() {
   subjectFilter.value = ''
   tagFilter.value = ''
+  keywordInput.value = ''
+  keyword.value = ''
   onFilterChange()
 }
 
@@ -537,6 +588,8 @@ onBeforeUnmount(() => {
 watch(() => props.audience, () => {
   subjectFilter.value = ''
   tagFilter.value = ''
+  keywordInput.value = ''
+  keyword.value = ''
   currentPage.value = 1
   teacherMode.value = false
   initStageFilter()
@@ -785,6 +838,39 @@ watch(effectiveStage, () => {
           </div>
         </div>
       </section>
+
+      <!-- 独立搜索：命中文件名或简介，与学科/模块筛选 AND 叠加；位置独立（筛选条件下方、列表上方），居中展示 -->
+      <div class="file-search">
+        <div class="file-search__box">
+          <svg class="file-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            ref="searchInputRef"
+            v-model="keywordInput"
+            type="text"
+            class="file-search__input"
+            placeholder="搜索资料名称或简介，如：作文、真题"
+            maxlength="50"
+            @keyup.enter="onSearch"
+          />
+          <button
+            v-if="keyword"
+            type="button"
+            class="file-search__clear"
+            aria-label="清空搜索"
+            @click="clearSearch"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <button type="button" class="file-search__btn" @click="onSearch">
+            搜索
+          </button>
+        </div>
+      </div>
 
       <!-- 文件列表 -->
       <section ref="listSectionRef" class="file-list-panel">
@@ -1366,6 +1452,111 @@ watch(effectiveStage, () => {
 .file-filter__reset:hover {
   color: #ea580c;
   background: #fff7ed;
+}
+
+/* ===== 搜索框（独立关键词搜索，与学科/模块筛选 AND 叠加） ===== */
+.file-search {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 4px auto 22px;
+}
+
+.file-search__box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 560px;
+  padding: 5px 5px 5px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.file-search__box:focus-within {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #f97316;
+}
+
+.file-search__icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.file-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 4px;
+  color: #1f2937;
+  font-size: 13px;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.file-search__input::placeholder {
+  color: #94a3b8;
+}
+
+.file-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #94a3b8;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-search__clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+.file-search__clear:hover {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.file-search__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 16px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 4px 10px -2px rgba(249, 115, 22, 0.3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.file-search__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -2px rgba(249, 115, 22, 0.4);
+}
+
+@media (max-width: 640px) {
+  .file-search__btn {
+    padding: 0 12px;
+  }
+  .file-search__box {
+    max-width: 100%;
+  }
 }
 
 /* ===== 筛选行：纯按钮行（无行首标题），三行依次为 当前身份 / 学科 / 模块 ===== */

@@ -161,6 +161,8 @@ const handleEdit = async (id: string) => {
         accessCode: d.accessCode || '',
         subject: d.subject,
         applicableStage: d.applicableStage || '',
+        description: d.description || '',
+        tag: d.tag || '',
         version: d.version,
       }
     } else {

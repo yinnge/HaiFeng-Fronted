@@ -105,7 +105,7 @@ export const navItems: NavItem[] = [
   /* ---------------- 考公（新增） ---------------- */
   {
     id: 'kaogong',
-    label: '考公',
+    label: '考公考编',
     subItems: [
       // 复用考公专栏列表页，面向人群由路由 props 写死（考公人）
       { label: '考公资料', route: '/civil-service' },

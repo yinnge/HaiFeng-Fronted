@@ -18,6 +18,7 @@ import GuideIcon from '@/components/university/GuideIcon.vue'
 import {
   GUIDE_MODULES,
   GUIDE_GROUPS,
+  GUIDE_SECTION_ORDER,
   HOT_GUIDE_PILLS,
   QUICK_TOOLS,
   GUIDE_TEXT,
@@ -89,23 +90,32 @@ const loading = reactive<Record<GuideCategoryApi, boolean>>({
   safety: false,
   life: false,
 })
+const categoryRequestId: Record<GuideCategoryApi, number> = {
+  survival: 0,
+  academic: 0,
+  social: 0,
+  safety: 0,
+  life: 0,
+}
 
 const initialLoading = ref(true)
 const activeModuleKey = ref<string | null>(null)
 const allPage = ref(1)
 const pageSize = 8
 const mobileValue = ref('')
-const guideRoot = ref<HTMLElement | null>(null)
 const mainRef = ref<HTMLElement | null>(null)
 
 const galleryImages = ref<GalleryItemVO[]>([])
 const galleryLoading = ref(false)
 const academicDenied = ref(false)
 const fetchedTags = ref<string[]>([])
+let galleryRequestId = 0
+let tagsRequestId = 0
 
 const overviewTags = computed(() => (props.customTags?.length ? props.customTags : fetchedTags.value))
 const expectedCategories = computed(() => (props.isVip && !academicDenied.value ? 5 : 4))
 const failedCount = computed(() => CATEGORY_KEYS.filter((key) => failed[key]).length)
+const anyCategoryLoading = computed(() => CATEGORY_KEYS.some((key) => loading[key]))
 const allFailed = computed(
   () => !initialLoading.value && failedCount.value >= expectedCategories.value,
 )
@@ -127,7 +137,18 @@ function moduleRaw(module: GuideModuleMeta): Record<string, any> | null {
 function moduleSections(module: GuideModuleMeta): { label: string; items: string[] }[] {
   const raw = moduleRaw(module)
   if (!raw) return []
-  return Object.entries(raw)
+
+  const order = GUIDE_SECTION_ORDER[module.key] ?? []
+  const entries = Object.entries(raw)
+  const ordered: [string, unknown][] = []
+  for (const label of order) {
+    if (Object.prototype.hasOwnProperty.call(raw, label)) ordered.push([label, raw[label]])
+  }
+  for (const [label, value] of entries) {
+    if (!order.includes(label)) ordered.push([label, value])
+  }
+
+  return ordered
     .map(([label, value]) => ({
       label,
       items: Array.isArray(value) ? value.map(String).filter((item) => item.trim()) : [],
@@ -139,8 +160,13 @@ function moduleCount(module: GuideModuleMeta): number {
   return moduleSections(module).reduce((sum, section) => sum + section.items.length, 0)
 }
 
+function moduleLoading(module: GuideModuleMeta): boolean {
+  return loading[module.category]
+}
+
 function moduleStatusText(module: GuideModuleMeta): string {
   if (isModuleLocked(module)) return GUIDE_TEXT.vipOnly
+  if (moduleLoading(module)) return '加载中...'
   if (moduleFailed(module)) return '加载失败'
   const count = moduleCount(module)
   return count > 0 ? GUIDE_TEXT.itemCount(count) : GUIDE_TEXT.noContent
@@ -148,6 +174,7 @@ function moduleStatusText(module: GuideModuleMeta): string {
 
 function moduleBadge(module: GuideModuleMeta): string {
   if (isModuleLocked(module)) return 'VIP'
+  if (moduleLoading(module)) return '…'
   if (moduleFailed(module)) return '!'
   const count = moduleCount(module)
   return count > 0 ? String(count) : '—'
@@ -192,13 +219,21 @@ async function fetchCategory(category: GuideCategoryApi, force = false, notify =
   if (loading[category]) return
   if (loaded[category] && !force) return
 
+  const id = props.universityId
+  if (!id) {
+    loading[category] = false
+    return
+  }
+  const requestId = ++categoryRequestId[category]
   loading[category] = true
   failed[category] = false
   try {
-    const res = await CATEGORY_FETCHERS[category](props.universityId)
+    const res = await CATEGORY_FETCHERS[category](id)
+    if (requestId !== categoryRequestId[category] || id !== props.universityId) return
     data[category] = (res?.data?.data ?? null) as GuideCategoryVO | null
     loaded[category] = true
   } catch (err: any) {
+    if (requestId !== categoryRequestId[category] || id !== props.universityId) return
     const message = err?.response?.data?.msg || err?.message || '获取指南内容失败'
     if (category === 'academic' && /VIP|会员|旗舰版/.test(message)) {
       academicDenied.value = true
@@ -210,14 +245,17 @@ async function fetchCategory(category: GuideCategoryApi, force = false, notify =
       if (notify) ElMessage.error(message)
     }
   } finally {
-    loading[category] = false
+    if (requestId === categoryRequestId[category]) loading[category] = false
   }
 }
 
+let loadAllRequestId = 0
+
 async function loadAll() {
+  const requestId = ++loadAllRequestId
   initialLoading.value = true
   await Promise.all(CATEGORY_KEYS.map((category) => fetchCategory(category)))
-  initialLoading.value = false
+  if (requestId === loadAllRequestId) initialLoading.value = false
 }
 
 function retryAll() {
@@ -233,29 +271,54 @@ function retryCategory(category: GuideCategoryApi) {
 }
 
 async function fetchRailGallery() {
+  const id = props.universityId
+  if (!id) {
+    galleryImages.value = []
+    galleryLoading.value = false
+    return
+  }
+  const requestId = ++galleryRequestId
   galleryLoading.value = true
   try {
-    const res = await getCampusGallery(props.universityId, { page: 1, size: 10 })
+    const res = await getCampusGallery(id, { page: 1, size: 10 })
+    if (requestId !== galleryRequestId || id !== props.universityId) return
     galleryImages.value = (res.data.data.records || []).slice(0, 4)
   } catch {
+    if (requestId !== galleryRequestId || id !== props.universityId) return
     galleryImages.value = []
   } finally {
-    galleryLoading.value = false
+    if (requestId === galleryRequestId) galleryLoading.value = false
   }
 }
 
 async function fetchOverviewTags() {
+  if (props.customTags?.length) return
+  const id = props.universityId
+  if (!id) {
+    fetchedTags.value = []
+    return
+  }
+  const requestId = ++tagsRequestId
   try {
-    const res = await getGuideOverview(props.universityId)
+    const res = await getGuideOverview(id)
+    if (requestId !== tagsRequestId || id !== props.universityId) return
     fetchedTags.value = res.data.data.customTags || []
   } catch {
+    if (requestId !== tagsRequestId || id !== props.universityId) return
     fetchedTags.value = []
   }
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
 function scrollToMain() {
   nextTick(() => {
-    mainRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    mainRef.value?.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    })
   })
 }
 
@@ -302,15 +365,19 @@ function handleTool(tool: QuickToolMeta) {
 
 function resetData() {
   CATEGORY_KEYS.forEach((category) => {
+    categoryRequestId[category]++
     data[category] = null
     loaded[category] = false
     failed[category] = false
     loading[category] = false
   })
+  galleryRequestId++
+  tagsRequestId++
   activeModuleKey.value = null
   allPage.value = 1
   academicDenied.value = false
   galleryImages.value = []
+  galleryLoading.value = false
   fetchedTags.value = []
 }
 
@@ -347,7 +414,6 @@ onMounted(() => {
 
 <template>
   <div
-    ref="guideRoot"
     class="guide-tab"
     :style="{ '--guide-sticky-top': `${stickyTop}px` }"
   >
@@ -384,8 +450,10 @@ onMounted(() => {
         </div>
 
         <button
+          type="button"
           class="dir-all"
           :class="{ 'is-active': activeModuleKey === null }"
+          :aria-current="activeModuleKey === null ? 'page' : undefined"
           @click="backToAll"
         >
           <span class="dir-all__icon">
@@ -409,6 +477,7 @@ onMounted(() => {
           <button
             v-for="module in item.modules"
             :key="module.key"
+            type="button"
             class="dir-item"
             :class="{
               'is-active': activeModuleKey === module.key,
@@ -417,6 +486,7 @@ onMounted(() => {
             }"
             :style="{ '--group-color': item.group.color }"
             :disabled="!hasAnyGuide"
+            :aria-current="activeModuleKey === module.key ? 'page' : undefined"
             @click="selectModule(module.key)"
           >
             <span class="dir-item__icon" :style="{ background: item.group.soft, color: item.group.color }">
@@ -428,7 +498,11 @@ onMounted(() => {
               :class="{
                 'is-vip': isModuleLocked(module),
                 'is-error': !isModuleLocked(module) && moduleFailed(module),
-                'is-empty': !isModuleLocked(module) && !moduleFailed(module) && moduleCount(module) === 0,
+                'is-empty':
+                  !isModuleLocked(module) &&
+                  !moduleFailed(module) &&
+                  !moduleLoading(module) &&
+                  moduleCount(module) === 0,
               }"
             >
               {{ moduleBadge(module) }}
@@ -471,7 +545,10 @@ onMounted(() => {
           <button class="primary-btn" @click="retryAll">重新加载</button>
         </div>
 
-        <div v-else-if="!hasAnyGuide" class="empty-panel guide-empty">
+        <div
+          v-else-if="!initialLoading && !anyCategoryLoading && !hasAnyGuide"
+          class="empty-panel guide-empty"
+        >
           <span class="empty-panel__icon empty-panel__icon--blue">
             <GuideIcon name="books" :size="34" />
           </span>
@@ -637,11 +714,16 @@ onMounted(() => {
             <button
               v-for="item in pagedModules"
               :key="item.module.key"
+              type="button"
               class="plan-card"
               :class="{
                 'is-locked': isModuleLocked(item.module),
                 'is-error': !isModuleLocked(item.module) && moduleFailed(item.module),
-                'is-empty': !isModuleLocked(item.module) && !moduleFailed(item.module) && moduleCount(item.module) === 0,
+                'is-empty':
+                  !isModuleLocked(item.module) &&
+                  !moduleFailed(item.module) &&
+                  !moduleLoading(item.module) &&
+                  moduleCount(item.module) === 0,
               }"
               @click="selectModule(item.module.key)"
             >
@@ -722,7 +804,12 @@ onMounted(() => {
               class="rail-thumb"
               @click="emit('open-gallery')"
             >
-              <img :src="image.imageUrl" :alt="`校园风光 ${index + 1}`" loading="lazy" />
+              <img
+                :src="image.imageUrl"
+                :alt="`校园风光 ${index + 1}`"
+                loading="lazy"
+                decoding="async"
+              />
               <span class="rail-thumb__mask">查看</span>
             </button>
           </div>
@@ -783,6 +870,11 @@ onMounted(() => {
   position: relative;
   color: var(--guide-ink);
   padding-bottom: 8px;
+}
+
+.guide-tab :is(button, a):focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
 }
 
 .guide-layout {
@@ -2143,6 +2235,17 @@ onMounted(() => {
 
   .lock-panel {
     padding: 26px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-tab *,
+  .guide-tab *::before,
+  .guide-tab *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 </style>
