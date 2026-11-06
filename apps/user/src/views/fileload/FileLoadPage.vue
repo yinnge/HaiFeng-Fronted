@@ -329,6 +329,8 @@ const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value
 
 /* ---------------- 收藏（favorite，targetType=file_info） ---------------- */
 const FAV_TARGET_TYPE = 'file_info' as const
+/** 后端 FileLoadPageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
 /** 仅看收藏开关（toggle）：开启后列表只查已收藏的文件 */
 const favOnly = ref(false)
 /** 当前已收藏的文件 id 集合（json-bigint 返回字符串，统一按 string 处理） */
@@ -336,18 +338,21 @@ const favIds = ref<Set<string>>(new Set())
 
 /**
  * 拉取当前用户收藏的全部文件 id（收藏视图用）。
- * /favorite/list 分页上限 100，循环取满直到不足一页（50 页 = 5000 条兜底防死循环）。
+ * /favorite/list 分页上限 100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
  */
 async function fetchAllFavFileIds(): Promise<string[]> {
   const ids: string[] = []
   const size = 100
-  for (let page = 1; page <= 50; page++) {
+  for (let page = 1; page <= 2; page++) {
     const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
     const records = res.data.data?.records || []
     for (const r of records) ids.push(String(r.targetId))
     if (records.length < size) break
   }
-  return ids
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 份文件')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
 }
 
 /** 批量回填当前页文件的收藏状态（后端单次 ≤100，分批查询；失败静默不影响列表） */

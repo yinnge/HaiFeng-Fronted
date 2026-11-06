@@ -3,10 +3,12 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } 
 import { useRouter, useRoute } from 'vue-router'
 import type { Component } from 'vue'
 import { getUniversityDetail, getCampusGallery } from '@/api/university'
+import { addFavorite, removeFavorite, getFavoriteStatus } from '@/api/favorite'
 import type { UniversityDetailVO, GalleryItemVO } from '@/types/university'
 import { ElMessage } from 'element-plus'
 import { MemberType } from '@haifeng/shared'
 import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import LaboratoryTab from '@/components/university/LaboratoryTab.vue'
 import DepartmentTab from '@/components/university/DepartmentTab.vue'
@@ -384,12 +386,61 @@ async function fetchDetail() {
     const res = await getUniversityDetail(id)
     if (requestId !== detailRequestId || id !== universityId.value) return
     detail.value = res.data.data
+    // 回填收藏状态（不阻塞详情展示）
+    void loadFavStatus()
   } catch (e: any) {
     if (requestId !== detailRequestId || id !== universityId.value) return
     detailError.value = true
     ElMessage.error(e?.message || '获取院校详情失败')
   } finally {
     if (requestId === detailRequestId) loading.value = false
+  }
+}
+
+// ==================== 收藏（favorite，targetType=university） ====================
+const FAV_TARGET_TYPE = 'university' as const
+/** 当前院校是否已收藏 */
+const favOn = ref(false)
+const favSubmitting = ref(false)
+
+/** 已登录时回填当前院校的收藏状态（失败按未收藏处理） */
+async function loadFavStatus() {
+  if (!userStore.isLoggedIn() || !detail.value) return
+  try {
+    const id = universityId.value
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, [id])
+    favOn.value = (res.data.data || []).map(String).includes(String(id))
+  } catch {
+    /* 状态回填失败忽略 */
+  }
+}
+
+/** 星标切换：收藏/取消收藏（未登录走全站统一登录引导） */
+async function toggleFavorite() {
+  if (!userStore.isLoggedIn()) {
+    userStore.setRedirectPath(route.fullPath)
+    if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+      router.push('/login')
+    }
+    return
+  }
+  if (favSubmitting.value || !detail.value) return
+  favSubmitting.value = true
+  try {
+    const id = universityId.value
+    if (favOn.value) {
+      await removeFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = true
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  } finally {
+    favSubmitting.value = false
   }
 }
 
@@ -453,6 +504,8 @@ watch(universityId, (id, previous) => {
   galleryRequestId++
   detail.value = null
   detailError.value = false
+  // 切换院校时先清收藏态，fetchDetail 成功后会重新回填
+  favOn.value = false
   loading.value = false
   galleryList.value = []
   galleryRequested.value = false
@@ -561,12 +614,29 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
                   </span>
                 </div>
 
-                <p
-                  v-if="[detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).length"
-                  class="identity-meta"
-                >
-                  {{ [detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).join(' · ') }}
-                </p>
+                <!-- 元数据行：原有 4 项文本 + 末尾高亮收藏药丸（区别于普通元数据） -->
+                <div class="identity-meta">
+                  <span
+                    v-if="[detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).length"
+                    class="identity-meta__text"
+                  >
+                    {{ [detail.region, detail.provinceName, detail.category, detail.nature].filter(Boolean).join(' · ') }}
+                  </span>
+                  <button
+                    type="button"
+                    class="identity-fav"
+                    :class="{ 'is-on': favOn, 'is-busy': favSubmitting }"
+                    :aria-pressed="favOn"
+                    :title="favOn ? '点击取消收藏' : '点击收藏该院校'"
+                    @click="toggleFavorite"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                    </svg>
+                    <span>收藏</span>
+                    <span class="identity-fav__state">{{ favOn ? '已收藏' : '未收藏' }}</span>
+                  </button>
+                </div>
               </div>
 
               <button class="identity-cover" @click="switchTab('gallery')">
@@ -1112,9 +1182,75 @@ const rankingMeta: Record<string, { name: string; abbr: string; short: string }>
 }
 
 .identity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-top: 9px;
   font-size: 13px;
   color: #64748b;
+}
+
+.identity-meta__text {
+  min-width: 0;
+}
+
+/* ---------- 收藏药丸：琥珀底高亮，与普通元数据文本明显区分 ---------- */
+.identity-fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #64748b;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.identity-fav svg {
+  width: 14px;
+  height: 14px;
+  color: #cbd5e1;
+}
+
+.identity-fav:hover {
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.identity-fav:hover svg {
+  color: #d97706;
+}
+
+.identity-fav.is-on {
+  color: #b45309;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.identity-fav.is-on svg {
+  color: #f59e0b;
+  fill: currentColor;
+}
+
+.identity-fav__state {
+  color: #64748b;
+}
+
+.identity-fav.is-on .identity-fav__state {
+  color: #b45309;
+}
+
+.identity-fav.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .identity-cover {
