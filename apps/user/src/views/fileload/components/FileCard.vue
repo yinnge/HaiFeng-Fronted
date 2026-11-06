@@ -5,9 +5,14 @@ import type { FileLoadListVO } from '@/types/fileload'
 const props = defineProps<{
   item: FileLoadListVO
   view: 'grid' | 'list'
+  /** 是否已收藏（灰星/黄星切换） */
+  favorited?: boolean
 }>()
 
-const emit = defineEmits<{ (e: 'open', item: FileLoadListVO): void }>()
+const emit = defineEmits<{
+  (e: 'open', item: FileLoadListVO): void
+  (e: 'toggle-fav', item: FileLoadListVO): void
+}>()
 
 type Tone = 'rose' | 'blue' | 'green' | 'amber' | 'violet' | 'slate'
 type Kind = 'doc' | 'video' | 'image' | 'cloud' | 'sheet' | 'slides'
@@ -132,6 +137,20 @@ function open(): void {
           {{ tag.text }}
         </span>
       </div>
+
+      <!-- 收藏星标：默认灰星，已收藏黄星填充；点击切换收藏 -->
+      <button
+        type="button"
+        class="file-fav"
+        :class="{ 'is-on': favorited }"
+        :aria-label="favorited ? `取消收藏 ${item.fileName}` : `收藏 ${item.fileName}`"
+        :title="favorited ? '取消收藏' : '收藏'"
+        @click.stop="emit('toggle-fav', item)"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+        </svg>
+      </button>
     </div>
 
     <div class="file-card__body">
@@ -297,10 +316,11 @@ function open(): void {
 .file-card__tags {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 4px;
   min-width: 0;
-  max-width: 62%;
+  /* 标签紧跟缩略图靠左，右侧空间留给收藏星标 */
+  margin-right: auto;
 }
 
 .micro-tag {
@@ -316,6 +336,53 @@ function open(): void {
   border-radius: 6px;
   background: var(--tone-bg);
   box-shadow: inset 0 0 0 1px var(--tone-ring);
+}
+
+/* ---------- 收藏星标 ---------- */
+.file-fav {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-fav svg {
+  width: 15px;
+  height: 15px;
+}
+
+.file-fav:hover {
+  color: #d97706;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.file-fav.is-on {
+  color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.file-fav.is-on svg {
+  fill: currentColor;
+}
+
+.file-fav:active {
+  transform: translateY(1px);
+}
+
+.file-fav:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
 }
 
 .file-card__body {
@@ -439,10 +506,10 @@ function open(): void {
 
 .file-card.is-list {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'thumb body foot'
-    'thumb tags foot';
+    'thumb body foot fav'
+    'thumb tags foot fav';
   align-items: center;
   gap: 4px 12px;
   padding: 12px 14px;
@@ -461,6 +528,12 @@ function open(): void {
   grid-area: tags;
   justify-content: flex-start;
   max-width: none;
+}
+
+.file-card.is-list .file-fav {
+  grid-area: fav;
+  align-self: center;
+  justify-self: end;
 }
 
 .file-card.is-list .file-card__body {
@@ -496,11 +569,11 @@ function open(): void {
 
 @media (max-width: 640px) {
   .file-card.is-list {
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 44px minmax(0, 1fr) auto;
     grid-template-areas:
-      'thumb body'
-      'thumb tags'
-      'foot foot';
+      'thumb body fav'
+      'thumb tags fav'
+      'foot foot foot';
   }
 
   .file-card.is-list .file-card__foot {

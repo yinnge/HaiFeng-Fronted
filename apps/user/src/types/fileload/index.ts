@@ -10,6 +10,12 @@ export interface FileLoadQueryDTO extends BasePageQuery {
   tag?: string
   /** 独立搜索关键词（可选）：命中文件名或简介，与学科/阶段/标签筛选 AND 叠加 */
   keyword?: string
+  /**
+   * 收藏过滤（可选）：仅返回命中的文件 id，与其它筛选 AND 叠加（对应后端 FileLoadPageQueryDTO.ids）。
+   * 逗号分隔的 id 字符串（Spring 自动拆分绑定 List<Long>）；
+   * 空字符串表示"无收藏"→ 后端直接返回空页。
+   */
+  ids?: string
 }
 
 /** 文件列表 VO（对应后端 FileLoadListVO） */

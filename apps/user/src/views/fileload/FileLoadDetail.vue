@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getFileLoadDetail, getFileLoadNetdisk, getFileLoadList } from '@/api/fileload'
+import { addFavorite, removeFavorite, getFavoriteStatus } from '@/api/favorite'
 import type {
   FileLoadDetailVO,
   FileLoadAudience,
@@ -82,6 +83,8 @@ async function load() {
     vipBlocked.value = false
     teacherForbidden.value = false
     await loadRelated()
+    // 回填收藏状态（不阻塞详情展示）
+    void loadFavStatus()
   } catch (e: any) {
     const msg = e?.message || '获取文件详情失败'
     // 教师专属详情要求老师身份，非老师访问返回教师权限不足 → 友好拦截
@@ -326,6 +329,58 @@ const metaItems = computed(() => [
 ])
 
 onMounted(load)
+
+/* ---------------- 收藏（favorite，targetType=file_info） ---------------- */
+const FAV_TARGET_TYPE = 'file_info' as const
+/** 当前文件是否已收藏 */
+const favOn = ref(false)
+const favSubmitting = ref(false)
+
+/** 已登录时回填当前文件的收藏状态（失败按未收藏处理） */
+async function loadFavStatus() {
+  if (!userStore.isLoggedIn() || !detail.value) return
+  try {
+    const id = String(detail.value.id)
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, [id])
+    favOn.value = (res.data.data || []).map(String).includes(id)
+  } catch {
+    /* 状态回填失败忽略 */
+  }
+}
+
+/** 星标切换：收藏/取消收藏（未登录引导登录） */
+async function toggleFavorite() {
+  if (!userStore.isLoggedIn()) {
+    userStore.setRedirectPath(route.fullPath)
+    try {
+      await ElMessageBox.confirm('收藏功能需登录后使用，请先登录', '提示', {
+        confirmButtonText: '前往登录',
+        cancelButtonText: '取消',
+        type: 'warning',
+      })
+      router.push('/login')
+    } catch { /* 用户取消 */ }
+    return
+  }
+  if (favSubmitting.value || !detail.value) return
+  favSubmitting.value = true
+  try {
+    const id = String(detail.value.id)
+    if (favOn.value) {
+      await removeFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = true
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  } finally {
+    favSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -384,6 +439,21 @@ onMounted(load)
                     </svg>
                     <span class="fd-meta-label">{{ m.label }}</span>
                     <span class="fd-meta-value">{{ m.value }}</span>
+                  </li>
+
+                  <!-- 收藏：元数据行末尾第 5 项，琥珀底高亮药丸，区别于普通元数据 -->
+                  <li
+                    class="fd-meta-item fd-meta-fav"
+                    :class="{ 'is-on': favOn, 'is-busy': favSubmitting }"
+                    :aria-pressed="favOn"
+                    :title="favOn ? '点击取消收藏' : '点击收藏该文件'"
+                    @click="toggleFavorite"
+                  >
+                    <svg class="fd-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                    </svg>
+                    <span class="fd-meta-label">收藏</span>
+                    <span class="fd-meta-value">{{ favOn ? '已收藏' : '未收藏' }}</span>
                   </li>
                 </ul>
               </div>
@@ -840,6 +910,62 @@ onMounted(load)
 .fd-meta-value {
   color: #334155;
   font-weight: 600;
+}
+
+/* ---------- 收藏项：琥珀底高亮药丸（与普通元数据区分） ---------- */
+.fd-meta-fav {
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.fd-meta-fav .fd-meta-icon {
+  color: #cbd5e1;
+}
+
+.fd-meta-fav .fd-meta-label {
+  color: #64748b;
+}
+
+.fd-meta-fav .fd-meta-value {
+  color: #64748b;
+}
+
+.fd-meta-fav:hover {
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.fd-meta-fav:hover .fd-meta-icon {
+  color: #d97706;
+}
+
+.fd-meta-fav.is-on {
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.fd-meta-fav.is-on .fd-meta-icon {
+  color: #f59e0b;
+  fill: currentColor;
+}
+
+.fd-meta-fav.is-on .fd-meta-label {
+  color: #d97706;
+}
+
+.fd-meta-fav.is-on .fd-meta-value {
+  color: #b45309;
+}
+
+.fd-meta-fav.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 /* ---------- 主操作按钮 ---------- */
