@@ -8,7 +8,7 @@ import PlannerCard from './components/PlannerCard.vue'
 import CircularGallery from './components/CircularGallery.vue'
 import HomePathwaySection from './components/HomePathwaySection.vue'
 import ToolboxSection from './components/toolbox/ToolboxSection.vue'
-import AnimatedLogo from '@/components/AnimatedLogo.vue'
+import HfHeroSection from '@/components/home/hero/HfHeroSection.vue'
 
 // ===== Core =====
 const router = useRouter()
@@ -173,26 +173,8 @@ onUnmounted(() => {
     <!-- ==================== 消隐微网格 + 顶部双色极光（DESIGN.md） ==================== -->
     <div class="bg-grid-aurora" aria-hidden="true"></div>
 
-    <!-- ==================== Hero（居中品牌头） ==================== -->
-    <section class="hero-section grain-overlay">
-      <div class="hero-glow" aria-hidden="true"></div>
-      <div class="hero-inner">
-        <div class="hero-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z" />
-          </svg>
-          AI 驱动 · 全周期升学规划
-        </div>
-        <h1 class="hero-title">
-          <AnimatedLogo class="hero-logo" />
-          <span>海枫<span class="hero-title-gradient">未来规划院</span></span>
-        </h1>
-        <p class="hero-desc">
-          依托大数据分析与AI算法，科学规划志愿、精准匹配院校，海枫未来规划院助您圆梦理想。从初中高中、高考志愿到职场上岸，我们全程陪伴。
-        </p>
-      </div>
-    </section>
+    <!-- ==================== Hero（双栏：价值主张 + 罗盘导航） ==================== -->
+    <HfHeroSection />
 
     <!-- ==================== 全周期规划矩阵 / 生涯星图（可切换） ==================== -->
     <HomePathwaySection />
@@ -360,87 +342,6 @@ onUnmounted(() => {
   /* 核心：径向遮罩，让网格在四周自然消隐（不生硬到底） */
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 60%, transparent 100%);
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 60%, transparent 100%);
-}
-
-/* ============ Hero（居中品牌头） ============ */
-.hero-section {
-  position: relative;
-  padding: 2.5rem 0 2rem;
-  isolation: isolate;
-}
-
-/* 暖光只属于 Hero：不再铺满全站，避免整页橙色通胀 */
-.hero-glow {
-  position: absolute;
-  inset: -3rem 10% auto;
-  height: 24rem;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 50% 60% at 72% 8%, rgba(249, 115, 22, 0.1), transparent 70%),
-    radial-gradient(ellipse 44% 56% at 24% 0%, rgba(251, 191, 36, 0.08), transparent 72%);
-  filter: blur(8px);
-}
-
-.hero-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin-bottom: 1.25rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
-  background: var(--sem-blue-bg);
-  color: #2563eb;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.hero-badge svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-.hero-title {
-  margin-top: 0;
-  font-size: clamp(2rem, 3vw, 3.2rem);
-  font-weight: 800;
-  color: #1f2937;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-  text-wrap: balance;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.hero-logo {
-  width: clamp(3.5rem, 5vw, 5rem);
-  height: clamp(3.5rem, 5vw, 5rem);
-  flex-shrink: 0;
-}
-
-.hero-title-gradient {
-  background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-light));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero-desc {
-  max-width: 640px;
-  margin: 1rem auto 0;
-  font-size: 1.05rem;
-  line-height: 1.85;
-  color: #6b7280;
 }
 
 /* ============ Sections ============ */
@@ -684,12 +585,6 @@ onUnmounted(() => {
   .home-page {
     padding: 0 0.875rem 3rem;
   }
-  .hero-section {
-    padding: 2rem 0 1rem;
-  }
-  .hero-title {
-    font-size: clamp(1.6rem, 6vw, 2.2rem);
-  }
   .section-alt .section-container {
     padding: 1.25rem;
     border-radius: 1.125rem;
@@ -699,9 +594,6 @@ onUnmounted(() => {
 @media (max-width: 640px) {
   .section-wrapper {
     padding: 2.5rem 0;
-  }
-  .hero-section {
-    padding: 1.75rem 0 1rem;
   }
 }
 </style>

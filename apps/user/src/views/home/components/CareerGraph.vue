@@ -359,6 +359,17 @@ function selectPreset(preset: PathPreset) {
 function goToColumn(node: CareerNode) {
   router.push(node.route)
 }
+
+// ==================== 对外暴露：按 key 选中节点（Hero 聚焦联动，§8.4） ====================
+// 效果与用户亲手点击该节点完全一致：选中、展开 ER 属性卫星、右侧面板展示实体信息。
+// 不触发拖拽态（程序化选中无需 setPointerCapture）。
+function selectNodeByKey(key: string) {
+  if (!nodes.value.some((n) => n.id === key)) return
+  selectedNodeId.value = key
+  activePreset.value = 'all'
+}
+
+defineExpose({ selectNodeByKey })
 </script>
 
 <template>
