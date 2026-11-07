@@ -66,6 +66,7 @@ const items = columns.map(c => ({
       :to="item.route"
       class="plan-card"
       :class="`plan-card--${item.stage}`"
+      :data-column-key="item.id"
     >
       <span class="plan-card__icon">
         <span class="plan-card__num">{{ item.num }}</span>
@@ -342,6 +343,74 @@ const items = columns.map(c => ({
 
   .plan-card:hover {
     transform: none;
+  }
+}
+
+/* ============ Hero 聚焦高亮（由 useColumnFocus 触发，仅持续 2s，平时零影响） ============
+   1) 静态：边框显示模块对应色 + 卡片柔光 + 图标 / 序号柔光环（无缩放、无闪烁，
+      图标底座内含 01-10 序号文字，遵循「含文字容器禁止 scale」红线）。
+   2) 动态：伪元素只在卡片「外侧」保留 2px 环，用 conic-gradient 的一段亮带
+      沿边框旋转流动（像贪吃蛇绕圈），1s/圈 × 2 = 2s，随 class 移除一起消失。
+   已删除原有的 border 缩放脉冲（hf-pulse-ring）。 */
+@property --hf-snake-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.plan-card.is-hf-pulse {
+  transform: translateY(-2px);
+  border-color: rgba(var(--hf-pulse-rgb), 0.6);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 14px 30px -6px rgba(var(--hf-pulse-rgb), 0.22);
+}
+.plan-card.is-hf-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(1rem + 2px);
+  padding: 2px;
+  /* 亮带主体 + 渐隐尾，其余透明；角度由 @property 插值驱动 */
+  background: conic-gradient(
+    from var(--hf-snake-angle),
+    transparent 0deg,
+    transparent 232deg,
+    rgba(var(--hf-pulse-rgb), 0.12) 268deg,
+    rgba(var(--hf-pulse-rgb), 0.55) 312deg,
+    rgb(var(--hf-pulse-rgb)) 350deg,
+    rgb(var(--hf-pulse-rgb)) 360deg
+  );
+  /* 只保留外侧 2px 环，遮掉内部，避免盖住卡片内容 */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: hf-snake-run 1s linear 2;
+}
+@keyframes hf-snake-run {
+  to {
+    --hf-snake-angle: 360deg;
+  }
+}
+.plan-card.is-hf-pulse .plan-card__icon {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 0 6px rgba(var(--hf-pulse-rgb), 0.18);
+}
+.plan-card.is-hf-pulse .plan-card__num {
+  box-shadow: 0 0 0 4px rgba(var(--hf-pulse-rgb), 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card.is-hf-pulse {
+    transform: none;
+  }
+  /* 不流动，仅保留一圈静态对应色外框 */
+  .plan-card.is-hf-pulse::after {
+    animation: none;
+    background: rgba(var(--hf-pulse-rgb), 0.55);
   }
 }
 </style>

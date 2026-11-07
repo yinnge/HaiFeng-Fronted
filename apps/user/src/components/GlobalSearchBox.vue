@@ -1,111 +1,33 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { searchUniversity, searchCity, searchMajor } from '@/api/search'
-import type { SearchItem } from '@/types/search'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useGlobalSearch, type SearchResultItem, type SearchResultType } from '@/composables/useGlobalSearch'
 
-const router = useRouter()
+/* 复用全局搜索核心（与 Hero 搜索共用），不改变现有导航搜索的提交/跳转行为。
+   UI 状态（下拉显隐 / ⌘K / compact 折叠）仍保留在本组件，外观与位置完全不变。 */
+const { keyword, groups, loading, hasResults, runSearch, go, reset } = useGlobalSearch()
 
 /* -------- 输入与下拉 -------- */
-const keyword = ref('')
 const focused = ref(false)
 const showDropdown = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
 
-interface Seg { text: string; hit: boolean }
-interface ResultItem { id: string; name: string; sub?: string; segments: Seg[] }
-interface ResultGroup { type: 'university' | 'city' | 'major'; label: string; items: ResultItem[] }
-
-const groups = ref<ResultGroup[]>([])
-const loading = ref(false)
-
-/* 高亮：院校/城市/专业按关键字子串 */
-function segmentsFromKeyword(text: string, kw: string): Seg[] {
-  if (!kw) return [{ text, hit: false }]
-  const lower = text.toLowerCase()
-  const k = kw.toLowerCase()
-  const out: Seg[] = []
-  let cursor = 0
-  let idx: number
-  while ((idx = lower.indexOf(k, cursor)) !== -1) {
-    if (idx > cursor) out.push({ text: text.slice(cursor, idx), hit: false })
-    out.push({ text: text.slice(idx, idx + k.length), hit: true })
-    cursor = idx + k.length
-  }
-  if (cursor < text.length) out.push({ text: text.slice(cursor), hit: false })
-  return out.length ? out : [{ text, hit: false }]
-}
-
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 function onInput() {
   if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(runSearch, 300)
-}
-
-async function runSearch() {
-  const kw = keyword.value.trim()
-  if (!kw) {
-    groups.value = []
-    showDropdown.value = false
-    return
-  }
-  loading.value = true
-  try {
-    const [u, c, m] = await Promise.allSettled([
-      searchUniversity(kw),
-      searchCity(kw),
-      searchMajor(kw),
-    ])
-    const next: ResultGroup[] = []
-    if (u.status === 'fulfilled') {
-      const list = (u.value.data.data || []) as SearchItem[]
-      if (list.length) {
-        next.push({
-          type: 'university',
-          label: '院校',
-          items: list.map((it) => ({ id: it.id, name: it.name, segments: segmentsFromKeyword(it.name, kw) })),
-        })
-      }
-    }
-    if (c.status === 'fulfilled') {
-      const list = (c.value.data.data || []) as SearchItem[]
-      if (list.length) {
-        next.push({
-          type: 'city',
-          label: '城市',
-          items: list.map((it) => ({ id: it.id, name: it.name, segments: segmentsFromKeyword(it.name, kw) })),
-        })
-      }
-    }
-    if (m.status === 'fulfilled') {
-      const list = (m.value.data.data || []) as SearchItem[]
-      if (list.length) {
-        next.push({
-          type: 'major',
-          label: '专业',
-          items: list.map((it) => ({ id: it.id, name: it.name, segments: segmentsFromKeyword(it.name, kw) })),
-        })
-      }
-    }
-    // 资讯组已移除：原详情页 /gaokao/article/:id 已删除；home 资讯由首页 ArticleListDialog 独立承担
-    groups.value = next
+  debounceTimer = setTimeout(() => {
+    runSearch()
     showDropdown.value = focused.value
-  } finally {
-    loading.value = false
-  }
+  }, 300)
 }
 
-function go(item: ResultItem, type: ResultGroup['type']) {
+function onResultClick(item: SearchResultItem, type: SearchResultType) {
+  go(item, type)
+  reset()
   showDropdown.value = false
+  focused.value = false
   expanded.value = false
-  keyword.value = ''
-  groups.value = []
-  const base =
-    type === 'university' ? '/university/'
-    : type === 'city' ? '/city/'
-    : '/major/'
-  router.push(base + item.id)
 }
 
 /* -------- 聚焦 / 失焦 -------- */
@@ -121,7 +43,7 @@ function onBlur() {
   }, 150)
 }
 
-/* -------- 全局 ⌘K / Ctrl+K 唤起 -------- */
+/* -------- 全局 ⌘K / Ctrl+K 唤起（仅绑定导航搜索框，§1.3） -------- */
 function onKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
     e.preventDefault()
@@ -172,16 +94,15 @@ onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
 })
 
-// 路由切换时收起
+// 路由切换时收起（useRoute 必须在 setup 上下文调用，勿放进 watch getter）
+const route = useRoute()
 watch(
-  () => router.currentRoute.value.fullPath,
+  () => route.fullPath,
   () => {
     showDropdown.value = false
     expanded.value = false
   },
 )
-
-const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
 </script>
 
 <template>
@@ -232,7 +153,7 @@ const hasResults = computed(() => groups.value.some((g) => g.items.length > 0))
                   :key="g.type + '-' + it.id"
                   type="button"
                   class="gs-item"
-                  @mousedown.prevent="go(it, g.type)"
+                  @mousedown.prevent="onResultClick(it, g.type)"
                 >
                   <span class="gs-item-name">
                     <template v-for="(s, i) in it.segments" :key="i"

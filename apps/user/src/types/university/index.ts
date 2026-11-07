@@ -16,6 +16,11 @@ export interface UniversityQueryDTO extends BasePageQuery {
   tags?: string
   /** 招生通道编码（t_special_channel.channel_code）；统招不传 */
   channelCode?: string
+  /**
+   * 收藏过滤（可选）：仅返回命中的院校 id，与其它筛选 AND 叠加（对应后端 BasePageQueryDTO.ids）。
+   * 逗号分隔的 id 字符串（Spring 自动拆分绑定 List<Long>）；后端上限 200 个。
+   */
+  ids?: string
 }
 
 /** 与后端 UniversityListVO 对齐：imageUrl=院校 logo；coverImage=详情轮播首图（可为 null，前端占位）；content=简介全文（前端截断） */

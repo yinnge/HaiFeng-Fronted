@@ -11,9 +11,13 @@ import type {
 import { ProvinceOptions } from '@haifeng/shared'
 import { ElMessage } from 'element-plus'
 import { useExpertContact } from '@/composables/useExpertContact'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 
 const router = useRouter()
 const expertContact = useExpertContact()
+const userStore = useUserStore()
 
 // ==================== 会话级状态持久化 ====================
 // 保存/恢复查询条件与页码，从详情页返回时继续上次浏览位置
@@ -218,9 +222,111 @@ function isUnifiedChannel(code: string) {
   return !!opt && (opt.channelName === '统招' || opt.channelCode === '统招')
 }
 
+// ==================== 收藏（favorite，targetType=university） ====================
+const FAV_TARGET_TYPE = 'university' as const
+/** 后端 BasePageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（临时态，不写入 sessionStorage）；toggle 再点退出回全部院校 */
+const favOnly = ref(false)
+/** 当前已收藏的院校 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取全部已收藏院校 id（收藏视图用）。
+ * /favorite/list 单次 size ≤100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ * 收藏视图为临时查看态，不写入 hf_university_list_state。
+ */
+async function fetchAllFavIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 所院校')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 回填当前页院校的星标状态（每页最多 36 条，/favorite/status 单次上限 100 → 一次即可） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 「我的收藏」toggle：开启只查收藏院校，再点退出回全部列表 */
+async function onToggleFavOnly() {
+  if (!favOnly.value && !(await requireLogin())) return
+  favOnly.value = !favOnly.value
+  currentPage.value = 1
+  fetchList()
+}
+
+/** 星标点击：切换收藏/取消收藏 */
+async function onToggleFav(item: UniversityListVO) {
+  if (!(await requireLogin())) return
+  const idStr = String(item.id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
 async function fetchList() {
   loading.value = true
   try {
+    // 收藏视图：先取已收藏院校 id，再透传 ids 与其它筛选 AND 叠加（后端负责分页与 total）
+    let favFilterIds: string | undefined
+    if (favOnly.value) {
+      const ids = await fetchAllFavIds()
+      // 无收藏 → 直接空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        return
+      }
+      favFilterIds = ids.join(',')
+    }
+
     const params: UniversityQueryDTO = {
       page: currentPage.value,
       size: pageSize.value,
@@ -234,10 +340,14 @@ async function fetchList() {
     if (query.channelCode && !isUnifiedChannel(query.channelCode)) {
       params.channelCode = query.channelCode
     }
+    // 逗号分隔 id 串，Spring 自动拆分绑定 List<Long>
+    if (favFilterIds) params.ids = favFilterIds
 
     const res = await getUniversityList(params)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
     saveState()
   } catch (e: any) {
     ElMessage.error(e?.message || '获取院校列表失败')
@@ -493,16 +603,31 @@ onMounted(async () => {
           </div>
         </section>
 
-        <!-- ==================== 筛选结果统计工具栏 ==================== -->
-        <div class="mt-7 mb-5 flex items-center gap-2.5">
-          <span class="w-8 h-8 rounded-[10px] bg-[#fff7ed] flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-[#f97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <!-- ==================== 筛选结果统计工具栏 + 我的收藏 toggle ==================== -->
+        <div class="mt-7 mb-5 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-8 h-8 rounded-[10px] bg-[#fff7ed] flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-[#f97316]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </span>
+            <p class="text-[15px] text-[#334155] truncate">
+              共 <span class="font-extrabold text-[#f97316] text-lg">{{ total }}</span> 所院校
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="univ-fav-toggle shrink-0"
+            :class="{ 'is-on': favOnly }"
+            :aria-pressed="favOnly"
+            @click="onToggleFavOnly"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
             </svg>
-          </span>
-          <p class="text-[15px] text-[#334155]">
-            共 <span class="font-extrabold text-[#f97316] text-lg">{{ total }}</span> 所院校
-          </p>
+            {{ favOnly ? '我的收藏中' : '我的收藏' }}
+          </button>
         </div>
 
         <!-- ==================== 主体：卡片网格 + 右侧栏 ==================== -->
@@ -573,8 +698,22 @@ onMounted(async () => {
                       <span v-else class="text-gray-300 text-xl font-bold">{{ item.name.charAt(0) }}</span>
                     </div>
 
-                    <!-- 名称 -->
-                    <h3 class="text-[16px] font-bold text-[#1e293b] truncate pr-2">{{ item.name }}</h3>
+                    <!-- 名称 + 收藏星标（避开封面左上角权威标签与右上角性质胶囊） -->
+                    <div class="flex items-center gap-2">
+                      <h3 class="flex-1 min-w-0 text-[16px] font-bold text-[#1e293b] truncate">{{ item.name }}</h3>
+                      <button
+                        type="button"
+                        class="univ-fav-star"
+                        :class="{ 'is-on': favIds.has(String(item.id)) }"
+                        :aria-label="favIds.has(String(item.id)) ? `取消收藏 ${item.name}` : `收藏 ${item.name}`"
+                        :title="favIds.has(String(item.id)) ? '取消收藏' : '收藏'"
+                        @click.stop="onToggleFav(item)"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                        </svg>
+                      </button>
+                    </div>
 
                     <!-- 标签行：tags 前 3 + "+N" + 类别 -->
                     <div class="flex flex-wrap items-center gap-1.5 mt-2 min-h-[22px]">
@@ -632,12 +771,17 @@ onMounted(async () => {
             <!-- 空状态 -->
             <div v-else class="univ-card !cursor-default text-center py-20">
               <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#fff7ed] flex items-center justify-center">
-                <svg class="w-10 h-10 text-[#f97316]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <svg v-if="favOnly" class="w-10 h-10 text-[#f59e0b]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                </svg>
+                <svg v-else class="w-10 h-10 text-[#f97316]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">暂无匹配的院校</h3>
-              <p class="text-sm text-gray-500">请调整筛选条件或检查搜索关键词</p>
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">{{ favOnly ? '暂无收藏院校' : '暂无匹配的院校' }}</h3>
+              <p class="text-sm text-gray-500">
+                {{ favOnly ? '在院校卡片名称右侧点亮星标，即可把心仪院校收进这里' : '请调整筛选条件或检查搜索关键词' }}
+              </p>
             </div>
 
             <!-- 自定义分页 -->
@@ -807,6 +951,103 @@ onMounted(async () => {
   background-position: center;
   background-repeat: no-repeat;
   box-shadow: 0 8px 30px -8px rgba(15, 23, 42, 0.12);
+}
+
+/* ===== 我的收藏 toggle：统计条右端，黄色实底；开启后加深 + 内凹按下态 ===== */
+.univ-fav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 2px 6px -1px rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.univ-fav-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.univ-fav-toggle:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.45);
+}
+
+.univ-fav-toggle:active {
+  transform: translateY(1px);
+}
+
+.univ-fav-toggle:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
+.univ-fav-toggle.is-on {
+  border-color: rgba(180, 83, 9, 0.4);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow:
+    inset 0 2px 4px rgba(120, 53, 15, 0.25),
+    0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.univ-fav-toggle.is-on svg {
+  fill: currentColor;
+}
+
+/* ===== 卡片收藏星标：名称行右侧，默认灰星 / 已收藏黄星 ===== */
+.univ-fav-star {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.univ-fav-star svg {
+  width: 15px;
+  height: 15px;
+}
+
+.univ-fav-star:hover {
+  color: #d97706;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.univ-fav-star.is-on {
+  color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.univ-fav-star.is-on svg {
+  fill: currentColor;
+}
+
+.univ-fav-star:active {
+  transform: translateY(1px);
+}
+
+.univ-fav-star:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
 }
 
 /* ===== 通用白卡（列表卡 / 侧栏卡 / 分页容器） ===== */

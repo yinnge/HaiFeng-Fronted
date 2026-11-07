@@ -3,6 +3,8 @@ import { ref, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HomePlanSection from './HomePlanSection.vue'
 import CareerGraph from './CareerGraph.vue'
+import { useColumnFocus, scrollToElement, hexToRgb } from '@/composables/useColumnFocus'
+import { COLUMN_TO_GRAPH_NODE, type ColumnKey } from '@/components/home/hero/hero.config'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +12,49 @@ const router = useRouter()
 // 矩阵视图 = 现有 5×2 矩阵 + 右侧公告；图谱视图 = 生涯星图
 type PathwayView = 'matrix' | 'graph'
 const activeView = ref<PathwayView>('matrix')
+
+// Hero 聚焦联动：图谱组件 ref（§8.4）
+const graphRef = ref<InstanceType<typeof CareerGraph> | null>(null)
+const { focusRequest } = useColumnFocus()
+
+// 矩阵卡片脉冲高亮（§8.3）：设置模块主色 rgb → 加类 2s → 移除；重复触发先移除+reflow 再添加
+function pulseMatrixCard(columnKey: string, color: string) {
+  const card = document.querySelector<HTMLElement>(`[data-column-key="${columnKey}"]`)
+  if (!card) return
+  card.style.setProperty('--hf-pulse-rgb', hexToRgb(color))
+  card.classList.remove('is-hf-pulse')
+  void card.offsetWidth // 强制 reflow，重启动画
+  card.classList.add('is-hf-pulse')
+  window.setTimeout(() => card.classList.remove('is-hf-pulse'), 2000)
+}
+
+// 处理一次聚焦请求：根据当前视图分流，不切换视图（§8.4 图谱不切矩阵）
+function focusColumn(columnKey: string, color: string) {
+  if (activeView.value === 'matrix') {
+    const card = document.querySelector<HTMLElement>(`[data-column-key="${columnKey}"]`)
+    if (!card) {
+      // 降级：仅滚动到区块顶部，不报错
+      document.getElementById('pathway')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    // 滚动结束后再触发脉冲，保证用户可见（scrollToElement 内部已处理 reduced-motion / 超时）
+    void scrollToElement(card, { center: true }).then(() => pulseMatrixCard(columnKey, color))
+  } else {
+    // 图谱视图：不切换视图，直接选中对应节点（效果同用户点击）
+    const nodeId = COLUMN_TO_GRAPH_NODE[columnKey as ColumnKey] ?? columnKey
+    const el = document.getElementById('pathway')
+    if (el) {
+      void scrollToElement(el, { center: false }).then(() => graphRef.value?.selectNodeByKey(nodeId))
+    } else {
+      graphRef.value?.selectNodeByKey(nodeId)
+    }
+  }
+}
+
+watch(focusRequest, (req) => {
+  if (!req) return
+  focusColumn(req.columnKey, req.color)
+})
 
 // 由 URL query 驱动初始视图（导航栏跳转 /?view=graph 时还原为图谱并滚动定位）
 function applyQueryView() {
@@ -112,7 +157,7 @@ watch(
       <Transition name="pathway-fade" mode="out-in">
         <div :key="activeView" class="pathway-content">
           <HomePlanSection v-if="activeView === 'matrix'" />
-          <CareerGraph v-else />
+          <CareerGraph v-else ref="graphRef" />
         </div>
       </Transition>
     </div>

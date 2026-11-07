@@ -9,6 +9,7 @@ import {
   getFileLoadSubjects,
   getFileLoadTags,
 } from '@/api/fileload'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
 import type { FileLoadListVO, FileLoadQueryDTO, FileLoadAudience } from '@/types/fileload'
 import { useUserStore } from '@/store'
 import FileCard from './components/FileCard.vue'
@@ -326,6 +327,114 @@ const bannerTitleParts = computed(() => {
 
 const hasActiveFilter = computed(() => !!(subjectFilter.value || tagFilter.value || keyword.value))
 
+/* ---------------- 收藏（favorite，targetType=file_info） ---------------- */
+const FAV_TARGET_TYPE = 'file_info' as const
+/** 后端 FileLoadPageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（toggle）：开启后列表只查已收藏的文件 */
+const favOnly = ref(false)
+/** 当前已收藏的文件 id 集合（json-bigint 返回字符串，统一按 string 处理） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取当前用户收藏的全部文件 id（收藏视图用）。
+ * /favorite/list 分页上限 100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ */
+async function fetchAllFavFileIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 份文件')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 批量回填当前页文件的收藏状态（后端单次 ≤100，分批查询；失败静默不影响列表） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  const chunks: string[][] = []
+  for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100))
+  try {
+    const resArr = await Promise.all(chunks.map((c) => getFavoriteStatus(FAV_TARGET_TYPE, c)))
+    const next = new Set(favIds.value)
+    for (const r of resArr) for (const id of r.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 「我的收藏」toggle：开启只查收藏文件，再点退出回全部列表（未登录引导登录） */
+async function onToggleFavOnly() {
+  if (!favOnly.value) {
+    if (!userStore.isLoggedIn()) {
+      userStore.setRedirectPath(router.currentRoute.value.fullPath)
+      try {
+        await ElMessageBox.confirm('收藏功能需登录后使用，请先登录', '提示', {
+          confirmButtonText: '前往登录',
+          cancelButtonText: '取消',
+          type: 'warning',
+        })
+        router.push('/login')
+      } catch { /* 用户取消 */ }
+      return
+    }
+    favOnly.value = true
+  } else {
+    favOnly.value = false
+  }
+  currentPage.value = 1
+  lastQueryKey = ''
+  fetchList()
+}
+
+/** 星标点击：切换收藏/取消收藏（未登录引导登录） */
+async function onToggleFav(item: FileLoadListVO) {
+  if (!userStore.isLoggedIn()) {
+    userStore.setRedirectPath(router.currentRoute.value.fullPath)
+    try {
+      await ElMessageBox.confirm('收藏功能需登录后使用，请先登录', '提示', {
+        confirmButtonText: '前往登录',
+        cancelButtonText: '取消',
+        type: 'warning',
+      })
+      router.push('/login')
+    } catch { /* 用户取消 */ }
+    return
+  }
+  const idStr = String(item.id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        lastQueryKey = ''
+        fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
 /** 拉取学科/模块的去重值（用于渲染筛选按钮组），失败不阻塞列表 */
 async function fetchOptions() {
   try {
@@ -355,6 +464,7 @@ async function fetchList(force = false) {
   const queryKey = [
     props.audience, teacherMode.value, effectiveStage.value,
     subjectFilter.value, tagFilter.value, keyword.value, currentPage.value, pageSize.value,
+    favOnly.value,
   ].join('|')
   if (!force && queryKey === lastQueryKey) return
   lastQueryKey = queryKey
@@ -363,6 +473,20 @@ async function fetchList(force = false) {
   teacherForbidden.value = false
   loadError.value = false
   try {
+    // 收藏视图：先取全部已收藏文件 id，再透传给列表接口（后端与筛选 AND 叠加）
+    let favFilterIds: string | undefined
+    if (favOnly.value) {
+      const ids = await fetchAllFavFileIds()
+      // 无收藏 → 直接返回空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        loadError.value = false
+        return
+      }
+      favFilterIds = ids.join(',')
+    }
+
     const params: FileLoadQueryDTO = {
       page: currentPage.value,
       size: pageSize.value,
@@ -372,11 +496,15 @@ async function fetchList(force = false) {
       tag: tagFilter.value || undefined,
       // 独立搜索关键词：命中文件名或简介，与上面三个筛选项 AND 叠加
       keyword: keyword.value || undefined,
+      // 收藏过滤：仅返回命中的文件（逗号分隔，Spring 自动绑定 List<Long>）
+      ids: favFilterIds,
     }
     const res = await getFileLoadList(props.audience, params, teacherMode.value)
     list.value = res.data.data.records
     total.value = res.data.data.total
     loadError.value = false
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
   } catch (e: any) {
     lastQueryKey = '' // 失败允许重试
     const msg = e?.message || ''
@@ -431,6 +559,8 @@ async function toggleTeacher() {
   keyword.value = ''
   currentPage.value = 1
   teacherForbidden.value = false
+  // 切换教师专属（独立数据集）时退出收藏视图
+  favOnly.value = false
   fetchOptions()
   fetchList()
 }
@@ -592,6 +722,9 @@ watch(() => props.audience, () => {
   keyword.value = ''
   currentPage.value = 1
   teacherMode.value = false
+  // 切换专栏时退出收藏视图并清空星标缓存（各专栏分别回填）
+  favOnly.value = false
+  favIds.value = new Set()
   initStageFilter()
   syncFromQuery()
   fetchOptions()
@@ -891,6 +1024,20 @@ watch(effectiveStage, () => {
           </div>
 
           <div class="file-list-tools">
+            <!-- 我的收藏 toggle：开启后仅查询已收藏文件（与筛选/搜索 AND 叠加），再点退出 -->
+            <button
+              type="button"
+              class="file-fav-toggle"
+              :class="{ 'is-on': favOnly }"
+              :aria-pressed="favOnly"
+              @click="onToggleFavOnly"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+              </svg>
+              {{ favOnly ? '我的收藏中' : '我的收藏' }}
+            </button>
+
             <label class="file-sort">
               <span class="sr-only">排序方式</span>
               <select :value="sortBy" @change="onSortChange">
@@ -972,16 +1119,23 @@ watch(effectiveStage, () => {
           </div>
 
           <div v-else-if="!list.length" class="file-state">
-            <span class="file-state__icon tone-slate">
+            <span class="file-state__icon" :class="favOnly ? 'tone-amber' : 'tone-slate'">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 7a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.6.8L12 7h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
-                <path d="m9.5 13 1.7 1.7 3.6-3.7" />
+                <template v-if="favOnly">
+                  <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                </template>
+                <template v-else>
+                  <path d="M3 7a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.6.8L12 7h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+                  <path d="m9.5 13 1.7 1.7 3.6-3.7" />
+                </template>
               </svg>
             </span>
-            <p class="file-state__title">暂无符合条件的资料</p>
-            <p class="file-state__desc">试试更换学科或模块，或重置筛选条件</p>
+            <p class="file-state__title">{{ favOnly ? '暂无收藏文件' : '暂无符合条件的资料' }}</p>
+            <p class="file-state__desc">
+              {{ favOnly ? '在列表卡片右上角点亮星标，即可把喜欢的资料收进这里' : '试试更换学科或模块，或重置筛选条件' }}
+            </p>
             <div class="file-state__actions">
-              <button v-if="hasActiveFilter" type="button" class="file-state__primary" @click="resetFilters">重置筛选</button>
+              <button v-if="hasActiveFilter && !favOnly" type="button" class="file-state__primary" @click="resetFilters">重置筛选</button>
               <button type="button" class="file-state__ghost" @click="onRefresh">刷新试试</button>
             </div>
           </div>
@@ -992,7 +1146,9 @@ watch(effectiveStage, () => {
               :key="item.id"
               :item="item"
               :view="viewMode"
+              :favorited="favIds.has(String(item.id))"
               @open="openDetail"
+              @toggle-fav="onToggleFav"
             />
           </div>
 
@@ -1721,6 +1877,57 @@ watch(effectiveStage, () => {
   gap: 8px;
 }
 
+/* 我的收藏 toggle：黄色实底，开启后加深并内凹表达按下态 */
+.file-fav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 2px 6px -1px rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-fav-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.file-fav-toggle:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.45);
+}
+
+.file-fav-toggle:active {
+  transform: translateY(1px);
+}
+
+.file-fav-toggle:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
+.file-fav-toggle.is-on {
+  color: #ffffff;
+  border-color: rgba(180, 83, 9, 0.4);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow:
+    inset 0 2px 4px rgba(120, 53, 15, 0.25),
+    0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.file-fav-toggle.is-on svg {
+  fill: currentColor;
+}
+
 .file-sort {
   position: relative;
   display: inline-flex;
@@ -1945,6 +2152,12 @@ watch(effectiveStage, () => {
 .file-state__icon.tone-slate {
   --tone: #64748b;
   --tone-bg: #f8fafc;
+}
+
+.file-state__icon.tone-amber {
+  --tone: #d97706;
+  --tone-bg: #fffbeb;
+  --tone-ring: rgba(245, 158, 11, 0.18);
 }
 
 .file-state__title {
@@ -2175,6 +2388,10 @@ watch(effectiveStage, () => {
   .file-list-tools {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .file-fav-toggle {
+    padding: 0 10px;
   }
 
   .file-grid.is-grid,
