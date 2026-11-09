@@ -636,6 +636,19 @@ onUnmounted(() => {
   --hf-canvas: #fbfaf8;
 }
 
+/* ⚠️ 接缝修复：.bg-grid-aurora 自带径向 mask，四周羽化后会露出 html 的
+   冷白 #f8fafc，形成「暖白中心 + 冷白边」的怪圈 —— 正是「发晕」的来源。
+   先在更底层铺一层无 mask 的暖白（fixed 铺满视口，不受 max-width 限制），
+   让羽化的终点仍是暖白，同时完整保留原设计的网格消隐效果。 */
+.home-page.is-editorial::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: var(--hf-canvas);
+  pointer-events: none;
+}
+
 .home-page.is-editorial .bg-grid-aurora {
   background-color: var(--hf-canvas);
   /* 暖底会让橙/蓝 radial 光晕显得发闷，整体降一档；网格线同步减弱 */
