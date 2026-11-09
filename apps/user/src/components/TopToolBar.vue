@@ -196,7 +196,7 @@ function openExpert() {
   top: -2px;
 }
 .tt-brand-title {
-  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--hf-font-sans);
   font-size: 20px;
   font-weight: 800;
   color: #18181B;
@@ -254,7 +254,7 @@ function openExpert() {
   display: none;
 }
 .tt-link {
-  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--hf-font-sans);
   font-size: 15px;
   font-weight: 600;
   color: #3F3F46;

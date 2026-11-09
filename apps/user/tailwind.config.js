@@ -49,8 +49,9 @@ export default {
         },
       },
       fontFamily: {
-        // 与 assets/styles/index.css 的 body 字体栈保持一致：中文系统栈 + 英文 system-ui
-        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'system-ui', '"PingFang SC"', '"HarmonyOS Sans SC"', 'MiSans', '"Microsoft YaHei"', 'sans-serif'],
+        // 统一读全局 CSS 变量（index.css 的 --hf-font-sans），避免 Tailwind / body /
+        // Element Plus / 局部组件各用一套字形。?font=system 也靠这一个变量切换。
+        sans: ['var(--hf-font-sans)'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       animation: {

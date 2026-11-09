@@ -179,6 +179,8 @@ const handleSocialClick = (url: string, name: string) => {
     <div class="footer-bottom">
       <p class="copyright">{{ siteInfo?.siteDescription }}</p>
       <p class="icp">ICP备案号：{{ siteInfo?.siteIcp ?? '加载中...' }}</p>
+      <!-- MiSans 许可协议要求「在软件中特别注明使用了 MiSans 字体」，此行为合规声明，勿删 -->
+      <p class="font-credit">本站使用 MiSans 字体（© 小米科技有限责任公司）；西文与数字采用 Inter（SIL OFL 1.1）</p>
     </div>
 
     <ElDialog
@@ -208,7 +210,7 @@ const handleSocialClick = (url: string, name: string) => {
 <style scoped>
 .site-footer {
   position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--hf-font-sans);
   overflow: hidden;
   background: #ffffff;
   border-top: 1px solid var(--neutral-border);
@@ -440,6 +442,14 @@ const handleSocialClick = (url: string, name: string) => {
   font-size: 13px;
   color: #9ca3af;
   margin: 0;
+}
+
+/* 合规声明：12px 整数像素 + 略深灰，避免小字发虚（见 2026-11-09 分数字号修复） */
+.font-credit {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6b7280;
+  margin: 8px 0 0;
 }
 
 .wechat-qrcode-container {

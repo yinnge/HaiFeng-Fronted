@@ -1,7 +1,8 @@
-/* 字体基线（2026-11-09）：中文走系统栈、英文数字走系统 UI 字体。
-   原此处为 Google Fonts CDN 的 Geist @import —— 境外依赖、首屏闪烁，
-   现移除；见 .workbuddy/memory/2026-11-09.md。
-   注意：本文件不含任何 @font-face / web font，正文保持零加载零闪烁。 */
+/* 字体基线（2026-11-09）：西文/数字 Inter Variable，中文 MiSans（自托管 web font），
+   系统字体栈兜底；见 assets/styles/misans.css 与 scripts/gen-misans-css.mjs。
+   原首行的 Google Fonts CDN Geist @import（境外依赖 + 首屏闪烁）已于 91a423f 移除。
+   font-display: swap：首次加载有一次字形切换，之后走缓存无闪烁；刻意不做任何
+   opacity/transform 淡入，避免把上午根治的文字毛边（AGENTS.md 第六节）请回来。 */
 
 @tailwind base;
 @tailwind components;
@@ -52,6 +53,15 @@
   --text-body: #4b5563;
   --text-muted: #6b7280;
   --text-subtle: #94a3b8;
+
+  /* 全站统一字体栈（唯一真相）：Inter Variable 管西文/数字 -> MiSans 管中文 -> 系统兜底。
+     实测 EP 2.13.7 dist/index.css 中 --el-font-family 只定义、组件多用 font-family:inherit，
+     所以同页字形不一致的真因是 TopToolBar / SiteFooter 的局部硬编码（已改为引用本变量）；
+     这里仍覆盖 --el-font-family，防御按需引入 / 版本升级时 EP 吃回自己的 Helvetica+雅黑栈。 */
+  --hf-font-sans: 'Inter Variable', 'MiSans', -apple-system, BlinkMacSystemFont,
+                  'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
+                  'Microsoft YaHei', sans-serif;
+  --el-font-family: var(--hf-font-sans);
 }
 
 /* 全局样式 */
@@ -80,10 +90,20 @@ body {
      视觉上不发生宽度变化 → 页面不再左右抖动。 */
   overflow-y: scroll;
   scrollbar-gutter: stable;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
-               'PingFang SC', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', sans-serif;
+  font-family: var(--hf-font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 字体 A/B 对比开关：?font=system 临时切回改版前的系统栈（见 main.ts）。
+   只换变量值，一处生效全站：body / Element Plus / TopToolBar / SiteFooter /
+   Tailwind 的 font-sans 都引用 --hf-font-sans。变量未被引用时 @font-face
+   不会发起任何字体请求，所以此开关下与改版前完全一致、零残留。 */
+/* 注意：此栈刻意不含 'MiSans' —— 该族名已被 misans.css 的 @font-face 注册，
+   一旦出现在栈里就会命中 web font，开关便不再是「改版前的系统栈」。 */
+html.font-system {
+  --hf-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+                  'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ============ 全站中性页面画布（视觉设计系统 2.0） ============ */

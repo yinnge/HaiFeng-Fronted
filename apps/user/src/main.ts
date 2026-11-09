@@ -3,12 +3,21 @@ import { createPinia } from 'pinia'
 import ElementPlus, { ElMessageBox } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
+// Web font：Inter Variable 管西文/数字，MiSans 管中文（统一族名与字重见 misans.css 生成脚本）
+import '@fontsource-variable/inter/wght.css'
+import './assets/styles/misans.css'
 
 import App from './App.vue'
 import router from './router'
 import { setSessionExpiredHandler } from '@haifeng/shared'
 import { useUserStore } from '@/store/modules/user'
 import './assets/styles/index.css'
+
+// 字体 A/B 对比：?font=system 临时切回改版前的系统字体栈。
+// 不写 localStorage，去掉参数即恢复新字体；不做任何淡入动画（避免引入合成层毛边）。
+if (new URLSearchParams(window.location.search).get('font') === 'system') {
+  document.documentElement.classList.add('font-system')
+}
 
 const app = createApp(App)
 
