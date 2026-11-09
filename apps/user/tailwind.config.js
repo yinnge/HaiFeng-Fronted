@@ -49,8 +49,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        // 与 assets/styles/index.css 的 body 字体栈保持一致：中文系统栈 + 英文 system-ui
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'system-ui', '"PingFang SC"', '"HarmonyOS Sans SC"', 'MiSans', '"Microsoft YaHei"', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       animation: {
         'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
