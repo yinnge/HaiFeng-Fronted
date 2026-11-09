@@ -145,6 +145,8 @@ onMounted(() => {
   letter-spacing: 0.02em;
 }
 .hf-title {
+  /* Hero 左标题保留 Bold；右侧罗盘走默认 --hf-font-sans 轻档 */
+  font-family: var(--hf-font-strong);
   margin: 16px 0 12px;
   font-size: clamp(30px, 3.4vw, 46px);
   line-height: 1.2;

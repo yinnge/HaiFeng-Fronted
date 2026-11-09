@@ -196,7 +196,8 @@ function openExpert() {
   top: -2px;
 }
 .tt-brand-title {
-  font-family: var(--hf-font-sans);
+  /* 顶部品牌名：保留 Bold 的例外区 */
+  font-family: var(--hf-font-strong);
   font-size: 20px;
   font-weight: 800;
   color: #18181B;

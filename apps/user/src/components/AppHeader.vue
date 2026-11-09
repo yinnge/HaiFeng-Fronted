@@ -433,6 +433,8 @@ onBeforeUnmount(() => {
   gap: 0.125rem;
   padding: clamp(0.375rem, 0.3rem + 0.2vw, 0.5rem) clamp(0.5rem, 0.4rem + 0.2vw, 0.625rem);
   font-size: clamp(0.875rem, 0.75rem + 0.35vw, 1.125rem);
+  /* 主导航菜单是用户要求保留力度的例外区 */
+  font-family: var(--hf-font-strong);
   font-weight: 700;
   color: #1f2937;
   white-space: nowrap;
