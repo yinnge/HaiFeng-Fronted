@@ -192,6 +192,9 @@ function formatDate(value?: string) {
   height: 0.85rem;
 }
 
+/* 跑马灯是「持续运动」的整行文字，任何实现都会在动画帧内被位图插值，
+   属于设计使然的现象 B；这里刻意只做 opacity/translate 的匀速平移，
+   不再叠加 scale / filter / will-change，避免静止时（hover 暂停）依然发糊。 */
 @keyframes ann-marquee {
   from {
     transform: translateX(0);

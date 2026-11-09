@@ -189,7 +189,7 @@ onMounted(() => {
 }
 
 .english-nav-item:active {
-  transform: scale(0.97);
+  transform: none;
 }
 
 /* ===== 右侧：考试类型下拉框 ===== */

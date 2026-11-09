@@ -719,7 +719,7 @@ onMounted(() => {
 .tools-pop-enter-from,
 .tools-pop-leave-to {
   opacity: 0;
-  transform: translateY(10px) scale(0.96);
+  transform: translateY(10px);
 }
 
 /* 分页器：当前页品牌橙实心，其余浅灰描边 */

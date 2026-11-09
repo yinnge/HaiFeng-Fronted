@@ -213,7 +213,9 @@ onMounted(() => {
   border-color: #cbd5e1;
 }
 .hf-cta-btn:active {
-  transform: translateY(0);
+  /* 归 none 而不是 translateY(0)：后者仍是变换节点，文字会常驻合成层 */
+  transform: none;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.22);
 }
 
 .hf-hero-right {

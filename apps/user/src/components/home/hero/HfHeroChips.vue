@@ -132,10 +132,12 @@ function onChildClick(columnKey: ColumnKey, color: string) {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.2s ease;
+  /* 不用 filter: brightness()：过滤链会把这颗 12px 文字胶囊整块位图化 */
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 .hf-chip-child:hover {
-  filter: brightness(0.97);
+  background: color-mix(in srgb, var(--chip-bg) 78%, var(--chip) 22%);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--chip) 16%, transparent);
 }
 
 .hf-chips-expand-enter-active,

@@ -399,7 +399,7 @@ async function handleCopyInviteCode() {
 }
 
 .copy-btn:active {
-  transform: scale(0.96);
+  transform: none;
 }
 
 /* ===== 账户概览 ===== */

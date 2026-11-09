@@ -76,13 +76,20 @@ const MODULE_ICONS: Record<string, Component> = {
 .hf-node {
   position: absolute;
   z-index: 3;
+  /* 用负 margin 完成「中心对齐」，不写 translate(-50%,-50%)：
+     常驻 transform 会让整个节点（含标题/副标题/序号文字）永久停留在合成层。 */
+  margin-left: -84px; /* 168 / 2 */
+  margin-top: -32px; /* 64 / 2 */
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  /* 位置仍按原设计瞬移，只淡入；缩放动画在 ::before 装饰层上进行 */
+  transition: opacity 0.4s ease;
+  transition-delay: var(--hf-node-delay, 0ms);
 }
 .hf-node-inner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -90,24 +97,50 @@ const MODULE_ICONS: Record<string, Component> = {
   height: 64px;
   padding: 0 12px;
   border-radius: 16px;
+  /* 背景 / 边框 / 阴影全部下沉到 ::before 纯装饰层，文字容器零 transform */
+}
+/* 只缩放背景层、文字不动：入场 0.6→1、展开 1.15、其他节点 0.92 都落在这里 */
+.hf-node-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 23, 42, 0.05);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.02),
     0 8px 24px -4px rgba(15, 23, 42, 0.08);
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transform: scale(var(--hf-node-scale, 1));
+  transition:
+    transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+  transition-delay: var(--hf-node-delay, 0ms);
+  pointer-events: none;
 }
-.hf-node:hover .hf-node-inner {
-  transform: translateY(-2px);
+/* 内容层始终盖在装饰层之上，且不参与任何 transform */
+.hf-node-icon,
+.hf-node-body,
+.hf-node-arrow {
+  position: relative;
+  z-index: 1;
+}
+.hf-node-badge,
+.hf-node-hot {
+  z-index: 1;
+}
+.hf-node:hover .hf-node-inner::before {
+  transform: scale(var(--hf-node-scale, 1)) translateY(-2px);
   border-color: rgba(249, 115, 22, 0.22);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.03),
     0 14px 28px -6px rgba(15, 23, 42, 0.12);
+  transition-delay: 0ms;
 }
 .hf-node:focus-visible {
   outline: none;
 }
-.hf-node:focus-visible .hf-node-inner {
+.hf-node:focus-visible .hf-node-inner::before {
   border-color: rgba(249, 115, 22, 0.5);
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
 }
@@ -134,7 +167,8 @@ const MODULE_ICONS: Record<string, Component> = {
   text-align: left;
 }
 .hf-node-sub {
-  font-size: 11.5px;
+  /* 11.5px 这类分数 px 字号在 1x 屏天然发虚，取整（AGENTS.md 铁律 4） */
+  font-size: 11px;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;

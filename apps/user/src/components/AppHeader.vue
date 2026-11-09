@@ -373,10 +373,13 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 50;
   background: #ffffff;
-  backdrop-filter: blur(12px);
+  /* ⚠️ 不要加常驻 will-change: transform / backdrop-filter：
+     两者都会把整条导航（含全部菜单文字）永久提升为合成层，
+     Windows/Chrome 下丢失子像素抗锯齿 → 全站导航文字发毛。
+     Chrome 对 transform 过渡会自动临时提升合成层、结束自动回落，无需声明。
+     纯白不透明底也让 backdrop-filter 完全没有视觉收益。 */
   border-bottom: 1px solid var(--neutral-border);
   transition: transform 0.3s ease;
-  will-change: transform;
 }
 
 /* 滚动收起（抽屉式上滑）：仅非主页页面滚动离开顶部后触发 */

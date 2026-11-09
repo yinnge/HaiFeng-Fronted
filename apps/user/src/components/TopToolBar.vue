@@ -268,7 +268,7 @@ function openExpert() {
   background: rgba(249, 115, 22, 0.06);
 }
 .tt-link:active {
-  transform: scale(0.97);
+  transform: none;
 }
 .tt-link.active,
 .tt-link.router-link-active {

@@ -73,7 +73,7 @@ export const HERO_LOGO = logoMain
 export const HERO_BADGE_TEXT = 'AI 驱动 · 全周期升学规划'
 /** 主标题：前缀 + 橙色渐变强调词 */
 export const HERO_TITLE = {
-  prefix: '无论你在哪个阶段，',
+  prefix: '无论你在哪个阶段',
   highlight: '都有下一步的答案',
 } as const
 /** 副标题 */
@@ -81,7 +81,7 @@ export const HERO_SUBTITLE = '用数据，为每一步升学选择兜底'
 /** 数据来源行（前置 ShieldCheck） */
 export const HERO_DATA_SOURCE = '数据来源：教育考试院 · 阳光高考 · 高校研招网'
 /** Hero 搜索框占位符 */
-export const HERO_SEARCH_PLACEHOLDER = '搜索院校、专业、分数线，如：山西大学 计算机'
+export const HERO_SEARCH_PLACEHOLDER = '搜索院校、专业等，如：山西大学 计算机'
 /** 双 CTA（§6-7）。主按钮进「高考志愿填报」路由，次按钮复用「专家咨询预约」对话框 */
 export const HERO_CTA: HeroCta[] = [
   { label: '开始志愿规划', primary: true, kind: 'route', route: '/gaokao' },

@@ -452,7 +452,7 @@ loadCommission()
 .withdraw-btn:hover {
   background: linear-gradient(135deg, #e8722a, #d4661a) !important;
   box-shadow: 0 6px 16px rgba(232, 114, 42, 0.4);
-  transform: translateY(-1px) scale(1.02);
+  transform: translateY(-1px);
 }
 
 /* 已邀请人数 */

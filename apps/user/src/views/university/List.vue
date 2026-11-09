@@ -1248,7 +1248,7 @@ onMounted(async () => {
   box-shadow: 0 6px 18px rgba(249, 115, 22, 0.4);
 }
 .btn-search:active {
-  transform: translateY(0) scale(0.98);
+  transform: none;
 }
 
 /* ===== 分页当前页 ===== */

@@ -368,12 +368,12 @@ const handleBackdropClick = (e: MouseEvent) => {
 }
 
 .totp-modal-enter-from .totp-dialog {
-  transform: scale(0.95) translateY(10px);
+  transform: translateY(10px);
   opacity: 0;
 }
 
 .totp-modal-leave-to .totp-dialog {
-  transform: scale(0.95) translateY(10px);
+  transform: translateY(10px);
   opacity: 0;
 }
 </style>

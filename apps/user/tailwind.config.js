@@ -96,9 +96,11 @@ export default {
           from: { opacity: 0, transform: 'translateY(10px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
         },
+        // 不用 scale：含文字容器的缩放会被位图重采样 → 文字发毛
+        // （该动画当前未使用，保留为「正确写法」模板，见 AGENTS.md 第六节）
         scaleIn: {
-          from: { opacity: 0, transform: 'scale(0.95)' },
-          to: { opacity: 1, transform: 'scale(1)' },
+          from: { opacity: 0, transform: 'translateY(8px)' },
+          to: { opacity: 1, transform: 'none' },
         },
       },
       boxShadow: {

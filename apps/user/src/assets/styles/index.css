@@ -462,15 +462,21 @@ body.el-popup-parent--hidden {
   transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* ============ 磁吸按钮物理 ============ */
+/* ============ 磁吸按钮物理 ============
+   ⚠️ 含文字的按钮一律不用 scale 做放大/按压：transform 会把文字提升为
+   合成层位图，缩放瞬间被 GPU 重采样 → Windows/Chrome 下文字发毛。
+   统一改用 translateY 位移 + 阴影收拢表达，稳态 transform: none。
+   见 AGENTS.md 第六节铁律 2。 */
 .magnetic-btn {
-  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+              box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .magnetic-btn:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-2px);
 }
 .magnetic-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: none;
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.1);
   transition-duration: 0.1s;
 }
 
@@ -524,7 +530,7 @@ body.el-popup-parent--hidden {
 
   .card-active:active {
     @apply shadow-card-active;
-    transform: translateY(0) scale(0.98);
+    transform: none;
     transition-duration: 0.1s;
   }
 
@@ -543,7 +549,7 @@ body.el-popup-parent--hidden {
   }
 
   .btn-brand:active {
-    transform: translateY(0) scale(0.98);
+    transform: none;
     transition-duration: 0.1s;
   }
 
@@ -573,7 +579,7 @@ body.el-popup-parent--hidden {
   }
 
   .btn-secondary:active {
-    transform: translateY(0) scale(0.98);
+    transform: none;
     transition-duration: 0.1s;
   }
 

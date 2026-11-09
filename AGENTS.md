@@ -217,7 +217,11 @@
   - `:active` 按压反馈也不要 `scale(0.99)`，用「阴影收拢 + `translateY(0)`」表达。
 - **铁律 3｜`will-change` 只能临时挂**：只加在确实高频动画的元素上，动画结束必须撤回 `auto`；**严禁**写在会长期存在的容器类上（一个 `will-change: transform` 会让整块 section 永久位图化）。
 - **铁律 4｜字号取整**：`rem` 换算后应落在整数 px（`0.8125rem = 13px` ✅ / `0.82rem = 13.12px` ❌），分数 px 字号在 1x 屏上天然发虚。
-- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。
+- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。纯白不透明底上的 `backdrop-filter` 没有视觉收益，直接删。
+- **铁律 6｜需要「放大 / 弹跳 / 倾斜」视觉时，只允许在 `::before` 背景层做**：把卡片的 `background / border / box-shadow / border-radius` 全部下沉到 `::before`（`position:absolute; inset:0; pointer-events:none`），`transform` 只写在这个空伪元素上；内容元素用 `position:relative; z-index:1` 盖在装饰层上，文字层零 transform。
+  - 参考实现：`components/home/hero/HfCompassNode.vue` 的 `.hf-node-inner::before`（消费 `compass-geometry.ts` 下发的 `--hf-node-scale`）、`HfCompassChild.vue` 的 `.hf-child-inner::before`（`hf-pop-bg` 入场弹跳，用 `animation-fill-mode: backwards` 避免锁死 hover）、`views/home/components/PlannerCard.vue` 的 `.planner-pop::before`（倾斜信息卡）。
+  - 配套动作：定位用的 `translate(-50%,-50%)` 也要消掉，改用 `margin-left: -W/2; margin-top: -H/2`；hover 的 `translateY` 同样挪到伪元素；`:active` 一律 `transform: none`，**不要**写 `translateY(0)`（后者仍是变换节点）；波浪错位用 `margin-top` 而非 `translateY`。
+  - `scale(1)` 也是变换节点：`scale >= 1` 的场景必须直接写 `transform: none`，不要「为了统一」保留 `scale(1)`。
 
 ### 4. 排查动作（30 秒定位，先量后改）
 
@@ -266,6 +270,14 @@ document.querySelector('.plan-card').getBoundingClientRect()
   - 加重因素：`.home-plan-grid` 的 `minmax(0,2fr)/minmax(320px,1fr)` + 矩阵 `repeat(2, minmax(0,1fr))` → 实读卡片宽 **395.328125px**，1x 屏（dpr=1）下 1px 描边被重采样成灰雾。
   - 修复：稳态 `filter/transform: none` + `is-settled{will-change:auto}`；移除 `.plan-card__icon` 的 `hover scale` 与 `:active scale`；字号取整（13px / 9px）；`html` 补 `text-rendering: optimizeLegibility` 与 `-webkit-font-smoothing: antialiased`。
   - 验证：`#pathway .section-container` → `filter: none / will-change: auto / transform: none`。
+- **首页 Hero 罗盘 + 全站按钮文字发毛（2026-11-09 根治，勿回退）**
+  - 真凶一（稳态、最严重）：`HfHeroCompass.vue` 舞台常驻 `transform: scale(${scale})`。≥1280 宽屏下 `scale` 恒为 1，但 `scale(1)` 仍是变换节点 → 6 个模块节点 / 子节点 / 返回按钮 / 提示的全部文字被永久位图化。修复：`scale >= 1` 时写 `transform: none`，仅 1024~1279 窄双栏才真正缩放。
+  - 真凶二：`compass-geometry.ts` 的 `moduleStyle` 直接给含文字的 `.hf-node` 下发 `scale(1.15 / 0.92 / 0.6)` → 点击展开放大时文字被插值。修复：改下发 `--hf-node-scale` / `--hf-node-delay`，由 `::before` 纯装饰层消费。
+  - 真凶三：`AppHeader.vue` 常驻 `will-change: transform` + 无视觉收益的 `backdrop-filter: blur(12px)`（底色 `#ffffff` 不透明）→ 全站导航文字常驻合成层。两者均删除；Chrome 对 transform 过渡会自动临时提升、结束回落，无需声明。
+  - 真凶四：全局 `index.css` 的 `.magnetic-btn / .btn-brand / .btn-secondary / .card-active` 与 user/admin 各页 `:active { scale(0.95~0.99) }` 共 31 处 → 统一改 `transform: none` + 阴影/位移/背景表达。
+  - 其余帮凶：`HfHeroChips` 的 `filter: brightness()` hover、`PlannerCard` 双层 `skewX` 抵消、`11.5px` 分数字号、`:active translateY(0)` 残留、`HfHeroCompass` 提示文字的 `translateX(-50%)`。
+  - **保留项（纯装饰层，合法）**：背景图 `scale(1.15)`、图片 hover `scale(1.03/1.04/1.05/1.08)`、loading 圆点、枫叶飘落、罗盘中心圆盘（仅 logo 图片）、以及所有 `::before` 上的 scale。跑马灯匀速平移属设计使然的现象 B，不叠加 scale/filter/will-change 即可。
+  - 验证：两端 `vue-tsc --noEmit` 通过；全库 `transform: ... scale(` 复查仅剩上述纯装饰层。
 
 ---
 
@@ -281,3 +293,4 @@ document.querySelector('.plan-card').getBoundingClientRect()
 - ❌ **严禁**删除 `index.css` 中根治 Element Plus 弹窗抖动的 `scrollbar-gutter: stable` 与 `width: 100% !important` 补丁
 - ❌ **严禁**把入场动画的稳态写成 `filter: blur(0)` 或让 `will-change` 常驻（见第六节铁律 1，会让整块容器永久位图化 → 描边糊、文字虚）
 - ❌ **严禁**给含文字或含序号徽标的容器写 `hover/active { transform: scale() }`（见第六节铁律 2）
+- ❌ **严禁**把「零效果」变换常驻在容器上（`scale(1)` / `translateY(0)` / `translate(-50%,-50%)` 定位），以及给纯白不透明底容器加 `backdrop-filter` 或常驻 `will-change`（见第六节铁律 3/5/6）

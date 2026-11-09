@@ -74,6 +74,6 @@ const { HIGH_IDENTITIES, highIdentity, onHighIdentityChange, gaokaoExtraItems } 
 }
 
 .toolkit-back-btn:active {
-  transform: scale(0.98);
+  transform: none;
 }
 </style>

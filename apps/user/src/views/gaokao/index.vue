@@ -436,7 +436,7 @@ async function initPage() {
 }
 
 .exam-link:active {
-  transform: translateY(0) scale(0.98);
+  transform: none;
 }
 
 /* 进场动画（页面加载时播放一次） */

@@ -221,7 +221,7 @@ function open(): void {
 }
 
 .file-card:active {
-  transform: translateY(-1px) scale(0.997);
+  transform: translateY(-1px);
 }
 
 .tone-rose {

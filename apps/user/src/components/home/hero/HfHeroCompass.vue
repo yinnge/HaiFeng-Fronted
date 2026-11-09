@@ -119,6 +119,11 @@ const playing = computed(() => entered.value && !paused.value)
 /* ---------------- 响应式缩放（1024~1279） ---------------- */
 const stageRef = ref<HTMLElement | null>(null)
 const scale = ref(1)
+/* ⚠️ 稳态绝不写 transform：即便 scale(1) 也是一条变换节点，整个舞台
+   （6 个模块节点 + 子节点 + 返回按钮 + 提示，全都是文字）会被提升为合成层，
+   Windows/Chrome 下丢失 LCD 子像素抗锯齿 → 文字发毛。
+   只有容器窄于 560px 设计坐标系（1024~1279 双栏）才真正做等比缩放。 */
+const stageTransform = computed(() => (scale.value >= 1 ? 'none' : `scale(${scale.value})`))
 let ro: ResizeObserver | null = null
 function measure() {
   if (!rootRef.value || !stageRef.value) return
@@ -161,7 +166,7 @@ onBeforeUnmount(() => {
       :style="{
         width: COMPASS_SIZE.w + 'px',
         height: COMPASS_SIZE.h + 'px',
-        transform: `scale(${scale})`,
+        transform: stageTransform,
       }"
     >
       <HfCompassDecor
@@ -177,7 +182,6 @@ onBeforeUnmount(() => {
       <!-- 中心圆盘 -->
       <button type="button" class="hf-center" :style="centerStyle(compassCtx)" aria-hidden="true" tabindex="-1">
         <img :src="HERO_LOGO" alt="" class="hf-center-logo" />
-        <span class="hf-center-text">你在哪一步？</span>
       </button>
 
       <!-- 返回按钮（展开态，Tab 序最前） -->
@@ -286,8 +290,11 @@ onBeforeUnmount(() => {
 .hf-hint {
   position: absolute;
   bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* 纯文字提示用 left/right + text-align 居中，
+     避免常驻 translateX(-50%) 把这段 12px 文字送进合成层 */
+  left: 0;
+  right: 0;
+  text-align: center;
   z-index: 5;
   font-size: 12px;
   color: #64748b;
