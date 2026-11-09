@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPlanners, getInstitutions } from '@/api/home'
 import type { PlannerListVO, InstitutionListVO } from '@/types/home'
@@ -12,6 +12,26 @@ import HfHeroSection from '@/components/home/hero/HfHeroSection.vue'
 
 // ===== Core =====
 const router = useRouter()
+const route = useRoute()
+
+/* ===== Editorial 试验皮肤（默认关闭） =====
+   仅主页、仅本组件作用域；关闭时 DOM 与计算样式与改版前完全一致（零残留）。
+   ?skin=editorial            暖白 #FAF9F5
+   ?skin=editorial&warm=soft  更保守的微暖 #FBFAF8，用来判断暖底是否发闷
+   ?skin=default              回原版并清除记忆 */
+const SKIN_KEY = 'haifeng:home-skin'
+type HomeSkin = 'default' | 'editorial' | 'soft'
+const skin = computed<HomeSkin>(() => {
+  const q = String(route.query.skin ?? '')
+  if (q === 'default') return 'default'
+  if (q === 'editorial') return route.query.warm === 'soft' ? 'soft' : 'editorial'
+  const saved = localStorage.getItem(SKIN_KEY)
+  return saved === 'editorial' || saved === 'soft' ? saved : 'default'
+})
+watch(skin, (v) => {
+  if (v === 'default') localStorage.removeItem(SKIN_KEY)
+  else localStorage.setItem(SKIN_KEY, v)
+}, { immediate: true })
 
 // ===== Planner =====
 const planners = ref<PlannerListVO[]>([])
@@ -169,7 +189,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="home-page">
+  <div class="home-page" :class="skin === 'default' ? '' : `is-editorial is-warm-${skin}`">
     <!-- ==================== 消隐微网格 + 顶部双色极光（DESIGN.md） ==================== -->
     <div class="bg-grid-aurora" aria-hidden="true"></div>
 
@@ -595,5 +615,76 @@ onUnmounted(() => {
   .section-wrapper {
     padding: 2.5rem 0;
   }
+}
+
+/* ============================================================
+   Editorial 试验皮肤（Claude 式杂志感）｜默认关闭
+   全部规则挂在 .home-page.is-editorial 下 → 关闭时零残留。
+   只动「画布 / 标题气质 / 正文节奏」：卡片白、圆角、CTA 品牌橙、
+   序号角标、共用导航、admin、全局 index.css 一律不动。
+   注意：不引入任何 transform / filter / will-change / backdrop-filter，
+   避免把上一轮刚根治的文字毛边（AGENTS.md 第六节）请回来。
+   ============================================================ */
+.home-page.is-editorial {
+  --hf-canvas: #faf9f5;      /* Claude 暖白 */
+  --hf-ink: #1f1e1d;         /* 深灰褐，替代纯黑感 */
+  --hf-accent: #d97757;      /* 低饱和赭橙，仅次级点缀 */
+  line-height: 1.7;
+}
+/* 保守档：只微暖，用来直接判断「暖底会不会晕」 */
+.home-page.is-editorial.is-warm-soft {
+  --hf-canvas: #fbfaf8;
+}
+
+.home-page.is-editorial .bg-grid-aurora {
+  background-color: var(--hf-canvas);
+  /* 暖底会让橙/蓝 radial 光晕显得发闷，整体降一档；网格线同步减弱 */
+  background-image:
+    radial-gradient(at 20% 0%, rgba(217, 119, 87, 0.045) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+    linear-gradient(to right, rgba(31, 30, 29, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(31, 30, 29, 0.028) 1px, transparent 1px);
+}
+
+/* 区块标题：字重克制 + 深灰褐 + 负字距归零；标题单独收紧行高 */
+.home-page.is-editorial .section-title {
+  font-weight: 600;
+  color: var(--hf-ink);
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+}
+.home-page.is-editorial .section-sub {
+  color: #6b6862;
+}
+
+/* Hero 大标题在子组件内，用 :deep 穿透（非 teleport，安全） */
+.home-page.is-editorial :deep(.hf-title) {
+  font-weight: 600;
+  color: var(--hf-ink);
+  letter-spacing: 0;
+}
+/* 去掉渐变文字（也是上一轮列出的毛边帮凶之一），改纯色赭橙强调 */
+.home-page.is-editorial :deep(.hf-title-hl) {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: var(--hf-accent);
+  color: var(--hf-accent);
+}
+.home-page.is-editorial :deep(.hf-subtitle) {
+  font-weight: 400;
+  color: #54514b;
+}
+.home-page.is-editorial :deep(.hf-source) {
+  color: #6b6862;
+}
+.home-page.is-editorial :deep(.hf-badge) {
+  color: #9a5c43;
+  background: #f7efe9;
+}
+/* 罗盘节点标题 700→600；徽标/按钮/序号角标保持原字重与品牌橙，
+   功能性组件（矩阵/公告/工具箱/弹窗）只吃底色与行高继承，不改内部排版 */
+.home-page.is-editorial :deep(.hf-node-title) {
+  font-weight: 600;
 }
 </style>
