@@ -214,10 +214,15 @@ function openExpert() {
   color: transparent;
 }
 .tt-brand-sub {
-  font-size: 11.5px;
+  /* 小字清晰度四件套（AGENTS.md 第六节铁律 4）：
+     ① 分数字号 11.5px → 12px：1x 屏上分数 px 字号天然发虚
+     ② 中灰 #71717A → zinc-600：400 字重的小字需要更高笔画对比
+     ③ 去掉 0.01em 小数 letter-spacing，避免每个字都落在分数像素上
+     ④ 全程不引入 transform / filter / will-change（上午毛边治理结论） */
+  font-size: 12px;
   font-weight: 400;
-  color: #71717A;
-  letter-spacing: 0.01em;
+  color: #52525B;
+  letter-spacing: 0;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -250,7 +255,7 @@ function openExpert() {
 }
 .tt-link {
   font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: #3F3F46;
   letter-spacing: 0.01em;
