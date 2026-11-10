@@ -434,7 +434,7 @@ onMounted(() => {
       <div class="major-layout" :class="filterCollapsed ? 'is-collapsed' : ''">
         <!-- 左侧筛选栏 -->
         <aside class="relative lg:sticky lg:top-24 lg:self-start">
-          <!-- 收起按钮放在 aside（筛选卡外层）右上角，紧贴卡片上边缘，不与卡内「重置」挤在同一行 -->
+          <!-- 收起按钮：绝对定位收在筛选卡内部右上角，不探出卡片；flex 居中让图标贴合框中心 -->
           <button
             v-if="!filterCollapsed"
             class="collapse-btn hidden lg:inline-flex"
@@ -1114,15 +1114,18 @@ onMounted(() => {
   height: 30px;
   border-radius: 50%;
 }
-/* 相对 aside 定位：紧贴筛选卡右上角、只探出 6px。
-   探出过多会悬在上方门类条与卡片之间的空隙里，视觉上上下都不靠、显得孤立。 */
+/* 相对 aside 定位：完全收在筛选卡内部右上角（与卡内「重置」同一水平带），不探出卡片边缘。
+   aside 与卡片同宽，top/right 即卡片内边距坐标；flex 居中保证图标严格贴合框中心。 */
 .collapse-btn {
   position: absolute;
-  top: -6px;
+  top: 12px;
   right: 12px;
   z-index: 2;
   width: 38px;
   height: 38px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   border: 1px solid rgba(249, 115, 22, 0.28);
   border-radius: 12px;
   background: #ffffff;
