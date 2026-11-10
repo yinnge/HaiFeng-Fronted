@@ -294,3 +294,63 @@ document.querySelector('.plan-card').getBoundingClientRect()
 - ❌ **严禁**把入场动画的稳态写成 `filter: blur(0)` 或让 `will-change` 常驻（见第六节铁律 1，会让整块容器永久位图化 → 描边糊、文字虚）
 - ❌ **严禁**给含文字或含序号徽标的容器写 `hover/active { transform: scale() }`（见第六节铁律 2）
 - ❌ **严禁**把「零效果」变换常驻在容器上（`scale(1)` / `translateY(0)` / `translate(-50%,-50%)` 定位），以及给纯白不透明底容器加 `backdrop-filter` 或常驻 `will-change`（见第六节铁律 3/5/6）
+- ❌ **严禁**用 `<link>` / `@import` 引境外字体 CDN、在组件里硬编码局部 `font-family` 栈、或为修「字太粗」逐模块改业务 CSS 的 `font-weight`（一律见第八节）
+- ❌ **严禁**删除 `SiteFooter.vue` 页脚的 `.font-credit`（MiSans 许可协议的合规义务，见第八节）
+
+---
+
+## 八、 User 端字体基线与字重治理（2026-11-10 定稿）
+
+> **适用范围：仅 `apps/user`**。Admin 端有独立字体栈，未接入任何 web font，禁止顺手改动。
+> `?skin=editorial` 暖白试验皮肤已删除；画布保持冷白 `#f8fafc`（见第二节），字体与底色互不影响。
+
+### 1. 唯一真相：`--hf-font-sans`
+
+定义在 `apps/user/src/assets/styles/index.css` 的 `:root`：
+
+```css
+--hf-font-sans: 'Inter Variable', 'MiSans', -apple-system, BlinkMacSystemFont,
+                'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
+                'Microsoft YaHei', sans-serif;
+```
+
+- `'Inter Variable'` 管西文/数字、`'MiSans'` 管中文，字体栈按字符逐个回退，**不需要给具体元素加字体 class**（数据大数字、日期、XLSX/PDF 徽标、PATHWAY 小标签自动生效）。
+- 以下位置**全部引用该变量**，禁止再写局部硬编码字体栈：`body`、`--el-font-family`（防御 EP 升级）、`tailwind.config.js` 的 `fontFamily.sans`、`TopToolBar.vue`、`SiteFooter.vue`。历史上同页跑 3 套字形（「有的地方可以、有的地方不可以」）就是局部硬编码造成的：实测 EP 2.13.7 的 `dist/index.css` 里 `--el-font-family` 只定义、0 引用，组件多用 `font-family: inherit`。
+- `?font=system` → `html.font-system` 覆盖该变量回系统栈做 A/B；**该旧栈刻意不含 `'MiSans'`**（族名已被 `@font-face` 注册，写进去就会命中 web font、开关失效）。
+
+### 2. 字体来源与构建
+
+| 包 | 版本 | 引入位置 | 说明 |
+|---|---|---|---|
+| `misans-webfont` | 4.3.1 | `main.ts` → `./assets/styles/misans.css`（生成物） | 简中 4 字重 / 753 分片 / 23.5 MB 进 dist；浏览器按 `unicode-range` 只下命中分片 |
+| `@fontsource-variable/inter` | 5.3.0 | `main.ts` → `@fontsource-variable/inter/wght.css` | `font-weight: 100 900` 可变字重，7 个 subset |
+
+- **`apps/user/scripts/gen-misans-css.mjs` 是字体 CSS 的唯一来源**（`pnpm --filter @haifeng/user fonts:gen`）；生成物 `misans.css` 勿手改。
+- 脚本做三件事：① 统一分包不一致的族名（regular/bold = `MiSans`，medium = `MiSans Medium`，semibold = `MiSans Semibold`，且后两者 weight 都标 400，直接引会让 600 匹配到 Bold）；② 按 `FACE_SPECS` 重排字重；③ 删 `local()`、woff2 改本地相对路径交 Vite 打包，**零 jsdelivr / unpkg 境外请求**（对齐 `91a423f` 删除 Geist CDN）。
+- ⚠️ **升级 `misans-webfont` 后必须重跑 `fonts:gen`**，否则族名与路径失效。
+- 成本：主 CSS 1,058 KB / gzip 269 KB，其中字体声明约 591 KB 源码；`font-display: swap` 首次有一次字形切换、缓存后无。刻意不做淡入动画，避免请回第六节的毛边。
+
+### 3. 字重策略：`FACE_SPECS` 双族名封顶
+
+| 族名 | 源字形 | `font-weight` | 用途 |
+|---|---|---|---|
+| `MiSans`（默认 `--hf-font-sans`） | Regular | `100 600` | 正文 / 标签 / 按钮 / 罗盘节点 |
+| | Medium | `700` | 次级强调 |
+| | Semibold | `800 900` | **全站最重**（替代 Bold） |
+| `MiSans Display`（`--hf-font-strong`） | Bold | `100 900` | 仅 3 处例外 |
+
+**例外 3 处**（保留 Bold）：`HfHeroSection.vue .hf-title`、`AppHeader.vue .nav-link`、`TopToolBar.vue .tt-brand-title`。
+
+- 业务代码里 **1176 处 `font-weight` 声明一处都不用改**：任何值最多命中 Semibold，不会再出现「厚重」；只有显式引用 `--hf-font-strong` 才拿 Bold。这是「以后不用逐模块调字重」的根本原因。
+- 调全站轻重 → 只改 `FACE_SPECS` 并重跑；让某处变粗 → 加一行 `font-family: var(--hf-font-strong)`；让例外区也变轻 → 删那 3 处引用。
+- `html.font-system` 必须同步 `--hf-font-strong: var(--hf-font-sans)`，否则 A/B 开关仍会加载 Bold。
+- 静态字体声明 `font-weight` 范围（如 `100 600`）是 CSS Fonts 4 合法写法：命中区间即使用该 face，不插值、不触发合成加粗。
+
+### 4. 字体相关严禁
+
+- ❌ **严禁**用 `<link>` / `@import` 引 `fonts.googleapis.com`、`fonts.gstatic.com`、jsdelivr 等境外 CDN。技术上 Google Fonts 与 MiSans **完全兼容**（族名排在 MiSans 前，西文走它、中文自动回退），但国内不稳、刚删过境外 CDN，且**只对西文有效、救不了中文厚重**（那是字重问题）。要看中某个字体，用 `@fontsource-variable/*` 本地包 + `main.ts` import。
+- ❌ **严禁**引 Google Fonts 的中文字体（Noto Sans SC 等）：体积巨大且会和 MiSans 抢中文。
+- ❌ **严禁**在组件里再写局部 `font-family` 硬编码栈（统一读 `--hf-font-sans`）。
+- ❌ **严禁**为修某个模块「字太粗」去逐个改业务 CSS 的 `font-weight` —— 一律改 `FACE_SPECS`。
+- ❌ **严禁**删除 `SiteFooter.vue` 页脚的 `.font-credit`。《MiSans 字体知识产权许可协议》要求「在软件中特别注明使用了 MiSans 字体」，这是**合规义务**；npm 包的 Apache-2.0 只管分包代码，字体文件另受该协议约束（还禁止改编字体本身）。
+- ❌ **严禁**用 `opacity` / `transform` / `filter` 做字体淡入，会把第六节根治的文字毛边请回来。
