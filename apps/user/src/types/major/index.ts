@@ -51,6 +51,8 @@ export interface MajorQueryDTO extends BasePageQuery {
   code?: string
   majorType?: string
   majorCategory?: string
+  /** 授予学位：精准匹配（eq），与其它条件 AND；空值不过滤。候选值来自 /degree-awarded/options */
+  degreeAwarded?: string
   /** 排序字段：综合(comprehensive, 默认) / 就业率(employmentRate) / 薪资水平(salaryMax) / 热度(sortOrder) */
   sortBy?: 'comprehensive' | 'employmentRate' | 'salaryMax' | 'sortOrder'
   sortOrder?: 'asc' | 'desc'

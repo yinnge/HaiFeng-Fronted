@@ -4,13 +4,14 @@ import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  ArrowRight, ArrowUp, Atom, BookMarked, BookOpen, Boxes, Brain, Briefcase,
+  ArrowRight, ArrowUp, Atom, Award, BookMarked, BookOpen, Boxes, Brain, Briefcase,
   BriefcaseBusiness, ChartNoAxesColumnIncreasing, ChevronsRight, Cog, Coins,
   FileText, GraduationCap, HeartPulse, Landmark, Layers, LayoutGrid, Leaf,
-  List as ListIcon, Monitor, Palette, PenLine, RotateCcw, Scale, School,
-  Search, SearchX, Sparkles, Sprout, TrendingUp, UserRound, Wrench, X,
+  List as ListIcon, Monitor, Palette, PanelLeftClose, PanelLeftOpen, PenLine,
+  RotateCcw, Scale, School, Search, SearchX, Sparkles, Sprout, TrendingUp,
+  UserRound, Wrench,
 } from 'lucide-vue-next'
-import { getMajorList, getMajorCategoryStats } from '@/api/major'
+import { getMajorList, getMajorCategoryStats, getDegreeAwardedOptions } from '@/api/major'
 import type { MajorListVO, MajorCategoryStatVO, MajorQueryDTO } from '@/types/major'
 import { Motion } from 'motion-v'
 import { useExpertContact } from '@/composables/useExpertContact'
@@ -29,6 +30,9 @@ const pageSize = ref(12)
 
 const stats = ref<MajorCategoryStatVO[]>([])
 const showAllCategories = ref(false)
+const degreeOptions = ref<string[]>([])
+/** 左侧筛选栏收起态；<lg 单列场景由 CSS 强制展开，见 .major-layout / .filter-rail */
+const filterCollapsed = ref(false)
 
 /* ---------- 学科门类语义图标（lucide） ---------- */
 const CATEGORY_ICONS: Record<string, Component> = {
@@ -78,6 +82,7 @@ function majorIcon(item: MajorListVO): Component {
 const filter = reactive({
   name: '',
   majorCategory: '',
+  degreeAwarded: '',
   type: '本科' as '全部' | '本科' | '专科',
   employmentRateMin: '',
   employmentRateMax: '',
@@ -150,12 +155,29 @@ function salaryText(min?: number | null, max?: number | null): string {
   if (!min && max) return `${max.toLocaleString()} 以内`
   return `${min!.toLocaleString()} - ${max!.toLocaleString()}`
 }
+/** 卡片指标区专用：去掉分隔符两侧空格，给 4~5 位数的薪资留出完整展示宽度；表格仍用 salaryText */
+function salaryCompact(item: MajorListVO): string {
+  return salaryText(item.salaryMin, item.salaryMax).replace(' - ', '-')
+}
 
 /* ---------- 统计条 ---------- */
 const categoryTotal = computed(() => stats.value.reduce((sum, s) => sum + (s.count || 0), 0))
 const visibleCategories = computed(() => (showAllCategories.value ? stats.value : stats.value.slice(0, 8)))
 
 /* ===================== 数据请求 ===================== */
+/** /list 与 /degree-awarded/options 共用的筛选参数（不含学位自身、不含分页/排序） */
+function currentFilterParams() {
+  return {
+    name: filter.name.trim() || undefined,
+    majorType: filter.type === '全部' ? undefined : filter.type,
+    majorCategory: filter.majorCategory || undefined,
+    employmentRateMin: filter.employmentRateMin ? Number(filter.employmentRateMin) : undefined,
+    employmentRateMax: filter.employmentRateMax ? Number(filter.employmentRateMax) : undefined,
+    salaryMin: filter.salaryMin ? Number(filter.salaryMin) : undefined,
+    salaryMax: filter.salaryMax ? Number(filter.salaryMax) : undefined,
+  }
+}
+
 async function fetchList() {
   loading.value = true
   try {
@@ -163,13 +185,8 @@ async function fetchList() {
     query.size = pageSize.value
     query.sortBy = sortType.value
     query.sortOrder = 'desc'
-    query.name = filter.name.trim() || undefined
-    query.majorType = filter.type === '全部' ? undefined : filter.type
-    query.majorCategory = filter.majorCategory || undefined
-    query.employmentRateMin = filter.employmentRateMin ? Number(filter.employmentRateMin) : undefined
-    query.employmentRateMax = filter.employmentRateMax ? Number(filter.employmentRateMax) : undefined
-    query.salaryMin = filter.salaryMin ? Number(filter.salaryMin) : undefined
-    query.salaryMax = filter.salaryMax ? Number(filter.salaryMax) : undefined
+    Object.assign(query, currentFilterParams())
+    query.degreeAwarded = filter.degreeAwarded || undefined
     const res = await getMajorList(query)
     list.value = res.data.data.records
     total.value = res.data.data.total
@@ -177,6 +194,21 @@ async function fetchList() {
     ElMessage.error(e?.message || '获取专业列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 候选学位随其它筛选条件联动。刻意剔除 degreeAwarded 自身：
+ * 后端 options 与 /list 共用 wrapper，带上自身会被 eq 锁死成只剩当前选中项。
+ * 同时显式带合法分页（后端继承 BasePageQueryDTO，size 需落在 [10,100]）。
+ */
+async function fetchDegreeOptions() {
+  try {
+    const params: MajorQueryDTO = { page: 1, size: 12, ...currentFilterParams() }
+    const res = await getDegreeAwardedOptions(params)
+    degreeOptions.value = res.data.data || []
+  } catch {
+    degreeOptions.value = []
   }
 }
 
@@ -190,40 +222,47 @@ async function fetchStats() {
   }
 }
 
+/** 筛选条件变化时列表与学位候选值一起刷新（排序/翻页不影响候选集合，不调此函数） */
+function refresh() {
+  fetchList()
+  fetchDegreeOptions()
+}
+
 /* ===================== 交互 ===================== */
 function handleSearch() {
   currentPage.value = 1
-  fetchList()
+  refresh()
 }
 
 function handleReset() {
   filter.name = ''
   filter.majorCategory = ''
+  filter.degreeAwarded = ''
   filter.type = '本科'
   filter.employmentRateMin = ''
   filter.employmentRateMax = ''
   filter.salaryMin = ''
   filter.salaryMax = ''
   currentPage.value = 1
-  fetchList()
+  refresh()
 }
 
 function onTypeChange(type: '全部' | '本科' | '专科') {
   filter.type = type
   currentPage.value = 1
-  fetchList()
+  refresh()
 }
 
 function toggleCategory(cat: string) {
   filter.majorCategory = filter.majorCategory === cat ? '' : cat
   currentPage.value = 1
-  fetchList()
+  refresh()
 }
 
 function clearCategory() {
   filter.majorCategory = ''
   currentPage.value = 1
-  fetchList()
+  refresh()
 }
 
 function changeSort(sort: typeof sortType.value) {
@@ -259,8 +298,7 @@ const scenePills = [
   { label: '学科评估', bg: '#FFF1F2', text: '#E11D48', target: 'category-stats' },
 ] as const
 
-/* ---------- 在线工具（悬浮框） ---------- */
-const toolsOpen = ref(false)
+/* ---------- 在线工具（左侧导航 + 收起态图标 rail） ---------- */
 const onlineTools = [
   { label: '院校库查询', icon: 'school', color: '#2563EB', bg: '#EFF6FF', to: '/university' },
   { label: '高考填报志愿', icon: 'edit', color: '#059669', bg: '#ECFDF5', to: '/gaokao' },
@@ -280,12 +318,6 @@ const TOOL_ICONS: Record<string, Component> = {
   expert: UserRound,
 }
 
-function toggleTools() {
-  toolsOpen.value = !toolsOpen.value
-}
-function closeTools() {
-  toolsOpen.value = false
-}
 function onToolClick(tool: (typeof onlineTools)[number]) {
   if (tool.to) {
     router.push(tool.to)
@@ -297,12 +329,11 @@ function onToolClick(tool: (typeof onlineTools)[number]) {
   } else if (tool.action === 'expert') {
     expertContact.open()
   }
-  closeTools()
 }
 
 onMounted(() => {
   fetchStats()
-  fetchList()
+  refresh()
 })
 </script>
 
@@ -400,19 +431,32 @@ onMounted(() => {
       </Motion>
 
       <!-- ============ 两栏布局（左筛选 + 中列表，已移除右栏） ============ -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div class="major-layout" :class="filterCollapsed ? 'is-collapsed' : ''">
         <!-- 左侧筛选栏 -->
         <aside class="lg:sticky lg:top-24 lg:self-start">
-          <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]">
+          <div
+            class="filter-expanded rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]"
+            :class="filterCollapsed ? 'is-hidden' : ''"
+          >
             <div class="mb-5 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="inline-block h-4 w-1 rounded-full bg-gradient-to-b from-orange-500 to-amber-500" />
                 <h2 class="text-base font-bold text-slate-800">筛选条件</h2>
               </div>
-              <button class="flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-500" @click="handleReset">
-                <RotateCcw :size="14" :stroke-width="1.75" />
-                重置
-              </button>
+              <div class="flex items-center gap-2">
+                <button class="flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-700" @click="handleReset">
+                  <RotateCcw :size="14" :stroke-width="1.75" />
+                  重置
+                </button>
+                <button
+                  class="collapse-btn hidden lg:inline-flex"
+                  title="收起筛选条件"
+                  aria-label="收起筛选条件"
+                  @click="filterCollapsed = true"
+                >
+                  <PanelLeftClose :size="16" :stroke-width="1.75" />
+                </button>
+              </div>
             </div>
 
             <div class="space-y-5">
@@ -449,6 +493,24 @@ onMounted(() => {
                   @change="handleSearch"
                 >
                   <el-option v-for="item in stats" :key="item.majorCategory" :label="item.majorCategory" :value="item.majorCategory" />
+                </el-select>
+              </div>
+
+              <!-- 授予学位（候选值随其它筛选条件联动，默认查全部） -->
+              <div>
+                <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                  <Award :size="14" :stroke-width="1.75" class="text-orange-500" />
+                  授予学位
+                </label>
+                <el-select
+                  v-model="filter.degreeAwarded"
+                  placeholder="全部学位"
+                  clearable
+                  filterable
+                  class="w-full"
+                  @change="handleSearch"
+                >
+                  <el-option v-for="opt in degreeOptions" :key="opt" :label="opt" :value="opt" />
                 </el-select>
               </div>
 
@@ -519,6 +581,50 @@ onMounted(() => {
                 搜索
               </button>
             </div>
+          </div>
+
+          <!-- 在线工具：移入左侧，一行一个导航 -->
+          <div
+            class="filter-expanded mt-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]"
+            :class="filterCollapsed ? 'is-hidden' : ''"
+          >
+            <div class="mb-2 flex items-center gap-2">
+              <span class="inline-block h-3.5 w-1 rounded-full bg-gradient-to-b from-orange-500 to-amber-500" />
+              <h3 class="text-sm font-bold text-slate-800">在线工具</h3>
+            </div>
+            <div class="space-y-1">
+              <button
+                v-for="tool in onlineTools"
+                :key="tool.label"
+                class="tool-row"
+                @click="onToolClick(tool)"
+              >
+                <span class="tool-icon" :style="{ background: tool.bg, color: tool.color }">
+                  <component :is="TOOL_ICONS[tool.icon]" :size="16" :stroke-width="1.75" />
+                </span>
+                <span class="tool-label">{{ tool.label }}</span>
+                <ArrowRight :size="13" :stroke-width="1.75" class="tool-arrow" />
+              </button>
+            </div>
+          </div>
+
+          <!-- 收起态：1 枚展开/收起 + 7 枚在线工具图标（严格 8 枚） -->
+          <div class="filter-rail" :class="filterCollapsed ? 'is-shown' : ''">
+            <button class="rail-btn" title="展开筛选条件" aria-label="展开筛选条件" @click="filterCollapsed = false">
+              <PanelLeftOpen :size="18" :stroke-width="1.75" />
+            </button>
+            <button
+              v-for="tool in onlineTools"
+              :key="tool.label"
+              class="rail-btn"
+              :title="tool.label"
+              :aria-label="tool.label"
+              @click="onToolClick(tool)"
+            >
+              <span class="rail-icon" :style="{ background: tool.bg, color: tool.color }">
+                <component :is="TOOL_ICONS[tool.icon]" :size="16" :stroke-width="1.75" />
+              </span>
+            </button>
           </div>
         </aside>
 
@@ -633,7 +739,7 @@ onMounted(() => {
                     <span class="metric-label">就业率</span>
                   </div>
                   <div class="metric-cell">
-                    <span class="metric-value">{{ salaryText(item.salaryMin, item.salaryMax) }}</span>
+                    <span class="metric-value">{{ salaryCompact(item) }}</span>
                     <span class="metric-label">薪资范围（月薪）</span>
                   </div>
                   <div class="metric-cell">
@@ -731,40 +837,6 @@ onMounted(() => {
       </div>
     </main>
 
-    <!-- ============ 在线工具悬浮框 ============ -->
-    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
-      <Transition name="tools-pop">
-        <div v-if="toolsOpen" class="w-72 rounded-2xl border border-slate-100 bg-white p-4 shadow-2xl">
-          <div class="mb-3 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-slate-800">在线工具</h3>
-            <button class="text-slate-400 transition hover:text-slate-600" @click="closeTools">
-              <X :size="16" :stroke-width="1.75" />
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-2.5">
-            <button
-              v-for="tool in onlineTools"
-              :key="tool.label"
-              class="flex flex-col items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 text-center transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
-              @click="onToolClick(tool)"
-            >
-              <span class="flex h-10 w-10 items-center justify-center rounded-xl" :style="{ background: tool.bg, color: tool.color }">
-                <component :is="TOOL_ICONS[tool.icon]" :size="20" :stroke-width="1.75" />
-              </span>
-              <span class="text-xs font-medium text-slate-600">{{ tool.label }}</span>
-            </button>
-          </div>
-        </div>
-      </Transition>
-
-      <button
-        class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-300/50 transition hover:-translate-y-0.5 hover:shadow-2xl active:shadow-lg"
-        title="在线工具"
-        @click="toggleTools"
-      >
-        <Wrench :size="28" :stroke-width="1.75" />
-      </button>
-    </div>
   </div>
 </template>
 
@@ -780,17 +852,6 @@ onMounted(() => {
   transform: translateY(-2px);
   border-color: rgba(249, 115, 22, 0.22);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(249, 115, 22, 0.08);
-}
-
-/* 在线工具悬浮面板过渡 */
-.tools-pop-enter-active,
-.tools-pop-leave-active {
-  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.tools-pop-enter-from,
-.tools-pop-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
 }
 
 /* 分页器：当前页品牌橙实心，其余浅灰描边 */
@@ -826,15 +887,16 @@ onMounted(() => {
   align-items: center;
   gap: 9px;
   padding: 8px 12px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 14px;
-  background: transparent;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
   text-align: left;
   transition: background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 .cat-item:hover {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.06);
+  border-color: rgba(249, 115, 22, 0.24);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
 }
 .cat-item.is-active {
   background: #fff7ed;
@@ -931,7 +993,8 @@ onMounted(() => {
 }
 .major-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 非等宽：学制只有两字，压到 44px，腾出的宽度优先给 4~5 位数薪资，剩余给学位 */
+  grid-template-columns: 60px minmax(0, 1.9fr) minmax(0, 1.1fr) 44px;
   margin-top: 16px;
   padding: 14px 0 12px;
   border-top: 1px solid rgba(15, 23, 42, 0.05);
@@ -949,6 +1012,7 @@ onMounted(() => {
   border-right: 1px solid rgba(15, 23, 42, 0.05);
 }
 .metric-cell:last-child {
+  padding: 0;
   border-right: 0;
 }
 .metric-cell--ring {
@@ -985,5 +1049,124 @@ onMounted(() => {
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(15, 23, 42, 0.05);
   }
+}
+
+/* ============ 左栏收起 / 展开 ============ */
+/* 只过渡 grid 列宽（重排，不是合成层），稳态不写 transform / filter，避免文字毛边 */
+.major-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  transition: grid-template-columns 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.major-layout.is-collapsed {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+/* <lg 本来就是单列，收起态不该出现：强制展开、rail 永不显示 */
+@media (max-width: 1023px) {
+  .major-layout,
+  .major-layout.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.filter-rail {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .filter-expanded.is-hidden {
+    display: none;
+  }
+  .filter-rail.is-shown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  }
+}
+.rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #64748b;
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+.rail-btn:hover {
+  background: #fff7ed;
+  color: #c2410c;
+}
+/* 第一枚（展开/收起）与 7 枚工具图标之间只靠留白分组，不额外加装饰元素 */
+.rail-btn:first-child {
+  margin-bottom: 8px;
+}
+.rail-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #94a3b8;
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+.collapse-btn:hover {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+/* ============ 左侧在线工具：一行一个导航 ============ */
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background-color 0.22s ease;
+}
+.tool-row:hover {
+  background: #fff7ed;
+}
+.tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+}
+.tool-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  transition: color 0.22s ease;
+}
+.tool-arrow {
+  flex: none;
+  color: #cbd5e1;
+  transition: color 0.22s ease;
+}
+.tool-row:hover .tool-label,
+.tool-row:hover .tool-arrow {
+  color: #c2410c;
 }
 </style>
