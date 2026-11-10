@@ -176,14 +176,22 @@ function openExpert() {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  /* 2026-11-10：只让品牌区向左贴合（抵消 .top-toolbar 的 24px padding 中的 16px），
+     logo 左缘距屏幕 24 -> 8px；右侧功能区与搜索框保持原有 24px 呼吸，
+     不全局去掉 padding，也不动 .tt-grid 的 max-width:2200px / margin:0 auto
+     （那是 >=2100 超宽屏封顶留白的既定规范）。想要完全贴边改成 -24px 即可。 */
+  margin-left: -16px;
 }
 .tt-logo-link {
   display: flex;
   flex-shrink: 0;
 }
 .tt-logo {
-  height: 36px;
-  width: 36px;
+  /* 2026-11-10：36 -> 48px（64px 高的工具条内上下各留 8px）。
+     放大 logo 与左右 padding 无关，真正上限是工具条高度，
+     所以只改自身尺寸，不动 .top-toolbar 的全局 padding。 */
+  height: 48px;
+  width: 48px;
   object-fit: contain;
 }
 .tt-brand-text {
@@ -228,7 +236,10 @@ function openExpert() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0;
+  /* 2026-11-10：用户要求 tagline 与「海枫未来规划院」分开约 3px。
+     只给下方这行加 margin-top，不动 .tt-brand-text 的 top:-2px 光学修正、
+     不动 .tt-grid 的 align-items:center（上方间距零改动）。 */
+  margin-top: 3px;
 }
 
 /* 中间搜索：靠左排布（不居中），把空间让给右侧功能区 */

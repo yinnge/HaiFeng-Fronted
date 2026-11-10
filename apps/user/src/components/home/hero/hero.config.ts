@@ -47,6 +47,9 @@ export interface HeroModule {
   iconName: string
   subtitle: string
   columns: ColumnKey[]
+  /** 左上角徽标文案覆盖；不填时显示 columns.length（该模块包含的子专栏数量）。
+      2026-11-10：用户要求「初高中」徽标由 2 改为 1（避免与考公就业同为 2），颜色不变。 */
+  badge?: string
   /** 罗盘静态形态中心坐标（设计坐标系 560×440） */
   center: { x: number; y: number }
 }
@@ -135,7 +138,7 @@ export const HERO_COLUMNS: Record<ColumnKey, HeroColumn> = {
 
 /** 6 个罗盘模块（覆盖全部 10 个专栏：2+1+1+1+3+2=10） */
 export const HERO_MODULES: HeroModule[] = [
-  { key: 'junior-senior', name: '初高中', type: 'multi', color: COLOR.blue, iconName: 'School', subtitle: '初中 · 高中', columns: ['middle', 'high'], center: { x: 116, y: 138 } },
+  { key: 'junior-senior', name: '初高中', type: 'multi', color: COLOR.blue, iconName: 'School', subtitle: '初中 · 高中', columns: ['middle', 'high'], badge: '1', center: { x: 116, y: 138 } },
   { key: 'gaokao', name: '高考志愿', type: 'single', color: COLOR.orange, iconName: 'Target', subtitle: '院校位次与专业精选', columns: ['gaokao'], center: { x: 280, y: 55 } },
   { key: 'english', name: '英语专项', type: 'single', color: COLOR.cyan, iconName: 'Languages', subtitle: '四六级 · 考研英语', columns: ['cet'], center: { x: 116, y: 302 } },
   { key: 'university', name: '大学成长', type: 'single', color: COLOR.emerald, iconName: 'GraduationCap', subtitle: '学分绩点与成长发展', columns: ['college'], center: { x: 444, y: 138 } },

@@ -50,3 +50,5 @@
 - 证书页批量导入（10-26）：`POST /api/v1/admin/certificate/import`。竞赛页（10-27）：`/import/main` + `/import/detail` 两端点、同一弹窗 `importMode` 切换；列头见当日日志。
 - 首页 Hero 双栏重构（11-06，`6e7c6be`）：`components/home/hero/` 全套 + `hero.config.ts` 配置驱动；`useGlobalSearch` / `useColumnFocus` / `useLoopPausable`；矩阵高亮用 `@property --hf-snake-angle` + conic-gradient + mask-composite。
 - 罗盘中心 logo（11-10）：`logo-main.png` 是 800×800 **RGBA，四角 alpha=0、71% 像素全透明**；白圆只是 `HfHeroCompass.vue .hf-center` 的 CSS 壳，已删（无 background / border / radius / shadow），`.hf-center-logo` 44→**112px** 占满原圆圈尺寸，`centerStyle` 的入场/展开 scale 保留（纯图片层合法）。图片自带透明留白，可见枫叶约占画布 67%×81%，若要枫叶本身撑满圆圈可再放大到 128~136px。
+- **罗盘节点左上角徽标 = `module.columns.length`（子专栏数量），不是序号**；两个模块都显示 2 是「恰好都含 2 个专栏」。`HeroModule.badge?: string` 可覆盖文案（初高中 11-10 设为 `'1'`），徽标色由 CSS `var(--m-color)` 按模块注入，与文案无关。
+- 顶部品牌区（11-10）：`.top-toolbar` 高 64px / `padding:0 24px`；`.tt-grid` 的 `max-width:2200px;margin:0 auto` **只在 >2200px 生效**，普通屏的左右留白全来自前者。**左右 padding 不限制 logo 尺寸，上限是 64px 高度** → `.tt-logo` 36→48px、`.tt-brand{margin-left:-16px}` 单独贴合，勿全局去 padding（会让搜索框与右侧菜单一起贴边）。tagline 与品牌名间距由 `.tt-brand-sub{margin-top:3px}` 控制，勿动 `.tt-brand-text{top:-2px}` 光学修正。

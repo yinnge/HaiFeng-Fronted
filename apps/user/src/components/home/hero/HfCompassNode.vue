@@ -66,7 +66,7 @@ const MODULE_ICONS: Record<string, Component> = {
         <ArrowDown v-if="module.type === 'single'" :size="14" :stroke-width="2" />
         <ChevronRight v-else :size="14" :stroke-width="2" />
       </span>
-      <span v-if="module.type === 'multi'" class="hf-node-badge">{{ module.columns.length }}</span>
+      <span v-if="module.type === 'multi'" class="hf-node-badge">{{ module.badge ?? module.columns.length }}</span>
       <span v-if="module.key === 'gaokao'" class="hf-node-hot">热门</span>
     </span>
   </button>
