@@ -434,7 +434,7 @@ onMounted(() => {
       <div class="major-layout" :class="filterCollapsed ? 'is-collapsed' : ''">
         <!-- 左侧筛选栏 -->
         <aside class="relative lg:sticky lg:top-24 lg:self-start">
-          <!-- 收起按钮放在 aside（筛选卡外层）右上角，向上探出卡片边缘，不与卡内「重置」挤在同一行 -->
+          <!-- 收起按钮放在 aside（筛选卡外层）右上角，紧贴卡片上边缘，不与卡内「重置」挤在同一行 -->
           <button
             v-if="!filterCollapsed"
             class="collapse-btn hidden lg:inline-flex"
@@ -453,7 +453,7 @@ onMounted(() => {
                 <span class="inline-block h-4 w-1 rounded-full bg-gradient-to-b from-orange-500 to-amber-500" />
                 <h2 class="text-base font-bold text-slate-800">筛选条件</h2>
               </div>
-              <button class="mr-8 flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-700" @click="handleReset">
+              <button class="mr-10 flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-700" @click="handleReset">
                 <RotateCcw :size="14" :stroke-width="1.75" />
                 重置
               </button>
@@ -1114,25 +1114,26 @@ onMounted(() => {
   height: 30px;
   border-radius: 50%;
 }
-/* 相对 aside 定位：向上探出筛选卡边缘，白底圆角微卡，放大到 38px */
+/* 相对 aside 定位：紧贴筛选卡右上角、只探出 6px。
+   探出过多会悬在上方门类条与卡片之间的空隙里，视觉上上下都不靠、显得孤立。 */
 .collapse-btn {
   position: absolute;
-  top: -16px;
+  top: -6px;
   right: 12px;
   z-index: 2;
   width: 38px;
   height: 38px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(249, 115, 22, 0.28);
   border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  color: #64748b;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  color: #c2410c;
   transition: background-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 .collapse-btn:hover {
   background: #fff7ed;
-  color: #c2410c;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.12);
+  color: #9a3412;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.16);
 }
 
 /* ============ 左侧在线工具：一行一个导航 ============ */
