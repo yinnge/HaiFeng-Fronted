@@ -433,7 +433,17 @@ onMounted(() => {
       <!-- ============ 两栏布局（左筛选 + 中列表，已移除右栏） ============ -->
       <div class="major-layout" :class="filterCollapsed ? 'is-collapsed' : ''">
         <!-- 左侧筛选栏 -->
-        <aside class="lg:sticky lg:top-24 lg:self-start">
+        <aside class="relative lg:sticky lg:top-24 lg:self-start">
+          <!-- 收起按钮放在 aside（筛选卡外层）右上角，向上探出卡片边缘，不与卡内「重置」挤在同一行 -->
+          <button
+            v-if="!filterCollapsed"
+            class="collapse-btn hidden lg:inline-flex"
+            title="收起筛选条件"
+            aria-label="收起筛选条件"
+            @click="filterCollapsed = true"
+          >
+            <PanelLeftClose :size="20" :stroke-width="1.75" />
+          </button>
           <div
             class="filter-expanded rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]"
             :class="filterCollapsed ? 'is-hidden' : ''"
@@ -443,20 +453,10 @@ onMounted(() => {
                 <span class="inline-block h-4 w-1 rounded-full bg-gradient-to-b from-orange-500 to-amber-500" />
                 <h2 class="text-base font-bold text-slate-800">筛选条件</h2>
               </div>
-              <div class="flex items-center gap-2">
-                <button class="flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-700" @click="handleReset">
-                  <RotateCcw :size="14" :stroke-width="1.75" />
-                  重置
-                </button>
-                <button
-                  class="collapse-btn hidden lg:inline-flex"
-                  title="收起筛选条件"
-                  aria-label="收起筛选条件"
-                  @click="filterCollapsed = true"
-                >
-                  <PanelLeftClose :size="16" :stroke-width="1.75" />
-                </button>
-              </div>
+              <button class="mr-8 flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-700" @click="handleReset">
+                <RotateCcw :size="14" :stroke-width="1.75" />
+                重置
+              </button>
             </div>
 
             <div class="space-y-5">
@@ -1114,16 +1114,25 @@ onMounted(() => {
   height: 30px;
   border-radius: 50%;
 }
+/* 相对 aside 定位：向上探出筛选卡边缘，白底圆角微卡，放大到 38px */
 .collapse-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  color: #94a3b8;
-  transition: background-color 0.22s ease, color 0.22s ease;
+  position: absolute;
+  top: -16px;
+  right: 12px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  color: #64748b;
+  transition: background-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 .collapse-btn:hover {
   background: #fff7ed;
   color: #c2410c;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.12);
 }
 
 /* ============ 左侧在线工具：一行一个导航 ============ */
