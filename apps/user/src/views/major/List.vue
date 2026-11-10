@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  ArrowRight, ArrowUp, Atom, BookMarked, BookOpen, Boxes, Brain, Briefcase,
+  BriefcaseBusiness, ChartNoAxesColumnIncreasing, ChevronsRight, Cog, Coins,
+  FileText, GraduationCap, HeartPulse, Landmark, Layers, LayoutGrid, Leaf,
+  List as ListIcon, Monitor, Palette, PenLine, RotateCcw, Scale, School,
+  Search, SearchX, Sparkles, Sprout, TrendingUp, UserRound, Wrench, X,
+} from 'lucide-vue-next'
 import { getMajorList, getMajorCategoryStats } from '@/api/major'
 import type { MajorListVO, MajorCategoryStatVO, MajorQueryDTO } from '@/types/major'
 import { Motion } from 'motion-v'
 import { useExpertContact } from '@/composables/useExpertContact'
+import MajorRateRing from './components/MajorRateRing.vue'
 
 const expertContact = useExpertContact()
 const router = useRouter()
@@ -21,8 +30,49 @@ const pageSize = ref(12)
 const stats = ref<MajorCategoryStatVO[]>([])
 const showAllCategories = ref(false)
 
-// 统一的学科门类图标（毕业帽），所有门类复用同一个，避免"方块"占位感
-const CATEGORY_ICON = 'M12 3L2 8l10 5 10-5-10-5zM6 11v5c0 1.8 2.5 6 2.5S18 17 18 12v-1'
+/* ---------- 学科门类语义图标（lucide） ---------- */
+const CATEGORY_ICONS: Record<string, Component> = {
+  工学: Cog,
+  理学: Atom,
+  文学: BookOpen,
+  管理学: ChartNoAxesColumnIncreasing,
+  艺术学: Palette,
+  经济学: TrendingUp,
+  法学: Scale,
+  教育学: GraduationCap,
+  医学: HeartPulse,
+  农学: Sprout,
+  历史学: Landmark,
+  哲学: Brain,
+}
+function categoryIcon(cat?: string): Component {
+  return CATEGORY_ICONS[cat || ''] || GraduationCap
+}
+
+/** 卡片图标按专业名细分，避免同门类所有卡片长得一样；未命中回退到门类图标 */
+const MAJOR_ICON_RULES: Array<[RegExp, Component]> = [
+  [/计算机|软件|数据科学|人工智能|网络空间|信息安全|物联网|数字媒体|智能科学/, Monitor],
+  [/电子|通信|微电子|集成电路|光电|自动化|电气/, Cog],
+  [/医学|临床|口腔|护理|药学|中医|预防医学/, HeartPulse],
+  [/生物|化学|材料|物理|数学|统计|地理科学/, Atom],
+  [/农学|园艺|植物|动物|林学|食品|种子/, Sprout],
+  [/法学|知识产权|监狱学/, Scale],
+  [/艺术|设计|音乐|美术|戏剧|影视|动画|书法/, Palette],
+  [/金融|经济|会计|财政|贸易|工商|审计/, TrendingUp],
+  [/环境|生态|土木|水利|建筑|城乡|风景园林/, Leaf],
+  [/教育|师范|心理|体育|学前/, GraduationCap],
+  [/语言|文学|新闻|传播|汉语|英语|翻译/, BookOpen],
+  [/管理|行政|公共|物流|旅游|电子商务/, BriefcaseBusiness],
+  [/历史|考古|文物|哲学|宗教/, Landmark],
+  [/机械|车辆|航空|航天|能源|矿业|冶金/, Wrench],
+]
+function majorIcon(item: MajorListVO): Component {
+  const text = `${item.majorName || ''}${item.parentCategory || ''}`
+  for (const [pattern, icon] of MAJOR_ICON_RULES) {
+    if (pattern.test(text)) return icon
+  }
+  return categoryIcon(item.majorCategory)
+}
 
 /* 筛选状态（UI 层），提交时映射到 query */
 const filter = reactive({
@@ -58,14 +108,14 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   理学: { bg: '#ECFDF5', text: '#059669' },
   文学: { bg: '#FFFBEB', text: '#D97706' },
   管理学: { bg: '#FFF7ED', text: '#F97316' },
-  艺术学: { bg: '#F5F3FF', text: '#7C3AED' },
+  艺术学: { bg: '#FFF1F2', text: '#E11D48' },
   经济学: { bg: '#ECFDF5', text: '#059669' },
   法学: { bg: '#EFF6FF', text: '#2563EB' },
   教育学: { bg: '#FFF7ED', text: '#F97316' },
   医学: { bg: '#ECFDF5', text: '#059669' },
   农学: { bg: '#ECFDF5', text: '#059669' },
   历史学: { bg: '#FFFBEB', text: '#D97706' },
-  哲学: { bg: '#F5F3FF', text: '#7C3AED' },
+  哲学: { bg: '#EFF6FF', text: '#2563EB' },
 }
 function categoryColor(cat?: string) {
   return CATEGORY_COLORS[cat || ''] || { bg: '#F1F5F9', text: '#475569' }
@@ -93,10 +143,6 @@ function rateClass(rate?: number | null) {
   if (rate >= 70) return 'text-amber-600'
   return 'text-rose-600'
 }
-function rateText(rate?: number | null) {
-  return rate == null ? '数据统计中' : `${rate.toFixed(1)}%`
-}
-
 /* ---------- 薪资友好渲染 ---------- */
 function salaryText(min?: number | null, max?: number | null): string {
   if (!min && !max) return '薪资数据待公布'
@@ -224,6 +270,15 @@ const onlineTools = [
   { label: 'AI智能规划', icon: 'ai', color: '#F97316', bg: '#FFF7ED', action: 'coming' as const },
   { label: '专家一对一指导', icon: 'expert', color: '#0EA5E9', bg: '#E0F2FE', action: 'expert' as const },
 ]
+const TOOL_ICONS: Record<string, Component> = {
+  school: School,
+  edit: PenLine,
+  book: BookOpen,
+  briefcase: Briefcase,
+  work: Boxes,
+  ai: Sparkles,
+  expert: UserRound,
+}
 
 function toggleTools() {
   toolsOpen.value = !toolsOpen.value
@@ -267,7 +322,7 @@ onMounted(() => {
           <div class="max-w-xl">
             <div class="mb-3 flex items-center gap-3">
               <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                <BookOpen :size="24" :stroke-width="1.75" />
               </span>
               <h1 class="text-2xl font-bold text-slate-800 md:text-3xl">专业列表</h1>
             </div>
@@ -283,7 +338,7 @@ onMounted(() => {
                 @click="scrollToId(pill.target)"
               >
                 <span class="inline-flex h-6 w-6 items-center justify-center rounded-lg" :style="{ background: pill.bg }">
-                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                  <ChevronsRight :size="14" :stroke-width="1.75" />
                 </span>
                 {{ pill.label }}
               </button>
@@ -298,44 +353,48 @@ onMounted(() => {
         :initial="{ opacity: 0, y: 20 }"
         :while-in-view="{ opacity: 1, y: 0 }"
         :transition="{ duration: 0.5, delay: 0.05 }"
-        class="mb-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]"
+        class="mb-6 rounded-2xl border border-slate-200/70 bg-[#F8FAFC] p-5 shadow-[0_1px_2px_rgba(15,23,42,0.02),0_4px_20px_-2px_rgba(15,23,42,0.04)]"
       >
-        <div class="mb-4 flex items-center gap-2">
+        <div class="mb-3 flex items-center gap-2">
           <h2 class="text-base font-bold text-slate-800">学科门类</h2>
           <span class="text-sm text-slate-400">按门类快速筛选</span>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="cat-bar">
           <button
-            class="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all"
-            :class="!filter.majorCategory
-              ? 'border-orange-200 bg-orange-50 text-orange-600 shadow-sm'
-              : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-orange-200'"
+            class="cat-item"
+            :class="!filter.majorCategory ? 'is-active' : ''"
             @click="clearCategory"
           >
-            全部专业
-            <span class="rounded-full bg-white px-2 py-0.5 text-xs font-bold">{{ categoryTotal }}</span>
+            <span class="cat-icon" style="background: #FFF7ED; color: #F97316">
+              <GraduationCap :size="19" :stroke-width="1.75" />
+            </span>
+            <span class="cat-copy">
+              <span class="cat-name">全部专业</span>
+              <span class="cat-count">{{ categoryTotal }}<ArrowUp :size="10" :stroke-width="2" /></span>
+            </span>
           </button>
           <button
             v-for="item in visibleCategories"
             :key="item.majorCategory"
-            class="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all"
-            :class="filter.majorCategory === item.majorCategory
-              ? 'border-orange-200 bg-orange-50 text-orange-600 shadow-sm'
-              : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-orange-200'"
+            class="cat-item"
+            :class="filter.majorCategory === item.majorCategory ? 'is-active' : ''"
             @click="toggleCategory(item.majorCategory)"
           >
-            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full" :style="{ background: categoryColor(item.majorCategory).bg, color: categoryColor(item.majorCategory).text }">
-              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path :d="CATEGORY_ICON" /></svg>
+            <span class="cat-icon" :style="{ background: categoryColor(item.majorCategory).bg, color: categoryColor(item.majorCategory).text }">
+              <component :is="categoryIcon(item.majorCategory)" :size="19" :stroke-width="1.75" />
             </span>
-            {{ item.majorCategory }}
-            <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">{{ item.count }}</span>
+            <span class="cat-copy">
+              <span class="cat-name">{{ item.majorCategory }}</span>
+              <span class="cat-count">{{ item.count }}<ArrowUp :size="10" :stroke-width="2" /></span>
+            </span>
           </button>
           <button
             v-if="stats.length > 8"
-            class="rounded-xl px-4 py-2.5 text-sm font-medium text-orange-500 transition hover:text-orange-600"
+            class="cat-more"
             @click="showAllCategories = !showAllCategories"
           >
-            {{ showAllCategories ? '收起' : '查看更多' }} →
+            {{ showAllCategories ? '收起' : '查看更多' }}
+            <ArrowRight :size="13" :stroke-width="1.75" />
           </button>
         </div>
       </Motion>
@@ -351,7 +410,7 @@ onMounted(() => {
                 <h2 class="text-base font-bold text-slate-800">筛选条件</h2>
               </div>
               <button class="flex items-center gap-1 text-sm text-slate-400 transition hover:text-orange-500" @click="handleReset">
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3M20 15a8 8 0 01-14 3" /></svg>
+                <RotateCcw :size="14" :stroke-width="1.75" />
                 重置
               </button>
             </div>
@@ -360,11 +419,11 @@ onMounted(() => {
               <!-- 专业名称 -->
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                  <svg class="h-3.5 w-3.5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4a1 1 0 001 1h4M9 3h6a1 1 0 011 1v16a1 1 0 01-1 1H9a1 1 0 01-1-1V4a1 1 0 011-1z" /></svg>
+                  <FileText :size="14" :stroke-width="1.75" class="text-orange-500" />
                   专业名称
                 </label>
                 <div class="relative">
-                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5-5m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <Search :size="16" :stroke-width="1.75" class="absolute left-3 top-1/2 -mt-2 text-slate-400" />
                   <input
                     v-model="filter.name"
                     type="text"
@@ -378,7 +437,7 @@ onMounted(() => {
               <!-- 学科门类 -->
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                  <svg class="h-3.5 w-3.5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h6v16H6a2 2 0 00-2 2V5zM20 5a2 2 0 00-2-2h-6v16h6a2 2 0 012 2V5z" /></svg>
+                  <BookMarked :size="14" :stroke-width="1.75" class="text-orange-500" />
                   学科门类
                 </label>
                 <el-select
@@ -396,7 +455,7 @@ onMounted(() => {
               <!-- 专业类型（原顶部本科/专科目录，移入筛选） -->
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                  <svg class="h-3.5 w-3.5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+                  <Layers :size="14" :stroke-width="1.75" class="text-orange-500" />
                   专业类型
                 </label>
                 <div class="grid grid-cols-3 gap-2">
@@ -417,7 +476,7 @@ onMounted(() => {
               <!-- 就业率 -->
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                  <svg class="h-3.5 w-3.5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M7 21V11M12 21V5M17 21v-8" /></svg>
+                  <ChartNoAxesColumnIncreasing :size="14" :stroke-width="1.75" class="text-orange-500" />
                   就业率（%）
                 </label>
                 <div class="flex items-center gap-2">
@@ -436,7 +495,7 @@ onMounted(() => {
               <!-- 薪资范围（月薪） -->
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                  <svg class="h-3.5 w-3.5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22c5 0 9-3 9-7s-4-5-9-5-9 1-9 5 4 7 9 7zM12 2v5M9.5 4.5h5" /></svg>
+                  <Coins :size="14" :stroke-width="1.75" class="text-orange-500" />
                   薪资范围（月薪/元）
                 </label>
                 <div class="flex items-center gap-2">
@@ -453,10 +512,10 @@ onMounted(() => {
               </div>
 
               <button
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-orange-600 hover:to-amber-600 active:scale-[0.98]"
+                class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-orange-600 hover:to-amber-600 active:translate-y-px"
                 @click="handleSearch"
               >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5-5m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <Search :size="16" :stroke-width="1.75" />
                 搜索
               </button>
             </div>
@@ -492,7 +551,7 @@ onMounted(() => {
                   title="卡片视图"
                   @click="viewMode = 'card'"
                 >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  <LayoutGrid :size="16" :stroke-width="1.75" />
                 </button>
                 <button
                   class="flex h-8 w-8 items-center justify-center rounded-full transition"
@@ -500,7 +559,7 @@ onMounted(() => {
                   title="列表视图"
                   @click="viewMode = 'table'"
                 >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h7v7H4V5zm9 0h7v7h-7V5zM4 14h7v5H4v-5zm9 0h7v5h-7v-5z" /></svg>
+                  <ListIcon :size="16" :stroke-width="1.75" />
                 </button>
               </div>
             </div>
@@ -509,7 +568,26 @@ onMounted(() => {
           <!-- 卡片视图 -->
           <div v-if="viewMode === 'card'">
             <div v-if="loading" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              <div v-for="n in 6" :key="n" class="h-64 animate-pulse rounded-2xl border border-slate-100 bg-white" />
+              <div v-for="n in 6" :key="n" class="hf-card animate-pulse p-5">
+                <div class="flex items-start gap-3">
+                  <div class="h-12 w-12 shrink-0 rounded-full bg-slate-100" />
+                  <div class="flex-1 space-y-2 pt-1">
+                    <div class="h-4 w-3/5 rounded bg-slate-100" />
+                    <div class="h-3 w-2/5 rounded bg-slate-50" />
+                  </div>
+                </div>
+                <div class="mt-4 flex gap-1.5">
+                  <div class="h-5 w-14 rounded-md bg-slate-50" />
+                  <div class="h-5 w-16 rounded-md bg-slate-50" />
+                </div>
+                <div class="mt-4 flex items-center justify-around border-y border-slate-50 py-4">
+                  <div class="h-12 w-12 rounded-full bg-slate-100" />
+                  <div class="h-4 w-16 rounded bg-slate-100" />
+                  <div class="h-4 w-14 rounded bg-slate-100" />
+                  <div class="h-4 w-10 rounded bg-slate-100" />
+                </div>
+                <div class="mt-3 h-3 w-4/5 rounded bg-slate-50" />
+              </div>
             </div>
             <div v-else-if="list.length" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <article
@@ -518,12 +596,13 @@ onMounted(() => {
                 class="hf-card group cursor-pointer p-5"
                 @click="goDetail(item.id)"
               >
+                <!-- 头部：圆形语义图标 + 标题/标签 + 右上查看详情 -->
                 <div class="flex items-start gap-3">
                   <span
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    class="major-icon-disc"
                     :style="{ background: categoryColor(item.majorCategory).bg, color: categoryColor(item.majorCategory).text }"
                   >
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path :d="CATEGORY_ICON" /></svg>
+                    <component :is="majorIcon(item)" :size="24" :stroke-width="1.75" />
                   </span>
                   <div class="min-w-0 flex-1">
                     <h3 class="truncate text-base font-bold text-slate-800">{{ item.majorName }}</h3>
@@ -536,6 +615,9 @@ onMounted(() => {
                       >{{ t }}</span>
                     </div>
                   </div>
+                  <span class="major-detail">
+                    查看详情 <ArrowRight :size="13" :stroke-width="1.75" />
+                  </span>
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-1.5">
@@ -544,35 +626,32 @@ onMounted(() => {
                   <span v-if="filter.type !== '全部'" class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{{ filter.type }}</span>
                 </div>
 
-                <div class="mt-4 space-y-2 border-t border-slate-50 pt-3">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400">就业率</span>
-                    <span class="font-semibold" :class="rateClass(item.employmentRate)">{{ rateText(item.employmentRate) }}</span>
+                <!-- 指标区：宽卡一行 4 格，窄卡自动 2×2 -->
+                <div class="major-metrics">
+                  <div class="metric-cell metric-cell--ring">
+                    <MajorRateRing :rate="item.employmentRate" :size="52" :stroke="5" />
+                    <span class="metric-label">就业率</span>
                   </div>
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400">薪资范围（元/月）</span>
-                    <span class="font-semibold text-slate-700">{{ salaryText(item.salaryMin, item.salaryMax) }}</span>
+                  <div class="metric-cell">
+                    <span class="metric-value">{{ salaryText(item.salaryMin, item.salaryMax) }}</span>
+                    <span class="metric-label">薪资范围（月薪）</span>
                   </div>
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400">授予学位</span>
-                    <span class="font-semibold text-slate-700">{{ item.degreeAwarded || '学位信息待完善' }}</span>
+                  <div class="metric-cell">
+                    <span class="metric-value">{{ item.degreeAwarded || '—' }}</span>
+                    <span class="metric-label">授予学位</span>
                   </div>
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400">学制</span>
-                    <span class="font-semibold text-slate-700">{{ item.studyDuration || '学制以官网为准' }}</span>
+                  <div class="metric-cell">
+                    <span class="metric-value">{{ item.studyDuration || '—' }}</span>
+                    <span class="metric-label">学制</span>
                   </div>
                 </div>
 
-                <p class="mt-3 line-clamp-2 text-sm text-slate-500">{{ item.description || '暂无简介' }}</p>
-
-                <div class="mt-3 flex justify-end">
-                  <span class="text-sm font-medium text-orange-500 transition group-hover:translate-x-1">查看详情 →</span>
-                </div>
+                <p class="mt-3 truncate text-sm text-slate-500">{{ item.description || '暂无简介' }}</p>
               </article>
             </div>
             <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
               <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-                <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <SearchX :size="28" :stroke-width="1.5" />
               </div>
               <p class="text-slate-400">暂无匹配的专业，试试调整筛选条件</p>
             </div>
@@ -659,7 +738,7 @@ onMounted(() => {
           <div class="mb-3 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800">在线工具</h3>
             <button class="text-slate-400 transition hover:text-slate-600" @click="closeTools">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
+              <X :size="16" :stroke-width="1.75" />
             </button>
           </div>
           <div class="grid grid-cols-2 gap-2.5">
@@ -670,15 +749,7 @@ onMounted(() => {
               @click="onToolClick(tool)"
             >
               <span class="flex h-10 w-10 items-center justify-center rounded-xl" :style="{ background: tool.bg, color: tool.color }">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <template v-if="tool.icon === 'school'"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3L2 8l10 5 10-5-10-5zM6 11v5c0 1 3 3 6 3s6-2 6-3v-5" /></template>
-                  <template v-else-if="tool.icon === 'edit'"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4h7M4 20l4-1 9.5-9.5a2 2 0 00-3-3L5 16l-1 4z" /></template>
-                  <template v-else-if="tool.icon === 'book'"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h6v16H6a2 2 0 00-2 2V5zM20 5a2 2 0 00-2-2h-6v16h6a2 2 0 012 2V5z" /></template>
-                  <template v-else-if="tool.icon === 'briefcase'"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8h18v11H3V8zM8 8V5a2 2 0 012-2h4a2 2 0 012 2v3" /></template>
-                  <template v-else-if="tool.icon === 'work'"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 5 9-5M3 8v8l9 5 9-5V8M3 8l9-5 9 5" /></template>
-                  <template v-else-if="tool.icon === 'ai'"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m13.5-6.5l-2 2m-5 5l-2 2m9 0l-2-2m-5-5l-2-2M12 8a4 4 0 100 8 4 4 0 000-8z" /></template>
-                  <template v-else><path stroke-linecap="round" stroke-linejoin="round" d="M12 11a3 3 0 100-6 3 3 0 000 6zM5 20a7 7 0 0114 0" /></template>
-                </svg>
+                <component :is="TOOL_ICONS[tool.icon]" :size="20" :stroke-width="1.75" />
               </span>
               <span class="text-xs font-medium text-slate-600">{{ tool.label }}</span>
             </button>
@@ -687,11 +758,11 @@ onMounted(() => {
       </Transition>
 
       <button
-        class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-300/50 transition hover:scale-105 active:scale-95"
+        class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-300/50 transition hover:-translate-y-0.5 hover:shadow-2xl active:shadow-lg"
         title="在线工具"
         @click="toggleTools"
       >
-        <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2-2 2.5-2.5z" /></svg>
+        <Wrench :size="28" :stroke-width="1.75" />
       </button>
     </div>
   </div>
@@ -741,5 +812,173 @@ onMounted(() => {
 .hf-pager :deep(.el-pagination .btn-next) {
   background-color: #f8fafc;
   border-radius: 8px;
+}
+
+/* ============ 学科门类筛选条：冷灰底容器 + 透明按钮靠色块分区 ============ */
+.cat-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  text-align: left;
+  transition: background-color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.cat-item:hover {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.06);
+}
+.cat-item.is-active {
+  background: #fff7ed;
+  border-color: rgba(249, 115, 22, 0.24);
+  box-shadow: 0 1px 3px rgba(249, 115, 22, 0.08);
+}
+.cat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+}
+.cat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.cat-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #334155;
+  white-space: nowrap;
+}
+.cat-item.is-active .cat-name {
+  color: #ea580c;
+}
+.cat-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+.cat-item.is-active .cat-count {
+  color: #f97316;
+}
+.cat-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #f97316;
+  border-radius: 10px;
+  transition: color 0.22s ease, background-color 0.22s ease;
+}
+.cat-more:hover {
+  color: #ea580c;
+  background: #ffffff;
+}
+
+/* ============ 专业卡片：原型指标栅格 ============ */
+/* 按卡片自身宽度响应，而非视口断点；稳态零 transform / 零 filter */
+.hf-card {
+  container-type: inline-size;
+}
+.major-icon-disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 50%;
+}
+.major-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f97316;
+  white-space: nowrap;
+  transition: color 0.22s ease;
+}
+.group:hover .major-detail {
+  color: #ea580c;
+}
+.major-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 16px;
+  padding: 14px 0 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.05);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 4px;
+  text-align: center;
+  border-right: 1px solid rgba(15, 23, 42, 0.05);
+}
+.metric-cell:last-child {
+  border-right: 0;
+}
+.metric-cell--ring {
+  gap: 4px;
+}
+.metric-value {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+.metric-label {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+/* 卡片变窄时自动退化为 2×2，避免 4 格挤成一行 */
+@container (max-width: 340px) {
+  .major-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 14px;
+  }
+  .metric-cell:nth-child(2) {
+    border-right: 0;
+  }
+  .metric-cell:nth-child(-n + 2) {
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  }
 }
 </style>
