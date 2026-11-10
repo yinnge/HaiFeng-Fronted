@@ -616,7 +616,7 @@ onMounted(() => {
                     </div>
                   </div>
                   <span class="major-detail">
-                    查看详情 <ArrowRight :size="13" :stroke-width="1.75" />
+                    查看详情 <ArrowRight :size="14" :stroke-width="2" />
                   </span>
                 </div>
 
@@ -703,7 +703,7 @@ onMounted(() => {
                       {{ salaryText(item.salaryMin, item.salaryMax) === '薪资数据待公布' ? '—' : salaryText(item.salaryMin, item.salaryMax) }}
                     </td>
                     <td class="px-4 py-3 text-sm">
-                      <span class="font-medium text-orange-500 hover:text-orange-600">查看详情</span>
+                      <span class="font-medium text-orange-700 hover:text-orange-800">查看详情</span>
                     </td>
                   </tr>
                 </tbody>
@@ -864,7 +864,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 .cat-item.is-active .cat-name {
-  color: #ea580c;
+  color: #c2410c;
 }
 .cat-count {
   display: inline-flex;
@@ -876,7 +876,7 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
 }
 .cat-item.is-active .cat-count {
-  color: #f97316;
+  color: #c2410c;
 }
 .cat-more {
   display: inline-flex;
@@ -886,12 +886,12 @@ onMounted(() => {
   padding: 8px 10px;
   font-size: 13px;
   font-weight: 500;
-  color: #f97316;
+  color: #c2410c;
   border-radius: 10px;
   transition: color 0.22s ease, background-color 0.22s ease;
 }
 .cat-more:hover {
-  color: #ea580c;
+  color: #9a3412;
   background: #ffffff;
 }
 
@@ -915,14 +915,19 @@ onMounted(() => {
   gap: 2px;
   flex: none;
   margin-top: 2px;
-  font-size: 12px;
+  /* 白底上的品牌橙 #f97316 只有 2.80:1（WCAG AA 小字需 4.5:1），
+     12px 细笔画被抗锯齿吃成灰雾 → 观感发毛。字重封顶后 500 命中
+     Regular 字形、笔画更细，问题显形。改用 orange-700/800
+     （5.18:1 / 7.31:1），字号取整提到 13px；刻意不加粗，
+     避免破坏刚定下的全站字重克制。 */
+  font-size: 13px;
   font-weight: 500;
-  color: #f97316;
+  color: #c2410c;
   white-space: nowrap;
   transition: color 0.22s ease;
 }
 .group:hover .major-detail {
-  color: #ea580c;
+  color: #9a3412;
 }
 .major-metrics {
   display: grid;
