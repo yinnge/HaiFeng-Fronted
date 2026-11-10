@@ -8,7 +8,8 @@
  *      misans-bold      -> "MiSans"          font-weight:700
  *    直接引入会让 font-weight:600 在 MiSans 族里只能向上匹配到 Bold(700)。
  *
- * B) 字重治理（2026-11-09 第三轮，用户要求「除导航栏 / Hero 左标题外全部降低」）。
+ * B) 字重治理（2026-11-09 第三轮：「除导航栏 / Hero 左标题外全部降低」；
+ *    2026-11-10 第四轮：用户看图后要求主导航也「再小一点」，例外由 3 处减为 2 处）。
  *    项目里 1176 处 CSS 字重声明 83% >= 500，另有 Tailwind font-medium 448 /
  *    font-bold 284 / font-semibold 205 处。装字体前系统栈只有 400/700，
  *    中文 500/600 靠合成显不出粗细；补齐真实字形后 11–17px 小字集体发黑。
@@ -18,13 +19,16 @@
  *        100-600 -> Regular   （正文、标签、按钮、罗盘节点、下拉项）
  *        700     -> Medium    （次级强调）
  *        800-900 -> Semibold  （全站最重，替代原先的 Bold，不会再厚重）
- *      MiSans Display（--hf-font-strong，仅 3 处）
- *        100-900 -> Bold      （主导航菜单 / 顶部品牌名 / Hero 左标题）
+ *      MiSans Display（--hf-font-strong，仅 2 处）
+ *        100-900 -> Bold      （顶部品牌名 / Hero 左标题；主导航 11-10 已摘除）
  *
  *    这样业务 CSS 里任何 font-weight 值最多只到 Semibold，以后新增模块
  *    写 font-bold / 800 / 900 也不会再冒出「厚重」；只有显式引用
  *    --hf-font-strong 的地方才是 Bold。例外集中在一个变量，改一处即可。
  *    资料列表 banner 标题(800@24-32px) 与罗盘节点(700@14px) 自动落到轻档。
+ *    ⚠️ MiSans Display 整族只有一个 Bold 字形（100-900 全覆盖），在此族里
+ *    改 font-weight 数字不会有任何视觉变化；要让例外区变细必须先删
+ *    var(--hf-font-strong) 引用，再调数字（见 AppHeader.vue .nav-link）。
  *
  * C) 本地化：删除 src:local(...) 避免本机装了不同版本 MiSans 时字形不一致；
  *    woff2 改相对路径交由 Vite 打包，不产生 jsdelivr / unpkg 境外请求
@@ -56,7 +60,7 @@ const FACE_SPECS = [
   ['regular', 'MiSans', '100 600', '全站默认：正文 / 标签 / 按钮 / 罗盘节点'],
   ['medium', 'MiSans', '700', '全站默认：次级强调'],
   ['semibold', 'MiSans', '800 900', '全站默认上限：替代 Bold，不再厚重'],
-  ['bold', 'MiSans Display', '100 900', '仅 --hf-font-strong：主导航 / 品牌名 / Hero 左标题'],
+  ['bold', 'MiSans Display', '100 900', '仅 --hf-font-strong：品牌名 / Hero 左标题 2 处'],
 ]
 
 const header = `/* 自动生成，请勿手改 —— 由 apps/user/scripts/gen-misans-css.mjs 产出。
@@ -65,7 +69,7 @@ const header = `/* 自动生成，请勿手改 —— 由 apps/user/scripts/gen-
         （已写在 SiteFooter.vue 页脚）。不得改编字体或其组件；可调字重/间距。
    本文件仅改 CSS 声明（族名/字重/URL），未改动任何字体文件。
    字重策略见脚本 FACE_SPECS：MiSans 最重只到 Semibold；Bold 仅由
-   --hf-font-strong（MiSans Display）提供给主导航 / 品牌名 / Hero 左标题。
+   --hf-font-strong（MiSans Display）只提供给品牌名 / Hero 左标题 2 处例外。
    unicode-range 分片由 cn-font-split 切好，浏览器只下载页面实际用到的分片。 */`
 
 const chunks = [header]

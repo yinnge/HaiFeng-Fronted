@@ -339,12 +339,13 @@ document.querySelector('.plan-card').getBoundingClientRect()
 | `MiSans`（默认 `--hf-font-sans`） | Regular | `100 600` | 正文 / 标签 / 按钮 / 罗盘节点 |
 | | Medium | `700` | 次级强调 |
 | | Semibold | `800 900` | **全站最重**（替代 Bold） |
-| `MiSans Display`（`--hf-font-strong`） | Bold | `100 900` | 仅 3 处例外 |
+| `MiSans Display`（`--hf-font-strong`） | Bold | `100 900` | 仅 2 处例外 |
 
-**例外 3 处**（保留 Bold）：`HfHeroSection.vue .hf-title`、`AppHeader.vue .nav-link`、`TopToolBar.vue .tt-brand-title`。
+**例外 2 处**（保留 Bold）：`HfHeroSection.vue .hf-title`、`TopToolBar.vue .tt-brand-title`。主导航 `AppHeader.vue .nav-link` 已于 **2026-11-10 降档摘除**（用户「字重再小一点，小 100」：删掉 `--hf-font-strong` 引用 + `700 → 600`，命中 MiSans Regular；Hero 左标题与品牌名均为 `800`，保持 Bold 不变）。
 
 - 业务代码里 **1176 处 `font-weight` 声明一处都不用改**：任何值最多命中 Semibold，不会再出现「厚重」；只有显式引用 `--hf-font-strong` 才拿 Bold。这是「以后不用逐模块调字重」的根本原因。
-- 调全站轻重 → 只改 `FACE_SPECS` 并重跑；让某处变粗 → 加一行 `font-family: var(--hf-font-strong)`；让例外区也变轻 → 删那 3 处引用。
+- ⚠️ **`MiSans Display` 是单字形族**：`100 900` 全覆盖且只有 Bold 一个 face，在挂了 `--hf-font-strong` 的元素上改 `font-weight` 数字**不会有任何视觉变化**。要让例外区变细，必须先删 `font-family: var(--hf-font-strong)` 引用回到默认族，再调数字。这是「小 100 却看不出变化」的典型陷阱。
+- 调全站轻重 → 只改 `FACE_SPECS` 并重跑；让某处变粗 → 加一行 `font-family: var(--hf-font-strong)`；让例外区也变轻 → 删那 2 处引用。
 - `html.font-system` 必须同步 `--hf-font-strong: var(--hf-font-sans)`，否则 A/B 开关仍会加载 Bold。
 - 静态字体声明 `font-weight` 范围（如 `100 600`）是 CSS Fonts 4 合法写法：命中区间即使用该 face，不插值、不触发合成加粗。
 

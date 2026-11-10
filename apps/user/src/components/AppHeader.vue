@@ -433,9 +433,12 @@ onBeforeUnmount(() => {
   gap: 0.125rem;
   padding: clamp(0.375rem, 0.3rem + 0.2vw, 0.5rem) clamp(0.5rem, 0.4rem + 0.2vw, 0.625rem);
   font-size: clamp(0.875rem, 0.75rem + 0.35vw, 1.125rem);
-  /* 主导航菜单是用户要求保留力度的例外区 */
-  font-family: var(--hf-font-strong);
-  font-weight: 700;
+  /* 主导航降档（2026-11-10，用户「字重再小一点，小 100」）：
+     原本挂 --hf-font-strong（MiSans Display 整族 100 900 只有 Bold 一个字形），
+     这种族里改 font-weight 数字完全不会变细 —— 必须同时摘掉该族名，
+     回到默认 --hf-font-sans，再把 700 -> 600 才真正命中 MiSans 的 Regular。
+     激活态靠颜色 + 下边框表达，不依赖字重层级。 */
+  font-weight: 600;
   color: #1f2937;
   white-space: nowrap;
   border-bottom: 2px solid transparent;

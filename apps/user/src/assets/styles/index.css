@@ -62,9 +62,10 @@
                   'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
                   'Microsoft YaHei', sans-serif;
   --el-font-family: var(--hf-font-sans);
-  /* 唯一「保留粗体」的出口：MiSans Display 是 Bold 字形，供主导航菜单 /
-     顶部品牌名 / Hero 左标题使用。其余任何模块写 font-bold / 800 / 900
-     最多只到 MiSans 的 Semibold，不会再出现厚重感（见 misans.css 生成脚本）。
+  /* 唯一「保留粗体」的出口：MiSans Display 是 Bold 字形，现仅剩顶部品牌名 /
+     Hero 左标题两处使用（主导航 2026-11-10 已按用户要求降档摘除）。
+     其余任何模块写 font-bold / 800 / 900 最多只到 MiSans 的 Semibold，
+     不会再出现厚重感（见 misans.css 生成脚本）。
      以后想让某处变粗，加这一行即可；想全局更轻，只改脚本 FACE_SPECS。 */
   --hf-font-strong: 'Inter Variable', 'MiSans Display', -apple-system, BlinkMacSystemFont,
                     'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
