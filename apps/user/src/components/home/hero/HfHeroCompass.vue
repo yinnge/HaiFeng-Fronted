@@ -233,35 +233,25 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* 中心圆盘 */
+/* 中心 logo（2026-11-10：去掉白色圆球背景，透明底 logo 放大到原圆圈尺寸） */
 .hf-center {
   position: absolute;
   width: 112px;
   height: 112px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.05);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.02),
-    0 8px 24px -4px rgba(15, 23, 42, 0.08);
+  /* 无 background / border / border-radius / box-shadow：
+     HERO_LOGO 是 800x800 RGBA，四角 alpha=0、71% 像素全透明，
+     白圆只是 CSS 画的壳，去掉后不会出现白方块。 */
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   z-index: 2;
   cursor: default;
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .hf-center-logo {
-  width: 44px;
-  height: 44px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
-}
-.hf-center-text {
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
 }
 
 /* 返回按钮 + 提示 */

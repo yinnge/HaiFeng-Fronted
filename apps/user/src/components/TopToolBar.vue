@@ -257,8 +257,11 @@ function openExpert() {
 .tt-link {
   font-family: var(--hf-font-sans);
   font-size: 15px;
-  font-weight: 600;
-  color: #3F3F46;
+  /* 2026-11-10：主页右侧这组「首页 / 百宝箱 / 生涯规划图谱 / 大数据对比 /
+     专家咨询预约」按用户要求加深 + 回一档字重（MiSans Medium，非 Bold）。
+     激活态仍由橙色文字 + 橙色底色 + 下划线区分，不叠加字重层级。 */
+  font-weight: 700;
+  color: #18181B;
   letter-spacing: 0.01em;
   background: transparent;
   border: none;
@@ -339,8 +342,9 @@ function openExpert() {
 .tt-mobile-link {
   text-align: left;
   font-size: 15px;
-  font-weight: 500;
-  color: #333;
+  /* 与桌面 .tt-link 保持一致：加深 + 回一档字重 */
+  font-weight: 700;
+  color: #18181B;
   background: none;
   border: none;
   padding: 12px 4px;

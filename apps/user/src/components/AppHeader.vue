@@ -438,8 +438,11 @@ onBeforeUnmount(() => {
      这种族里改 font-weight 数字完全不会变细 —— 必须同时摘掉该族名，
      回到默认 --hf-font-sans，再把 700 -> 600 才真正命中 MiSans 的 Regular。
      激活态靠颜色 + 下边框表达，不依赖字重层级。 */
-  font-weight: 600;
-  color: #1f2937;
+  /* 2026-11-10：用户要求「文字更黑、像 md 加粗」。字重回一档到 700
+     （MiSans 的 Medium，仍比最初的 MiSans Display Bold 细），颜色加深到
+     slate-900；激活态仍由橙色 + 下边框表达，不叠加字重。 */
+  font-weight: 700;
+  color: #111827;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
