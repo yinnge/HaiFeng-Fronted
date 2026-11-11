@@ -52,6 +52,14 @@
 - 无「相关专业」接口：`/list` 支持 `majorCategory`、**不支持 `parentCategory`**；`MajorRateRing` 的 rate 是 0–100 且 null 自显 `—`，复用时父层接管空态。仓库 **eslint 未安装、无配置**，`pnpm lint` 不可用。
 - 防糊：本页可点击项只用颜色/边框/箭头位移反馈，**不启用 hover translateY 位移**。
 
+## 考研专业列表页（11-11 重构）
+- `views/major/PostgradList.vue` 只取数/编排；7 组件 + `utils.ts` + `postgrad.css` 在 `views/major/postgrad/`，页面级 CSS 由 `.page-postgrad-list` 限定。
+- **考研专业详情无路由**，列表/榜单行点击开 `PostgradMajorDialog` 弹窗（与本科专业详情、院校详情 Tab 共 3 处复用），别改 router-link。榜单 `size=5` 违反后端 `@Min(10)`，用 `size=10` + `slice(0,5)`；`HOT_INDEX_BY_RANK` 是固定展示值、非实时。
+- URL 同步 8 键 `page/size/name/code/degreeType/disciplineCategory/popularity/difficulty`；`?majorId=` 深链来自首页工具箱 `MajorModule.vue:108`，清理只删该键（靠 `buildQuery` 只写 8 键实现），**不要 `query:{}` 全量清空**。
+- `PostgradMajorQueryDTO` 无排序字段；门类枚举是纯 HTTP `/discipline-categories`，无静态候选；14 门类含「交叉学科」只写在 DESIGN.md，代码静态表是 13 个。
+- DESIGN.md §0.3 指定的 `constants/planningTools.ts`、`components/PlanningToolsCard.vue`、`views/major/utils.ts` **均不存在**；真实共享物是 `detail/components/utils.ts` 的 `HERO_BG_URL` / `TONE_COLORS` / `getDisciplineIcon`。
+- 本页**启用** hover `translateY(-2px)`（Q10），专业详情页**禁用**；两页刻意不同。
+
 ## 最近迭代（节选）
 - 证书页批量导入（10-26）：`POST /api/v1/admin/certificate/import`。竞赛页（10-27）：`/import/main` + `/import/detail` 两端点、同一弹窗 `importMode` 切换；列头见当日日志。
 - 首页 Hero 双栏重构（11-06，`6e7c6be`）：`components/home/hero/` 全套 + `hero.config.ts` 配置驱动；`useGlobalSearch` / `useColumnFocus` / `useLoopPausable`；矩阵高亮用 `@property --hf-snake-angle` + conic-gradient + mask-composite。
