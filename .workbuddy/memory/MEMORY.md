@@ -48,17 +48,24 @@
 
 ## 专业详情页（11-11 重构）
 - `views/major/Detail.vue` 只取数/编排；12 个子组件 + `utils.ts` + `detail.css` 在 `views/major/detail/`，页面级 CSS 全部由 `.page-major-detail` 限定；不改 `index.css` / `List.vue` / router。
-- **考研方向**返回 `PostgradMajorDirectionBriefVO{id,postgradMajorName,category?}`（不是 `UndergraduateMajorDirectionBriefVO`），**无详情路由**，点击开 `PostgradMajorDialog` 弹窗；**竞赛 + 考研方向都是 VIP 门禁**；竞赛 VO 字段 `competitionId/competitionName`。
+- **考研方向**返回 `PostgradMajorDirectionBriefVO{id,postgradMajorName,category?}`（不是 `UndergraduateMajorDirectionBriefVO`）；**11-11 晚已新增 `/postgrad-major/:id` 独立详情页**，点击 `router.push`，`PostgradMajorDialog` 已删除（见下节）；**竞赛 + 考研方向都是 VIP 门禁**；竞赛 VO 字段 `competitionId/competitionName`。
 - 无「相关专业」接口：`/list` 支持 `majorCategory`、**不支持 `parentCategory`**；`MajorRateRing` 的 rate 是 0–100 且 null 自显 `—`，复用时父层接管空态。仓库 **eslint 未安装、无配置**，`pnpm lint` 不可用。
 - 防糊：本页可点击项只用颜色/边框/箭头位移反馈，**不启用 hover translateY 位移**。
 
 ## 考研专业列表页（11-11 重构）
 - `views/major/PostgradList.vue` 只取数/编排；7 组件 + `utils.ts` + `postgrad.css` 在 `views/major/postgrad/`，页面级 CSS 由 `.page-postgrad-list` 限定。
-- **考研专业详情无路由**，列表/榜单行点击开 `PostgradMajorDialog` 弹窗（与本科专业详情、院校详情 Tab 共 3 处复用），别改 router-link。榜单 `size=5` 违反后端 `@Min(10)`，用 `size=10` + `slice(0,5)`；`HOT_INDEX_BY_RANK` 是固定展示值、非实时。
-- URL 同步 8 键 `page/size/name/code/degreeType/disciplineCategory/popularity/difficulty`；`?majorId=` 深链来自首页工具箱 `MajorModule.vue:108`，清理只删该键（靠 `buildQuery` 只写 8 键实现），**不要 `query:{}` 全量清空**。
+- **11-11 晚更新（推翻原结论）**：考研专业详情已改独立页面 `/postgrad-major/:id`（`PostgradMajorDetail`），列表卡片/榜单、本科专业详情、院校详情 Tab 3 处入口全部 `router.push`，`PostgradMajorDialog.vue` 已 `git rm`；首页工具箱直跳详情页，列表页保留旧 `?majorId=` 兼容分支（replace 到详情页）。榜单 `size=5` 违反后端 `@Min(10)`，用 `size=10` + `slice(0,5)`；`HOT_INDEX_BY_RANK` 是固定展示值、非实时。
+- URL 同步 8 键 `page/size/name/code/degreeType/disciplineCategory/popularity/difficulty`（靠 `buildQuery` 只写 8 键，**不要 `query:{}` 全量清空**）；`MajorModule.vue` 已不再生成 `?majorId=`。
 - `PostgradMajorQueryDTO` 无排序字段；门类枚举是纯 HTTP `/discipline-categories`，无静态候选；14 门类含「交叉学科」只写在 DESIGN.md，代码静态表是 13 个。
 - DESIGN.md §0.3 指定的 `constants/planningTools.ts`、`components/PlanningToolsCard.vue`、`views/major/utils.ts` **均不存在**；真实共享物是 `detail/components/utils.ts` 的 `HERO_BG_URL` / `TONE_COLORS` / `getDisciplineIcon`。
 - 本页**启用** hover `translateY(-2px)`（Q10），专业详情页**禁用**；两页刻意不同。
+
+## 考研专业详情页（11-11 晚，弹窗改页面）
+- 主文件 `views/major/PostgradDetail.vue`；`postgrad-detail/postgrad-detail.css` + `components/` 下 8 组件（Hero / Skeleton / Intro / ExamSubjects / Requirements / CrossExam / RelatedMajors / Universities）。右栏**零改动复用** `postgrad/components/PostgradHotRank.vue` + `PostgradToolsCard.vue`。
+- **Q10 关键手法**：根节点并列挂 `class="page-postgrad-detail page-postgrad-list"` + `import './postgrad/postgrad.css'`，零改动复用 `.hf-card` / `.hf-section-title` / `.hf-tag` / `.hf-skeleton` / `.pg-pager` / `.pg-grid` / `.pg-right` sticky / `.postgrad-select-popper`；本页专有样式只由 `.page-postgrad-detail` 限定。代价：根类名带「列表页」语义。
+- 数据契约：`PostgradMajorDetailVO` 13 字段全必填、**不含 id / 不含热度数值**；`examSubjects` / `admissionRequirements` 是**扁平 string[]**（原型 3 列分组无字段支撑，切勿按关键词猜分组）；「温馨提示 / 备注说明 / AI 定制 CTA / Tab」均无落点，不做。Hero 只显示 `popularity` / `difficulty` 标签。
+- VIP 门禁沿用弹窗：基础信息公开，「关联本科专业」「开设院校」仅 VIP 可见；手写分页 → `el-pagination`（size=10），院校类型 11 项常量；`watch(isPro)` 开通后免刷新解锁。热榜独立请求 `size=10`+`slice(0,5)`、只一次。面包屑 `router.back()` 无历史兜底列表。
+- 交互策略：本页**禁用整卡 hover 位移**（Q14，与本科详情页一致）；列表页**启用** `translateY(-2px)`；三页刻意不同。请求带自增 `requestId` 防竞态，附属数据失败静默降级空数组。
 
 ## 最近迭代（节选）
 - 证书页批量导入（10-26）：`POST /api/v1/admin/certificate/import`。竞赛页（10-27）：`/import/main` + `/import/detail` 两端点、同一弹窗 `importMode` 切换；列头见当日日志。
