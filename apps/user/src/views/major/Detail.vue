@@ -4,7 +4,7 @@
  * 数据契约、路由、VIP 门禁沿用旧页（详见 DESIGN.md §0 与 Q1/Q2 裁决）。
  */
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import {
   getMajorCompetitions,
@@ -18,7 +18,6 @@ import type { PostgradMajorDirectionBriefVO } from '@/types/postgrad-major'
 import { useUserStore } from '@/store'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
-import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 
 import MajorHero from './detail/components/MajorHero.vue'
 import MajorStatBar from './detail/components/MajorStatBar.vue'
@@ -36,6 +35,7 @@ import MajorToolsCard from './detail/components/MajorToolsCard.vue'
 import './detail/detail.css'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const recharge = useRechargeDialog()
 const { hidden: headerHidden } = useAutoHideHeader()
@@ -55,9 +55,6 @@ const isPro = computed(() => userStore.userInfo?.memberType === 'vip')
 
 /** Q12：与 FileLoadDetail.vue:69 一致，导航抽屉收起时把 sticky 顶部空隙收掉 */
 const asideTop = computed(() => (headerHidden.value ? 8 : 76))
-
-const dialogVisible = ref(false)
-const selectedDirectionId = ref<string | null>(null)
 
 /** 竞赛与考研方向沿用旧页 VIP 门禁；size=100 满足后端 [10,100] 约束并一次取全 */
 async function fetchCompetitions(id: string) {
@@ -154,9 +151,9 @@ async function loadAll() {
   }
 }
 
+/** Q2：考研方向详情改为独立页面，点击推 /postgrad-major/:id（弹窗已删除） */
 function showDirectionDetail(id: string) {
-  selectedDirectionId.value = id
-  dialogVisible.value = true
+  void router.push(`/postgrad-major/${id}`)
 }
 
 onMounted(loadAll)
@@ -243,8 +240,5 @@ watch(
         <RouterLink to="/major" class="detail-empty__btn">返回专业列表</RouterLink>
       </div>
     </div>
-
-    <!-- 沿用旧页：考研方向点击打开弹窗，本页不新增路由 -->
-    <PostgradMajorDialog v-model:visible="dialogVisible" :major-id="selectedDirectionId" />
   </div>
 </template>

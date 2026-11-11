@@ -28,7 +28,7 @@ const isHot = computed(() => popularity.value === '热门')
 </script>
 
 <template>
-  <!-- Q1：无考研详情路由，整卡 button 打开 PostgradMajorDialog；底部「查看详情」只是文字+箭头，不嵌套链接 -->
+  <!-- 整卡 button 由父层推 /postgrad-major/:id；底部「查看详情」只是文字+箭头，不嵌套链接 -->
   <button
     type="button"
     class="hf-card pg-major-card is-clickable"

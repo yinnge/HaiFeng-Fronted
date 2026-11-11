@@ -54,7 +54,7 @@ const blue = TONE_COLORS.blue
           <span class="directions__count">{{ group.total }} 个</span>
         </div>
         <div class="directions__items">
-          <!-- 无对应详情路由：沿用旧页行为，点击打开 PostgradMajorDialog 弹窗 -->
+          <!-- 点击由父层推 /postgrad-major/:id 考研专业详情页 -->
           <button
             v-for="item in group.visible"
             :key="item.id"

@@ -31,7 +31,7 @@ const RANK_COLORS = [
     </div>
 
     <nav v-else class="hot-rank__list" aria-label="热门考研专业">
-      <!-- Q1：无详情路由，行用 button 打开弹窗，不嵌套链接 -->
+      <!-- 行用 button，由父层 @open 推 /postgrad-major/:id；不嵌套链接 -->
       <button
         v-for="(item, index) in items"
         :key="item.id"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 import { getPostgradMajorsByUniversity } from '@/api/postgrad-major'
 import type { PostgradMajorBriefVO } from '@/types/postgrad-major'
 import { useUserStore } from '@/store'
@@ -9,6 +9,7 @@ import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { MemberType } from '@haifeng/shared'
 
 const recharge = useRechargeDialog()
+const router = useRouter()
 const props = defineProps<{
   universityId: string
   /** 预览模式：详情页板块只展示前 3 条，隐藏筛选/分页 */
@@ -36,9 +37,6 @@ const degreeOptions = [
   { value: '专业学位', label: '专业学位' },
 ]
 
-const dialogVisible = ref(false)
-const selectedMajorId = ref<string | null>(null)
-
 async function fetchList() {
   loading.value = true
   try {
@@ -63,9 +61,9 @@ function switchDegree(degree: string) {
   fetchList()
 }
 
+/** Q2：考研专业详情改为独立页面，点击推 /postgrad-major/:id（弹窗已删除） */
 function showDetail(id: string) {
-  selectedMajorId.value = id
-  dialogVisible.value = true
+  void router.push(`/postgrad-major/${id}`)
 }
 
 function onPageChange(page: number) {
@@ -141,10 +139,5 @@ watch(isPro, (value) => {
         </button>
       </div>
     </template>
-
-    <PostgradMajorDialog
-      v-model:visible="dialogVisible"
-      :major-id="selectedMajorId"
-    />
   </div>
 </template>

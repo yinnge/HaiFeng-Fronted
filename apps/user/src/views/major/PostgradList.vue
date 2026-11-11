@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * 考研专业列表页：本文件只负责取数与编排，展示拆到 postgrad/components/ 下。
- * 接口、字段名、排序行为（不传排序参数）沿用旧页；Q1 裁决：详情无路由，沿用弹窗。
+ * 接口、字段名、排序行为（不传排序参数）沿用旧页；
+ * 本轮 Q2：考研专业详情改为独立页面，点击卡片 / 榜单行推 /postgrad-major/:id，弹窗已删除。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PostgradMajorDialog from '@/components/major/PostgradMajorDialog.vue'
 import { getPostgradMajorList, getPostgradMajorDisciplineCategories } from '@/api/postgrad-major'
 import type { PostgradMajorListVO, PostgradMajorQueryDTO } from '@/types/postgrad-major'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
@@ -43,8 +43,6 @@ const currentPage = ref(1)
 const pageSize = ref(DEFAULT_PAGE_SIZE)
 const activeDegree = ref('')
 const disciplineOptions = ref<string[]>([])
-const dialogVisible = ref(false)
-const selectedMajorId = ref<string | null>(null)
 const hotList = ref<PostgradMajorListVO[]>([])
 const hotLoading = ref(false)
 const tabsAnchor = ref<HTMLElement | null>(null)
@@ -79,8 +77,8 @@ function currentState(): UrlState {
 }
 
 /**
- * Q3：URL 只写 8 个已知 key，天然不含 majorId → 深链被清理但筛选状态完整保留，
- * 不必再单独 router.replace({query:{}}) 全量清空。
+ * URL 只写 8 个已知 key，天然不含 majorId（历史深链已在 onMounted 改道详情页），
+ * 不必再单独 router.replace({query:{}}) 全量清空，筛选状态完整保留。
  * lastWrittenQuery 用于 watch 防循环（router.replace 会再次触发 route.query 变化）。
  */
 function writeUrl() {
@@ -224,9 +222,9 @@ function onSizeChange(size: number) {
   scrollToTabs()
 }
 
+/** Q2：详情改为独立页面，卡片与榜单行统一 push 到 /postgrad-major/:id */
 function showDetail(id: string) {
-  selectedMajorId.value = id
-  dialogVisible.value = true
+  void router.push(`/postgrad-major/${id}`)
 }
 
 /** 外部 query 变化（浏览器前进/后退、其它页面带参进入）反向恢复；自己写的那次跳过 */
@@ -242,14 +240,17 @@ watch(
 )
 
 onMounted(() => {
-  // 先读深链 id，writeUrl 会把它从 URL 中清掉
+  // Q3：兼容历史 ?majorId= 深链（外部书签 / 旧链接），直接改道新详情页，不再开弹窗
   const deepLinkId = typeof route.query.majorId === 'string' ? route.query.majorId : ''
+  if (deepLinkId) {
+    void router.replace({ name: 'PostgradMajorDetail', params: { id: deepLinkId } })
+    return
+  }
   restore(parseUrlState(route.query))
   writeUrl()
   void fetchList()
   void fetchDisciplineCategories()
   void fetchHotRank()
-  if (deepLinkId) showDetail(deepLinkId)
 })
 </script>
 
@@ -323,8 +324,5 @@ onMounted(() => {
         </aside>
       </div>
     </div>
-
-    <!-- Q1：沿用旧页行为，考研专业详情由弹窗承载，本页不新增路由 -->
-    <PostgradMajorDialog v-model:visible="dialogVisible" :major-id="selectedMajorId" />
   </div>
 </template>
