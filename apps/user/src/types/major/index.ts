@@ -39,6 +39,8 @@ export interface MajorDetailVO {
   careerProspect: string
   mainCourses: string[]
   knowledgeSkills: string[]
+  /** 学制：后端当前未返回，Hero 有值才渲染（DESIGN.md §1 预留项） */
+  studyYears?: string
 }
 
 export interface MajorCategoryStatVO {

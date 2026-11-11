@@ -46,6 +46,12 @@
 - `scrollY>8` 抽屉式收起（`composables/useAutoHideHeader.ts` 模块级单例）；顶部双层：`DefaultLayout` 首页渲染 `TopToolBar`（常驻不收起），其下 `AppHeader` 接 `:top-offset`（首页 64 / 其余 0）。`GlobalSearchBox` flex 链逐级 `flex:1;min-width:0`。
 - **主页右侧「首页/百宝箱/生涯规划图谱/大数据对比/专家咨询预约」在 `components/TopToolBar.vue .tt-link`**，不在 `views/home/components`；`config/navigation.ts` 只是纯菜单数据（label/route/subItems/inactiveQuery），**不含任何样式**。
 
+## 专业详情页（11-11 重构）
+- `views/major/Detail.vue` 只取数/编排；12 个子组件 + `utils.ts` + `detail.css` 在 `views/major/detail/`，页面级 CSS 全部由 `.page-major-detail` 限定；不改 `index.css` / `List.vue` / router。
+- **考研方向**返回 `PostgradMajorDirectionBriefVO{id,postgradMajorName,category?}`（不是 `UndergraduateMajorDirectionBriefVO`），**无详情路由**，点击开 `PostgradMajorDialog` 弹窗；**竞赛 + 考研方向都是 VIP 门禁**；竞赛 VO 字段 `competitionId/competitionName`。
+- 无「相关专业」接口：`/list` 支持 `majorCategory`、**不支持 `parentCategory`**；`MajorRateRing` 的 rate 是 0–100 且 null 自显 `—`，复用时父层接管空态。仓库 **eslint 未安装、无配置**，`pnpm lint` 不可用。
+- 防糊：本页可点击项只用颜色/边框/箭头位移反馈，**不启用 hover translateY 位移**。
+
 ## 最近迭代（节选）
 - 证书页批量导入（10-26）：`POST /api/v1/admin/certificate/import`。竞赛页（10-27）：`/import/main` + `/import/detail` 两端点、同一弹窗 `importMode` 切换；列头见当日日志。
 - 首页 Hero 双栏重构（11-06，`6e7c6be`）：`components/home/hero/` 全套 + `hero.config.ts` 配置驱动；`useGlobalSearch` / `useColumnFocus` / `useLoopPausable`；矩阵高亮用 `@property --hf-snake-angle` + conic-gradient + mask-composite。

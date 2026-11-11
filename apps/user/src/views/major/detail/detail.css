@@ -1,0 +1,262 @@
+/* ============================================================================
+ * 专业详情页「页面级」样式。
+ * 说明：index.css 的 `.app-shell main > *` 会把页面根节点强制 transparent 且
+ *       background-image:none，因此画布直接透出 html 的 #f8fafc（DESIGN.md §2）。
+ *       本文件所有选择器都以 .page-major-detail 限定，不下发到其它路由；
+ *       Hero 等卡片是页面根的嵌套子节点，不受全局背景清空影响。
+ * 铁律：稳态零 transform / filter / will-change；字号全部取整 px；
+ *       hover 只用 translateY + 阴影 + 颜色；:active 用 transform:none；无 scale。
+ * ========================================================================== */
+
+.page-major-detail {
+  --md-line: #f1f5f9;
+  min-height: 100vh;
+}
+
+.page-major-detail .detail-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+/* ---------- 面包屑 ---------- */
+.page-major-detail .detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.page-major-detail .detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.page-major-detail .detail-back:hover {
+  color: #c2410c;
+}
+/* Q6 裁决：辅助小字不得低于 #64748B，不用 #94A3B8 */
+.page-major-detail .detail-crumb-aux {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ---------- 双栏骨架 ---------- */
+.page-major-detail .detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 20px;
+}
+.page-major-detail .detail-left,
+.page-major-detail .detail-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-major-detail .detail-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  /* top 由主文件按 useAutoHideHeader 动态注入（Q12：hidden ? 8 : 76） */
+  .page-major-detail .detail-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+/* 祖先链上不设 overflow:hidden，保证 sticky 生效 */
+
+/* ---------- 统一卡片 ---------- */
+.page-major-detail .hf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/*
+ * hover 反馈策略（防糊优先）：本页所有可点击项只改颜色 / 边框 / 箭头位移，
+ * 不启用 translateY 位移，彻底规避 hover 期间合成层位图化造成的文字毛边。
+ * DESIGN.md §6 允许 translateY，但「仅可点击卡片才有位移」是上限而非必须。
+ */
+
+/* ---------- 一级模块标题（橙竖条是全页品牌橙的两个出处之一） ---------- */
+.page-major-detail .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-major-detail .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+.page-major-detail .hf-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+}
+
+/* ---------- 说明性标签：一律 6px 圆角，不用 9999px 胶囊 ---------- */
+.page-major-detail .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+
+/* ---------- 「查看更多 / 收起」文字链接 ---------- */
+.page-major-detail .hf-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.page-major-detail .hf-more:hover {
+  color: #9a3412;
+}
+.page-major-detail .hf-chevron {
+  transition: transform 0.2s ease;
+}
+.page-major-detail .hf-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* ---------- 占位文案与骨架 ---------- */
+.page-major-detail .hf-placeholder {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.75;
+}
+.page-major-detail .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-major-detail .hf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 键盘焦点 ---------- */
+.page-major-detail :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- VIP 升级引导（非实心橙，避免与 AI 主按钮争抢 CTA） ---------- */
+.page-major-detail .hf-vip-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  text-align: center;
+}
+.page-major-detail .hf-vip-guide__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.page-major-detail .hf-vip-guide__desc {
+  font-size: 13px;
+  color: #64748b;
+}
+.page-major-detail .hf-vip-guide__btn {
+  margin-top: 6px;
+  padding: 8px 20px;
+  /* 中性描边：避免验收项里出现任何「橙色实线外框」的歧义，橙色只留在文字 */
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.page-major-detail .hf-vip-guide__btn:hover {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+/* ---------- 加载 / 异常 ---------- */
+.page-major-detail .detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 20px;
+}
+.page-major-detail .detail-empty__btn {
+  padding: 9px 20px;
+  /* 中性描边：避免验收项里出现任何「橙色实线外框」的歧义，橙色只留在文字 */
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-major-detail .detail-empty__btn:hover {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+/* ---------- 加载骨架：与卡片布局一致的纯色块，无动画、无空阴影卡 ---------- */
+.page-major-detail .detail-skeleton-hero {
+  height: 190px;
+  border-radius: 18px;
+}
+.page-major-detail .detail-skeleton-stat {
+  height: 96px;
+  margin-top: 20px;
+  border-radius: 18px;
+}
+.page-major-detail .detail-skeleton-block {
+  height: 168px;
+}
+.page-major-detail .detail-skeleton-block--short {
+  height: 120px;
+}
+@media (max-width: 767px) {
+  .page-major-detail .detail-skeleton-hero {
+    height: 168px;
+  }
+}
