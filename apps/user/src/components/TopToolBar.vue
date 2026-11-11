@@ -176,14 +176,22 @@ function openExpert() {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  /* 2026-11-10：只让品牌区向左贴合（抵消 .top-toolbar 的 24px padding 中的 16px），
+     logo 左缘距屏幕 24 -> 8px；右侧功能区与搜索框保持原有 24px 呼吸，
+     不全局去掉 padding，也不动 .tt-grid 的 max-width:2200px / margin:0 auto
+     （那是 >=2100 超宽屏封顶留白的既定规范）。想要完全贴边改成 -24px 即可。 */
+  margin-left: -16px;
 }
 .tt-logo-link {
   display: flex;
   flex-shrink: 0;
 }
 .tt-logo {
-  height: 36px;
-  width: 36px;
+  /* 2026-11-10：36 -> 48px（64px 高的工具条内上下各留 8px）。
+     放大 logo 与左右 padding 无关，真正上限是工具条高度，
+     所以只改自身尺寸，不动 .top-toolbar 的全局 padding。 */
+  height: 48px;
+  width: 48px;
   object-fit: contain;
 }
 .tt-brand-text {
@@ -196,7 +204,8 @@ function openExpert() {
   top: -2px;
 }
 .tt-brand-title {
-  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  /* 顶部品牌名：保留 Bold 的例外区 */
+  font-family: var(--hf-font-strong);
   font-size: 20px;
   font-weight: 800;
   color: #18181B;
@@ -214,15 +223,23 @@ function openExpert() {
   color: transparent;
 }
 .tt-brand-sub {
-  font-size: 11.5px;
+  /* 小字清晰度四件套（AGENTS.md 第六节铁律 4）：
+     ① 分数字号 11.5px → 12px：1x 屏上分数 px 字号天然发虚
+     ② 中灰 #71717A → zinc-600：400 字重的小字需要更高笔画对比
+     ③ 去掉 0.01em 小数 letter-spacing，避免每个字都落在分数像素上
+     ④ 全程不引入 transform / filter / will-change（上午毛边治理结论） */
+  font-size: 12px;
   font-weight: 400;
-  color: #71717A;
-  letter-spacing: 0.01em;
+  color: #52525B;
+  letter-spacing: 0;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0;
+  /* 2026-11-10：用户要求 tagline 与「海枫未来规划院」分开约 3px。
+     只给下方这行加 margin-top，不动 .tt-brand-text 的 top:-2px 光学修正、
+     不动 .tt-grid 的 align-items:center（上方间距零改动）。 */
+  margin-top: 3px;
 }
 
 /* 中间搜索：靠左排布（不居中），把空间让给右侧功能区 */
@@ -249,10 +266,13 @@ function openExpert() {
   display: none;
 }
 .tt-link {
-  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #3F3F46;
+  font-family: var(--hf-font-sans);
+  font-size: 15px;
+  /* 2026-11-10：主页右侧这组「首页 / 百宝箱 / 生涯规划图谱 / 大数据对比 /
+     专家咨询预约」按用户要求加深 + 回一档字重（MiSans Medium，非 Bold）。
+     激活态仍由橙色文字 + 橙色底色 + 下划线区分，不叠加字重层级。 */
+  font-weight: 700;
+  color: #18181B;
   letter-spacing: 0.01em;
   background: transparent;
   border: none;
@@ -268,7 +288,7 @@ function openExpert() {
   background: rgba(249, 115, 22, 0.06);
 }
 .tt-link:active {
-  transform: scale(0.97);
+  transform: none;
 }
 .tt-link.active,
 .tt-link.router-link-active {
@@ -333,8 +353,9 @@ function openExpert() {
 .tt-mobile-link {
   text-align: left;
   font-size: 15px;
-  font-weight: 500;
-  color: #333;
+  /* 与桌面 .tt-link 保持一致：加深 + 回一档字重 */
+  font-weight: 700;
+  color: #18181B;
   background: none;
   border: none;
   padding: 12px 4px;

@@ -445,7 +445,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   border-radius: 50%;
   background: #ffffff;
-  backdrop-filter: blur(8px);
+  /* 纯白不透明底，backdrop-filter 无任何视觉收益，却会让这颗按钮常驻合成层 */
   border: 1px solid var(--neutral-border-strong);
   box-shadow: 0 4px 16px var(--neutral-shadow);
   color: #64748b;
@@ -596,4 +596,5 @@ onUnmounted(() => {
     padding: 2.5rem 0;
   }
 }
+
 </style>

@@ -267,6 +267,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '考研专业', requiresAuth: true }
   },
   {
+    path: '/postgrad-major/:id',
+    name: 'PostgradMajorDetail',
+    component: () => import('@/views/major/PostgradDetail.vue'),
+    meta: { title: '考研专业详情', requiresAuth: true }
+  },
+  {
     path: '/city',
     name: 'CityList',
     component: () => import('@/views/city/List.vue'),

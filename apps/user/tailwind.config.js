@@ -49,8 +49,10 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        // 统一读全局 CSS 变量（index.css 的 --hf-font-sans），避免 Tailwind / body /
+        // Element Plus / 局部组件各用一套字形。?font=system 也靠这一个变量切换。
+        sans: ['var(--hf-font-sans)'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       animation: {
         'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
@@ -96,9 +98,11 @@ export default {
           from: { opacity: 0, transform: 'translateY(10px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
         },
+        // 不用 scale：含文字容器的缩放会被位图重采样 → 文字发毛
+        // （该动画当前未使用，保留为「正确写法」模板，见 AGENTS.md 第六节）
         scaleIn: {
-          from: { opacity: 0, transform: 'scale(0.95)' },
-          to: { opacity: 1, transform: 'scale(1)' },
+          from: { opacity: 0, transform: 'translateY(8px)' },
+          to: { opacity: 1, transform: 'none' },
         },
       },
       boxShadow: {

@@ -644,7 +644,7 @@ defineExpose({ selectNodeByKey })
               <button
                 type="button"
                 @click="goToColumn(currentSelectedNode)"
-                class="group w-full inline-flex items-center justify-between pl-5 pr-2 py-2.5 rounded-full bg-orange-600 text-white text-xs font-semibold shadow-xs transition-all duration-300 hover:bg-orange-500 active:scale-[0.98]"
+                class="group w-full inline-flex items-center justify-between pl-5 pr-2 py-2.5 rounded-full bg-orange-600 text-white text-xs font-semibold shadow-xs transition-all duration-300 hover:bg-orange-500 active:bg-orange-700 active:shadow-none"
               >
                 <span>进入「{{ currentSelectedNode.title }}」主页</span>
                 <span class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs transition-transform duration-300 group-hover:translate-x-0.5">

@@ -848,7 +848,7 @@ onMounted(() => {
 }
 
 .subject-btn:active {
-  transform: scale(0.97);
+  transform: none;
 }
 
 .subject-btn.is-selected,

@@ -73,6 +73,8 @@
 | **翡翠绿 (Growth Green)** | **生机畅通 · 实证精确** | `#059669` (`emerald-600`) | `#ECFDF5` (`emerald-50`) | `rgba(5, 150, 105, 0.18)` | 状态在线指示（`实时同步`）、考研`报录精算`标签、`招录`类公告、成功率/就业率正向指标 |
 
 > **色彩对比度硬约束（WCAG AA）**：黄色系作文字时，严禁在白底上直接使用浅亮黄（如 `#FACC15` 看不清），文字必须使用深琥珀色 `#D97706` 或 `#B45309`，搭配 `#FFFBEB` 浅黄底，确保清晰锐利。
+>
+> **橙色小字同理（2026-11-10 实测）**：品牌橙 `#F97316` 在白底只有 **2.80:1**，`#EA580C` 也只有 **3.56:1**，均达不到普通文字 AA 的 4.5:1 —— 用在 11–14px 文字上会被抗锯齿吃成灰雾、观感「发毛」。**文字态一律用 `orange-700 #C2410C`（5.18:1）**，hover 用 `orange-800 #9A3412`（7.31:1）；品牌橙保留给实心按钮背景、描边、图标与大字号装饰。字重封顶后 `font-weight: 500` 命中 Regular 字形、笔画更细，会放大这个问题，**不要靠加粗掩盖**（破坏全站字重克制），改对比度 + 取整字号才是正解。参照 `views/major/List.vue .major-detail`。
 
 ---
 
@@ -217,7 +219,11 @@
   - `:active` 按压反馈也不要 `scale(0.99)`，用「阴影收拢 + `translateY(0)`」表达。
 - **铁律 3｜`will-change` 只能临时挂**：只加在确实高频动画的元素上，动画结束必须撤回 `auto`；**严禁**写在会长期存在的容器类上（一个 `will-change: transform` 会让整块 section 永久位图化）。
 - **铁律 4｜字号取整**：`rem` 换算后应落在整数 px（`0.8125rem = 13px` ✅ / `0.82rem = 13.12px` ❌），分数 px 字号在 1x 屏上天然发虚。
-- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。
+- **铁律 5｜`backdrop-filter` 只给悬浮层**（吸顶导航、弹窗遮罩、浮层卡片）；严禁给正文大容器加 `backdrop-filter`，它同样会栅格化整个子树。纯白不透明底上的 `backdrop-filter` 没有视觉收益，直接删。
+- **铁律 6｜需要「放大 / 弹跳 / 倾斜」视觉时，只允许在 `::before` 背景层做**：把卡片的 `background / border / box-shadow / border-radius` 全部下沉到 `::before`（`position:absolute; inset:0; pointer-events:none`），`transform` 只写在这个空伪元素上；内容元素用 `position:relative; z-index:1` 盖在装饰层上，文字层零 transform。
+  - 参考实现：`components/home/hero/HfCompassNode.vue` 的 `.hf-node-inner::before`（消费 `compass-geometry.ts` 下发的 `--hf-node-scale`）、`HfCompassChild.vue` 的 `.hf-child-inner::before`（`hf-pop-bg` 入场弹跳，用 `animation-fill-mode: backwards` 避免锁死 hover）、`views/home/components/PlannerCard.vue` 的 `.planner-pop::before`（倾斜信息卡）。
+  - 配套动作：定位用的 `translate(-50%,-50%)` 也要消掉，改用 `margin-left: -W/2; margin-top: -H/2`；hover 的 `translateY` 同样挪到伪元素；`:active` 一律 `transform: none`，**不要**写 `translateY(0)`（后者仍是变换节点）；波浪错位用 `margin-top` 而非 `translateY`。
+  - `scale(1)` 也是变换节点：`scale >= 1` 的场景必须直接写 `transform: none`，不要「为了统一」保留 `scale(1)`。
 
 ### 4. 排查动作（30 秒定位，先量后改）
 
@@ -266,6 +272,14 @@ document.querySelector('.plan-card').getBoundingClientRect()
   - 加重因素：`.home-plan-grid` 的 `minmax(0,2fr)/minmax(320px,1fr)` + 矩阵 `repeat(2, minmax(0,1fr))` → 实读卡片宽 **395.328125px**，1x 屏（dpr=1）下 1px 描边被重采样成灰雾。
   - 修复：稳态 `filter/transform: none` + `is-settled{will-change:auto}`；移除 `.plan-card__icon` 的 `hover scale` 与 `:active scale`；字号取整（13px / 9px）；`html` 补 `text-rendering: optimizeLegibility` 与 `-webkit-font-smoothing: antialiased`。
   - 验证：`#pathway .section-container` → `filter: none / will-change: auto / transform: none`。
+- **首页 Hero 罗盘 + 全站按钮文字发毛（2026-11-09 根治，勿回退）**
+  - 真凶一（稳态、最严重）：`HfHeroCompass.vue` 舞台常驻 `transform: scale(${scale})`。≥1280 宽屏下 `scale` 恒为 1，但 `scale(1)` 仍是变换节点 → 6 个模块节点 / 子节点 / 返回按钮 / 提示的全部文字被永久位图化。修复：`scale >= 1` 时写 `transform: none`，仅 1024~1279 窄双栏才真正缩放。
+  - 真凶二：`compass-geometry.ts` 的 `moduleStyle` 直接给含文字的 `.hf-node` 下发 `scale(1.15 / 0.92 / 0.6)` → 点击展开放大时文字被插值。修复：改下发 `--hf-node-scale` / `--hf-node-delay`，由 `::before` 纯装饰层消费。
+  - 真凶三：`AppHeader.vue` 常驻 `will-change: transform` + 无视觉收益的 `backdrop-filter: blur(12px)`（底色 `#ffffff` 不透明）→ 全站导航文字常驻合成层。两者均删除；Chrome 对 transform 过渡会自动临时提升、结束回落，无需声明。
+  - 真凶四：全局 `index.css` 的 `.magnetic-btn / .btn-brand / .btn-secondary / .card-active` 与 user/admin 各页 `:active { scale(0.95~0.99) }` 共 31 处 → 统一改 `transform: none` + 阴影/位移/背景表达。
+  - 其余帮凶：`HfHeroChips` 的 `filter: brightness()` hover、`PlannerCard` 双层 `skewX` 抵消、`11.5px` 分数字号、`:active translateY(0)` 残留、`HfHeroCompass` 提示文字的 `translateX(-50%)`。
+  - **保留项（纯装饰层，合法）**：背景图 `scale(1.15)`、图片 hover `scale(1.03/1.04/1.05/1.08)`、loading 圆点、枫叶飘落、罗盘中心圆盘（仅 logo 图片）、以及所有 `::before` 上的 scale。跑马灯匀速平移属设计使然的现象 B，不叠加 scale/filter/will-change 即可。
+  - 验证：两端 `vue-tsc --noEmit` 通过；全库 `transform: ... scale(` 复查仅剩上述纯装饰层。
 
 ---
 
@@ -281,3 +295,65 @@ document.querySelector('.plan-card').getBoundingClientRect()
 - ❌ **严禁**删除 `index.css` 中根治 Element Plus 弹窗抖动的 `scrollbar-gutter: stable` 与 `width: 100% !important` 补丁
 - ❌ **严禁**把入场动画的稳态写成 `filter: blur(0)` 或让 `will-change` 常驻（见第六节铁律 1，会让整块容器永久位图化 → 描边糊、文字虚）
 - ❌ **严禁**给含文字或含序号徽标的容器写 `hover/active { transform: scale() }`（见第六节铁律 2）
+- ❌ **严禁**把「零效果」变换常驻在容器上（`scale(1)` / `translateY(0)` / `translate(-50%,-50%)` 定位），以及给纯白不透明底容器加 `backdrop-filter` 或常驻 `will-change`（见第六节铁律 3/5/6）
+- ❌ **严禁**用 `<link>` / `@import` 引境外字体 CDN、在组件里硬编码局部 `font-family` 栈、或为修「字太粗」逐模块改业务 CSS 的 `font-weight`（一律见第八节）
+- ❌ **严禁**删除 `SiteFooter.vue` 页脚的 `.font-credit`（MiSans 许可协议的合规义务，见第八节）
+
+---
+
+## 八、 User 端字体基线与字重治理（2026-11-10 定稿）
+
+> **适用范围：仅 `apps/user`**。Admin 端有独立字体栈，未接入任何 web font，禁止顺手改动。
+> `?skin=editorial` 暖白试验皮肤已删除；画布保持冷白 `#f8fafc`（见第二节），字体与底色互不影响。
+
+### 1. 唯一真相：`--hf-font-sans`
+
+定义在 `apps/user/src/assets/styles/index.css` 的 `:root`：
+
+```css
+--hf-font-sans: 'Inter Variable', 'MiSans', -apple-system, BlinkMacSystemFont,
+                'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
+                'Microsoft YaHei', sans-serif;
+```
+
+- `'Inter Variable'` 管西文/数字、`'MiSans'` 管中文，字体栈按字符逐个回退，**不需要给具体元素加字体 class**（数据大数字、日期、XLSX/PDF 徽标、PATHWAY 小标签自动生效）。
+- 以下位置**全部引用该变量**，禁止再写局部硬编码字体栈：`body`、`--el-font-family`（防御 EP 升级）、`tailwind.config.js` 的 `fontFamily.sans`、`TopToolBar.vue`、`SiteFooter.vue`。历史上同页跑 3 套字形（「有的地方可以、有的地方不可以」）就是局部硬编码造成的：实测 EP 2.13.7 的 `dist/index.css` 里 `--el-font-family` 只定义、0 引用，组件多用 `font-family: inherit`。
+- `?font=system` → `html.font-system` 覆盖该变量回系统栈做 A/B；**该旧栈刻意不含 `'MiSans'`**（族名已被 `@font-face` 注册，写进去就会命中 web font、开关失效）。
+
+### 2. 字体来源与构建
+
+| 包 | 版本 | 引入位置 | 说明 |
+|---|---|---|---|
+| `misans-webfont` | 4.3.1 | `main.ts` → `./assets/styles/misans.css`（生成物） | 简中 4 字重 / 753 分片 / 23.5 MB 进 dist；浏览器按 `unicode-range` 只下命中分片 |
+| `@fontsource-variable/inter` | 5.3.0 | `main.ts` → `@fontsource-variable/inter/wght.css` | `font-weight: 100 900` 可变字重，7 个 subset |
+
+- **`apps/user/scripts/gen-misans-css.mjs` 是字体 CSS 的唯一来源**（`pnpm --filter @haifeng/user fonts:gen`）；生成物 `misans.css` 勿手改。
+- 脚本做三件事：① 统一分包不一致的族名（regular/bold = `MiSans`，medium = `MiSans Medium`，semibold = `MiSans Semibold`，且后两者 weight 都标 400，直接引会让 600 匹配到 Bold）；② 按 `FACE_SPECS` 重排字重；③ 删 `local()`、woff2 改本地相对路径交 Vite 打包，**零 jsdelivr / unpkg 境外请求**（对齐 `91a423f` 删除 Geist CDN）。
+- ⚠️ **升级 `misans-webfont` 后必须重跑 `fonts:gen`**，否则族名与路径失效。
+- 成本：主 CSS 1,058 KB / gzip 269 KB，其中字体声明约 591 KB 源码；`font-display: swap` 首次有一次字形切换、缓存后无。刻意不做淡入动画，避免请回第六节的毛边。
+
+### 3. 字重策略：`FACE_SPECS` 双族名封顶
+
+| 族名 | 源字形 | `font-weight` | 用途 |
+|---|---|---|---|
+| `MiSans`（默认 `--hf-font-sans`） | Regular | `100 600` | 正文 / 标签 / 按钮 / 罗盘节点 |
+| | Medium | `700` | 次级强调 |
+| | Semibold | `800 900` | **全站最重**（替代 Bold） |
+| `MiSans Display`（`--hf-font-strong`） | Bold | `100 900` | 仅 2 处例外 |
+
+**例外 2 处**（保留 Bold）：`HfHeroSection.vue .hf-title`、`TopToolBar.vue .tt-brand-title`。主导航 `AppHeader.vue .nav-link` 已于 **2026-11-10 降档摘除**（用户「字重再小一点，小 100」：删掉 `--hf-font-strong` 引用 + `700 → 600`，命中 MiSans Regular；Hero 左标题与品牌名均为 `800`，保持 Bold 不变）。
+
+- 业务代码里 **1176 处 `font-weight` 声明一处都不用改**：任何值最多命中 Semibold，不会再出现「厚重」；只有显式引用 `--hf-font-strong` 才拿 Bold。这是「以后不用逐模块调字重」的根本原因。
+- ⚠️ **`MiSans Display` 是单字形族**：`100 900` 全覆盖且只有 Bold 一个 face，在挂了 `--hf-font-strong` 的元素上改 `font-weight` 数字**不会有任何视觉变化**。要让例外区变细，必须先删 `font-family: var(--hf-font-strong)` 引用回到默认族，再调数字。这是「小 100 却看不出变化」的典型陷阱。
+- 调全站轻重 → 只改 `FACE_SPECS` 并重跑；让某处变粗 → 加一行 `font-family: var(--hf-font-strong)`；让例外区也变轻 → 删那 2 处引用。
+- `html.font-system` 必须同步 `--hf-font-strong: var(--hf-font-sans)`，否则 A/B 开关仍会加载 Bold。
+- 静态字体声明 `font-weight` 范围（如 `100 600`）是 CSS Fonts 4 合法写法：命中区间即使用该 face，不插值、不触发合成加粗。
+
+### 4. 字体相关严禁
+
+- ❌ **严禁**用 `<link>` / `@import` 引 `fonts.googleapis.com`、`fonts.gstatic.com`、jsdelivr 等境外 CDN。技术上 Google Fonts 与 MiSans **完全兼容**（族名排在 MiSans 前，西文走它、中文自动回退），但国内不稳、刚删过境外 CDN，且**只对西文有效、救不了中文厚重**（那是字重问题）。要看中某个字体，用 `@fontsource-variable/*` 本地包 + `main.ts` import。
+- ❌ **严禁**引 Google Fonts 的中文字体（Noto Sans SC 等）：体积巨大且会和 MiSans 抢中文。
+- ❌ **严禁**在组件里再写局部 `font-family` 硬编码栈（统一读 `--hf-font-sans`）。
+- ❌ **严禁**为修某个模块「字太粗」去逐个改业务 CSS 的 `font-weight` —— 一律改 `FACE_SPECS`。
+- ❌ **严禁**删除 `SiteFooter.vue` 页脚的 `.font-credit`。《MiSans 字体知识产权许可协议》要求「在软件中特别注明使用了 MiSans 字体」，这是**合规义务**；npm 包的 Apache-2.0 只管分包代码，字体文件另受该协议约束（还禁止改编字体本身）。
+- ❌ **严禁**用 `opacity` / `transform` / `filter` 做字体淡入，会把第六节根治的文字毛边请回来。

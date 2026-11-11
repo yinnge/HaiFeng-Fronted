@@ -214,7 +214,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocPointerDo
   box-shadow: 0 8px 20px rgba(249, 115, 22, 0.34);
 }
 .hf-submit:active {
-  transform: translateY(0);
+  transform: none;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.22);
 }
 
 /* 下拉 */

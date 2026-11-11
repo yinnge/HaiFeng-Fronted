@@ -828,7 +828,7 @@ onMounted(() => {
 }
 
 :deep(.el-pagination.is-background .el-pager li:active) {
-  transform: scale(0.95);
+  transform: none;
 }
 
 :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
@@ -860,7 +860,7 @@ onMounted(() => {
 
 :deep(.el-pagination.is-background .btn-next:active),
 :deep(.el-pagination.is-background .btn-prev:active) {
-  transform: scale(0.95);
+  transform: none;
 }
 
 :deep(.el-pagination .el-pagination__total) {

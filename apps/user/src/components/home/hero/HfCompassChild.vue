@@ -19,7 +19,7 @@ defineEmits<{ click: [] }>()
       :style="{
         left: pos.x + 'px',
         top: pos.y + 'px',
-        animationDelay: index * 60 + 'ms',
+        '--pop-delay': index * 60 + 'ms',
       }"
     :aria-label="column.title + '，按回车定位到下方专栏'"
     @click="$emit('click')"
@@ -39,25 +39,24 @@ defineEmits<{ click: [] }>()
 .hf-child {
   position: absolute;
   z-index: 4;
+  /* 负 margin 代替 translate(-50%,-50%) 做中心对齐，消除常驻变换节点 */
+  margin-left: -80px; /* 160 / 2 */
+  margin-top: -30px; /* 60 / 2 */
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
-  transform: translate(-50%, -50%);
   opacity: 0;
+  /* 入场只淡入；弹跳 scale 放到纯装饰背景层 ::before 上 */
   animation: hf-pop 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation-delay: var(--pop-delay, 0ms);
 }
 @keyframes hf-pop {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .hf-child-inner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -65,12 +64,34 @@ defineEmits<{ click: [] }>()
   height: 60px;
   padding: 0 11px;
   border-radius: 16px;
+  /* 背景/边框/阴影下沉到伪元素，标题与副标题文字零 transform */
+}
+.hf-child-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 23, 42, 0.05);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.02),
     0 8px 24px -4px rgba(15, 23, 42, 0.08);
-  transition: transform 0.25s ease, border-color 0.25s ease;
+  /* backwards：delay 期间保持 0.6，动画结束回到普通样式（无 transform），
+     避免 animation fill 锁死 hover 位移 */
+  animation: hf-pop-bg 0.4s cubic-bezier(0.32, 0.72, 0, 1) backwards;
+  animation-delay: var(--pop-delay, 0ms);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  pointer-events: none;
+}
+@keyframes hf-pop-bg {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+.hf-child-icon,
+.hf-child-body,
+.hf-child-arrow {
+  position: relative;
+  z-index: 1;
 }
 .hf-child-icon {
   display: flex;
@@ -109,14 +130,14 @@ defineEmits<{ click: [] }>()
   flex-shrink: 0;
   color: #334155;
 }
-.hf-child:hover .hf-child-inner {
+.hf-child:hover .hf-child-inner::before {
   transform: translateY(-2px);
   border-color: rgba(249, 115, 22, 0.22);
 }
 .hf-child:focus-visible {
   outline: none;
 }
-.hf-child:focus-visible .hf-child-inner {
+.hf-child:focus-visible .hf-child-inner::before {
   border-color: rgba(249, 115, 22, 0.5);
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
 }
@@ -125,7 +146,9 @@ defineEmits<{ click: [] }>()
   .hf-child {
     animation: none;
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+  }
+  .hf-child-inner::before {
+    animation: none;
   }
 }
 </style>

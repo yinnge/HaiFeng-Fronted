@@ -438,7 +438,7 @@ function handleAvatarClick() {
 }
 
 .upgrade-btn:hover {
-  transform: translateY(-2px) scale(1.03);
+  transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
 }
 
@@ -447,7 +447,7 @@ function handleAvatarClick() {
 }
 
 .upgrade-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: none;
 }
 
 .upgrade-icon {

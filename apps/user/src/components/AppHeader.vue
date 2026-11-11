@@ -373,10 +373,13 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 50;
   background: #ffffff;
-  backdrop-filter: blur(12px);
+  /* ⚠️ 不要加常驻 will-change: transform / backdrop-filter：
+     两者都会把整条导航（含全部菜单文字）永久提升为合成层，
+     Windows/Chrome 下丢失子像素抗锯齿 → 全站导航文字发毛。
+     Chrome 对 transform 过渡会自动临时提升合成层、结束自动回落，无需声明。
+     纯白不透明底也让 backdrop-filter 完全没有视觉收益。 */
   border-bottom: 1px solid var(--neutral-border);
   transition: transform 0.3s ease;
-  will-change: transform;
 }
 
 /* 滚动收起（抽屉式上滑）：仅非主页页面滚动离开顶部后触发 */
@@ -430,8 +433,16 @@ onBeforeUnmount(() => {
   gap: 0.125rem;
   padding: clamp(0.375rem, 0.3rem + 0.2vw, 0.5rem) clamp(0.5rem, 0.4rem + 0.2vw, 0.625rem);
   font-size: clamp(0.875rem, 0.75rem + 0.35vw, 1.125rem);
+  /* 主导航降档（2026-11-10，用户「字重再小一点，小 100」）：
+     原本挂 --hf-font-strong（MiSans Display 整族 100 900 只有 Bold 一个字形），
+     这种族里改 font-weight 数字完全不会变细 —— 必须同时摘掉该族名，
+     回到默认 --hf-font-sans，再把 700 -> 600 才真正命中 MiSans 的 Regular。
+     激活态靠颜色 + 下边框表达，不依赖字重层级。 */
+  /* 2026-11-10：用户要求「文字更黑、像 md 加粗」。字重回一档到 700
+     （MiSans 的 Medium，仍比最初的 MiSans Display Bold 细），颜色加深到
+     slate-900；激活态仍由橙色 + 下边框表达，不叠加字重。 */
   font-weight: 700;
-  color: #1f2937;
+  color: #111827;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;

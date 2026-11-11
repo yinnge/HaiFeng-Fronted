@@ -13,7 +13,6 @@ import {
   batchHardDeleteMajorScore,
 } from '@/api/algorithm/admission/major-score'
 import { getGroupPage } from '@/api/algorithm/admission/group'
-import { getMajorPage } from '@/api/major'
 import { getDictPage } from '@/api/algorithm/constraint'
 import type {
   AdmissionMajorScoreListVO,
@@ -170,35 +169,6 @@ const getLatestFromHistory = (history: any[] | null | undefined, field: string):
   if (!history || history.length === 0) return null
   const latest = history[history.length - 1]
   return latest[field] ?? null
-}
-
-// 专业名称模糊联想（复用 /api/v1/admin/major/list 的 majorName 模糊查询）
-const queryMajorSuggestions = async (
-  queryString: string,
-  cb: (results: { value: string; majorCode: string }[]) => void
-) => {
-  if (!queryString) {
-    cb([])
-    return
-  }
-  try {
-    const res = await getMajorPage({ page: 1, size: 10, majorName: queryString })
-    if (res.data.code === 200) {
-      const list = res.data.data.records || []
-      cb(list.map((m) => ({ value: m.majorName, majorCode: m.majorCode })))
-    } else {
-      cb([])
-    }
-  } catch {
-    cb([])
-  }
-}
-
-// 选中联想项：专业名称 + 专业代码一并填入（也可不选，直接手动输入）
-const handleMajorSelect = (item: Record<string, any>) => {
-  if (!item?.value) return
-  formData.majorName = String(item.value)
-  formData.majorCode = item.majorCode ? String(item.majorCode) : ''
 }
 
 const handlePageChange = (page: number) => {
@@ -482,7 +452,7 @@ onMounted(() => {
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="专业代码" style="width: 100%; margin-bottom: 16px;">
+                <el-form-item label="专业对应代码" style="width: 100%; margin-bottom: 16px;">
                   <el-input v-model="queryParams.majorCode" placeholder="模糊搜索" clearable style="width: 100%;" @keyup.enter="handleSearch" />
                 </el-form-item>
               </el-col>
@@ -547,7 +517,7 @@ onMounted(() => {
       <el-table :data="tableData" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="groupId" label="专业组ID" min-width="90" />
-        <el-table-column prop="majorCode" label="专业代码" min-width="120" />
+        <el-table-column prop="majorCode" label="专业对应代码" min-width="120" />
         <el-table-column prop="majorName" label="专业名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="educationLevel" label="层次" min-width="80" />
         <el-table-column label="最新年份" min-width="80">
@@ -613,7 +583,7 @@ onMounted(() => {
                 <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
                 <el-descriptions-item label="专业组ID">{{ detailData.groupId }}</el-descriptions-item>
                 <el-descriptions-item label="专业ID">{{ detailData.majorId ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="专业代码">{{ detailData.majorCode }}</el-descriptions-item>
+                <el-descriptions-item label="专业对应代码">{{ detailData.majorCode }}</el-descriptions-item>
                 <el-descriptions-item label="专业名称">{{ detailData.majorName }}</el-descriptions-item>
                 <el-descriptions-item label="层次">{{ detailData.educationLevel || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="学制">{{ detailData.duration || '-' }}</el-descriptions-item>
@@ -668,27 +638,14 @@ onMounted(() => {
             </el-form-item>
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item label="专业代码" required class="dialog-form-item">
-                  <el-input v-model="formData.majorCode" placeholder="选中专业自动填入，也可手动输入" maxlength="20" />
+                <el-form-item label="专业对应代码" required class="dialog-form-item">
+                  <el-input v-model="formData.majorCode" placeholder="请输入该专业组内的专业对应代码" maxlength="20" />
+                  <div class="form-tip">每个专业组命名都不同，必填。</div>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="专业名称" required class="dialog-form-item">
-                  <el-autocomplete
-                    v-model="formData.majorName"
-                    :fetch-suggestions="queryMajorSuggestions"
-                    placeholder="输入名称模糊查询，选中自动带出专业代码；也可直接输入"
-                    clearable
-                    style="width: 100%"
-                    @select="handleMajorSelect"
-                  >
-                    <template #default="{ item }">
-                      <div class="flex items-center justify-between gap-4">
-                        <span class="truncate">{{ item.value }}</span>
-                        <span class="shrink-0 text-xs text-gray-400">{{ item.majorCode }}</span>
-                      </div>
-                    </template>
-                  </el-autocomplete>
+                  <el-input v-model="formData.majorName" placeholder="请输入专业名称" clearable maxlength="100" />
                 </el-form-item>
               </el-col>
             </el-row>

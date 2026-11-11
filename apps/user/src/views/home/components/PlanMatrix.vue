@@ -166,8 +166,9 @@ const items = columns.map(c => ({
 
 .plan-card:active {
   /* 按压反馈不再用 scale：整卡含标题文字，缩放走合成层位图插值会让文字瞬间发虚
-     （DESIGN.md 方案1）。改用阴影收拢表达按压感。 */
-  transform: translateY(0);
+     （DESIGN.md 方案1）。改用阴影收拢表达按压感；归 none 而非 translateY(0)，
+     避免残留变换节点。 */
+  transform: none;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.03),
     0 4px 12px -4px rgba(15, 23, 42, 0.08);

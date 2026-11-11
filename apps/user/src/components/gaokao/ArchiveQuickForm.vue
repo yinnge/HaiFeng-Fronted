@@ -420,7 +420,7 @@ async function onMockFill() {
 }
 
 .gk-subject-btn:active {
-  transform: scale(0.97);
+  transform: none;
 }
 
 .gk-subject-btn.is-selected,

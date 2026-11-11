@@ -105,7 +105,7 @@ const activeError = computed(() =>
           <router-link
             v-for="item in postgrad"
             :key="item.id"
-            :to="{ path: '/postgrad-major', query: { majorId: item.id } }"
+            :to="{ name: 'PostgradMajorDetail', params: { id: item.id } }"
             class="tbx-card"
           >
             <div class="tbx-card-top">

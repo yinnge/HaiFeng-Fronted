@@ -442,11 +442,11 @@ async function handleSave() {
 .save-btn:hover {
   background: linear-gradient(135deg, #e8722a, #d4661a);
   box-shadow: 0 6px 16px rgba(232, 114, 42, 0.35);
-  transform: scale(1.02);
+  transform: translateY(-1px);
 }
 
 .save-btn:active {
-  transform: scale(0.99);
+  transform: none;
 }
 
 .btn-icon {

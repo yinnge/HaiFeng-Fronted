@@ -577,26 +577,26 @@ onMounted(() => { fetchData() })
 /* Buttons - Micro-animations */
 .search-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .search-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.search-btn:active { transform:translateY(0) scale(0.98); box-shadow:0 1px 4px rgba(249,115,22,0.3); }
+.search-btn:active { transform:none; box-shadow:0 1px 4px rgba(249,115,22,0.3); }
 .reset-btn { display:inline-flex; align-items:center; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .reset-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
-.reset-btn:active { transform:scale(0.98); }
+.reset-btn:active { transform:none; }
 
 /* Action Bar */
 .action-bar { position:relative; z-index:1; display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
 .primary-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .primary-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.primary-btn:active { transform:translateY(0) scale(0.98); }
+.primary-btn:active { transform:none; }
 .outline-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#374151; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .outline-btn:hover { color:#F97316; border-color:#F97316; background:rgba(249,115,22,0.04); }
-.outline-btn:active { transform:scale(0.98); }
+.outline-btn:active { transform:none; }
 .danger-btn { display:inline-flex; align-items:center; padding:8px 20px; background:linear-gradient(135deg,#ef4444,#f87171); color:#fff; border:none; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(239,68,68,0.3); }
 .danger-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(239,68,68,0.4); }
-.danger-btn:active { transform:translateY(0) scale(0.98); }
+.danger-btn:active { transform:none; }
 .danger-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
 .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 20px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .refresh-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
-.refresh-btn:active { transform:scale(0.98); }
+.refresh-btn:active { transform:none; }
 
 /* Table Card */
 .table-card { background:#fff; border-radius:12px; padding:24px; border:1px solid rgba(249,115,22,0.1); border-top:3px solid #F97316; border-bottom:3px solid #FB923C; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
@@ -618,7 +618,7 @@ onMounted(() => { fetchData() })
 /* Action Buttons - Micro-animations */
 .action-group { display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; }
 .act-btn { display:inline-flex; align-items:center; padding:3px 10px; border:none; border-radius:12px; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); white-space:nowrap; }
-.act-btn:active { transform:scale(0.95); }
+.act-btn:active { transform:none; }
 .act-detail { background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; }
 .act-detail:hover { box-shadow:0 2px 8px rgba(249,115,22,0.3); transform:translateY(-1px); }
 .act-edit { background:linear-gradient(135deg,#2563eb,#60a5fa); color:#fff; }
@@ -658,10 +658,10 @@ onMounted(() => { fetchData() })
 .uni-form :deep(.el-switch.is-checked .el-switch__core) { background:#F97316; border-color:#F97316; }
 .cancel-btn { display:inline-flex; align-items:center; padding:8px 24px; background:#fff; color:#6b7280; border:1px solid #d1d5db; border-radius:20px; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); }
 .cancel-btn:hover { color:#374151; border-color:#9ca3af; background:#f9fafb; }
-.cancel-btn:active { transform:scale(0.98); }
+.cancel-btn:active { transform:none; }
 .submit-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 24px; background:linear-gradient(135deg,#F97316,#FB923C); color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(249,115,22,0.3); }
 .submit-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(249,115,22,0.4); }
-.submit-btn:active { transform:translateY(0) scale(0.98); }
+.submit-btn:active { transform:none; }
 .uni-form :deep(.el-divider) { margin:20px 0 12px; }
 .uni-form :deep(.el-divider__text) { background:#fff; padding-right:12px; }
 .uni-form :deep(.el-collapse) { border:1px solid rgba(249,115,22,0.15); border-radius:8px; }
@@ -679,7 +679,7 @@ onMounted(() => { fetchData() })
 .jsonb-tag-remove:hover { background:rgba(239,68,68,0.2); color:#dc2626; transform:scale(1.1); }
 .jsonb-add-btn { display:inline-flex; align-items:center; padding:4px 12px; background:#fff; color:#F97316; border:1px dashed rgba(249,115,22,0.4); border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); }
 .jsonb-add-btn:hover { border-color:#F97316; background:rgba(249,115,22,0.04); transform:translateY(-1px); }
-.jsonb-add-btn:active { transform:scale(0.98); }
+.jsonb-add-btn:active { transform:none; }
 
 /* JSONB Detail View */
 .jsonb-detail-row { margin-bottom:12px; }

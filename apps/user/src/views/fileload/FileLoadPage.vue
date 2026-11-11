@@ -1259,7 +1259,7 @@ watch(effectiveStage, () => {
 }
 
 .stage-nav-item:active {
-  transform: scale(0.97);
+  transform: none;
 }
 
 /* 占位目录（资讯/练题/生涯规划）：灰色，点击弹「敬请期待」 */

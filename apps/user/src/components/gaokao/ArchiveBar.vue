@@ -465,7 +465,7 @@ function onWinScroll(e?: Event) {
 }
 
 .archive-nav-item:active {
-  transform: scale(0.97);
+  transform: none;
 }
 
 /* 火焰角标（右上角） */
