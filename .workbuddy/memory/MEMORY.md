@@ -35,6 +35,14 @@
 - 业务 CSS 字重声明一处未改；调全站轻重只改 `FACE_SPECS`。`font-display:swap` 首次一次字形切换，刻意不做淡入。
 - **合规义务**：MiSans 协议要求注明使用，已写 `SiteFooter.vue` 页脚 `.font-credit`，勿删。
 
+## 行业列表页（11-12 重构，`68e8fd2`）
+- `List.vue` 只取数/编排；`views/industry/components/` 下 7 组件 + `utils.ts` + `industry.css`（`.page-industry-list` 限定）。**冷白 Hero**（与竞赛页暖橙 Hero 有意区分）+ 3 列网格 + 右栏热门榜/在线工具/收口条。
+- ★ **行业域后端事实（DB 实测）**：行业 **90 条**，`category` = 「字母+中文名」（如「C 制造业」）共 **17 门类**；**`t_industry.icon_class` 存 FA 类名但 C 端 VO 不返回，且 63/90 为 `fa-industry`**（无区分度，仅 27 条专属）→ 不可用；**`sort_order` 全为 0**（做不了热门榜），真实热度是 **`investment_heat`**（30~88）；`category` 后端是**精准匹配（eq）**，URL 回写必须原样写回不能截断；`t_industry_detail` 有 8 个 JSONB 字段（详情页数据充足）。
+- ★ **图标映射**：前端两级 = **行业名关键词（61 条规则）→ 17 门类兜底**；依据是 DB 那 27 条专属 `icon_class`（fa-tractor/fa-cow/fa-train/fa-plane/fa-hospital…）**证明录入时就是「一行业一图标」意图**，按同语义反推 lucide。实测 **90/90 全命中、46 种图标**。规则表在 `components/utils.ts` 的 `KEYWORD_ICONS`。
+- **热门榜数值伪造、条目接口动态**：独立请求不带筛选，条目与顺序由 `/industry/list` 返回，仅「热度数值」用前端固定数组 `HOT_INDEX_BY_RANK`（用户明确要求，与竞赛页同款）。
+- 收藏后端已就绪（`INDUSTRY` 枚举 + Validator + ids 过滤）→ 前端完整接入零后端改动。
+- 在线工具：「考公指南」接现成路由 **`/civil-service`**（考公专栏）；岗位查询即将上线；专家项复用 `useExpertContact`。
+
 ## 业务规则
 - **游客档案/专业组**：游客档案仅 localStorage `haifeng:guest-gaokao-archive`；`Groups.vue` 用 `guestArchiveParams` 上行，已登录不传。`request.ts` 401 仅「有 token」算过期。
 - **高考省份锁定**：登录用户首次保存档案后锁定（导航 + 表单 disabled），游客随便切；单例 `useProvinceLock.ts`。
