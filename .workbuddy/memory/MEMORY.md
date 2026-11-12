@@ -66,6 +66,21 @@
 - Hero 背景图复用 `HERO_BG_URL`（= `picture/university/列表背景.png`），**走 JS 内联 url() 注入，不进 CSS 产物**（产物核对时别去 CSS 里找）。
 - URL 同步 4 键 `page/size/compName/compLevel`。
 
+## 竞赛详情页（11-12 重构，`bd22712`）
+- `Detail.vue` 只取数/编排；`views/competition/detail/` 下 `utils.ts` + `detail.css`（`.page-competition-detail` 限定）+ 8 组件。**视觉 = 暖橙 Hero + 冷白画布**（用户拍板，与列表页冷白规范有意区分）；右栏 = 橙报名卡 → 赛事流程 → 获奖信息 → 推荐专业 → 在线工具 → 收口条；顶部 5 Tab 且 **Tab 进 URL**。
+- ★★ **竞赛详情后端事实（直连 PG 实测，`docker exec haifeng-postgres psql -U postgres -d haifeng`）**：
+  - `basic_info` 的 title **只有 5 个固定值**（竞赛简介/参赛对象/竞赛时间/**官方网站**/主办单位），100/100 条齐全。⚠️ V9 注释列的 9 项与实际不符，官网的 title 是「官方网站」不是「官网」。
+  - **报名 URL = basicInfo「官方网站」项的 content**，98/100 是 https URL（后端无独立字段，搜 url/website/报名 零命中）→ 前端正则校验，非 URL 降级不可点击。
+  - **8 个详情字段 100/100 全非空**；`process_guide`/`awards_display`/`competition_rules` 实为 `{title,content}`。
+  - `purposes` 实测 **3~5 条**（非固定 4）→ 网格用 auto-fit。
+  - `t_competition_major` **当前 0 行**；接口 `@RequireVip` **只认 vip**（普通会员/Pro 都拿不到）。
+  - `registration_time` 在主表有但 **C 端详情 VO 不返回**（列表 VO 才有）→ Hero 改用 basicInfo 的「竞赛时间」。
+- ★ **已修的现存 bug**：`types/certificate/index.ts` 的 `processGuide`/`awardsDisplay` 原声明 `{step,desc}`/`{level,count}`，后端实为 `{title,content}` → **这两块页面一直是空的**，已改。
+- ★ **两个后端隐患（待办，本轮未动）**：① `CompetitionMajorMapper.selectMajorsByCompetitionId` 漏 `is_deleted=FALSE`（同文件另一方法带了）；② 竞赛 3 个 C 端 VO 缺 `@JsonSerialize(ToStringSerializer)`（前端 json-bigint `storeAsString` 已兜住，暂不影响）。
+- **在线工具单一数据源**：详情页 `detail/utils.ts` 用 `export { COMPETITION_TOOLS } from '../components/utils'` 复用列表页配置。
+- ★ **并行工作提交技巧**：`types/certificate/index.ts` 被两路任务共用 → `git add` 整文件会误提交对方改动，用 **`git apply --cached` 做 hunk 级暂存**（`git stash --keep-index` 对单文件混改不可靠）。
+- **环境**：沙箱内 dev server 的 curl 返回 502 是 http_proxy 拦截 → **`curl --noproxy '*'`** 直连；后台进程用 Bash 工具 `run_in_background=true`（`&`+`nohup` 会被回收）；后端 JVM 未运行时可**直连 DB 取真实数据做前端逻辑验证**。
+
 ## 专业模块页面结构（11-11~11-12 重构）
 - `views/major/Detail.vue` 只取数/编排；12 子组件 + `utils.ts` + `detail.css` 在 `views/major/detail/`，页面级 CSS 全由 `.page-major-detail` 限定。
 - **考研专业详情已改独立页面** `/postgrad-major/:id`（`PostgradDetail.vue` + `postgrad-detail/` 8 组件）；`PostgradMajorDialog.vue` 已删除。根节点并列挂 `class="page-postgrad-detail page-postgrad-list"` + `import './postgrad/postgrad.css'` 零改动复用列表页通用类（代价：根类名带列表页语义）。
