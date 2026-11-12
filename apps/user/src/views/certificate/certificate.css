@@ -1,0 +1,256 @@
+/* ============================================================================
+ * 证书列表页「页面级」样式。
+ * 所有选择器由 .page-certificate-list 限定，不下发到其它路由；
+ * 下拉浮层被 teleport 到 body，故 .certificate-select-popper 规则单独写成全局唯一类名。
+ * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
+ * 而 html 画布本身就是 #f8fafc，透出即可。
+ * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
+ * ========================================================================== */
+
+/* 大屏宽度统一走 :root --hf-container-*（与 .container 同策略，见 index.css 末尾）：
+   >=1536 随视口放宽 + 每边 88px 安全边 + 2200px 封顶；<1536 保持原 1360px。 */
+.page-certificate-list .cert-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+@media (min-width: 1536px) {
+  .page-certificate-list .cert-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
+}
+
+/* ---------- 双栏 ---------- */
+.page-certificate-list .cert-hero-wrap {
+  margin-bottom: 20px;
+}
+.page-certificate-list .cert-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.page-certificate-list .cert-left,
+.page-certificate-list .cert-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-certificate-list .cert-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  /* top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  .page-certificate-list .cert-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+
+/* ---------- 两列证书卡片网格 ---------- */
+.page-certificate-list .cert-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 767px) {
+  .page-certificate-list .cert-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 统一卡片 ---------- */
+.page-certificate-list .hf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* 仅可点击的证书卡启用 hover 位移；纯展示卡保持静止 */
+.page-certificate-list .cert-card.is-clickable:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.22);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(249, 115, 22, 0.08);
+}
+.page-certificate-list .cert-card.is-clickable:active {
+  transform: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* ---------- 一级模块标题：3×14px 品牌橙竖条 ---------- */
+.page-certificate-list .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-certificate-list .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+
+/* ---------- 说明性标签：6px 圆角 ---------- */
+.page-certificate-list .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+.page-certificate-list .hf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 键盘焦点 ---------- */
+.page-certificate-list :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 骨架 / 空态 / 错误态 ---------- */
+.page-certificate-list .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-certificate-list .cert-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 20px;
+}
+.page-certificate-list .cert-state__text {
+  font-size: 14px;
+  color: #64748b;
+}
+.page-certificate-list .cert-state__btn {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-certificate-list .cert-state__btn:hover {
+  background: #f8fafc;
+  color: #9a3412;
+}
+
+/* ---------- 检索表单：统一 40px / 圆角 10px / 聚焦柔光环 ---------- */
+.page-certificate-list .cert-input .el-input__wrapper,
+.page-certificate-list .cert-select .el-select__wrapper,
+.page-certificate-list .cert-select .el-input__wrapper {
+  height: 40px;
+  min-height: 40px;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
+}
+.page-certificate-list .cert-input .el-input__wrapper.is-focus,
+.page-certificate-list .cert-select .el-select__wrapper.is-focused,
+.page-certificate-list .cert-select .el-select__wrapper .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.5) inset, 0 0 0 3px rgba(249, 115, 22, 0.12);
+}
+.page-certificate-list .cert-input .el-input__inner,
+.page-certificate-list .cert-select .el-select__placeholder {
+  font-size: 14px;
+  color: #1e293b;
+}
+.page-certificate-list .cert-input .el-input__inner::placeholder,
+.page-certificate-list .cert-select .el-select__placeholder.is-transparent,
+.page-certificate-list .cert-select .el-select__placeholder {
+  color: #64748b;
+}
+.page-certificate-list .cert-input .el-input__prefix,
+.page-certificate-list .cert-select .el-select__prefix {
+  color: #64748b;
+}
+
+/* ---------- 下拉浮层：popper-class 传送到 body，必须用全局唯一类名 ---------- */
+.certificate-select-popper.el-popper {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+}
+.certificate-select-popper .el-select-dropdown__item {
+  border-radius: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+.certificate-select-popper .el-select-dropdown__item.is-selected {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 600;
+}
+.certificate-select-popper .el-select-dropdown__item.is-hovering {
+  background: #f8fafc;
+  color: #c2410c;
+}
+
+/* ---------- 分页：浅橙底橙字，不用 Element 默认蓝、不用实心橙 ---------- */
+.page-certificate-list .cert-pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.page-certificate-list .cert-pager .el-pagination {
+  --el-pagination-hover-color: #c2410c;
+}
+.page-certificate-list .cert-pager .el-pagination.is-background .el-pager li {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+}
+.page-certificate-list .cert-pager .el-pagination.is-background .el-pager li:not(.is-active):hover {
+  color: #c2410c;
+}
+.page-certificate-list .cert-pager .el-pagination.is-background .el-pager li.is-active {
+  background: #fff7ed;
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #c2410c;
+  font-weight: 600;
+}
+.page-certificate-list .cert-pager .el-pagination .btn-prev,
+.page-certificate-list .cert-pager .el-pagination .btn-next {
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+/* ---------- 无障碍：降级过渡与平滑滚动 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .page-certificate-list *,
+  .page-certificate-list *::before,
+  .page-certificate-list *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
