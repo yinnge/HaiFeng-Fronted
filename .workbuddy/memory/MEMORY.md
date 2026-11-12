@@ -55,7 +55,16 @@
 - **列表页 toggle 的两个坑**：① `major/List.vue` 的 `query` 是复用 reactive 对象 → 退出收藏视图必须 `delete query.ids`；`university`/`postgrad` 每次新建 params 无此问题。② 收藏视图内取消收藏要立即移除并刷新当前页（末页仅剩 1 条时回退一页）。
 - **`PostgradMajorCard.vue` 根元素是 `<button>` → 改 `<div role="button" tabindex="0">`**（button 内不能嵌套 button），补 Enter/Space 键盘可达。
 - ★ **`PostgradMajorDetailVO` 无 id 字段** → 详情页收藏 targetId 取 `route.params.id`。
-- 已落地：文件（fileload）、院校（university）、本科专业（major）、考研专业（postgrad_major）。前端 typecheck 全绿；后端待本地编译+重启。
+- 已落地：文件（fileload）、院校（university）、本科专业（major）、考研专业（postgrad_major）、**竞赛（competition，11-12）**。前端 typecheck 全绿；后端待本地编译+重启。
+
+## 竞赛列表页（11-12 重构，`8e5ff59`）
+- `views/competition/List.vue` 只取数/编排；`components/` 下 7 组件 + `utils.ts`，页面级 CSS 为 `views/competition/competition.css`（`.page-competition-list` 限定，**不复用 postgrad.css**）。`Detail.vue` **本轮未动**（待下轮按规范重做 + 接收藏）。
+- **后端事实**：`GET /api/v1/app/competition/list` **免登录**；排序硬编码 `sort_order DESC, created_at DESC`（DTO 无排序参数）→ 热门榜只能取列表头部近似；**无 hot/views 字段**，VO 仅 4 字段 `id/compName/compLevel/registrationTime`；`comp_level` 是**无 CHECK 的自由 VARCHAR(50)**（库里可能有「市级」等任意值 → 下拉不能硬编码三项当全集）；`registrationTime` 是**自由文本**（"每年3月/9月"），不能当日期格式化。
+- **竞赛收藏后端早已就绪**（`FavoriteTargetType.COMPETITION` + `CompetitionFavoriteValidator` + `page()` 已实现 ids 过滤）→ 前端接入零后端改动，唯一缺口是前端 `CompetitionQueryDTO` 补 `ids?: string`（已补）。
+- **热门榜 + 级别聚合合并为一次请求**：`size=100`（后端 @Min(10)/@Max(100)），前 5 条当热门榜、全部记录聚合级别选项 → 省一次往返。
+- 卡片图标**两级映射**：关键词表 `KEYWORD_ICONS`（`components/utils.ts`）→ 级别兜底（国家级 Trophy/省级 Medal/校级 Award）→ Trophy。**等业务方给正式映射表时只替换该数组**。
+- Hero 背景图复用 `HERO_BG_URL`（= `picture/university/列表背景.png`），**走 JS 内联 url() 注入，不进 CSS 产物**（产物核对时别去 CSS 里找）。
+- URL 同步 4 键 `page/size/compName/compLevel`。
 
 ## 专业模块页面结构（11-11~11-12 重构）
 - `views/major/Detail.vue` 只取数/编排；12 子组件 + `utils.ts` + `detail.css` 在 `views/major/detail/`，页面级 CSS 全由 `.page-major-detail` 限定。
