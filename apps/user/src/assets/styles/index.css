@@ -70,6 +70,16 @@
   --hf-font-strong: 'Inter Variable', 'MiSans Display', -apple-system, BlinkMacSystemFont,
                     'Segoe UI', system-ui, 'PingFang SC', 'HarmonyOS Sans SC',
                     'Microsoft YaHei', sans-serif;
+
+  /* ===== 大屏内容区宽度策略（2026-11-12）=====
+     背景：Tailwind 默认 container 在 2xl(1536px) 硬封顶，24"/27"/4K 越宽
+           左右留白越多；列表/表单页(47+)与详情/城市页三套容器上限又各自为政。
+     目标：大屏随视口放宽，但每边保留安全边给右侧悬浮操作栏让位，且封顶防
+           内容行过长。改这两个变量即可全局调宽窄，无需逐页改。
+     详见文件末尾 .container 覆盖规则。 */
+  --hf-container-max: 2200px;    /* 内容区封顶，与顶栏 .tt-grid 的 2200px 对齐 */
+  --hf-container-gutter: 88px;   /* 大屏每边留白；右侧悬浮栏约 60px + 呼吸余量 */
+  --hf-container-floor: 1536px;  /* 保底：中屏不比 Tailwind 2xl 现状更窄 */
 }
 
 /* 全局样式 */
@@ -729,4 +739,32 @@ body.el-popup-parent--hidden {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(232, 114, 42, 0.3);
   color: #b45309;
+}
+
+/* ============================================================================
+ * 大屏内容区宽度策略（2026-11-12）
+ * ----------------------------------------------------------------------------
+ * 问题：Tailwind v3 默认 .container 在 2xl(1536px) 就硬封顶，24"(1920) 左右
+ *       各留 192px、27"(2560) 各留 512px、4K 更夸张；而顶栏封顶 2200px，
+ *       内容区比顶栏窄得多，大屏观感「内容缩在中间、四周发空」。
+ * 现状分三套上限，一并纳入同一策略：
+ *   - 列表/表单等 47+ 页：Tailwind `.container`（默认 1536px 封顶）→ 本规则覆盖
+ *   - 专业/考研/城市详情页：`.detail-container` / `.pg-container` / `.ct-container`（1360px）
+ *     → 选择器带 .page-xxx 前缀、特异性更高，全局单类覆盖不到，已在各自
+ *       页面级 CSS 内引用同一组 :root 变量（公式相同），勿在此重复添加选择器。
+ * 公式（仅 >=1536px 生效，笔记本 <1536 完全不动、保持原样）：
+ *   max(1536px, min(100% - 2*gutter, 2200px))
+ *   · max(1536px, …) 保底 → 中屏 1536~1712 不比现状更窄
+ *   · gutter 88px → 右侧悬浮操作栏(right:12 + w:48 ≈ 60px)有让位、左右对称
+ *   · 2200px 封顶 → 与顶栏对齐，超宽屏不拉伸成难读的长行
+ * 调宽窄只改 :root 的 --hf-container-{max,gutter,floor}，勿逐页写死宽度。
+ * 说明：100% 相对父级 main(content-box)，不含滚动条 gutter，不会横向溢出。
+ * ========================================================================== */
+@media (min-width: 1536px) {
+  .container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
 }
