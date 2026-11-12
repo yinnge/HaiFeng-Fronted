@@ -3,6 +3,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { addFavorite, removeFavorite, getFavoriteStatus } from '@/api/favorite'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 import {
   ArrowRight, ArrowUp, Atom, Award, BookMarked, BookOpen, Boxes, Brain, Briefcase,
   BriefcaseBusiness, ChartNoAxesColumnIncreasing, ChevronsRight, Cog, Coins,
@@ -19,6 +22,7 @@ import MajorRateRing from './components/MajorRateRing.vue'
 
 const expertContact = useExpertContact()
 const router = useRouter()
+const userStore = useUserStore()
 
 const heroBg = encodeURI(`${import.meta.env.BASE_URL}picture/university/列表背景.png`)
 
@@ -178,6 +182,58 @@ function currentFilterParams() {
   }
 }
 
+// ==================== 收藏（favorite，targetType=major） ====================
+const FAV_TARGET_TYPE = 'major' as const
+/** 当前页已收藏的专业 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/** 回填当前页星标状态（每页最多 36 条，/favorite/status 单次上限 100 → 一次即可；失败静默） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 星标点击：收藏 / 取消收藏 */
+async function onToggleFav(item: MajorListVO) {
+  if (!(await requireLogin())) return
+  const idStr = String(item.id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
 async function fetchList() {
   loading.value = true
   try {
@@ -190,6 +246,8 @@ async function fetchList() {
     const res = await getMajorList(query)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
   } catch (e: any) {
     ElMessage.error(e?.message || '获取专业列表失败')
   } finally {
@@ -721,9 +779,24 @@ onMounted(() => {
                       >{{ t }}</span>
                     </div>
                   </div>
-                  <span class="major-detail">
-                    查看详情 <ArrowRight :size="14" :stroke-width="2" />
-                  </span>
+                  <!-- 右上操作组：收藏星标 + 查看详情（星标需 @click.stop，整卡可点跳详情） -->
+                  <div class="flex shrink-0 items-start gap-2">
+                    <button
+                      type="button"
+                      class="major-fav-star"
+                      :class="{ 'is-on': favIds.has(String(item.id)) }"
+                      :aria-label="favIds.has(String(item.id)) ? `取消收藏 ${item.majorName}` : `收藏 ${item.majorName}`"
+                      :title="favIds.has(String(item.id)) ? '取消收藏' : '收藏'"
+                      @click.stop="onToggleFav(item)"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                      </svg>
+                    </button>
+                    <span class="major-detail">
+                      查看详情 <ArrowRight :size="14" :stroke-width="2" />
+                    </span>
+                  </div>
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-1.5">
@@ -809,7 +882,21 @@ onMounted(() => {
                       {{ salaryText(item.salaryMin, item.salaryMax) === '薪资数据待公布' ? '—' : salaryText(item.salaryMin, item.salaryMax) }}
                     </td>
                     <td class="px-4 py-3 text-sm">
-                      <span class="font-medium text-orange-700 hover:text-orange-800">查看详情</span>
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          class="major-fav-star"
+                          :class="{ 'is-on': favIds.has(String(item.id)) }"
+                          :aria-label="favIds.has(String(item.id)) ? `取消收藏 ${item.majorName}` : `收藏 ${item.majorName}`"
+                          :title="favIds.has(String(item.id)) ? '取消收藏' : '收藏'"
+                          @click.stop="onToggleFav(item)"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                          </svg>
+                        </button>
+                        <span class="font-medium text-orange-700 hover:text-orange-800">查看详情</span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -971,6 +1058,53 @@ onMounted(() => {
   flex: none;
   border-radius: 50%;
 }
+/* ===== 收藏星标：卡片右上操作组 / 表格操作列共用 ===== */
+.major-fav-star {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.major-fav-star svg {
+  width: 15px;
+  height: 15px;
+}
+
+.major-fav-star:hover {
+  color: #d97706;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.major-fav-star.is-on {
+  color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.major-fav-star.is-on svg {
+  fill: currentColor;
+}
+
+.major-fav-star:active {
+  transform: translateY(1px);
+}
+
+.major-fav-star:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
 .major-detail {
   display: inline-flex;
   align-items: center;
