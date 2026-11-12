@@ -1,0 +1,207 @@
+/* ============================================================================
+ * 城市详情页「页面级」样式：所有选择器由 .page-city-detail 限定，不下发到其它路由。
+ * Q14：自建一份通用类（不跨模块挂 .page-postgrad-list / .page-major-detail）。
+ * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
+ * 而 html 画布本身就是 #f8fafc，透出即可；Hero / 卡片是嵌套子节点，不受影响。
+ * 铁律：稳态零 transform / filter / will-change；字号全取整 px；
+ *       无紫色 / 橙渐变铺底 / 彩色实线外框 / 9999px 胶囊 / scale / backdrop-filter。
+ * ========================================================================== */
+
+.page-city-detail .ct-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+/* ---------- 面包屑 ---------- */
+.page-city-detail .ct-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+  margin-bottom: 16px;
+}
+.page-city-detail .ct-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.page-city-detail .ct-back:hover {
+  color: #c2410c;
+  background: #fff7ed;
+}
+.page-city-detail .ct-back svg {
+  flex: none;
+}
+.page-city-detail .ct-crumb-aux {
+  padding-left: 12px;
+  border-left: 1px solid #e2e8f0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+/* ---------- 双栏 ---------- */
+.page-city-detail .ct-hero-wrap,
+.page-city-detail .ct-stat-wrap {
+  margin-bottom: 20px;
+}
+.page-city-detail .ct-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.page-city-detail .ct-left,
+.page-city-detail .ct-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-city-detail .ct-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  /* Q9：top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  .page-city-detail .ct-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+/* 祖先链不设 overflow:hidden，保证 sticky 生效 */
+
+/* ---------- 统一卡片：白底 + 发丝边 + 双层柔阴影，无 transform ---------- */
+.page-city-detail .hf-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ---------- 一级模块标题：3×14px 品牌橙竖条 ---------- */
+.page-city-detail .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-city-detail .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+
+/* ---------- 说明性标签：6px 圆角 ---------- */
+.page-city-detail .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+.page-city-detail .ct-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #334155;
+}
+.page-city-detail .hf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 键盘焦点 ---------- */
+.page-city-detail :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 骨架 / 空态 / 错误态 ---------- */
+.page-city-detail .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-city-detail .ct-skeleton-hero {
+  height: 208px;
+  margin-bottom: 20px;
+}
+.page-city-detail .ct-skeleton-stat {
+  height: 96px;
+  margin-bottom: 20px;
+}
+.page-city-detail .ct-skeleton-block {
+  height: 148px;
+}
+.page-city-detail .ct-skeleton-block--short {
+  height: 96px;
+}
+.page-city-detail .ct-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 20px;
+}
+.page-city-detail .ct-empty__btn {
+  padding: 9px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.page-city-detail .ct-empty__btn:hover {
+  background: #fff7ed;
+  color: #9a3412;
+}
+.page-city-detail .ct-placeholder {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #64748b;
+}
+
+/* ---------- 无障碍：降级过渡 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .page-city-detail *,
+  .page-city-detail *::before,
+  .page-city-detail *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
