@@ -90,6 +90,16 @@
 - **防糊交互策略**：列表页**启用** hover `translateY(-2px)`；详情页（本科 + 考研）**禁用**整卡位移，只用颜色/边框/箭头位移。三页刻意不同。
 - 无「相关专业」接口：`/list` 支持 `majorCategory`、**不支持 `parentCategory`**。仓库 **eslint 未安装、无配置**，`pnpm lint` 不可用。
 
+## 证书列表页（11-12 重构，`01d67eb`）
+- `views/certificate/List.vue` 只取数/编排；`components/` 下 6 组件 + `utils.ts`，页面级 CSS `views/certificate/certificate.css`（`.page-certificate-list` 限定）。**详情弹窗本轮零改动**，原样搬进 `CertificateDetailDialog.vue`（"暂不修改 detail"，待下轮重做）。
+- ★ **类名前缀用 `cert-`，不是 `ct-`** —— 城市详情页（`views/city/detail/`）**已占用 `ct-`**（ct-grid/ct-left/ct-right/ct-container/ct-hero-wrap 等 16 个）。改前缀前务必看**产物 CSS**（两 chunk 都含 `ct-` 才是暴露点），别只看源码目录。
+- **后端事实**：C 端列表**只有** `category`（精准）+ `certName`（模糊）两个筛选，**无 certLevel 筛选、无排序参数**（硬编码 `sort_order DESC, created_at DESC`）；`category`/`cert_level` 都是**无 CHECK 的自由 VARCHAR**（取值不封闭 → 分类下拉取后端 `/certificate/categories` 的 DB DISTINCT 值，标签**不做值→色映射**，固定分类橙 `#C2410C`/`#FFF7ED` + 级别黄 `#B45309`/`#FFFBEB`）；列表 VO **含 id 主键**（9 字段）；详情接口 `/certificate/{id}/detail` **需登录**。
+- **证书收藏后端早已就绪**（`FavoriteTargetType.CERTIFICATE` + `CertificateFavoriteValidator` + `page()` 已实现 ids 过滤）→ 前端接入零后端改动，唯一缺口是 `CertificateQueryDTO` 补 `ids?: string`（已补）。
+- 证书图标**两级映射**：`KEYWORD_ICONS`（名称正则→icon+语义色）→ `CATEGORY_ICONS`（分类兜底）→ `BadgeCheck`+slate，集中 `components/utils.ts`，**业务方给正式表时只替换这两个数组**。
+- Hero 背景图 = `picture/university/列表背景.png`（复用 `HERO_BG_URL`），**JS 内联 url() 注入，不进 CSS 产物**；右栏工具 5 项在 `CERTIFICATE_TOOLS`（与竞赛页 `COMPETITION_TOOLS` 逐字一致但独立维护）。
+- URL 同步 4 键 `page/size/certName/category`。★ **已修的现存 bug**：旧 `?certId=` 深链处理 `router.replace({query:{}})` 会清空全部 query、误伤用户筛选 → 改为**只移除 `certId` 这一个键**。
+- **并行工作**：同一工作区还有竞赛详情页一路改动（见上），`types/certificate/index.ts` 被两路共用 → `git add` 精确路径暂存，勿 `git add -A`；沙箱 **safe-delete 会拦 `rm -rf`**（genie-trash 失败 → fail closed），构建验证目录用 `mv` 移出仓库。
+
 ## 城市详情页（11-12 重构，无原型按经验）
 - `views/city/Detail.vue` 只取数/编排；`views/city/detail/` 下 `utils.ts` + `city-detail.css` + 9 组件。页面级 CSS 由 `.page-city-detail` **自建**通用类（不跨模块挂 `.page-postgrad-list`）。`city/List.vue` / router / `index.css` 零改动。
 - 「列表页 4 个快捷工具」是 `List.vue:223-228` 内联数组，**不是组件** → 详情页新建 `CityQuickToolsCard.vue` 复制 4 项（企业查询/行业分析/就业前景/AI智能分析占位）。
