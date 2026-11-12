@@ -1,79 +1,304 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+/**
+ * 企业列表页：本文件只负责取数与编排，展示拆到 components/ 下。
+ * 接口沿用 /api/v1/app/enterprise/list（公开、免登录）+ /enterprise/types（企业类型去重）。
+ * 后端排序固定 sort_order DESC, created_at DESC（DTO 无排序参数）。
+ * 收藏（targetType=enterprise）：后端枚举 / Validator / page ids 过滤均已就绪，前端零后端改动。
+ */
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getEnterpriseList, getEnterpriseTypes } from '@/api/enterprise'
 import type { EnterpriseListVO, EnterpriseQueryDTO } from '@/types/enterprise'
-import { Motion } from 'motion-v'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 
+import EnterpriseHero from './components/EnterpriseHero.vue'
+import EnterpriseSearchCard from './components/EnterpriseSearchCard.vue'
+import EnterpriseCard from './components/EnterpriseCard.vue'
+import EnterpriseSkeleton from './components/EnterpriseSkeleton.vue'
+import EnterpriseToolsCard from './components/EnterpriseToolsCard.vue'
+import {
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZES,
+  buildQuery,
+  parseUrlState,
+  stableQueryString,
+  type UrlState,
+} from './components/utils'
+
+import './enterprise.css'
+
+const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
+const { hidden: headerHidden } = useAutoHideHeader()
+
+/** 与竞赛/证书页一致，导航抽屉收起时把 sticky 顶部空隙收掉 */
+const asideTop = computed(() => (headerHidden.value ? 8 : 76))
 
 const loading = ref(false)
 const list = ref<EnterpriseListVO[]>([])
 const total = ref(0)
+const error = ref('')
 const currentPage = ref(1)
-const pageSize = ref(12)
+const pageSize = ref(DEFAULT_PAGE_SIZE)
+/** 企业类型下拉项：来自后端 /enterprise/types 接口（DB DISTINCT 去重，取值不封闭） */
+const typeOptions = ref<string[]>([])
 
-const query = reactive<EnterpriseQueryDTO>({
-  page: 1,
-  size: 12,
+/** 已提交的筛选（名称 / 城市输入由回车或点搜索提交） */
+const filters = reactive({
   enterpriseName: '',
   enterpriseNature: '',
   enterpriseType: '',
   cityName: '',
-  recruitmentStatus: '',
 })
+/** 名称 / 城市输入态：回车或点搜索才查询 */
+const nameInput = ref('')
+const cityInput = ref('')
 
-const natureOptions = ['央企', '国企', '民企', '外企', '合资']
-const statusOptions = ['招聘中', '已结束']
-const typeOptions = ref<string[]>([])
+let requestId = 0
+let lastWrittenQuery = ''
 
-async function fetchTypes() {
-  try {
-    const res = await getEnterpriseTypes()
-    typeOptions.value = res.data.data || []
-  } catch {
-    // 类型接口失败不影响页面主体功能
+function currentState(): UrlState {
+  return {
+    page: currentPage.value,
+    size: pageSize.value,
+    enterpriseName: filters.enterpriseName,
+    enterpriseNature: filters.enterpriseNature,
+    enterpriseType: filters.enterpriseType,
+    cityName: filters.cityName,
   }
 }
 
-async function fetchList() {
-  loading.value = true
+/**
+ * URL 只写 6 个已知 key（page/size/enterpriseName/enterpriseNature/enterpriseType/cityName），
+ * 天然不含收藏 ids（收藏态是会话态，不进 URL）。
+ * lastWrittenQuery 用于 watch 防循环（router.replace 会再次触发 route.query 变化）。
+ */
+function writeUrl() {
+  const query = buildQuery(currentState())
+  lastWrittenQuery = stableQueryString(query)
+  void router.replace({ path: route.path, query })
+}
+
+function restore(state: UrlState) {
+  currentPage.value = state.page
+  pageSize.value = state.size
+  filters.enterpriseName = state.enterpriseName
+  filters.enterpriseNature = state.enterpriseNature
+  filters.enterpriseType = state.enterpriseType
+  filters.cityName = state.cityName
+  nameInput.value = state.enterpriseName
+  cityInput.value = state.cityName
+}
+
+// ==================== 收藏（favorite，targetType=enterprise） ====================
+const FAV_TARGET_TYPE = 'enterprise' as const
+/** 后端 BasePageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（toggle）：开启后只查已收藏的企业，再点退出回全部 */
+const favOnly = ref(false)
+/** 当前页已收藏的企业 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取全部已收藏企业 id（收藏视图用）。
+ * /favorite/list 单次 size ≤100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ */
+async function fetchAllFavIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 家企业')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 回填当前页星标状态（每页最多 12 条，/favorite/status 单次上限 100 → 一次即可；失败静默） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
   try {
-    const params: EnterpriseQueryDTO = { page: currentPage.value, size: pageSize.value }
-    if (query.enterpriseName) params.enterpriseName = query.enterpriseName
-    if (query.enterpriseNature) params.enterpriseNature = query.enterpriseNature
-    if (query.enterpriseType) params.enterpriseType = query.enterpriseType
-    if (query.cityName) params.cityName = query.cityName
-    if (query.recruitmentStatus) params.recruitmentStatus = query.recruitmentStatus
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 「查看收藏」toggle：开启只查收藏企业，再点退出回全部列表 */
+async function onToggleFavOnly() {
+  if (!favOnly.value && !(await requireLogin())) return
+  favOnly.value = !favOnly.value
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
+}
+
+/** 星标点击：收藏 / 取消收藏 */
+async function onToggleFav(id: string) {
+  if (!(await requireLogin())) return
+  const idStr = String(id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        void fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
+/** 竞态：每次请求带自增 id，只采纳最新一次响应 */
+async function fetchList() {
+  const id = ++requestId
+  loading.value = true
+  error.value = ''
+
+  const params: EnterpriseQueryDTO = {
+    page: currentPage.value,
+    size: pageSize.value,
+    enterpriseName: filters.enterpriseName || undefined,
+    enterpriseNature: filters.enterpriseNature || undefined,
+    enterpriseType: filters.enterpriseType || undefined,
+    cityName: filters.cityName || undefined,
+  }
+
+  try {
+    // 收藏视图：先取已收藏企业 id，再透传 ids 与其它筛选 AND 叠加（后端负责分页与 total）
+    if (favOnly.value) {
+      const ids = await fetchAllFavIds()
+      if (id !== requestId) return
+      // 无收藏 → 直接空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        return
+      }
+      params.ids = ids.join(',')
+    }
 
     const res = await getEnterpriseList(params)
-    list.value = res.data.data.records
-    total.value = res.data.data.total
-  } catch (e: any) {
-    ElMessage.error(e?.message || '获取企业列表失败')
+    if (id !== requestId) return
+    list.value = res.data.data.records ?? []
+    total.value = res.data.data.total ?? 0
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
+  } catch (e) {
+    if (id !== requestId) return
+    error.value = (e as Error)?.message || '获取企业列表失败'
+    list.value = []
+    total.value = 0
   } finally {
-    loading.value = false
+    if (id === requestId) loading.value = false
+  }
+}
+
+/** 企业类型去重列表（后端 /enterprise/types，DB DISTINCT）；失败静默为空 */
+async function fetchTypes() {
+  try {
+    const res = await getEnterpriseTypes()
+    typeOptions.value = res.data.data ?? []
+  } catch {
+    typeOptions.value = []
   }
 }
 
 function handleSearch() {
+  filters.enterpriseName = nameInput.value.trim().slice(0, 100)
+  filters.cityName = cityInput.value.trim().slice(0, 20)
   currentPage.value = 1
-  fetchList()
+  writeUrl()
+  void fetchList()
 }
 
 function handleReset() {
-  query.enterpriseName = ''
-  query.enterpriseNature = ''
-  query.enterpriseType = ''
-  query.cityName = ''
-  query.recruitmentStatus = ''
+  filters.enterpriseName = ''
+  filters.enterpriseNature = ''
+  filters.enterpriseType = ''
+  filters.cityName = ''
+  nameInput.value = ''
+  cityInput.value = ''
   currentPage.value = 1
-  fetchList()
+  writeUrl()
+  void fetchList()
 }
 
-function goPositions(item: EnterpriseListVO) {
-  router.push({
+/** 性质 / 类型下拉变更立即查询；等 defineModel 的 update 事件同步回 filters 后再读状态 */
+async function onFilterChange() {
+  await nextTick()
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
+}
+
+/** 热门城市药丸：填入城市并立即查询 */
+function onPickCity(city: string) {
+  filters.cityName = city
+  cityInput.value = city
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
+}
+
+function onPageChange(page: number) {
+  currentPage.value = page
+  writeUrl()
+  void fetchList()
+}
+
+function onSizeChange(size: number) {
+  pageSize.value = size
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
+}
+
+/**
+ * 整卡点击 → 跳企业岗位列表。
+ * 后端无 /enterprise/:id 路由，本轮不新增详情页；
+ * query 参数带上卡片已知信息，岗位页可即时渲染，刷新/深链也能靠接口补齐。
+ * 卡片统一 emit id（与竞赛/证书/考研三页一致），此处按 id 回查列表项。
+ */
+function openPositions(id: string) {
+  const item = list.value.find((i) => String(i.id) === id)
+  if (!item) return
+  void router.push({
     path: `/enterprise/${item.id}/positions`,
     query: {
       name: item.enterpriseName,
@@ -87,159 +312,91 @@ function goPositions(item: EnterpriseListVO) {
   })
 }
 
-function onPageChange(page: number) { currentPage.value = page; fetchList() }
-function onSizeChange(size: number) { pageSize.value = size; currentPage.value = 1; fetchList() }
+/** 外部 query 变化（浏览器前进/后退、其它页面带参进入）反向恢复；自己写的那次跳过 */
+watch(
+  () => route.query,
+  (query) => {
+    const normalized = buildQuery(parseUrlState(query))
+    if (stableQueryString(normalized) === lastWrittenQuery) return
+    restore(parseUrlState(query))
+    lastWrittenQuery = stableQueryString(normalized)
+    void fetchList()
+  },
+)
 
 onMounted(() => {
-  fetchList()
-  fetchTypes()
+  restore(parseUrlState(route.query))
+  writeUrl()
+  void fetchList()
+  void fetchTypes()
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <main class="container mx-auto px-6 py-8">
-      <!-- Intro Banner -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-            </span>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">企业信息大全 · 科学规划职业的起点</h1>
-          </div>
-          <p class="text-gray-600 leading-relaxed mb-4">
-            聚合优质企业信息，覆盖互联网/IT、金融、制造、教育等行业头部企业，提供企业规模、主营业务、招聘状态等数据，助您了解目标企业，规划职业发展。
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="kw in ['企业性质', '企业规模', '主营业务', '招聘状态']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
-              {{ kw }}
-            </span>
-          </div>
-        </div>
-      </Motion>
+  <div class="page-enterprise-list">
+    <div class="ent-container">
+      <div class="ent-hero-wrap">
+        <EnterpriseHero />
+      </div>
 
-      <!-- 企业检索 -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.1 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            企业检索
+      <div class="ent-grid">
+        <div class="ent-left">
+          <EnterpriseSearchCard
+            v-model:enterprise-name="nameInput"
+            v-model:enterprise-nature="filters.enterpriseNature"
+            v-model:enterprise-type="filters.enterpriseType"
+            v-model:city-name="cityInput"
+            :total="total"
+            :type-options="typeOptions"
+            :fav-only="favOnly"
+            @search="handleSearch"
+            @reset="handleReset"
+            @filter-change="onFilterChange"
+            @toggle-fav="onToggleFavOnly"
+            @pick-city="onPickCity"
+          />
+
+          <EnterpriseSkeleton v-if="loading" :count="pageSize" />
+
+          <div v-else-if="error" class="ent-state">
+            <p class="ent-state__text">{{ error }}</p>
+            <button type="button" class="ent-state__btn" @click="fetchList">重试</button>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <input
-              v-model="query.enterpriseName"
-              type="text"
-              placeholder="输入企业名称搜索"
-              class="flex-1 min-w-[200px] rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-              @keyup.enter="handleSearch"
+
+          <div v-else-if="!list.length" class="ent-state">
+            <el-empty :description="favOnly ? '暂无收藏的企业，在卡片右上角点亮星标即可收藏' : '暂无符合条件的企业'" />
+            <button v-if="!favOnly" type="button" class="ent-state__btn" @click="handleReset">清除筛选</button>
+          </div>
+
+          <div v-else class="ent-card-grid">
+            <EnterpriseCard
+              v-for="item in list"
+              :key="item.id"
+              :item="item"
+              :favorited="favIds.has(String(item.id))"
+              @open="openPositions"
+              @toggle-fav="onToggleFav"
             />
-            <button
-              class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-              @click="handleSearch"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              搜索
-            </button>
-            <button
-              class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
-              @click="handleReset"
-            >
-              重置
-            </button>
-          </div>
-          <div class="mt-4 border-t border-gray-100 pt-4 flex flex-wrap items-center gap-3">
-            <span class="text-sm text-gray-400">精准筛选：</span>
-            <el-select v-model="query.enterpriseNature" placeholder="企业性质" clearable class="!w-36">
-              <el-option v-for="opt in natureOptions" :key="opt" :label="opt" :value="opt" />
-            </el-select>
-            <el-select v-model="query.enterpriseType" placeholder="企业类型" clearable class="!w-36">
-              <el-option v-for="opt in typeOptions" :key="opt" :label="opt" :value="opt" />
-            </el-select>
-            <input
-              v-model="query.cityName"
-              type="text"
-              placeholder="城市名称"
-              class="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors"
-            />
-            <el-select v-model="query.recruitmentStatus" placeholder="招聘状态" clearable class="!w-32">
-              <el-option v-for="opt in statusOptions" :key="opt" :label="opt" :value="opt" />
-            </el-select>
-          </div>
-        </div>
-      </Motion>
-
-      <!-- 企业列表 -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.2 }">
-        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-            企业列表
-          </div>
-          <div v-loading="loading" class="min-h-[400px]">
-            <div v-if="list.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div
-                v-for="item in list"
-                :key="item.id"
-                class="group rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
-              >
-                <div class="h-1 bg-gradient-to-r from-[#F97316] to-[#FB923C]"></div>
-                <div class="p-5">
-                  <div class="flex items-start gap-4 mb-3">
-                    <div class="shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center overflow-hidden">
-                      <img
-                        v-if="item.logoUrl"
-                        :src="item.logoUrl"
-                        :alt="item.enterpriseName"
-                        class="w-full h-full object-cover"
-                        @error="($event.target as HTMLImageElement).style.display = 'none'"
-                      />
-                      <span v-else class="text-lg font-bold text-orange-600">{{ item.enterpriseName.charAt(0) }}</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <h3 class="text-lg font-bold text-gray-800 truncate">{{ item.enterpriseName }}</h3>
-                      <div class="flex items-center gap-2 mt-1">
-                        <span class="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-600">{{ item.enterpriseNature }}</span>
-                        <span v-if="item.enterpriseType" class="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{{ item.enterpriseType }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="space-y-1.5 text-sm text-gray-500 mb-3">
-                    <div v-if="item.cityName">📍 {{ item.cityName }}</div>
-                    <div v-if="item.enterpriseScale">👥 {{ item.enterpriseScale }}</div>
-                    <div v-if="item.region">🏠 {{ item.region }}</div>
-                  </div>
-
-                  <p v-if="item.mainBusiness" class="text-sm text-gray-400 line-clamp-2 mb-4">{{ item.mainBusiness }}</p>
-
-                  <button
-                    class="w-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 py-2 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-md shadow-orange-200"
-                    @click="goPositions(item)"
-                  >
-                    查看岗位
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div v-else-if="!loading" class="py-20 text-center text-gray-400">暂无企业数据</div>
           </div>
 
-          <!-- 分页 -->
-          <div v-if="total > pageSize" class="mt-6 flex justify-center">
+          <div v-if="!loading && !error && list.length && total > pageSize" class="ent-pager">
             <el-pagination
               background
-              layout="total, sizes, prev, pager, next"
+              layout="prev, pager, next, sizes"
               :total="total"
-              :page-sizes="[12, 24, 36]"
+              :page-sizes="[...PAGE_SIZES]"
               :page-size="pageSize"
               :current-page="currentPage"
               @current-change="onPageChange"
               @size-change="onSizeChange"
             />
           </div>
-        </section>
-      </Motion>
-    </main>
+        </div>
+
+        <aside class="ent-right" :style="{ top: `${asideTop}px` }">
+          <EnterpriseToolsCard />
+        </aside>
+      </div>
+    </div>
   </div>
 </template>
