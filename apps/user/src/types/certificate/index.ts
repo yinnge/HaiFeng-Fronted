@@ -51,8 +51,10 @@ export interface CompetitionDetailVO {
   competitionRules: Array<{ title: string; content: string }> | null
   scoringCriteria: string[] | null
   notices: string[] | null
-  processGuide: Array<{ step: string; desc: string }> | null
-  awardsDisplay: Array<{ level: string; count: string }> | null
+  /** 后端实际结构为 {title, content}（DB JSONB，V74 迁移后统一），勿按 {step,desc} 取 */
+  processGuide: Array<{ title: string; content: string }> | null
+  /** 后端实际结构为 {title, content}（DB JSONB），勿按 {level,count} 取 */
+  awardsDisplay: Array<{ title: string; content: string }> | null
 }
 
 export interface CompetitionMajorBriefVO {

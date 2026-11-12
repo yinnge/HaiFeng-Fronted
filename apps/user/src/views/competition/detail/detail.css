@@ -1,0 +1,707 @@
+/* ============================================================================
+ * 竞赛详情页「页面级」样式。
+ * 所有选择器由 .page-competition-detail 限定，不下发到其它路由；
+ * 下拉浮层被 teleport 到 body，故 .competition-detail-popper 规则单独写成全局唯一类名。
+ * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
+ * 而 html 画布本身就是 #f8fafc（冷白），透出即可 —— 冷白画布正是本页用来突出暖橙 Hero 的底。
+ * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
+ * ========================================================================== */
+
+/* 大屏宽度统一走 :root --hf-container-*（与 .container 同策略，见 index.css 末尾）：
+   >=1536 随视口放宽 + 每边 88px 安全边 + 2200px 封顶；<1536 保持原 1360px。 */
+.page-competition-detail .cd-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+@media (min-width: 1536px) {
+  .page-competition-detail .cd-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
+}
+
+/* ---------- 双栏 ---------- */
+.page-competition-detail .cd-hero-wrap {
+  margin-bottom: 20px;
+}
+.page-competition-detail .cd-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.page-competition-detail .cd-left,
+.page-competition-detail .cd-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-competition-detail .cd-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  /* top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  .page-competition-detail .cd-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+
+/* ---------- 统一卡片 ---------- */
+.page-competition-detail .hf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* 仅可点击的元素启用 hover 位移；纯展示卡保持静止 */
+.page-competition-detail .cd-major-row.is-clickable:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.22);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(249, 115, 22, 0.08);
+}
+.page-competition-detail .cd-major-row.is-clickable:active {
+  transform: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* ---------- 一级模块标题：3×14px 品牌橙竖条 ---------- */
+.page-competition-detail .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-competition-detail .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+
+/* ---------- 说明性标签：6px 圆角 ---------- */
+.page-competition-detail .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+.page-competition-detail .hf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 键盘焦点 ---------- */
+.page-competition-detail :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 骨架 / 空态 / 错误态 ---------- */
+.page-competition-detail .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-competition-detail .cd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 20px;
+}
+.page-competition-detail .cd-state__text {
+  font-size: 14px;
+  color: #64748b;
+}
+.page-competition-detail .cd-state__btn {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-competition-detail .cd-state__btn:hover {
+  background: #f8fafc;
+  color: #9a3412;
+}
+
+/* ---------- Tab 导航：白底药丸行 ---------- */
+.page-competition-detail .cd-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.page-competition-detail .cd-tabs::-webkit-scrollbar {
+  display: none;
+}
+.page-competition-detail .cd-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.page-competition-detail .cd-tab:hover {
+  background: #f8fafc;
+  color: #c2410c;
+}
+.page-competition-detail .cd-tab.is-active {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 700;
+}
+.page-competition-detail .cd-tab svg {
+  color: #94a3b8;
+}
+.page-competition-detail .cd-tab.is-active svg {
+  color: #ea580c;
+}
+
+/* ---------- 右侧橙色报名卡：暖橙焦点 ---------- */
+.page-competition-detail .cd-signup {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  box-shadow: 0 8px 24px -6px rgba(249, 115, 22, 0.35);
+}
+/* 右上角装饰层：纯装饰，缩放合法（不含文字） */
+.page-competition-detail .cd-signup::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -32px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+.page-competition-detail .cd-signup__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.page-competition-detail .cd-signup__title {
+  margin: 14px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #ffffff;
+}
+.page-competition-detail .cd-signup__desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+.page-competition-detail .cd-signup__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 44px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.page-competition-detail .cd-signup__btn:hover {
+  box-shadow: 0 6px 16px -4px rgba(120, 53, 15, 0.35);
+  transform: translateY(-1px);
+}
+.page-competition-detail .cd-signup__btn:active {
+  transform: none;
+}
+.page-competition-detail .cd-signup__hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 赛事流程时间轴（右栏） ---------- */
+.page-competition-detail .cd-timeline {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+.page-competition-detail .cd-timeline__item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+/* 竖线：最后一个不画 */
+.page-competition-detail .cd-timeline__item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+.page-competition-detail .cd-timeline__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+.page-competition-detail .cd-timeline__body {
+  min-width: 0;
+  flex: 1;
+  padding-top: 2px;
+}
+.page-competition-detail .cd-timeline__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-competition-detail .cd-timeline__text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 获奖信息（右栏） ---------- */
+.page-competition-detail .cd-award-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.page-competition-detail .cd-award {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.page-competition-detail .cd-award__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+}
+.page-competition-detail .cd-award__body {
+  min-width: 0;
+  flex: 1;
+}
+.page-competition-detail .cd-award__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-competition-detail .cd-award__text {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 关联专业（右栏） ---------- */
+.page-competition-detail .cd-major-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.page-competition-detail .cd-major-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.page-competition-detail .cd-major-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+}
+.page-competition-detail .cd-major-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-competition-detail .cd-major-row__arrow {
+  flex: none;
+  color: #334155;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.page-competition-detail .cd-major-row:hover .cd-major-row__arrow {
+  transform: translateX(2px);
+  color: #ea580c;
+}
+
+/* ---------- VIP 引导卡（右栏） ---------- */
+.page-competition-detail .cd-vip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 16px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff7ed 100%);
+  text-align: center;
+}
+.page-competition-detail .cd-vip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #d97706;
+}
+.page-competition-detail .cd-vip__title {
+  margin: 12px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #92400e;
+}
+.page-competition-detail .cd-vip__desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b45309;
+}
+.page-competition-detail .cd-vip__btn {
+  margin-top: 14px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.page-competition-detail .cd-vip__btn:hover {
+  box-shadow: 0 6px 14px -4px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+.page-competition-detail .cd-vip__btn:active {
+  transform: none;
+}
+
+/* ---------- 右栏底部收口条 ---------- */
+.page-competition-detail .cd-aside-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.page-competition-detail .cd-aside-footer__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: #10b981;
+}
+.page-competition-detail .cd-aside-footer__link {
+  margin-left: auto;
+  flex: none;
+  color: #c2410c;
+  font-weight: 600;
+  text-decoration: none;
+}
+.page-competition-detail .cd-aside-footer__link:hover {
+  color: #9a3412;
+}
+
+/* ---------- 内容区块通用 ---------- */
+.page-competition-detail .cd-block {
+  padding: 22px 24px;
+}
+.page-competition-detail .cd-block__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-competition-detail .cd-block__title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+.page-competition-detail .cd-block__icon {
+  color: #64748b;
+}
+.page-competition-detail .cd-block__body {
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #475569;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.page-competition-detail .cd-subtitle {
+  margin: 20px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+
+/* 基本信息：标题 + 内容两列 */
+.page-competition-detail .cd-basic-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 767px) {
+  .page-competition-detail .cd-basic-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.page-competition-detail .cd-basic {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.page-competition-detail .cd-basic__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+.page-competition-detail .cd-basic__text {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+/* 赛事目的：网格（DB 实测每条竞赛 3~5 条，用 auto-fit 自适应列数） */
+.page-competition-detail .cd-purpose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (max-width: 767px) {
+  .page-competition-detail .cd-purpose-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.page-competition-detail .cd-purpose {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.page-competition-detail .cd-purpose__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #c2410c;
+}
+.page-competition-detail .cd-purpose__text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+/* 规则 / 评分 / 注意事项：列表 */
+.page-competition-detail .cd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.page-competition-detail .cd-list__item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.page-competition-detail .cd-list__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.page-competition-detail .cd-list__body {
+  min-width: 0;
+  flex: 1;
+}
+.page-competition-detail .cd-list__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-competition-detail .cd-list__text {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+.page-competition-detail .cd-bullet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.page-competition-detail .cd-bullet-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+}
+.page-competition-detail .cd-bullet-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f97316;
+}
+
+/* ---------- 无障碍：降级过渡与平滑滚动 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .page-competition-detail *,
+  .page-competition-detail *::before,
+  .page-competition-detail *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
