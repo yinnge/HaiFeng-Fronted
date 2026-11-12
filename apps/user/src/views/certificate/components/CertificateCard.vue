@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ArrowRight, CalendarDays, GraduationCap, Wallet } from 'lucide-vue-next'
+import { ArrowRight, CalendarDays, GraduationCap } from 'lucide-vue-next'
 import type { CertificateListVO } from '@/types/certificate'
 import {
   categoryTag,
   getCertificateIcon,
   levelTag,
-  normalizeExamFee,
   normalizeExamTime,
   normalizeIntro,
   normalizeMajor,
@@ -28,7 +27,6 @@ const level = computed(() => levelTag(props.item.certLevel))
 const intro = computed(() => normalizeIntro(props.item.certIntro))
 const major = computed(() => normalizeMajor(props.item.applicableMajor))
 const examTime = computed(() => normalizeExamTime(props.item.examTime))
-const examFee = computed(() => normalizeExamFee(props.item.examFee))
 </script>
 
 <template>
@@ -93,11 +91,6 @@ const examFee = computed(() => normalizeExamFee(props.item.examFee))
           <CalendarDays :size="14" :stroke-width="1.75" class="cert-footer__icon" />
           <span class="cert-footer__label">考试时间</span>
           <span class="cert-footer__text" :title="examTime">{{ examTime }}</span>
-        </span>
-        <span class="cert-footer__row">
-          <Wallet :size="14" :stroke-width="1.75" class="cert-footer__icon" />
-          <span class="cert-footer__label">考试费用</span>
-          <span class="cert-footer__text">{{ examFee }}</span>
         </span>
       </span>
       <span class="cert-footer__action">

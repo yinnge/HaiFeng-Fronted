@@ -254,3 +254,277 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================================
+ * 证书详情弹框样式（全局唯一类名，不加 .page-certificate-list 前缀）
+ *
+ * ⚠️ 为什么不用 scoped + :deep()：
+ *   1) Element Plus Dialog 的 class 经 $attrs 合并到 .el-dialog **根元素自身**，
+ *      scoped 编译出的 `.cert-detail-dialog[data-v-x] .el-dialog` 是后代选择器，
+ *      同元素非后代 → 永远匹配不到（旧代码的 3 条规则全是死规则）。
+ *   2) 弹框 teleport 到 body，已脱离 .page-certificate-list 的 DOM 子树，
+ *      页面级限定选择器同样命中不了。
+ *   故与 .certificate-select-popper 同一策略：独立全局类名，全站唯一。
+ * ========================================================================== */
+
+/* 弹框本体：16px 圆角 + 发丝边 + 双层弥散阴影（AGENTS.md 第三节微质感） */
+.cert-detail-dialog.el-dialog {
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 12px 32px -4px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+.cert-detail-dialog .el-dialog__header {
+  margin-right: 0;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.cert-detail-dialog .el-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.cert-detail-dialog .el-dialog__headerbtn {
+  top: 14px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.cert-detail-dialog .el-dialog__headerbtn:hover {
+  background: #f8fafc;
+  color: #c2410c;
+}
+.cert-detail-dialog .el-dialog__body {
+  padding: 20px 24px;
+  color: #1e293b;
+}
+.cert-detail-dialog .el-dialog__footer {
+  padding: 14px 24px 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ---------- 内容区布局 ---------- */
+.cert-detail-dialog .cert-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- 顶部：图标底座 + 名称 + 双标签 ---------- */
+.cert-detail-dialog .cert-detail__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+.cert-detail-dialog .cert-detail__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 15px;
+}
+.cert-detail-dialog .cert-detail__head-main {
+  min-width: 0;
+  flex: 1;
+}
+.cert-detail-dialog .cert-detail__name {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+.cert-detail-dialog .cert-detail__tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+/* 弹框在 body 下，.page-certificate-list .hf-tag 命中不到 → 此处单独补一份 */
+.cert-detail-dialog .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+
+/* ---------- 概览 3 格 ---------- */
+.cert-detail-dialog .cert-detail__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.cert-detail-dialog .cert-detail__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.cert-detail-dialog .cert-detail__fact-icon {
+  flex: none;
+  margin-top: 2px;
+  color: #64748b;
+}
+.cert-detail-dialog .cert-detail__fact-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.cert-detail-dialog .cert-detail__fact-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+.cert-detail-dialog .cert-detail__fact-value {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 分节 ---------- */
+.cert-detail-dialog .cert-detail__section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.cert-detail-dialog .cert-detail__section-icon {
+  flex: none;
+  color: #64748b;
+}
+.cert-detail-dialog .cert-detail__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 报考条件：每项一个说明性标签 ---------- */
+.cert-detail-dialog .cert-detail__reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cert-detail-dialog .cert-detail__req {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.18);
+}
+
+/* ---------- 官网：弹框内唯一的实心主行动 ---------- */
+.cert-detail-dialog .cert-detail__site {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.18);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cert-detail-dialog .cert-detail__site:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.24);
+}
+.cert-detail-dialog .cert-detail__site:active {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.18);
+}
+.cert-detail-dialog .cert-detail__site-arrow {
+  flex: none;
+}
+.cert-detail-dialog .cert-detail__site-url {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.82);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+/* ---------- 底部：关闭为幽灵按钮（主行动唯一化） ---------- */
+.cert-detail-dialog .cert-detail__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.cert-detail-dialog .cert-detail__close:hover {
+  color: #c2410c;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: #f8fafc;
+}
+
+/* ---------- 窄屏：概览降单列、头部纵向堆叠、按钮全宽 ---------- */
+@media (max-width: 767px) {
+  .cert-detail-dialog .el-dialog__body {
+    padding: 16px;
+  }
+  .cert-detail-dialog .cert-detail__head {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cert-detail-dialog .cert-detail__facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .cert-detail-dialog .cert-detail__site {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .cert-detail-dialog .cert-detail__site-url {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+}
+

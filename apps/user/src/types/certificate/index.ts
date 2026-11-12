@@ -1,5 +1,11 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
+/**
+ * 证书列表项。
+ * ⚠️ 后端 application.yml 配了 `jackson.default-property-inclusion: non_null`
+ *    → 所有 null 字段在 JSON 中**整个键都不存在**（不是 null）。
+ *    t_certificate.exam_fee 实测 275/275 行全为 NULL，故 examFee 声明为可选。
+ */
 export interface CertificateListVO {
   id: string
   certName: string
@@ -8,10 +14,12 @@ export interface CertificateListVO {
   applicableMajor: string
   registrationTime: string
   examTime: string
-  examFee: number
+  /** 全表为 NULL，JSON 中可能没有该键 */
+  examFee?: number
   certIntro: string
 }
 
+/** 证书详情（同样受 non_null 省略策略影响，可选字段在响应中可能缺键） */
 export interface CertificateDetailVO {
   id: string
   certName: string
@@ -20,7 +28,8 @@ export interface CertificateDetailVO {
   applicableMajor: string
   registrationTime: string
   examTime: string
-  examFee: number
+  /** 全表为 NULL，JSON 中可能没有该键 */
+  examFee?: number
   certIntro: string
   examRequirements: string[]
   examArrangement: string

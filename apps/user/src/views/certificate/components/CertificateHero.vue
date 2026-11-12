@@ -18,7 +18,7 @@ import { HERO_BG_URL, HERO_FEATURES, TONE_COLORS } from './utils'
       <div class="cert-hero__main">
         <h1 class="cert-hero__title">职业技能证书大全 · 打造硬核职场竞争力</h1>
         <p class="cert-hero__desc">
-          汇集计算机、财会、语言、工程、教师、医疗等各类职业资格证书，提供级别、适用专业、报名与考试安排、考试费用等完整信息，助你精准规划考证路径
+          汇集计算机、财会、语言、工程、教师、医疗等各类职业资格证书，提供级别、适用专业、报名与考试安排、报考条件与官方查询入口，助你精准规划考证路径
         </p>
         <div class="cert-hero__features">
           <div v-for="item in HERO_FEATURES" :key="item.label" class="cert-hero__feature">

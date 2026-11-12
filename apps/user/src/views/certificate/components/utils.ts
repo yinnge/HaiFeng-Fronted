@@ -107,25 +107,56 @@ export function getCertificateIcon(
 /* ============ 分类 / 级别标签配色 ============ */
 
 /**
- * 分类标签：品牌橙柔光底。
- * category 是 DB 去重出来的自由文本（无 CHECK 约束），取值不封闭，
- * 故不做「值 → 色」映射，固定用一套橙系，避免大面积落到回退色。
+ * 分类 → 语义色。
+ * ⚠️ 旧注释曾写「category 是无 CHECK 的自由文本，取值不封闭，故固定用一套橙系」——
+ *    该前提已被 DB 实测推翻：t_certificate.category 实际只有 9 个 DISTINCT 值
+ *    （职场通用类 / 管理类 / 计算机类 / 财经类 / 工程建筑类 / 教育类 / 语言类 / 医学健康类 / 法律类），
+ *    属封闭集合，故改为按值映射，能传达真实的领域语义。
+ *    新增分类时在此表补一行即可；未收录的取值回退 slate 中性色。
+ */
+const CATEGORY_TONES: Record<string, IconTone> = {
+  职场通用类: 'slate',
+  管理类: 'blue',
+  计算机类: 'blue',
+  财经类: 'green',
+  工程建筑类: 'amber',
+  教育类: 'green',
+  语言类: 'slate',
+  医学健康类: 'red',
+  法律类: 'slate',
+}
+
+/**
+ * 分类标签：按值映射到四色活力光谱（AGENTS.md 第二节色彩令牌表）。
+ * 未收录的分类回退冷灰 slate（中性，不抢占视觉）。
  */
 export function categoryTag(category?: string | null): ToneColors & { text: string } {
   const text = (category ?? '').trim()
   if (!text) return { ...TONE_COLORS.slate, text: '' }
-  return { fg: '#C2410C', bg: '#FFF7ED', ring: 'rgba(249,115,22,.2)', text }
+  return { ...TONE_COLORS[CATEGORY_TONES[text] ?? 'slate'], text }
 }
 
 /**
- * 级别标签：向日葵黄系。
- * cert_level 同样是自由文本（可能是「初级/中级/高级」，也可能是其它表述），
- * 与分类同理固定一套色，不按值映射。
+ * 级别 → 语义色。
+ * cert_level 实测同样只有 4 个 DISTINCT 值（不分等级 88 / 中级 64 / 初级 63 / 高级 60），
+ * 是封闭集合 → 按值映射：初级=翡翠绿（入门）、中级=晴空蓝（进阶）、
+ * 高级=向日葵黄（金榜）、不分等级=冷灰 slate（无层级）。
+ */
+const LEVEL_TONES: Record<string, IconTone> = {
+  初级: 'green',
+  中级: 'blue',
+  高级: 'amber',
+  不分等级: 'slate',
+}
+
+/**
+ * 级别标签：按值映射。
+ * 未收录的级别回退冷灰 slate。
  */
 export function levelTag(certLevel?: string | null): ToneColors & { text: string } {
   const text = (certLevel ?? '').trim()
   if (!text) return { ...TONE_COLORS.slate, text: '' }
-  return { fg: '#B45309', bg: '#FFFBEB', ring: 'rgba(245,158,11,.22)', text }
+  return { ...TONE_COLORS[LEVEL_TONES[text] ?? 'slate'], text }
 }
 
 /* ============ 在线工具快捷入口 ============ */
@@ -219,9 +250,6 @@ export const PLACEHOLDER_MAJOR = '适用专业待补充'
 /** 考试时间缺失时的占位文案 */
 export const PLACEHOLDER_EXAM_TIME = '考试时间待公布'
 
-/** 考试费用缺失时的占位文案 */
-export const PLACEHOLDER_EXAM_FEE = '费用待公布'
-
 /** 摘要：证书简介缺失时回落到占位文案 */
 export function normalizeIntro(value?: string | null): string {
   const text = (value ?? '').trim()
@@ -238,12 +266,6 @@ export function normalizeMajor(value?: string | null): string {
 export function normalizeExamTime(value?: string | null): string {
   const text = (value ?? '').trim()
   return text || PLACEHOLDER_EXAM_TIME
-}
-
-/** 考试费用：0 元是合法值，只有 null / undefined 才回落到占位文案 */
-export function normalizeExamFee(value?: number | null): string {
-  if (value === null || value === undefined) return PLACEHOLDER_EXAM_FEE
-  return `¥${value.toLocaleString('zh-CN')}`
 }
 
 /* ============ Hero 特性项 ============ */
