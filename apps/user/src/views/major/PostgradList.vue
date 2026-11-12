@@ -6,9 +6,13 @@
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { getPostgradMajorList, getPostgradMajorDisciplineCategories } from '@/api/postgrad-major'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
 import type { PostgradMajorListVO, PostgradMajorQueryDTO } from '@/types/postgrad-major'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 
 import PostgradHero from './postgrad/components/PostgradHero.vue'
 import PostgradDegreeTabs from './postgrad/components/PostgradDegreeTabs.vue'
@@ -30,6 +34,7 @@ import './postgrad/postgrad.css'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const { hidden: headerHidden } = useAutoHideHeader()
 
 /** Q8：与专业详情页一致，导航抽屉收起时把 sticky 顶部空隙收掉 */
@@ -100,6 +105,94 @@ function restore(state: UrlState) {
   codeInput.value = state.code
 }
 
+// ==================== 收藏（favorite，targetType=postgrad_major） ====================
+const FAV_TARGET_TYPE = 'postgrad_major' as const
+/** 后端 BasePageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（toggle）：开启后只查已收藏的考研专业，再点退出回全部 */
+const favOnly = ref(false)
+/** 当前页已收藏的考研专业 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取全部已收藏考研专业 id（收藏视图用）。
+ * /favorite/list 单次 size ≤100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ */
+async function fetchAllFavIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 个考研专业')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 回填当前页星标状态（每页最多 10 条，/favorite/status 单次上限 100 → 一次即可；失败静默） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 「查看收藏」toggle：开启只查收藏专业，再点退出回全部列表 */
+async function onToggleFavOnly() {
+  if (!favOnly.value && !(await requireLogin())) return
+  favOnly.value = !favOnly.value
+  currentPage.value = 1
+  fetchList()
+}
+
+/** 星标点击：收藏 / 取消收藏 */
+async function onToggleFav(id: string) {
+  if (!(await requireLogin())) return
+  const idStr = String(id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
 /** 竞态：每次请求带自增 id，只采纳最新一次响应 */
 async function fetchList() {
   const id = ++requestId
@@ -118,10 +211,25 @@ async function fetchList() {
   }
 
   try {
+    // 收藏视图：先取已收藏专业 id，再透传 ids 与其它筛选 AND 叠加（后端负责分页与 total）
+    if (favOnly.value) {
+      const ids = await fetchAllFavIds()
+      if (id !== requestId) return
+      // 无收藏 → 直接空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        return
+      }
+      params.ids = ids.join(',')
+    }
+
     const res = await getPostgradMajorList(params)
     if (id !== requestId) return
     list.value = res.data.data.records ?? []
     total.value = res.data.data.total ?? 0
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
   } catch (e) {
     if (id !== requestId) return
     error.value = (e as Error)?.message || '获取考研专业列表失败'
@@ -278,9 +386,11 @@ onMounted(() => {
             v-model:difficulty="filters.difficulty"
             :total="total"
             :discipline-options="disciplineOptions"
+            :fav-only="favOnly"
             @search="handleSearch"
             @reset="handleReset"
             @filter-change="onFilterChange"
+            @toggle-fav="onToggleFavOnly"
           />
 
           <PostgradMajorSkeleton v-if="loading" :count="pageSize" />
@@ -291,8 +401,8 @@ onMounted(() => {
           </div>
 
           <div v-else-if="!list.length" class="pg-state">
-            <el-empty description="暂无符合条件的考研专业" />
-            <button type="button" class="pg-state__btn" @click="handleReset">清除筛选</button>
+            <el-empty :description="favOnly ? '暂无收藏的考研专业，在卡片右上角点亮星标即可收藏' : '暂无符合条件的考研专业'" />
+            <button v-if="!favOnly" type="button" class="pg-state__btn" @click="handleReset">清除筛选</button>
           </div>
 
           <div v-else class="pg-card-grid">
@@ -300,7 +410,9 @@ onMounted(() => {
               v-for="item in list"
               :key="item.id"
               :item="item"
+              :favorited="favIds.has(String(item.id))"
               @open="showDetail"
+              @toggle-fav="onToggleFav"
             />
           </div>
 

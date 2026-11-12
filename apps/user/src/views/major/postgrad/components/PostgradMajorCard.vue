@@ -12,8 +12,15 @@ import {
   normalizeSubjects,
 } from './utils'
 
-const props = defineProps<{ item: PostgradMajorListVO }>()
-const emit = defineEmits<{ (e: 'open', id: string): void }>()
+const props = defineProps<{
+  item: PostgradMajorListVO
+  /** 是否已收藏（灰星 / 黄星切换） */
+  favorited?: boolean
+}>()
+const emit = defineEmits<{
+  (e: 'open', id: string): void
+  (e: 'toggle-fav', id: string): void
+}>()
 
 const iconStyle = computed(() =>
   getPostgradMajorIcon(props.item.majorName, props.item.disciplineCategory),
@@ -28,12 +35,15 @@ const isHot = computed(() => popularity.value === '热门')
 </script>
 
 <template>
-  <!-- 整卡 button 由父层推 /postgrad-major/:id；底部「查看详情」只是文字+箭头，不嵌套链接 -->
-  <button
-    type="button"
+  <!-- 整卡由父层推 /postgrad-major/:id；根元素用 div[role=button]（内部要放收藏按钮，button 不可嵌套） -->
+  <div
     class="hf-card pg-major-card is-clickable"
+    role="button"
+    tabindex="0"
     :aria-label="`查看 ${item.majorName} 详情`"
     @click="emit('open', String(item.id))"
+    @keydown.enter="emit('open', String(item.id))"
+    @keydown.space.prevent="emit('open', String(item.id))"
   >
     <span class="major-head">
       <span
@@ -92,6 +102,20 @@ const isHot = computed(() => popularity.value === '热门')
           </span>
         </span>
       </span>
+      <!-- 右上角收藏星标（放大版）：@click.stop 避免触发整卡跳转 -->
+      <button
+        type="button"
+        class="pg-fav-star"
+        :class="{ 'is-on': favorited }"
+        :aria-label="favorited ? `取消收藏 ${item.majorName}` : `收藏 ${item.majorName}`"
+        :title="favorited ? '取消收藏' : '收藏'"
+        @click.stop="emit('toggle-fav', String(item.id))"
+        @keydown.stop
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+        </svg>
+      </button>
     </span>
 
     <span class="major-brief" :title="item.brief || ''">{{ briefText }}</span>
@@ -109,7 +133,7 @@ const isHot = computed(() => popularity.value === '热门')
         <ArrowRight :size="14" :stroke-width="1.75" class="major-footer__arrow" />
       </span>
     </span>
-  </button>
+  </div>
 </template>
 
 <style scoped>
@@ -265,5 +289,52 @@ const isHot = computed(() => popularity.value === '热门')
 .pg-major-card:hover .major-footer__arrow {
   transform: translateX(2px);
   color: #ea580c;
+}
+
+/* ===== 右上角收藏星标（放大版） ===== */
+.pg-fav-star {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pg-fav-star svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pg-fav-star:hover {
+  color: #d97706;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.pg-fav-star.is-on {
+  color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.pg-fav-star.is-on svg {
+  fill: currentColor;
+}
+
+.pg-fav-star:active {
+  transform: translateY(1px);
+}
+
+.pg-fav-star:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
 }
 </style>

@@ -22,7 +22,10 @@ import type {
   UniversityBriefForPostgradVO,
 } from '@/types/postgrad-major'
 import type { UndergraduateMajorDirectionBriefVO } from '@/types/major'
+import { ElMessage } from 'element-plus'
+import { addFavorite, removeFavorite, getFavoriteStatus } from '@/api/favorite'
 import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 import { MemberType } from '@haifeng/shared'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
 import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
@@ -61,6 +64,52 @@ const undergradTotal = ref(0)
 const undergradPage = ref(1)
 const undergradPageSize = ref(10)
 
+// ==================== 收藏（favorite，targetType=postgrad_major） ====================
+const FAV_TARGET_TYPE = 'postgrad_major' as const
+/** 当前考研专业是否已收藏 */
+const favOn = ref(false)
+const favSubmitting = ref(false)
+
+/** 已登录时回填当前专业的收藏状态（失败按未收藏处理） */
+async function loadFavStatus() {
+  if (!userStore.isLoggedIn() || !detail.value) return
+  try {
+    const id = currentId()
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, [id])
+    favOn.value = (res.data.data || []).map(String).includes(String(id))
+  } catch {
+    /* 状态回填失败忽略 */
+  }
+}
+
+/** 星标切换：收藏 / 取消收藏（未登录走全站统一登录引导） */
+async function toggleFavorite() {
+  if (!userStore.isLoggedIn()) {
+    userStore.setRedirectPath(route.fullPath)
+    if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+      router.push('/login')
+    }
+    return
+  }
+  if (favSubmitting.value || !detail.value) return
+  favSubmitting.value = true
+  try {
+    const id = currentId()
+    if (favOn.value) {
+      await removeFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, id)
+      favOn.value = true
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  } finally {
+    favSubmitting.value = false
+  }
+}
 const universities = ref<UniversityBriefForPostgradVO[]>([])
 const universityLoading = ref(false)
 const universityTotal = ref(0)
@@ -163,6 +212,8 @@ async function loadAll() {
     const res = await getPostgradMajorDetail(id)
     if (rid !== requestId) return
     detail.value = res.data.data
+    // 回填收藏状态（不阻塞详情展示）
+    void loadFavStatus()
     // 附属数据失败不阻塞主详情展示，各自降级为空数组
     await Promise.all([
       fetchUndergraduateMajors(rid, id),
@@ -231,6 +282,8 @@ watch(
   () => route.params.id,
   () => {
     window.scrollTo(0, 0)
+    // 切换专业时先清收藏态，loadAll 成功后会重新回填
+    favOn.value = false
     void loadAll()
   },
 )
@@ -256,7 +309,12 @@ onMounted(loadAll)
 
       <template v-else-if="detail">
         <div class="pgd-hero-wrap">
-          <PostgradDetailHero :detail="detail" />
+          <PostgradDetailHero
+            :detail="detail"
+            :favorited="favOn"
+            :fav-busy="favSubmitting"
+            @toggle-fav="toggleFavorite"
+          />
         </div>
 
         <div class="pg-grid">

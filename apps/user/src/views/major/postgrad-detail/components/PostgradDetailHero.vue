@@ -10,7 +10,15 @@ import {
 } from '../../postgrad/components/utils'
 import { PLACEHOLDER_DASH } from '../../detail/components/utils'
 
-const props = defineProps<{ detail: PostgradMajorDetailVO }>()
+const props = defineProps<{
+  detail: PostgradMajorDetailVO
+  /** 是否已收藏（灰星 / 黄星切换） */
+  favorited?: boolean
+  /** 收藏请求进行中 */
+  favBusy?: boolean
+}>()
+
+const emit = defineEmits<{ (e: 'toggle-fav'): void }>()
 
 /** 与列表页同款两级图标映射；关键词命中时底座色取所属门类色 */
 const majorIcon = computed(() =>
@@ -51,6 +59,22 @@ const infoItems = computed(() => [
             class="hf-tag"
             :style="{ color: degree.fg, backgroundColor: degree.bg, '--tag-ring': degree.ring }"
           >{{ degree.text }}</span>
+
+          <!-- 收藏：名称行末尾高亮药丸，区别于普通标签 -->
+          <button
+            type="button"
+            class="pgd-hero__fav"
+            :class="{ 'is-on': favorited, 'is-busy': favBusy }"
+            :aria-pressed="favorited"
+            :title="favorited ? '点击取消收藏' : '点击收藏该专业'"
+            @click="emit('toggle-fav')"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+            </svg>
+            <span class="pgd-hero__fav-label">收藏</span>
+            <span class="pgd-hero__fav-state">{{ favorited ? '已收藏' : '未收藏' }}</span>
+          </button>
         </div>
 
         <p class="pgd-hero__code hf-mono">{{ detail.majorCode || PLACEHOLDER_DASH }}</p>
@@ -140,6 +164,62 @@ const infoItems = computed(() => [
   line-height: 1.5;
   color: #475569;
 }
+
+/* ---------- 收藏药丸：名称行末尾，琥珀底高亮，与普通标签明显区分 ---------- */
+.pgd-hero__fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #64748b;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.pgd-hero__fav svg {
+  width: 14px;
+  height: 14px;
+  color: #cbd5e1;
+}
+
+.pgd-hero__fav:hover {
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.pgd-hero__fav:hover svg {
+  color: #d97706;
+}
+
+.pgd-hero__fav.is-on {
+  color: #b45309;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.pgd-hero__fav.is-on svg {
+  color: #f59e0b;
+  fill: currentColor;
+}
+
+.pgd-hero__fav.is-on .pgd-hero__fav-label,
+.pgd-hero__fav.is-on .pgd-hero__fav-state {
+  color: #b45309;
+}
+
+.pgd-hero__fav.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
+}
 .pgd-hero__tags {
   display: flex;
   align-items: center;
@@ -222,6 +302,14 @@ const infoItems = computed(() => [
   .pgd-hero__intro {
     -webkit-line-clamp: 3;
     line-clamp: 3;
+  }
+  .pgd-hero__fav-label,
+  .pgd-hero__fav-state {
+    /* 移动端只保留星标，减小占位 */
+    display: none;
+  }
+  .pgd-hero__fav {
+    padding: 4px;
   }
 }
 </style>
