@@ -3,7 +3,8 @@
  * 所有选择器由 .page-competition-detail 限定，不下发到其它路由；
  * 下拉浮层被 teleport 到 body，故 .competition-detail-popper 规则单独写成全局唯一类名。
  * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
- * 而 html 画布本身就是 #f8fafc（冷白），透出即可 —— 冷白画布正是本页用来突出暖橙 Hero 的底。
+ * 而 html 画布本身就是 #f8fafc（冷白），透出即可；Hero 与列表页同款冷白蓝，
+ * 暖橙只保留给右栏「报名参赛」卡作为唯一视觉焦点。
  * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
  * ========================================================================== */
 
@@ -149,8 +150,12 @@
   color: #9a3412;
 }
 
-/* ---------- Tab 导航：白底药丸行 ---------- */
+/* ---------- Tab 导航：吸顶白底药丸行（锚点跳转，不切换内容） ---------- */
 .page-competition-detail .cd-tabs {
+  position: sticky;
+  /* top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  top: var(--cd-tabs-top, 76px);
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -200,7 +205,51 @@
   color: #ea580c;
 }
 
-/* ---------- 右侧橙色报名卡：暖橙焦点 ---------- */
+/* ---------- 同页 5 个分区（Tab 锚点目标） ---------- */
+.page-competition-detail .cd-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+.page-competition-detail .cd-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  scroll-margin-top: var(--cd-scroll-offset, 140px);
+}
+.page-competition-detail .cd-section__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-competition-detail .cd-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+.page-competition-detail .cd-section__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-competition-detail .cd-section__line {
+  flex: 1;
+  height: 1px;
+  min-width: 20px;
+  background: linear-gradient(90deg, #e2e8f0 0%, rgba(226, 232, 240, 0) 100%);
+}
+
+/* ---------- 右侧橙色报名卡：暖橙焦点（保留，不做冷白化） ---------- */
 .page-competition-detail .cd-signup {
   position: relative;
   overflow: hidden;
@@ -544,13 +593,6 @@
   color: #475569;
   white-space: pre-line;
   overflow-wrap: anywhere;
-}
-.page-competition-detail .cd-subtitle {
-  margin: 20px 0 0;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #1e293b;
 }
 
 /* 基本信息：标题 + 内容两列 */

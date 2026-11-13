@@ -16,7 +16,7 @@
 
 ## ★ 勿回退（视觉 / 交互）
 - **弹窗锁滚动抖动**：`body{overflow-y:scroll;scrollbar-gutter:stable}` + `body.el-popup-parent--hidden{width:100%!important}`；勿删或换别的补偿。
-- **详情页画布**：全局 `.app-shell main>*,#app>*{background:transparent!important}` 透出 **`#f8fafc` 冷白**；实心白卡/橙 Hero 须 scoped `background:…!important`；teleport 到 body 的弹窗 scoped `:deep()` 失效。`?skin=editorial` 与全部暖白 CSS 已删（11-10），别再翻回暖白/改 tailwind 令牌。
+- **详情页画布**：全局 `.app-shell main>*,#app>*{background:transparent!important}` 透出 **`#f8fafc` 冷白**；实心白卡/Hero 须 scoped `background:…!important`；teleport 到 body 的弹窗 scoped `:deep()` 失效。`?skin=editorial` 与全部暖白 CSS 已删（11-10），别再翻回暖白/改 tailwind 令牌。**★ 11-13 定案：竞赛/行业详情页 Hero 一律冷白蓝（`#eff6ff` + 白色渐变遮罩 + 背景图，同列表页），暖橙只留竞赛右栏报名卡，别再改回暖橙。**
 - **ElDialog 样式作用域**：`inheritAttrs:false` → 用户 class 落在 `.el-dialog` 根元素**自身**，` .xxx :deep(.el-dialog)` 后代选择器永远匹配不到，且 teleport 已脱离 `.page-xxx`。正解：全局唯一类名 + `.xxx.el-dialog{...}`（同元素）。
 - **token key 撞车**：admin `/admin/`→`haifeng_admin_access_token`，user `/`→`haifeng_access_token`；admin vite base `/admin/`、login `/admin/login`，用 `import.meta.env.BASE_URL` 动态拼接。
 - **tokenVersion/VIP**：会员权益变更不得 bump tokenVersion；VIP 实时靠 `AuthAspect.checkVip` 回退 DB。
@@ -49,6 +49,7 @@
 - **分页 size ∈[10,100]**；榜单 `size=5` 违规 → `size=10` + `slice(0,5)`。热门榜无 hot 字段时取列表头部近似，热度值用固定展示常量 `HOT_INDEX_BY_RANK`（非实时）。
 - **卡片网格**：postgrad/竞赛/证书列表 2 列，行业/企业 3 列。**防糊**：列表页启用 hover `translateY(-2px)`；详情页禁用整卡位移，只用颜色/边框/箭头位移。
 - 无「相关专业」类接口时不要硬凑。
+- **详情页 Tab 锚点化（11-13 竞赛详情定案，勿回退成切换隐藏）**：多 Tab 详情页 = 「5 个分区全部同页渲染 + 点击 Tab 平滑滚动到锚点」。要点：① 分区恒存在，空数据也渲染占位卡（否则 `getElementById` 为 null、点击无反应）；② Tab 栏 `position:sticky`，top 用 `asideTop`(8/76) 注入 CSS 变量；③ 滚动偏移 = `asideTop + Tab 栏实高 + 14`；④ `IntersectionObserver({rootMargin:'-40% 0px -50% 0px'})` 反向高亮并同步 `?tab=`，点击后锁 spy 900ms 防平滑滚动抖动；⑤ `watch(query.tab)` 靠 `next===active` 防循环；⑥ `prefers-reduced-motion` 降级 `behavior:'auto'`。
 
 ## 业务规则 / 导航
 - **游客档案**仅 localStorage `haifeng:guest-gaokao-archive`；`Groups.vue` 用 `guestArchiveParams`，已登录不传。`request.ts` 401 仅「有 token」算过期。
@@ -58,11 +59,12 @@
 - 导航断点 4 档：<768 汉堡 / 768~1700 桌面+更多 / ≥1700 完整菜单 / ≥2100 封顶留白。`scrollY>8` 抽屉式收起（`useAutoHideHeader.ts` 单例）；首页 `TopToolBar`（64px 常驻）其下 `AppHeader` 接 `:top-offset`（首页 64 / 其余 0）。主页右侧链接在 `TopToolBar.vue .tt-link`；`config/navigation.ts` 纯数据。
 
 ## 页面结构 / 数据速查（细节见各自 daily log）
-- **竞赛**：List 冷白 / detail 暖橙 Hero（右栏=报名卡→流程→获奖→专业→工具→收口条，Tab 进 URL）。列表 VO 仅 `id/compName/compLevel/registrationTime`；`comp_level` 无 CHECK 自由 VARCHAR → 动态聚合；`registrationTime` 自由文本；`t_competition_major` 0 行；`/competition/{id}/majors` `@RequireVip`。
+- **竞赛**：List 冷白 / detail **冷白蓝 Hero**（11-13 定案；右栏=报名卡〔唯一暖橙〕→流程→获奖→专业→工具→收口条；左栏 5 个分区全展示、Tab 为同页锚点，`?tab=` 可深链）。列表 VO 仅 `id/compName/compLevel/registrationTime`；`comp_level` 无 CHECK 自由 VARCHAR → 动态聚合；`registrationTime` 自由文本；`t_competition_major` 0 行；`/competition/{id}/majors` `@RequireVip`。
 - **证书**：无 `/certificate/:id` 路由，详情是 `CertificateDetailDialog.vue` 弹框。C 端列表仅 `category`(精准)+`certName`(模糊) 两筛选。`t_certificate` 275 行：`cert_level` 4 值、`category` 9 值 → 按值映射（初级绿/中级蓝/高级黄/不分等级 slate）。`exam_fee` 275/275 NULL + `non_null` → 键整个不存在，卡片与弹框均不展示。
 - **城市详情**：`views/city/detail/`（9 组件 + `city-detail.css`）；`CityDetailVO` 29 字段、13 个 `Record<string,any>`、**不含 id/cityIntro/coverImageUrl** → 用 `readNum/readText/readList` 安全读取。
-- **行业**：List 冷白 Hero + 3 列 + 右栏热门榜/工具（11-12 `68e8fd2`）。DB 实测 90 条、17 门类、`sort_order` 全 0、真实热度 `investment_heat`(30~88)、`category` 后端 eq 精准匹配；图标 = 名称关键词 61 规则 → 17 门类兜底（90/90 命中、46 种），在 `components/utils.ts` 私有 `KEYWORD_ICONS`。★ **`t_industry_detail` 8 个 JSONB 90/90 全为空 `{}`**、`short/detailed_description` 全空；详情 VO 不含 id、不含 description；主表仅 9 个概览指标有值（`talent_gap` 全空）。`t_enterprise_industry` 0 行，`/enterprises` `@RequireVip`；详情接口 `/industry/{id}/detail` 仅 `@RequireLogin`。C 端 `IndustryListVO.id`（Long）**缺 `@JsonSerialize`**。列表页「名称搜索」是纯 UI 未接后端（`IndustryQueryDTO` 无 name）。**详情页 11-13 已重构**：`Detail.vue` 只做编排 + `detail/`（`detail.css` 用 `.page-industry-detail` / `idt-` 前缀、`utils.ts` re-export `INDUSTRY_TOOLS`+`HERO_BG_URL`、10 组件）；正文以主表 9 指标为主、8 个 JSONB 走通用容错渲染器（有值才出，全空显示「深度数据整理中」），并发补 `/industry/list?ids=` 拿 `description`+`category`。趋势色板语义正向（上升绿/稳定蓝/下降红），用 `trendStyle()`，**刻意不复用列表页 `growthTone()`**（那个是 A 股习惯正=红）。
+- **行业**：List 冷白 Hero + 3 列 + 右栏热门榜/工具（11-12 `68e8fd2`）。DB 实测 90 条、17 门类、`sort_order` 全 0、真实热度 `investment_heat`(30~88)、`category` 后端 eq 精准匹配；图标 = 名称关键词 61 规则 → 17 门类兜底（90/90 命中、46 种），在 `components/utils.ts` 私有 `KEYWORD_ICONS`。★ **`t_industry_detail` 8 个 JSONB 90/90 全为空 `{}`**、`short/detailed_description` 全空；详情 VO 不含 id、不含 description；主表仅 9 个概览指标有值（`talent_gap` 全空）。`t_enterprise_industry` 0 行，`/enterprises` `@RequireVip`；详情接口 `/industry/{id}/detail` 仅 `@RequireLogin`。C 端 `IndustryListVO.id`（Long）**缺 `@JsonSerialize`**。列表页「名称搜索」是纯 UI 未接后端（`IndustryQueryDTO` 无 name）。**详情页 11-13 已重构**：`Detail.vue` 只做编排 + `detail/`（`detail.css` 用 `.page-industry-detail` / `idt-` 前缀、`utils.ts` re-export `INDUSTRY_TOOLS`+`HERO_BG_URL`、10 组件）；正文以主表 9 指标为主、8 个 JSONB 走通用容错渲染器（有值才出，全空显示「深度数据整理中」），并发补 `/industry/list?ids=` 拿 `description`+`category`。趋势色板语义正向（上升绿/稳定蓝/下降红），用 `trendStyle()`，**刻意不复用列表页 `growthTone()`**（那个是 A 股习惯正=红）。**11-13 二次迭代：详情 Hero 改冷白蓝（与列表页同款），暖橙不再用于任何详情页 Hero。**
 - **企业**：List 尚未重构。`EnterpriseListVO` 11 字段含 id、**不含 recruitmentStatus**；`t_enterprise` 2373 条、100% 无 logo、`sort_order` 全 0；`enterprise_nature` 有 CHECK；`enterprise_type` 13 值走 `/enterprise/types`；无 `/enterprise/:id` 路由，只有 `/enterprise/:id/positions`。
 
 ## 最近迭代（节选）
 - 首页 Hero 双栏重构（11-06 `6e7c6be`）；罗盘中心 logo 44→**112px**（11-10）。
+- 行业详情页重构（11-13 `abd17f6`）；同日晚两个详情页 Hero 改冷白蓝 + 竞赛详情 5 Tab 改同页锚点导航。

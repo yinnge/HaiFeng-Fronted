@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 行业详情 Hero：暖橙实心底 + 通用背景图，冷白画布衬托（需求 Q2 / Q12）。
+ * 行业详情 Hero：冷白蓝底 + 通用背景图，与列表页同款（2026-11-13 定案，替代暖橙）。
  * 样式集中在 ../detail.css（全部由 .page-industry-detail 限定，不写 scoped，
  * 避免 teleport / 全局背景清空导致的选择器失配）。
  */

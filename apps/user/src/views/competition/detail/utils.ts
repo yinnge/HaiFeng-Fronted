@@ -2,7 +2,8 @@
  * 竞赛详情页共享工具函数与配置。
  *
  * 约定：
- * - 色值复用专业详情页 TONE_COLORS（只读复用）；本页 Hero 额外用暖橙品牌色。
+ * - 色值复用专业详情页 TONE_COLORS（只读复用）；Hero 与列表页同款冷白蓝，
+ *   暖橙仅保留给右栏报名参赛卡（2026-11-13 定案）。
  * - 字号全部取整 px，样式里不写分数 px / rem 字号。
  * - 图标统一 lucide-vue-next（AGENTS.md 第四节：严禁 Emoji 图标）。
  * - Hero 背景图复用 HERO_BG_URL（picture/university/列表背景.png，与列表页通用）。
@@ -31,7 +32,7 @@ export { HERO_BG_URL, TONE_COLORS }
 export { levelTag }
 export type { IconTone }
 
-/* ============ Tab 定义 ============ */
+/* ============ Tab 定义（= 页面内 5 个锚点分区） ============ */
 
 export type CompetitionTabKey = 'detail' | 'guide' | 'scoring' | 'awards' | 'faq'
 
@@ -42,7 +43,9 @@ export interface CompetitionTab {
 }
 
 /**
- * 顶部 5 个 Tab。后端 8 个详情字段的归位见下：
+ * 顶部 5 个 Tab 现在不再切换隐藏内容，而是 5 个「同页锚点」：
+ * 全部内容一次渲染，点击 Tab 平滑滚动到对应分区（2026-11-13 定案）。
+ * 后端 8 个详情字段的归位见下：
  * - 竞赛详情 detail   → basicInfo + background + purposes
  * - 参赛指南 guide    → competitionRules（processGuide 只放右栏，不占 Tab）
  * - 评审标准 scoring  → scoringCriteria
@@ -58,6 +61,14 @@ export const COMPETITION_TABS: CompetitionTab[] = [
 ]
 
 export const DEFAULT_TAB: CompetitionTabKey = 'detail'
+
+/**
+ * 分区 DOM id。5 个分区恒定存在（数据为空也渲染占位卡），
+ * 保证任意 Tab 都能定位到元素，不会出现「点了没反应」的死锚点。
+ */
+export function sectionId(key: CompetitionTabKey): string {
+  return `cd-section-${key}`
+}
 
 /* ============ 赛事流程（右栏时间轴） ============ */
 
@@ -211,7 +222,7 @@ export function awardIcon(title: string): Component {
 export { COMPETITION_TOOLS } from '../components/utils'
 export type { CompetitionTool } from '../components/utils'
 
-/* ============ URL 状态同步（Tab） ============ */
+/* ============ URL 状态同步（Tab 锚点） ============ */
 
 /** 从 route.query 解析 Tab；非法值回退默认 */
 export function parseTab(query: LocationQuery): CompetitionTabKey {

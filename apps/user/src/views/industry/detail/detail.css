@@ -4,7 +4,7 @@
  * （列表页已占 ind-，前缀必须全库唯一）。
  * 组件一律不写 scoped style：本文件集中维护，避免 teleport / 全局背景清空导致选择器失配。
  * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
- * 而 html 画布本身就是 #f8fafc（冷白），透出即可 —— 冷白画布正是用来衬托暖橙 Hero 的底。
+ * 而 html 画布本身就是 #f8fafc（冷白），透出即可；Hero 与列表页同款冷白蓝，整页冷调。
  * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
  * 橙色小字一律 #c2410c / hover #9a3412；品牌橙只给实心背景、描边与图标。
  * ========================================================================== */
@@ -178,21 +178,27 @@
   color: #9a3412;
 }
 
-/* ============ 暖橙 Hero ============ */
+/* ============ 冷白蓝 Hero（与列表页同款） ============ */
 .page-industry-detail .idt-hero {
+  --hero-bg-pos: center 62%;
   position: relative;
   padding: 26px 30px 24px;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(249, 115, 22, 0.16);
-  box-shadow: 0 8px 24px -8px rgba(249, 115, 22, 0.28);
-  background-color: #f97316;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  background-color: #eff6ff;
   background-image:
-    linear-gradient(100deg, rgba(249, 115, 22, 0.97) 0%, rgba(249, 115, 22, 0.92) 46%, rgba(234, 88, 12, 0.82) 74%, rgba(234, 88, 12, 0.62) 100%),
+    linear-gradient(90deg, #f8fbff 0%, rgba(248, 251, 255, 0.94) 36%, rgba(248, 251, 255, 0) 72%),
     var(--hero-bg-url);
-  background-position: center, center 62%;
-  background-size: cover, cover;
+  background-position: center, var(--hero-bg-pos);
+  background-size: auto, cover;
   background-repeat: no-repeat, no-repeat;
+}
+@media (max-width: 767px) {
+  .page-industry-detail .idt-hero {
+    --hero-bg-pos: 75% 62%;
+  }
 }
 .page-industry-detail .idt-hero__top {
   position: relative;
@@ -209,8 +215,9 @@
   height: 58px;
   flex: none;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: #dbeafe;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
 }
 .page-industry-detail .idt-hero__main {
   min-width: 0;
@@ -228,7 +235,7 @@
   font-weight: 800;
   line-height: 1.3;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: #0f172a;
 }
 .page-industry-detail .idt-hero__cat {
   display: inline-flex;
@@ -236,12 +243,13 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
 }
 .page-industry-detail .idt-hero__cat-code {
   display: inline-flex;
@@ -250,7 +258,8 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.28);
+  background: #bfdbfe;
+  color: #1e40af;
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
@@ -259,14 +268,14 @@
   margin: 10px 0 0;
   font-size: 14px;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.94);
+  color: #475569;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
 
-/* 右上角收藏星标 */
+/* 右上角收藏星标：冷白底变体 */
 .page-industry-detail .idt-hero__fav {
   position: absolute;
   top: 0;
@@ -276,12 +285,13 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #64748b;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
   cursor: pointer;
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 .page-industry-detail .idt-hero__fav svg {
   width: 22px;
@@ -291,9 +301,14 @@
 .page-industry-detail .idt-hero__fav.is-on {
   color: #f59e0b;
   background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28);
 }
 .page-industry-detail .idt-hero__fav.is-on svg {
   fill: currentColor;
+}
+.page-industry-detail .idt-hero__fav:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
 }
 
 /* Hero 内 4 个速览小卡 */
@@ -314,14 +329,14 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 2px 10px -4px rgba(120, 53, 15, 0.2);
+  box-shadow: 0 2px 10px -4px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(37, 99, 235, 0.1);
   text-align: center;
 }
 .page-industry-detail .idt-hero__stat-value {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.25;
-  color: #9a3412;
+  color: #1d4ed8;
   overflow-wrap: anywhere;
 }
 .page-industry-detail .idt-hero__stat-label {

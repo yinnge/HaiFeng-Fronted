@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 竞赛详情页：本文件只负责取数与编排，展示拆到 detail/components/ 下。
+ * 竞赛详情页：本文件只负责取数、Tab 锚点编排，展示拆到 detail/components/ 下。
  * 接口沿用：
  * - GET /api/v1/app/competition/{id}/detail  需登录（路由守卫 requiresAuth）
  * - GET /api/v1/app/competition/{id}/majors  需 VIP（仅 vip，游客/普通会员/Pro 均无数据）
@@ -8,8 +8,11 @@
  * - basicInfo 的 title 只有 5 个固定值：竞赛简介/参赛对象/竞赛时间/官方网站/主办单位；
  *   「官方网站」content 为报名跳转 URL（100 条中 98 条是 https:// URL）。
  * - processGuide / awardsDisplay 后端结构均为 {title, content}（非 {step,desc} / {level,count}）。
+ *
+ * 2026-11-13：5 个 Tab 由「切换隐藏 panel」改为「同页锚点导航」——
+ * 全部内容一次渲染，点击 Tab 平滑滚动到对应分区，滚动时 scroll spy 反向高亮并同步 ?tab=。
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterLink, type LocationQueryRaw } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCompetitionDetail, getCompetitionMajors } from '@/api/certificate'
@@ -30,11 +33,13 @@ import CompetitionMajorsCard from './detail/components/CompetitionMajorsCard.vue
 import CompetitionToolsCard from './detail/components/CompetitionToolsCard.vue'
 import {
   ASIDE_MAX_ITEMS,
+  COMPETITION_TABS,
   DEFAULT_TAB,
   buildTabQuery,
   extractOfficialSite,
   extractSummary,
   parseTab,
+  sectionId,
   toAwardItems,
   toBasicInfoItems,
   toProcessSteps,
@@ -56,6 +61,7 @@ const asideTop = computed(() => (headerHidden.value ? 8 : 76))
 const loading = ref(false)
 const detail = ref<CompetitionDetailVO | null>(null)
 const error = ref('')
+/** 当前高亮分区（点击 Tab 或滚动 scroll spy 都会更新） */
 const activeTab = ref<CompetitionTabKey>(DEFAULT_TAB)
 
 const majors = ref<CompetitionMajorBriefVO[]>([])
@@ -168,7 +174,33 @@ async function onToggleFav() {
   }
 }
 
-/* ---------- Tab 与 URL 同步 ---------- */
+/* ---------- Tab 锚点：滚动定位 + scroll spy + URL 同步 ---------- */
+
+let spyObserver: IntersectionObserver | null = null
+/** 点击 Tab 后的平滑滚动期间，暂时忽略 spy，避免中途高亮抖动 / URL 反复写入 */
+let spyLockedUntil = 0
+let scrollRaf = 0
+let positioned = false
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+/** 锚点滚动偏移：动态吸顶的导航高度 + Tab 栏实高 + 呼吸间距 */
+function scrollOffset(): number {
+  const bar = document.querySelector<HTMLElement>('.cd-tabs')
+  return asideTop.value + (bar?.getBoundingClientRect().height ?? 50) + 14
+}
+
+function scrollToTab(tab: CompetitionTabKey, behavior?: ScrollBehavior) {
+  const el = document.getElementById(sectionId(tab))
+  if (!el) return
+  const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - scrollOffset())
+  window.scrollTo({
+    top,
+    behavior: behavior ?? (prefersReducedMotion() ? 'auto' : 'smooth'),
+  })
+}
 
 /**
  * 写入 Tab 到 URL。
@@ -186,15 +218,58 @@ function writeTab() {
   void router.replace({ path: route.path, query })
 }
 
-function onTabChange(tab: CompetitionTabKey) {
-  if (tab === activeTab.value) return
+function onTabSelect(tab: CompetitionTabKey) {
   activeTab.value = tab
+  spyLockedUntil = Date.now() + 900
   writeTab()
+  scrollToTab(tab)
+}
+
+/** 视口中部窄带判定当前分区；只在 key 变化时更新高亮与 URL，不会形成 watch 循环 */
+function setupSpy() {
+  spyObserver?.disconnect()
+  if (typeof IntersectionObserver === 'undefined') return
+  spyObserver = new IntersectionObserver(
+    (entries) => {
+      if (Date.now() < spyLockedUntil) return
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        const key = (entry.target as HTMLElement).dataset.tab as CompetitionTabKey | undefined
+        if (!key || key === activeTab.value) continue
+        activeTab.value = key
+        writeTab()
+      }
+    },
+    { rootMargin: '-40% 0px -50% 0px', threshold: 0 },
+  )
+  void nextTick(() => {
+    if (!spyObserver) return
+    for (const tab of COMPETITION_TABS) {
+      const el = document.getElementById(sectionId(tab.key))
+      if (el) spyObserver.observe(el)
+    }
+  })
+}
+
+/** 页面滚到底时，最后一个分区可能永远进不了 spy 窄带 → 兜底高亮 */
+function onWinScroll() {
+  if (scrollRaf) return
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = 0
+    if (Date.now() < spyLockedUntil) return
+    const doc = document.documentElement
+    if (window.innerHeight + window.scrollY < doc.scrollHeight - 40) return
+    const last = COMPETITION_TABS[COMPETITION_TABS.length - 1]
+    if (last && activeTab.value !== last.key) {
+      activeTab.value = last.key
+      writeTab()
+    }
+  })
 }
 
 /**
- * 外部 query 变化（浏览器前进/后退、分享链接进入）反向恢复 Tab。
- * 自己写入的那次会走到同一分支，但 next === activeTab.value 时直接跳过，不会成环。
+ * 外部 query 变化（浏览器前进/后退、分享链接进入）反向恢复分区并滚动。
+ * 自己写入的那次 next === activeTab.value，直接跳过，不会成环。
  */
 watch(
   () => route.query.tab,
@@ -202,7 +277,23 @@ watch(
     const next = parseTab({ tab: raw })
     if (next === activeTab.value) return
     activeTab.value = next
+    spyLockedUntil = Date.now() + 900
+    scrollToTab(next)
   },
+)
+
+/** 详情数据就绪后建立 spy；带 ?tab= 的深链在此定位一次 */
+watch(
+  () => detail.value,
+  async (value) => {
+    if (!value || positioned) return
+    positioned = true
+    await nextTick()
+    setupSpy()
+    const key = parseTab(route.query)
+    if (key !== DEFAULT_TAB) scrollToTab(key, 'auto')
+  },
+  { flush: 'post' },
 )
 
 /** 会员身份变化时重新拉关联专业（登录后立即可用） */
@@ -214,6 +305,14 @@ onMounted(() => {
   activeTab.value = parseTab(route.query)
   void fetchDetail()
   void fetchMajors()
+  window.addEventListener('scroll', onWinScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onWinScroll)
+  if (scrollRaf) cancelAnimationFrame(scrollRaf)
+  spyObserver?.disconnect()
+  spyObserver = null
 })
 </script>
 
@@ -248,12 +347,12 @@ onMounted(() => {
         <div class="cd-grid">
           <div class="cd-left">
             <CompetitionDetailTabs
-              :model-value="activeTab"
-              @update:model-value="onTabChange"
+              :active="activeTab"
+              :style="{ '--cd-tabs-top': `${asideTop}px` }"
+              @select="onTabSelect"
             />
 
             <CompetitionDetailPanels
-              :tab="activeTab"
               :basic-items="basicItems"
               :background="detail.background || ''"
               :purposes="purposes"

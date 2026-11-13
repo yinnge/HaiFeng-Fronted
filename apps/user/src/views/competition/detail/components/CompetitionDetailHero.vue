@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CalendarDays, Send, Trophy, Users } from 'lucide-vue-next'
-import { HERO_BG_URL, TONE_COLORS, levelTag } from '../utils'
+import { CalendarDays, Trophy, Users } from 'lucide-vue-next'
+import { HERO_BG_URL, levelTag } from '../utils'
 
 const props = defineProps<{
   compName: string
@@ -21,7 +21,7 @@ const level = levelTag(props.compLevel)
 </script>
 
 <template>
-  <!-- 暖橙 Hero：品牌橙实心底 + 背景图透出，冷白画布衬托 -->
+  <!-- 冷白蓝 Hero：与竞赛列表页同款；右栏报名参赛卡保留暖橙焦点 -->
   <section class="cd-hero" :style="{ '--hero-bg-url': `url(${HERO_BG_URL})` }">
     <div class="cd-hero__left">
       <span class="cd-hero__icon">
@@ -33,7 +33,7 @@ const level = levelTag(props.compLevel)
         <div class="cd-hero__meta">
           <span
             v-if="level.text"
-            class="hf-tag cd-hero__tag"
+            class="hf-tag"
             :style="{ color: level.fg, backgroundColor: level.bg, '--tag-ring': level.ring }"
           >{{ level.text }}</span>
           <span v-if="audience" class="cd-hero__meta-item">
@@ -66,7 +66,9 @@ const level = levelTag(props.compLevel)
 </template>
 
 <style scoped>
+/* 冷白蓝 Hero：与列表页 .cp-hero 同款，不挂 hf-card 避免背景被覆盖 */
 .cd-hero {
+  --hero-bg-pos: center 62%;
   position: relative;
   display: flex;
   align-items: center;
@@ -74,14 +76,14 @@ const level = levelTag(props.compLevel)
   padding: 28px 32px;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(249, 115, 22, 0.16);
-  box-shadow: 0 8px 24px -8px rgba(249, 115, 22, 0.28);
-  background-color: #f97316;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  background-color: #eff6ff;
   background-image:
-    linear-gradient(100deg, rgba(249, 115, 22, 0.97) 0%, rgba(249, 115, 22, 0.92) 46%, rgba(234, 88, 12, 0.82) 74%, rgba(234, 88, 12, 0.62) 100%),
+    linear-gradient(90deg, #f8fbff 0%, rgba(248, 251, 255, 0.94) 36%, rgba(248, 251, 255, 0) 72%),
     var(--hero-bg-url);
-  background-position: center, center 62%;
-  background-size: cover, cover;
+  background-position: center, var(--hero-bg-pos);
+  background-size: auto, cover;
   background-repeat: no-repeat, no-repeat;
 }
 .cd-hero__left {
@@ -100,8 +102,9 @@ const level = levelTag(props.compLevel)
   height: 58px;
   flex: none;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: #dbeafe;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
 }
 .cd-hero__main {
   min-width: 0;
@@ -112,13 +115,13 @@ const level = levelTag(props.compLevel)
   font-weight: 800;
   line-height: 1.3;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: #0f172a;
 }
 .cd-hero__desc {
   margin: 8px 0 0;
   font-size: 14px;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.92);
+  color: #475569;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -131,9 +134,6 @@ const level = levelTag(props.compLevel)
   gap: 12px;
   margin-top: 16px;
 }
-.cd-hero__tag {
-  background: rgba(255, 255, 255, 0.94) !important;
-}
 .cd-hero__meta-item {
   display: inline-flex;
   align-items: center;
@@ -142,7 +142,7 @@ const level = levelTag(props.compLevel)
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.95);
+  color: #475569;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -151,7 +151,7 @@ const level = levelTag(props.compLevel)
   flex: none;
 }
 
-/* ===== 右上角收藏星标（与列表页同款） ===== */
+/* ===== 右上角收藏星标（冷白底变体） ===== */
 .cd-hero__fav {
   position: absolute;
   top: 20px;
@@ -161,10 +161,11 @@ const level = levelTag(props.compLevel)
   justify-content: center;
   width: 40px;
   height: 40px;
-  color: rgba(255, 255, 255, 0.75);
+  color: #64748b;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
   cursor: pointer;
   transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -175,21 +176,24 @@ const level = levelTag(props.compLevel)
 .cd-hero__fav:hover {
   color: #f59e0b;
   background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28);
 }
 .cd-hero__fav.is-on {
   color: #f59e0b;
   background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28);
 }
 .cd-hero__fav.is-on svg {
   fill: currentColor;
 }
 .cd-hero__fav:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline: 2px solid rgba(37, 99, 235, 0.5);
   outline-offset: 2px;
 }
 
 @media (max-width: 767px) {
   .cd-hero {
+    --hero-bg-pos: 75% 62%;
     padding: 20px;
   }
   .cd-hero__left {

@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { COMPETITION_TABS, type CompetitionTabKey } from '../utils'
+/**
+ * 顶部 5 个 Tab：现在只做「同页锚点导航」，不再切换隐藏内容。
+ * 点击后由主文件平滑滚动到 sectionId(key) 对应的分区，并在滚动时反向高亮。
+ */
+import { COMPETITION_TABS, sectionId, type CompetitionTabKey } from '../utils'
 
 defineProps<{
-  modelValue: CompetitionTabKey
+  /** 当前滚动位置对应的分区（scroll spy 反向回填） */
+  active: CompetitionTabKey
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: CompetitionTabKey): void
+  (e: 'select', key: CompetitionTabKey): void
 }>()
 </script>
 
@@ -17,9 +22,10 @@ const emit = defineEmits<{
       :key="tab.key"
       type="button"
       class="cd-tab"
-      :class="{ 'is-active': tab.key === modelValue }"
-      :aria-current="tab.key === modelValue ? 'page' : undefined"
-      @click="emit('update:modelValue', tab.key)"
+      :class="{ 'is-active': tab.key === active }"
+      :aria-current="tab.key === active ? 'location' : undefined"
+      :aria-controls="sectionId(tab.key)"
+      @click="emit('select', tab.key)"
     >
       <component :is="tab.icon" :size="15" :stroke-width="1.75" />
       {{ tab.label }}
