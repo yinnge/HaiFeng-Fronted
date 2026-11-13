@@ -1,408 +1,272 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+/**
+ * 行业详情页：本文件只负责取数与编排，展示拆到 detail/components/ 下（需求 Q12）。
+ *
+ * 接口：
+ * - GET /api/v1/app/industry/{id}/detail    仅 @RequireLogin（路由守卫 requiresAuth）
+ * - GET /api/v1/app/industry/list?ids=...   公开，补 category + description（需求 Q9）
+ * - GET /api/v1/app/industry/enterprises    @RequireVip（需求 Q4）
+ *
+ * 数据要点（DB 实测 2026-11-13）：
+ * - IndustryDetailVO 不含 id / category / description；category 与行业简介长文本只在列表 VO，
+ *   故并发补一次 /industry/list?ids=，失败静默降级、不阻塞主详情。
+ * - t_industry_detail 的 8 个 JSONB 90/90 全为 {}，两段描述全空，talentGap 全空；
+ *   正文以主表 9 个概览指标为主体，JSONB 走「有值才渲染」的容错渲染器（需求 Q1 / Q11）。
+ * - 关联表 t_enterprise_industry 当前 0 行，故 VIP 也大概率返回空，空态文案已明确。
+ */
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getIndustryDetail } from '@/api/industry'
+import { ArrowLeft } from 'lucide-vue-next'
+import { getIndustryDetail, getIndustryList } from '@/api/industry'
 import { getIndustryEnterprises } from '@/api/enterprise'
-import type { IndustryDetailVO } from '@/types/industry'
-import type { IndustryEnterpriseGroupVO } from '@/types/enterprise'
-import { Motion } from 'motion-v'
-
+import { addFavorite, removeFavorite, getFavoriteStatus } from '@/api/favorite'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
 import { useRechargeDialog } from '@/composables/useRechargeDialog'
+import { useUserStore } from '@/store'
+import { MemberType } from '@haifeng/shared'
+import { confirmLogin } from '@/utils/loginGuide'
+import type { IndustryDetailVO, IndustryListVO } from '@/types/industry'
+import type { EnterpriseJumpVO } from '@/types/enterprise'
 
-const recharge = useRechargeDialog()
-const router = useRouter()
+import IndustryDetailHero from './detail/components/IndustryDetailHero.vue'
+import IndustryIntroCard from './detail/components/IndustryIntroCard.vue'
+import IndustryMetricsCard from './detail/components/IndustryMetricsCard.vue'
+import IndustryTrendCard from './detail/components/IndustryTrendCard.vue'
+import IndustryDeepDataCard from './detail/components/IndustryDeepDataCard.vue'
+import IndustrySameCategoryLink from './detail/components/IndustrySameCategoryLink.vue'
+import IndustryTrendAsideCard from './detail/components/IndustryTrendAsideCard.vue'
+import IndustryEnterpriseCard from './detail/components/IndustryEnterpriseCard.vue'
+import IndustryDetailToolsCard from './detail/components/IndustryDetailToolsCard.vue'
+
+import './detail/detail.css'
+
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
+const recharge = useRechargeDialog()
+const { hidden: headerHidden } = useAutoHideHeader()
 
+/** 与列表页一致，导航抽屉收起时把 sticky 顶部空隙收掉 */
+const asideTop = computed(() => (headerHidden.value ? 8 : 76))
+
+const industryId = computed(() => String(route.params.id ?? ''))
 const loading = ref(false)
 const detail = ref<IndustryDetailVO | null>(null)
+const error = ref('')
+
+/** 列表 VO 补取：只用来拿 category 与 description（详情 VO 没有这两个字段） */
+const brief = ref<IndustryListVO | null>(null)
+const category = computed(() => brief.value?.category?.trim() || '')
+const intro = computed(() => brief.value?.description?.trim() || '')
+
+/* ---------- 收藏（需求 Q5；后端 INDUSTRY 枚举与 Validator 已就绪，零后端改动） ---------- */
+const FAV_TARGET_TYPE = 'industry' as const
+const favorited = ref(false)
+const favBusy = ref(false)
+
+/* ---------- 关联企业（需求 Q4） ---------- */
+const isVip = computed(() => userStore.userInfo?.memberType === MemberType.VIP)
+const enterprises = ref<EnterpriseJumpVO[]>([])
+const entLoading = ref(false)
+
+/* ---------- 取数 ---------- */
 
 async function fetchDetail() {
-  const id = route.params.id as string
-  if (!id) {
-    ElMessage.error('行业ID不存在')
+  if (!industryId.value) {
+    error.value = '行业 ID 不存在'
     return
   }
   loading.value = true
+  error.value = ''
   try {
-    const res = await getIndustryDetail(id)
+    const res = await getIndustryDetail(industryId.value)
     detail.value = res.data.data
+    void refreshFavStatus()
   } catch (e: any) {
-    ElMessage.error(e?.message || '获取行业详情失败')
+    error.value = e?.message || '获取行业详情失败'
+    detail.value = null
   } finally {
     loading.value = false
   }
 }
 
-function getTrendIcon(trend: string | undefined): string {
-  if (trend === '上升') return '📈'
-  if (trend === '下降') return '📉'
-  return '➡️'
-}
-
-function getTrendColor(trend: string | undefined): string {
-  if (trend === '上升') return 'text-green-600'
-  if (trend === '下降') return 'text-red-600'
-  return 'text-gray-500'
-}
-
-const relatedEnterprises = ref<IndustryEnterpriseGroupVO[]>([])
-const relatedLoading = ref(false)
-const isProRelated = ref(false)
-
-async function fetchRelatedEnterprises() {
-  const industryId = route.params.id as string
-  if (!industryId) return
-  relatedLoading.value = true
+/**
+ * 补取列表 VO：后端 IndustryServiceImpl.page() 支持 ids 过滤（BasePageQueryDTO.ids）。
+ * 公开接口，失败只影响简介与门类，不阻塞主详情 → 静默降级（需求 Q9）。
+ */
+async function fetchBrief() {
+  if (!industryId.value) return
   try {
-    const res = await getIndustryEnterprises([industryId])
-    relatedEnterprises.value = res.data.data
-    isProRelated.value = true
-  } catch (e: any) {
-    if (e?.response?.status === 403) {
-      isProRelated.value = false
-    }
-  } finally {
-    relatedLoading.value = false
+    const res = await getIndustryList({ page: 1, size: 10, ids: industryId.value })
+    brief.value = res.data.data?.records?.[0] ?? null
+  } catch {
+    brief.value = null
   }
 }
 
-function goEnterprisePositions(enterpriseId: string, enterpriseNameVal: string) {
-  router.push({
-    path: `/enterprise/${enterpriseId}/positions`,
-    query: { name: enterpriseNameVal },
-  })
+/**
+ * 关联企业：@RequireVip 硬门槛，非 VIP 直接跳过请求避免 403 噪音，由卡片渲染引导。
+ * ⚠️ shared request 抛的是 Error（无 .response 字段），不能用 e.response.status 判 403。
+ */
+async function fetchEnterprises() {
+  if (!industryId.value) return
+  if (!isVip.value) {
+    enterprises.value = []
+    return
+  }
+  entLoading.value = true
+  try {
+    const res = await getIndustryEnterprises([industryId.value])
+    enterprises.value = res.data.data?.[0]?.enterprises ?? []
+  } catch {
+    enterprises.value = []
+  } finally {
+    entLoading.value = false
+  }
+}
+
+/** 回填收藏状态（失败静默，星标保持默认灰色） */
+async function refreshFavStatus() {
+  if (!userStore.isLoggedIn() || !industryId.value) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, [industryId.value])
+    favorited.value = (res.data.data || []).some((id) => String(id) === industryId.value)
+  } catch {
+    /* 忽略 */
+  }
+}
+
+/** 收藏 / 取消收藏；未登录走全站 confirmLogin + 回跳 */
+async function onToggleFav() {
+  if (favBusy.value) return
+  if (!userStore.isLoggedIn()) {
+    userStore.setRedirectPath(router.currentRoute.value.fullPath)
+    if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+      router.push('/login')
+    }
+    return
+  }
+  favBusy.value = true
+  try {
+    if (favorited.value) {
+      await removeFavorite(FAV_TARGET_TYPE, industryId.value)
+      favorited.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, industryId.value)
+      favorited.value = true
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  } finally {
+    favBusy.value = false
+  }
+}
+
+/** 三路并发：主详情 / 列表补取 / 关联企业，互不阻塞 */
+function loadAll() {
+  if (!industryId.value) {
+    error.value = '行业 ID 不存在'
+    return
+  }
+  brief.value = null
+  enterprises.value = []
+  favorited.value = false
+  void fetchDetail()
+  void fetchBrief()
+  void fetchEnterprises()
 }
 
 onMounted(() => {
-  fetchDetail()
-  fetchRelatedEnterprises()
+  loadAll()
 })
 
-const activeJsonbTab = ref('industryScale')
+/** 同路由换 id（如从热门榜连点不同行业）时重新取数 */
+watch(industryId, (next, prev) => {
+  if (next && next !== prev) loadAll()
+})
 
-function hasJsonbData(field: Record<string, any> | undefined | null): boolean {
-  return !!field && Object.keys(field).length > 0
-}
-
-function getActiveSection() {
-  return jsonbSections.find(s => s.key === activeJsonbTab.value)
-}
-
-const jsonbSections = [
-  {
-    key: 'industryScale',
-    title: '行业规模',
-    icon: '📊',
-    fields: [
-      { key: 'scaleValue', label: '规模数值' },
-      { key: 'scaleLabel', label: '规模标签' },
-      { key: 'scaleDescriptions', label: '规模描述', type: 'array' },
-    ],
-  },
-  {
-    key: 'industryTalentDemand',
-    title: '人才需求',
-    icon: '🧑‍💼',
-    fields: [
-      { key: 'demandValue', label: '需求量' },
-      { key: 'demandLabel', label: '需求标签' },
-      { key: 'demandDescriptions', label: '需求描述', type: 'array' },
-    ],
-  },
-  {
-    key: 'industrySalary',
-    title: '行业薪资',
-    icon: '💰',
-    fields: [
-      { key: 'salaryRange', label: '薪资范围' },
-      { key: 'salaryLabel', label: '薪资标签' },
-      { key: 'salaryDescriptions', label: '薪资描述', type: 'array' },
-    ],
-  },
-  {
-    key: 'policyInfo',
-    title: '政策信息',
-    icon: '🏛️',
-    fields: [
-      { key: 'policyOverview', label: '政策概览' },
-      { key: 'nationalPolicies', label: '国家政策', type: 'array' },
-      { key: 'policyHighlights', label: '政策亮点' },
-    ],
-  },
-  {
-    key: 'developmentSupportInfo',
-    title: '发展支持',
-    icon: '🏗️',
-    fields: [
-      { key: 'regionalOverview', label: '地域概述' },
-      { key: 'keyCities', label: '重点城市', type: 'array' },
-      { key: 'cityPolicies', label: '城市政策', type: 'array' },
-    ],
-  },
-  {
-    key: 'talentAnalysis',
-    title: '人才分析',
-    icon: '📈',
-    fields: [
-      { key: 'analysisTitle', label: '分析标题' },
-      { key: 'shortagePositions', label: '紧缺岗位', type: 'array' },
-      { key: 'educationRequirement', label: '学历要求' },
-      { key: 'majorRequirement', label: '专业要求' },
-      { key: 'talentTrendDescription', label: '人才趋势' },
-    ],
-  },
-  {
-    key: 'talentPolicy',
-    title: '人才政策',
-    icon: '🎓',
-    fields: [
-      { key: 'policyTitle', label: '政策标题' },
-      { key: 'nationalPolicies', label: '国家级政策', type: 'array' },
-      { key: 'localPolicies', label: '地方级政策', type: 'array' },
-      { key: 'enterpriseDescription', label: '企业层面' },
-    ],
-  },
-  {
-    key: 'salaryData',
-    title: '薪资数据',
-    icon: '💵',
-    fields: [
-      { key: 'salaryAnalysisTitle', label: '薪资分析标题' },
-      { key: 'salaryAnalysisDescription', label: '薪资分析描述' },
-      { key: 'regionalSalaryTitle', label: '地域差异标题' },
-      { key: 'regionalSalaryDescription', label: '地域差异描述' },
-      { key: 'salaryTrendAnalysis', label: '趋势分析' },
-    ],
-  },
-]
+/** 会员身份变化（登录后立即成为 VIP）时重新拉关联企业 */
+watch(isVip, () => {
+  void fetchEnterprises()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <main class="container mx-auto px-6 py-8" v-loading="loading">
-      <template v-if="detail">
-        <!-- Hero Header -->
-        <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4 }" class="mb-8">
-          <section class="rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-8 shadow-lg shadow-orange-200/60">
-            <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
-              <div>
-                <div class="flex items-center gap-3 flex-wrap">
-                  <h2 class="text-2xl md:text-3xl font-bold text-white">{{ detail.industryName }}</h2>
-                  <span v-if="detail.category" class="rounded-full bg-white/20 px-3 py-1 text-sm text-white border border-white/30">{{ detail.category }}</span>
-                </div>
-                <p class="text-orange-50 mt-2">{{ detail.shortDescription }}</p>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div class="rounded-xl bg-white p-4 text-center shadow-md">
-                <div class="text-2xl font-bold text-orange-500">{{ detail.investmentHeat != null ? `${detail.investmentHeat}%` : '-' }}</div>
-                <div class="text-gray-500 mt-1 text-xs">投资热度</div>
-              </div>
-              <div class="rounded-xl bg-white p-4 text-center shadow-md">
-                <div class="text-2xl font-bold text-blue-600">{{ detail.annualGrowthRate != null ? `${detail.annualGrowthRate}%` : '-' }}</div>
-                <div class="text-gray-500 mt-1 text-xs">年增长率</div>
-              </div>
-              <div class="rounded-xl bg-white p-4 text-center shadow-md">
-                <div class="text-2xl font-bold text-purple-600">{{ detail.marketScale || '-' }}</div>
-                <div class="text-gray-500 mt-1 text-xs">市场规模</div>
-              </div>
-              <div class="rounded-xl bg-white p-4 text-center shadow-md">
-                <div class="text-2xl font-bold text-green-600">{{ detail.talentGap || '-' }}</div>
-                <div class="text-gray-500 mt-1 text-xs">人才缺口</div>
-              </div>
-            </div>
-          </section>
-        </Motion>
+  <div class="page-industry-detail">
+    <div class="idt-container">
+      <nav class="idt-breadcrumb" aria-label="面包屑">
+        <RouterLink to="/industry" class="idt-back">
+          <ArrowLeft :size="15" :stroke-width="1.75" />
+          返回行业列表
+        </RouterLink>
+        <span class="idt-crumb-aux">行业探索 / 行业详情</span>
+      </nav>
 
-        <!-- Two-column content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <!-- Left column -->
-          <div class="lg:col-span-2 space-y-6">
-            <!-- 详细描述 -->
-            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.1 }">
-              <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-                <h3 class="mb-4 text-lg font-bold text-gray-800">📋 详细描述</h3>
-                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ detail.detailedDescription || '暂无详细介绍' }}</p>
-              </section>
-            </Motion>
-
-            <!-- JSONB Tabs -->
-            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.2 }">
-              <section class="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
-                <h3 class="mb-4 text-lg font-bold text-gray-800">🗂️ 深度数据</h3>
-                <div class="jsonb-tab-bar">
-                  <button
-                    v-for="section in jsonbSections"
-                    :key="section.key"
-                    :class="['jsonb-tab', { active: activeJsonbTab === section.key }]"
-                    @click="activeJsonbTab = section.key"
-                  >
-                    <span>{{ section.icon }}</span>
-                    <span>{{ section.title }}</span>
-                  </button>
-                </div>
-
-                <div v-if="getActiveSection() && hasJsonbData((detail as any)?.[getActiveSection()!.key])" class="jsonb-tab-content">
-                  <div v-for="field in getActiveSection()!.fields" :key="field.key" class="jsonb-field-row">
-                    <template v-if="(detail as any)?.[getActiveSection()!.key]?.[field.key] != null && (detail as any)?.[getActiveSection()!.key]?.[field.key] !== ''">
-                      <span class="jsonb-field-label">{{ field.label }}</span>
-                      <template v-if="field.type === 'array' && Array.isArray((detail as any)?.[getActiveSection()!.key]?.[field.key]) && (detail as any)?.[getActiveSection()!.key]?.[field.key].length">
-                        <div class="flex flex-wrap gap-2">
-                          <span v-for="(item, idx) in (detail as any)?.[getActiveSection()!.key]?.[field.key]" :key="idx" class="jsonb-pill">{{ item }}</span>
-                        </div>
-                      </template>
-                      <template v-else-if="field.type !== 'array'">
-                        <span class="jsonb-field-value">{{ (detail as any)?.[getActiveSection()!.key]?.[field.key] }}</span>
-                      </template>
-                    </template>
-                  </div>
-                </div>
-                <p v-else class="text-sm text-gray-400">暂无数据</p>
-              </section>
-            </Motion>
+      <!-- 加载骨架：与真实布局同构，避免出现孤立空阴影卡 -->
+      <template v-if="loading && !detail">
+        <div class="hf-skeleton idt-skeleton-hero" />
+        <div class="idt-grid">
+          <div class="idt-left">
+            <div v-for="n in 3" :key="n" class="hf-skeleton idt-skeleton-block" />
           </div>
-
-          <!-- Right column (sticky) -->
-          <div class="space-y-6 lg:sticky lg:top-24">
-            <!-- 趋势一览 -->
-            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.15 }">
-              <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-                <h3 class="mb-4 text-lg font-bold text-gray-800">📈 趋势一览</h3>
-                <div class="space-y-3 text-sm">
-                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
-                    <span class="text-gray-400">增长趋势</span>
-                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.growthTrend)" class="font-semibold">{{ detail.growthTrend || '-' }}</span><span>{{ getTrendIcon(detail.growthTrend) }}</span></span>
-                  </div>
-                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
-                    <span class="text-gray-400">市场趋势</span>
-                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.marketTrend)" class="font-semibold">{{ detail.marketTrend || '-' }}</span><span>{{ getTrendIcon(detail.marketTrend) }}</span></span>
-                  </div>
-                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
-                    <span class="text-gray-400">人才趋势</span>
-                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.talentTrend)" class="font-semibold">{{ detail.talentTrend || '-' }}</span><span>{{ getTrendIcon(detail.talentTrend) }}</span></span>
-                  </div>
-                  <div class="flex justify-between items-center rounded-lg bg-white px-3 py-2.5">
-                    <span class="text-gray-400">投资趋势</span>
-                    <span class="flex items-center gap-1"><span :class="getTrendColor(detail.investmentTrend)" class="font-semibold">{{ detail.investmentTrend || '-' }}</span><span>{{ getTrendIcon(detail.investmentTrend) }}</span></span>
-                  </div>
-                </div>
-                <div v-if="detail.investmentHeat != null" class="mt-4">
-                  <div class="flex items-center justify-between mb-2 text-xs">
-                    <span class="text-gray-400">投资热度</span>
-                    <span class="font-semibold text-gray-700">{{ detail.investmentHeat }}%</span>
-                  </div>
-                  <el-progress :percentage="detail.investmentHeat" :stroke-width="10" :show-text="false" color="#f97316" />
-                </div>
-              </section>
-            </Motion>
-
-            <!-- 关联企业 -->
-            <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.4, delay: 0.25 }">
-              <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-                <h3 class="mb-4 text-lg font-bold text-gray-800">🏢 关联企业</h3>
-                <div v-if="relatedLoading" class="text-sm text-gray-400">加载中...</div>
-                <template v-else-if="isProRelated">
-                  <div v-if="relatedEnterprises.length && relatedEnterprises[0].enterprises.length" class="space-y-3">
-                    <div
-                      v-for="ent in relatedEnterprises[0].enterprises"
-                      :key="ent.enterpriseId"
-                      class="flex items-center justify-between rounded-xl bg-white p-4 hover:bg-orange-50 transition-colors cursor-pointer border border-gray-100"
-                      @click="goEnterprisePositions(ent.enterpriseId, ent.enterpriseName)"
-                    >
-                      <span class="font-medium text-gray-800">{{ ent.enterpriseName }}</span>
-                      <span class="text-sm text-orange-500 font-medium">查看岗位 →</span>
-                    </div>
-                  </div>
-                  <p v-else class="text-sm text-gray-400">暂无关联企业</p>
-                </template>
-                <div v-else class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 p-4 border border-orange-100">
-                  <p class="text-sm text-gray-600">
-                    🔒 升级
-                    <span class="text-orange-500 font-semibold hover:underline cursor-pointer" @click="recharge.open()">VIP会员</span>
-                    可查看关联企业信息
-                  </p>
-                </div>
-              </section>
-            </Motion>
+          <div class="idt-right">
+            <div class="hf-skeleton idt-skeleton-block" />
+            <div class="hf-skeleton idt-skeleton-block--short" />
           </div>
         </div>
       </template>
-    </main>
+
+      <!-- 错误态：可重试 -->
+      <div v-else-if="error && !detail" class="idt-state">
+        <p class="idt-state__text">{{ error }}</p>
+        <button type="button" class="idt-state__btn" @click="loadAll()">重新加载</button>
+      </div>
+
+      <template v-else-if="detail">
+        <div class="idt-hero-wrap">
+          <IndustryDetailHero
+            :detail="detail"
+            :category="category"
+            :intro="intro"
+            :favorited="favorited"
+            @toggle-fav="onToggleFav"
+          />
+        </div>
+
+        <div class="idt-grid">
+          <div class="idt-left">
+            <IndustryIntroCard
+              :intro="intro"
+              :detailed="detail.detailedDescription"
+              :short="detail.shortDescription"
+            />
+            <IndustryMetricsCard :detail="detail" />
+            <IndustryTrendCard :detail="detail" />
+            <IndustryDeepDataCard :detail="detail" />
+            <IndustrySameCategoryLink :category="category" />
+          </div>
+
+          <aside class="idt-right" :style="{ top: `${asideTop}px` }">
+            <IndustryTrendAsideCard :detail="detail" />
+            <IndustryEnterpriseCard
+              :is-vip="isVip"
+              :loading="entLoading"
+              :items="enterprises"
+              @upgrade="recharge.open()"
+            />
+            <IndustryDetailToolsCard />
+
+            <div class="idt-aside-footer">
+              <span class="idt-aside-footer__dot" />
+              <span>数据仅供生涯规划参考</span>
+              <RouterLink class="idt-aside-footer__link" to="/industry">返回行业列表</RouterLink>
+            </div>
+          </aside>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
-
-<style scoped>
-/* ========== JSONB Tab Bar ========== */
-.jsonb-tab-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #f3f4f6;
-}
-.jsonb-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  background: #fff;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.jsonb-tab:hover {
-  color: #f97316;
-  border-color: #f97316;
-}
-.jsonb-tab.active {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
-/* ========== JSONB Tab Content ========== */
-.jsonb-tab-content {
-  min-height: 80px;
-}
-.jsonb-field-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f9fafb;
-}
-.jsonb-field-row:last-child {
-  border-bottom: none;
-}
-.jsonb-field-label {
-  flex-shrink: 0;
-  width: 100px;
-  color: #9ca3af;
-  font-size: 13px;
-  padding-top: 2px;
-}
-.jsonb-field-value {
-  color: #374151;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* ========== JSONB Pill Tags ========== */
-.jsonb-pill {
-  display: inline-block;
-  padding: 4px 12px;
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  color: #c2410c;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid rgba(249, 115, 22, 0.15);
-}
-</style>

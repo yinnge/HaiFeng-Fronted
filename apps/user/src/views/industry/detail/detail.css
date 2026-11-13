@@ -1,0 +1,946 @@
+/* ============================================================================
+ * 行业详情页「页面级」样式。
+ * 所有选择器由 .page-industry-detail 限定，不下发到其它路由；类名前缀 idt-
+ * （列表页已占 ind-，前缀必须全库唯一）。
+ * 组件一律不写 scoped style：本文件集中维护，避免 teleport / 全局背景清空导致选择器失配。
+ * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
+ * 而 html 画布本身就是 #f8fafc（冷白），透出即可 —— 冷白画布正是用来衬托暖橙 Hero 的底。
+ * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
+ * 橙色小字一律 #c2410c / hover #9a3412；品牌橙只给实心背景、描边与图标。
+ * ========================================================================== */
+
+/* 大屏宽度走 :root --hf-container-*（与 .container 同策略，见 index.css 末尾） */
+.page-industry-detail .idt-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+@media (min-width: 1536px) {
+  .page-industry-detail .idt-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
+}
+
+/* ---------- 面包屑 ---------- */
+.page-industry-detail .idt-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.page-industry-detail .idt-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #c2410c;
+  text-decoration: none;
+}
+.page-industry-detail .idt-back:hover {
+  color: #9a3412;
+}
+.page-industry-detail .idt-crumb-aux {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+/* ---------- 双栏 ---------- */
+.page-industry-detail .idt-hero-wrap {
+  margin-bottom: 20px;
+}
+.page-industry-detail .idt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.page-industry-detail .idt-left,
+.page-industry-detail .idt-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-industry-detail .idt-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  /* top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  .page-industry-detail .idt-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+
+/* ---------- 统一卡片：纯白 + 冷灰发丝边 + 双层弥散阴影 ---------- */
+.page-industry-detail .hf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+/* 详情页禁用整卡位移：只用颜色 / 边框 / 箭头位移 */
+.page-industry-detail .idt-block {
+  padding: 22px 24px;
+}
+.page-industry-detail .idt-aside-card {
+  padding: 20px;
+}
+.page-industry-detail .idt-block__icon {
+  color: #64748b;
+}
+
+/* ---------- 一级模块标题：3×14px 品牌橙竖条 ---------- */
+.page-industry-detail .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-industry-detail .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+
+/* ---------- 说明性标签：6px 圆角 ---------- */
+.page-industry-detail .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+/* ---------- 键盘焦点 ---------- */
+.page-industry-detail :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 骨架 / 错误态 ---------- */
+.page-industry-detail .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-industry-detail .idt-skeleton-hero {
+  height: 236px;
+  margin-bottom: 20px;
+}
+.page-industry-detail .idt-skeleton-block {
+  height: 160px;
+}
+.page-industry-detail .idt-skeleton-block--short {
+  height: 220px;
+}
+.page-industry-detail .idt-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 20px;
+}
+.page-industry-detail .idt-state__text {
+  font-size: 14px;
+  color: #64748b;
+}
+.page-industry-detail .idt-state__btn {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-industry-detail .idt-state__btn:hover {
+  background: #f8fafc;
+  color: #9a3412;
+}
+
+/* ============ 暖橙 Hero ============ */
+.page-industry-detail .idt-hero {
+  position: relative;
+  padding: 26px 30px 24px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(249, 115, 22, 0.16);
+  box-shadow: 0 8px 24px -8px rgba(249, 115, 22, 0.28);
+  background-color: #f97316;
+  background-image:
+    linear-gradient(100deg, rgba(249, 115, 22, 0.97) 0%, rgba(249, 115, 22, 0.92) 46%, rgba(234, 88, 12, 0.82) 74%, rgba(234, 88, 12, 0.62) 100%),
+    var(--hero-bg-url);
+  background-position: center, center 62%;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+}
+.page-industry-detail .idt-hero__top {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+.page-industry-detail .idt-hero__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.page-industry-detail .idt-hero__main {
+  min-width: 0;
+  max-width: calc(100% - 132px);
+}
+.page-industry-detail .idt-hero__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-industry-detail .idt-hero__title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.page-industry-detail .idt-hero__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.page-industry-detail .idt-hero__cat-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.page-industry-detail .idt-hero__desc {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.94);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 右上角收藏星标 */
+.page-industry-detail .idt-hero__fav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: rgba(255, 255, 255, 0.8);
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.page-industry-detail .idt-hero__fav svg {
+  width: 22px;
+  height: 22px;
+}
+.page-industry-detail .idt-hero__fav:hover,
+.page-industry-detail .idt-hero__fav.is-on {
+  color: #f59e0b;
+  background: #ffffff;
+}
+.page-industry-detail .idt-hero__fav.is-on svg {
+  fill: currentColor;
+}
+
+/* Hero 内 4 个速览小卡 */
+.page-industry-detail .idt-hero__stats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+.page-industry-detail .idt-hero__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 74px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 10px -4px rgba(120, 53, 15, 0.2);
+  text-align: center;
+}
+.page-industry-detail .idt-hero__stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #9a3412;
+  overflow-wrap: anywhere;
+}
+.page-industry-detail .idt-hero__stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+/* ============ 行业简介 ============ */
+.page-industry-detail .idt-intro__text {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #475569;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ============ 核心指标看板 ============ */
+.page-industry-detail .idt-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.page-industry-detail .idt-metrics__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.page-industry-detail .idt-metrics__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+.page-industry-detail .idt-metrics__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+.page-industry-detail .idt-metrics__hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
+}
+.page-industry-detail .idt-heat {
+  margin-top: 18px;
+}
+.page-industry-detail .idt-heat__head,
+.page-industry-detail .idt-aside-heat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+.page-industry-detail .idt-heat__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-industry-detail .idt-heat__value {
+  color: #c2410c;
+}
+.page-industry-detail .idt-heat__track,
+.page-industry-detail .idt-aside-heat__track {
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+.page-industry-detail .idt-heat__bar,
+.page-industry-detail .idt-aside-heat__bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fb923c 0%, #f97316 55%, #ea580c 100%);
+}
+.page-industry-detail .idt-heat__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+/* ============ 四大趋势（左栏展开） ============ */
+.page-industry-detail .idt-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.page-industry-detail .idt-trend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 12px;
+}
+.page-industry-detail .idt-trend-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+}
+.page-industry-detail .idt-trend-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.page-industry-detail .idt-trend-item__label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #334155;
+}
+.page-industry-detail .idt-trend-item__value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.page-industry-detail .idt-trend-item__hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+/* ============ 深度数据（JSONB 容错渲染） ============ */
+.page-industry-detail .idt-deep__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+.page-industry-detail .idt-jsonb {
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.page-industry-detail .idt-jsonb__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-industry-detail .idt-jsonb__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+}
+.page-industry-detail .idt-jsonb__head-text {
+  min-width: 0;
+}
+.page-industry-detail .idt-jsonb__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-industry-detail .idt-jsonb__desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.page-industry-detail .idt-jsonb__fields {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+.page-industry-detail .idt-jsonb__field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #e2e8f0;
+}
+.page-industry-detail .idt-jsonb__label {
+  width: 96px;
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+.page-industry-detail .idt-jsonb__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+.page-industry-detail .idt-jsonb__tags {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.page-industry-detail .idt-jsonb__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+/* 全空时的轻量提示：不摆空 Tab、不留白块 */
+.page-industry-detail .idt-deep__empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.page-industry-detail .idt-deep__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: #ffedd5;
+  color: #c2410c;
+}
+.page-industry-detail .idt-deep__empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #1e293b;
+}
+.page-industry-detail .idt-deep__empty-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+/* ============ 同门类出口 ============ */
+.page-industry-detail .idt-same {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.page-industry-detail .idt-same:hover {
+  border-color: rgba(249, 115, 22, 0.22);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(249, 115, 22, 0.08);
+}
+.page-industry-detail .idt-same__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: #fff7ed;
+  color: #c2410c;
+}
+.page-industry-detail .idt-same__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.page-industry-detail .idt-same__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-industry-detail .idt-same__hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.page-industry-detail .idt-same__arrow {
+  flex: none;
+  color: #c2410c;
+  transition: transform 0.2s ease;
+}
+.page-industry-detail .idt-same:hover .idt-same__arrow {
+  transform: translateX(3px);
+}
+
+/* ============ 右栏：趋势速览 ============ */
+.page-industry-detail .idt-aside-trends {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+.page-industry-detail .idt-aside-trend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.page-industry-detail .idt-aside-trend:last-child {
+  border-bottom: 0;
+}
+.page-industry-detail .idt-aside-trend__label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #475569;
+}
+.page-industry-detail .idt-aside-trend__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.page-industry-detail .idt-aside-heat {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ============ 右栏：关联企业 / VIP 引导 ============ */
+.page-industry-detail .idt-vip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+  padding: 20px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff7ed 100%);
+  text-align: center;
+}
+.page-industry-detail .idt-vip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #d97706;
+}
+.page-industry-detail .idt-vip__title {
+  margin: 12px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #92400e;
+}
+.page-industry-detail .idt-vip__desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b45309;
+}
+.page-industry-detail .idt-vip__btn {
+  margin-top: 14px;
+  padding: 9px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+.page-industry-detail .idt-vip__btn:hover {
+  box-shadow: 0 6px 14px -4px rgba(249, 115, 22, 0.4);
+}
+.page-industry-detail .idt-aside-empty {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #64748b;
+  text-align: center;
+}
+.page-industry-detail .idt-ent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.page-industry-detail .idt-ent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+.page-industry-detail .idt-ent-row:hover {
+  background: #fff7ed;
+}
+.page-industry-detail .idt-ent-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #c2410c;
+}
+.page-industry-detail .idt-ent-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-industry-detail .idt-ent-row__arrow {
+  flex: none;
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.page-industry-detail .idt-ent-row:hover .idt-ent-row__arrow {
+  transform: translateX(2px);
+  color: #c2410c;
+}
+
+/* ============ 右栏：在线工具（与列表页同款交互） ============ */
+.page-industry-detail .idt-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+.page-industry-detail .idt-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.page-industry-detail .idt-tool-row:hover {
+  background: #f8fafc;
+}
+.page-industry-detail .idt-tool-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+}
+.page-industry-detail .idt-tool-row__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1e293b;
+}
+.page-industry-detail .idt-tool-row__soon {
+  flex: none;
+}
+.page-industry-detail .idt-tool-row__arrow {
+  flex: none;
+  color: #334155;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.page-industry-detail .idt-tool-row:hover .idt-tool-row__arrow {
+  transform: translateX(2px);
+  color: #ea580c;
+}
+
+/* ============ 右栏底部收口条 ============ */
+.page-industry-detail .idt-aside-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.page-industry-detail .idt-aside-footer__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: #10b981;
+}
+.page-industry-detail .idt-aside-footer__link {
+  margin-left: auto;
+  flex: none;
+  color: #c2410c;
+  font-weight: 600;
+  text-decoration: none;
+}
+.page-industry-detail .idt-aside-footer__link:hover {
+  color: #9a3412;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 1023px) {
+  .page-industry-detail .idt-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .page-industry-detail .idt-container {
+    padding: 20px 16px 48px;
+  }
+  .page-industry-detail .idt-hero {
+    padding: 20px;
+  }
+  .page-industry-detail .idt-hero__icon {
+    width: 46px;
+    height: 46px;
+  }
+  .page-industry-detail .idt-hero__main {
+    max-width: calc(100% - 100px);
+  }
+  .page-industry-detail .idt-hero__title {
+    font-size: 21px;
+  }
+  .page-industry-detail .idt-hero__fav {
+    width: 36px;
+    height: 36px;
+  }
+  .page-industry-detail .idt-hero__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-industry-detail .idt-block {
+    padding: 18px;
+  }
+  .page-industry-detail .idt-metrics,
+  .page-industry-detail .idt-trend-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page-industry-detail .idt-jsonb__field {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .page-industry-detail .idt-jsonb__label {
+    width: auto;
+  }
+}
+
+/* ============ 无障碍：降级过渡 ============ */
+@media (prefers-reduced-motion: reduce) {
+  .page-industry-detail *,
+  .page-industry-detail *::before,
+  .page-industry-detail *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
