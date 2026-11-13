@@ -1,0 +1,162 @@
+/* ============================================================================
+ * 企业岗位页「页面级」样式。
+ * 所有选择器由 .page-enterprise-position 限定，不下发到其它路由；
+ * 类名前缀 pos-（ep- 已被其它模块占用）。
+ * 不写页面根背景：index.css 的 .app-shell main > * 会以 !important 抹掉，
+ * 而 html 画布本身就是 #f8fafc，透出即可。
+ * 铁律：稳态零 transform / filter / will-change；字号全取整 px；无 scale / backdrop-filter。
+ * ========================================================================== */
+
+/* 大屏宽度统一走 :root --hf-container-*（与 .container 同策略，见 index.css 末尾）：
+   >=1536 随视口放宽 + 每边 88px 安全边 + 2200px 封顶；<1536 保持原 1360px。 */
+.page-enterprise-position .pos-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+@media (min-width: 1536px) {
+  .page-enterprise-position .pos-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
+}
+
+/* ---------- 双栏 ---------- */
+.page-enterprise-position .pos-hero-wrap {
+  margin-bottom: 20px;
+}
+.page-enterprise-position .pos-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.page-enterprise-position .pos-left,
+.page-enterprise-position .pos-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .page-enterprise-position .pos-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  /* top 由主文件按 useAutoHideHeader 动态注入（hidden ? 8 : 76） */
+  .page-enterprise-position .pos-right {
+    position: sticky;
+    align-self: start;
+  }
+}
+/* 祖先链不设 overflow:hidden，保证 sticky 生效 */
+
+/* ---------- 统一卡片 ---------- */
+.page-enterprise-position .hf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02), 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* 岗位卡为纯展示（不可跳转），保持静止，不启用 hover 位移（详情页防糊交互策略） */
+.page-enterprise-position .pos-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.page-enterprise-position .pos-card:hover {
+  border-color: rgba(249, 115, 22, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(249, 115, 22, 0.06);
+}
+
+/* ---------- 一级模块标题：3×14px 品牌橙竖条 ----------
+   与列表页 enterprise.css 的定义逐字一致（各页面级 CSS 同源复制）。
+   右侧「在线工具」直接复用列表页的 EnterpriseToolsCard.vue，该组件用到
+   hf-card / hf-section-title / hf-tag 三个语义类 —— 因本页根类名不同，
+   列表页的限定选择器打不到这里，故本页需自带一份，否则工具栏会掉样式。 */
+.page-enterprise-position .hf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+}
+.page-enterprise-position .hf-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background: #f97316;
+}
+
+/* ---------- 说明性标签：6px 圆角 ---------- */
+.page-enterprise-position .hf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--tag-ring, transparent);
+}
+
+/* ---------- 键盘焦点 ---------- */
+.page-enterprise-position :where(a, button, [role='button']):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 骨架 / 空态 / 错误态 ---------- */
+.page-enterprise-position .hf-skeleton {
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+.page-enterprise-position .pos-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 20px;
+  text-align: center;
+}
+.page-enterprise-position .pos-state__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #64748b;
+}
+.page-enterprise-position .pos-state__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+.page-enterprise-position .pos-state__btn {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-enterprise-position .pos-state__btn:hover {
+  background: #f8fafc;
+  color: #9a3412;
+}
