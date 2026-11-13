@@ -55,16 +55,16 @@ export interface CityDetailVO {
   culture: Record<string, any>
 }
 
-/** 城市数据概览（/stats 接口） */
+/** 城市数据概览（/stats 接口，字段名与后端 CityStatsVO 严格一致） */
 export interface CityStatsVO {
   /** 全国城市数 */
   cityCount?: number | null
-  /** 全国高校数 */
-  collegeCount?: number | null
-  /** 全国常住人口（万） */
-  residentPopulation?: number | null
-  /** 全国 GDP 总量（亿元） */
-  gdp?: number | null
+  /** 全国高校数（sum(college_count)） */
+  collegeTotal?: number | null
+  /** 全国常住人口合计（万人） */
+  populationTotal?: number | null
+  /** 全国 GDP 合计（亿元） */
+  gdpTotal?: number | null
 }
 
 /** 城市排行榜单条（/rank 接口） */

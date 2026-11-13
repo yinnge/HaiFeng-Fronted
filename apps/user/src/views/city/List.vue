@@ -207,9 +207,9 @@ const statBlocks = computed(() => {
   const s = stats.value
   return [
     { label: '全国城市数', data: s?.cityCount != null ? { value: trimNum(s.cityCount), unit: '' } : null, color: 'orange' },
-    { label: '全国高校数', data: s?.collegeCount != null ? { value: trimNum(s.collegeCount), unit: '所' } : null, color: 'blue' },
-    { label: '全国常住人口', data: formatUnit(s?.residentPopulation, '万'), color: 'emerald' },
-    { label: '全国GDP总量', data: formatUnit(s?.gdp, '亿元'), color: 'amber' },
+    { label: '全国高校数', data: s?.collegeTotal != null ? { value: trimNum(s.collegeTotal), unit: '所' } : null, color: 'blue' },
+    { label: '全国常住人口', data: formatUnit(s?.populationTotal, '万'), color: 'emerald' },
+    { label: '全国GDP总量', data: formatUnit(s?.gdpTotal, '亿元'), color: 'amber' },
   ]
 })
 
@@ -405,9 +405,9 @@ onMounted(() => {
           <!-- 列表卡片 -->
           <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <article
-              v-for="(item, idx) in list"
+              v-for="item in list"
               :key="item.id"
-              class="group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-orange-200"
+              class="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-orange-200"
               @click="goDetail(item.id)"
             >
               <!-- 封面 -->
@@ -422,10 +422,6 @@ onMounted(() => {
                 <div v-else class="flex h-full w-full items-center justify-center text-slate-300">
                   <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-7-5.6-7-11a7 7 0 1114 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
                 </div>
-                <!-- 序号徽标 -->
-                <span class="absolute -left-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-xs font-bold text-white shadow ring-2 ring-white">
-                  {{ String((currentPage - 1) * pageSize + idx + 1).padStart(2, '0') }}
-                </span>
                 <!-- 等级胶囊 -->
                 <span
                   v-if="item.cityLevel || item.region"
@@ -491,14 +487,13 @@ onMounted(() => {
         <aside class="space-y-6 lg:sticky lg:top-24">
           <!-- 城市数据概览 -->
           <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-            <div class="mb-4 flex items-center justify-between">
+            <div class="mb-4 flex items-center">
               <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
                 <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
                 </span>
                 城市数据概览
               </h3>
-              <button class="text-xs text-slate-400 transition hover:text-orange-500" @click="router.push('/city')">查看更多 ›</button>
             </div>
             <div v-if="statsLoading" class="grid grid-cols-2 gap-3">
               <div v-for="n in 4" :key="n" class="shimmer h-20 rounded-xl bg-slate-50"></div>

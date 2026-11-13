@@ -5,12 +5,15 @@ import { DIFFICULTY_OPTIONS, POPULARITY_OPTIONS } from './utils'
 defineProps<{
   total: number
   disciplineOptions: string[]
+  /** 是否处于「只看收藏」模式 */
+  favOnly?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'search'): void
   (e: 'reset'): void
   (e: 'filter-change'): void
+  (e: 'toggle-fav'): void
 }>()
 
 /** 名称 / 代码是本地输入态：只有回车或点搜索才提交到查询 */
@@ -28,9 +31,24 @@ const difficulty = defineModel<string>('difficulty', { default: '' })
         <Search :size="16" :stroke-width="1.75" class="search-card__head-icon" />
         专业检索
       </h2>
-      <span class="search-card__count">
-        共 <strong>{{ total }}</strong> 个专业
-      </span>
+      <div class="search-card__head-right">
+        <span class="search-card__count">
+          共 <strong>{{ total }}</strong> 个专业
+        </span>
+        <!-- 查看收藏 toggle：开启后仅查已收藏专业，与检索条件 AND 叠加 -->
+        <button
+          type="button"
+          class="pg-fav-toggle"
+          :class="{ 'is-on': favOnly }"
+          :aria-pressed="favOnly"
+          @click="emit('toggle-fav')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+          </svg>
+          {{ favOnly ? '收藏中' : '查看收藏' }}
+        </button>
+      </div>
     </div>
 
     <div class="search-card__row">
@@ -123,6 +141,62 @@ const difficulty = defineModel<string>('difficulty', { default: '' })
 .search-card__count strong {
   font-weight: 600;
   color: #0f172a;
+}
+.search-card__head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ===== 查看收藏 toggle：黄色实底；开启后加深 + 内凹按下态 ===== */
+.pg-fav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 2px 6px -1px rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pg-fav-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pg-fav-toggle:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.45);
+}
+
+.pg-fav-toggle:active {
+  transform: translateY(1px);
+}
+
+.pg-fav-toggle:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
+.pg-fav-toggle.is-on {
+  border-color: rgba(180, 83, 9, 0.4);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow:
+    inset 0 2px 4px rgba(120, 53, 15, 0.25),
+    0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.pg-fav-toggle.is-on svg {
+  fill: currentColor;
 }
 .search-card__row {
   display: flex;

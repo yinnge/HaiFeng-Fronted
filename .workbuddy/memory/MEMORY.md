@@ -1,75 +1,70 @@
 # 项目长期记忆（海枫前端 monorepo）
 
-> **权威规范 = 仓库内 `AGENTS.md`**（随仓库走、更全）。本文件只留跨会话高频要点与 AGENTS.md 之外的事实；逐日细节见 `.workbuddy/memory/YYYY-MM-DD.md`。2026-11-10 已精简去重。
+> 权威规范 = 仓库内 `AGENTS.md`（随仓库走、更全）。本文件只留跨会话高频要点；逐日细节见 `.workbuddy/memory/YYYY-MM-DD.md`。
 
 ## 环境 / git
-- 类型检查 `pnpm --filter @haifeng/admin|user typecheck`；bash 里 pnpm 失效 → PowerShell 调 `D:\npm\npm-global\pnpm.cmd`。
+- 类型检查 `pnpm --filter @haifeng/admin|user typecheck`；bash 里 pnpm 失效 → PowerShell 调 `D:\npm\npm-global\pnpm.cmd`。仓库 **eslint 未安装**，`pnpm lint` 不可用。
+- `@haifeng/shared` main/exports 指向 **src 源码**（非 dist），改后仍跑 `pnpm --filter @haifeng/shared build` 更新 .d.ts。
+- **JVM 红线**：后端运行期禁 `mvn clean` / IDE Rebuild（无 devtools → NoClassDefFoundError）；沙箱内更禁跑 `mvn`（Lombok 注解处理失效会写坏磁盘 `target/classes`）。改 Java 只能本地编译 + 重启；校验用 `javac -proc:none -d <临时目录>`。构建 `mvn -pl haifeng-app -am compile`。
+- 收尾必 commit；`git pull --rebase` 前确认 `git status` 干净。Vite build 验到全新目录（沙箱守卫拦清空已有 `dist/assets`），**真实 dist 需本地重 build**；产物按时间戳取最新 CSS。safe-delete 拦 `rm -rf` → 验证目录用 `mv` 移出仓库。**不要 `git add -A`**（并行任务共用文件，用 `git add <路径>` 或 `git apply --cached` hunk 级暂存）。
+- 后端仓库 `D:\exeProject\ideaProjects\Project-HaiFeng`（分支 PDF），不在前端 monorepo 内。dev server curl 502 是 http_proxy → `curl --noproxy '*'`；后台进程用 Bash `run_in_background=true`；后端未运行时可**直连 PG**（`docker exec haifeng-postgres psql -U postgres -d haifeng`）取真实数据。
 - 品牌主色 `#F97316`/`#FB923C`；admin 暖橙渐变+橙边卡片，user 冷白微灰卡；仅样式任务不动 `<script>`。
-- **JVM 红线**：后端运行期禁 `mvn clean` / IDE Rebuild（无 devtools，改写磁盘 class 撞车 → NoClassDefFoundError），改 Java 只能重启。
-- `@haifeng/shared` 的 main/exports 指向 **src 源码**（非 dist），改后仍跑 `pnpm --filter @haifeng/shared build` 更新 .d.ts。
-- 收尾必 commit；`git pull --rebase` 前确认 `git status` 干净。Vite build 验到全新目录（沙箱守卫拦清空已有 `dist/assets`），**真实 dist 需本地重 build**。产物核对要按时间戳取最新 CSS —— 验证目录是累积的，`grep -l | head -1` 会取到旧文件。
 
-## 高频已知坑索引（详见 AGENTS.md 第一节）
-1. 新公开接口同步 `SecurityConfig.WHITE_LIST`（否则 401）2. 分页 `size∈[10,100]`、`page≥1` 3. 就业枚举以 DTO `@Pattern` + DB CHECK 为权威 4. 错误文案 `err.response?.data?.msg || err.message || 兜底` 5. MP `updateById` 排除 `is_deleted`，禁用=软删 / 删除=物理删 6. CORS `allowedMethods` 含 PATCH 7. 弹窗锁滚动抖动（已根治）8. 列表 VO 返 `id` 主键 9. OSS 预签名 3.17.4 仅 `ResponseHeaderOverrides`。
+## 高频已知坑（详见 AGENTS.md 第一节）
+1. 新公开接口同步 `SecurityConfig.WHITE_LIST` 2. 分页 `size∈[10,100]`、`page≥1` 3. 就业枚举以 DTO `@Pattern` + DB CHECK 为权威 4. 错误文案 `err.response?.data?.msg || err.message || 兜底` 5. MP `updateById` 排除 `is_deleted`，禁用=软删 / 删除=物理删 6. CORS 含 PATCH 7. 弹窗锁滚动抖动（已根治）8. 列表 VO 返 `id` 主键 9. OSS 预签名 3.17.4 仅 `ResponseHeaderOverrides` 10. C 端 VO 的 `Long` 雪花 ID 需 `@JsonSerialize(ToStringSerializer)`（60+ 处待办，竞赛/证书域已修）。
+11. ★ 标签配色/建筛选前**先查 DB 实际取值**：别凭 VARCHAR 无 CHECK 就断定不封闭，实测常只有 4~9 个值。查法 `docker exec haifeng-postgres psql -U postgres -d haifeng -c "SELECT col,count(*) FROM t_x GROUP BY col"`。
 
 ## ★ 勿回退（视觉 / 交互）
 - **弹窗锁滚动抖动**：`body{overflow-y:scroll;scrollbar-gutter:stable}` + `body.el-popup-parent--hidden{width:100%!important}`；勿删或换别的补偿。
-- **详情页暖橙底**：全局 `.app-shell main>*,#app>*{background:transparent!important}` 透出 `#fff7ed`；实心白卡/橙 Hero 须 scoped `background:…!important`；teleport 到 body 的弹窗 scoped `:deep()` 失效。
-- **token key 撞车**：admin `/admin/`→`haifeng_admin_access_token`，user `/`→`haifeng_access_token`。「用户不存在 / 403 + 重登即好 / 通知列表空」先查这个。
+- **详情页画布**：全局 `.app-shell main>*,#app>*{background:transparent!important}` 透出 **`#f8fafc` 冷白**；实心白卡/Hero 须 scoped `background:…!important`；teleport 到 body 的弹窗 scoped `:deep()` 失效。`?skin=editorial` 与全部暖白 CSS 已删（11-10），别再翻回暖白/改 tailwind 令牌。**★ 11-13 定案：竞赛/行业详情页 Hero 一律冷白蓝（`#eff6ff` + 白色渐变遮罩 + 背景图，同列表页），暖橙只留竞赛右栏报名卡，别再改回暖橙。**
+- **ElDialog 样式作用域**：`inheritAttrs:false` → 用户 class 落在 `.el-dialog` 根元素**自身**，` .xxx :deep(.el-dialog)` 后代选择器永远匹配不到，且 teleport 已脱离 `.page-xxx`。正解：全局唯一类名 + `.xxx.el-dialog{...}`（同元素）。
+- **token key 撞车**：admin `/admin/`→`haifeng_admin_access_token`，user `/`→`haifeng_access_token`；admin vite base `/admin/`、login `/admin/login`，用 `import.meta.env.BASE_URL` 动态拼接。
 - **tokenVersion/VIP**：会员权益变更不得 bump tokenVersion；VIP 实时靠 `AuthAspect.checkVip` 回退 DB。
-- **EP 控件对齐**：`.el-select__selected-item` 会拉回隐藏输入框占行，规则只挂 `.el-select__placeholder`；el-input-number 须 `.el-input{width:100%;min-width:0}`。
-- **入场动画必须退出合成层**：`.reveal.revealed` 稳态 `filter:none` / `transform:none` + `.is-settled{will-change:auto}`，否则常驻位图化 → 发丝边糊成灰雾、文字发虚。含文字容器禁 `hover/active: scale()`；缩放只放 `::before` 纯装饰层，定位改负 margin。纯图片/装饰层 scale 合法。
-- **文字毛边根治（11-09）**：四真凶 = 罗盘舞台常驻 `scale(1)`、给含文字节点下发 scale、`AppHeader` 常驻 `will-change` + 无收益 `backdrop-filter`、全库 31 处 `:active scale`。详见 AGENTS.md 第六节铁律 6。
-- **Hero 不自带背景层**：`.bg-grid-aurora` 是全屏 fixed 画布，`.hf-hero` 保持透明、无 isolation / deco / glow。
-- **scoped CSS 类名笔误零报错**：重构 SFC 后必过一遍 `git diff HEAD` 的 CSS 选择器（typecheck/build 全绿也查不出）。
-- **橙色小字对比度（11-10）**：`#f97316` 白底仅 2.80:1（AA 需 4.5:1），文字态一律 `#c2410c`(5.18:1) / hover `#9a3412`(7.31:1) + 取整字号，**不要靠加粗掩盖**；品牌橙保留给实心背景/描边/图标/大字。⚠️ `background-color:` 含 `color:` 子串，批量替换必须带断言。
-- **「小字必然糊」是误解**：清晰度由对比度 + 笔画粗细决定。tagline 那次真因 = `11.5px` 分数字号 + `#71717A` 浅色 + `0.01em` 小数间距，换字体救不了。全库 257 处 rem 字号中 139 处（30 文件）落分数 px，未批量改。
+- **EP 控件对齐**：规则只挂 `.el-select__placeholder`；el-input-number 须 `.el-input{width:100%;min-width:0}`。
+- **防糊**：入场动画必须退出合成层（稳态 `filter:none`/`transform:none` + `.is-settled{will-change:auto}`）；含文字容器禁 `hover/active: scale()`；缩放只放 `::before` 装饰层。罗盘舞台常驻 scale / AppHeader 常驻 will-change / 全库 :active scale 是文字毛边四真凶。
+- **Hero 不自带背景层**：`.bg-grid-aurora` 是全屏 fixed 画布，`.hf-hero` 保持透明、无 isolation/deco/glow。
+- **橙色小字对比度**：`#f97316` 白底仅 2.80:1 → 文字态一律 `#c2410c`(5.18:1)/hover `#9a3412`(7.31:1)+取整字号，**不要靠加粗掩盖**；品牌橙留给实心背景/描边/图标/大字。⚠️ `background-color:` 含 `color:` 子串，批量替换必带断言。
+- **scoped CSS 类名笔误零报错**：重构 SFC 后必过一遍 `git diff HEAD` 的 CSS 选择器。
 
 ## ★ 字体 / 字重定案（权威见 AGENTS.md 第八节）
-- 仅 **user 端**：`misans-webfont@4.3.1` + `@fontsource-variable/inter@5.3.0`，自托管、零境外 CDN。唯一真相 `--hf-font-sans` = `'Inter Variable','MiSans',系统栈`；body / `--el-font-family` / Tailwind sans / TopToolBar / SiteFooter 全引用它。`?font=system` → `html.font-system`（旧栈刻意不含 `'MiSans'`）。admin 零改动。
-- `apps/user/scripts/gen-misans-css.mjs`（`pnpm --filter @haifeng/user fonts:gen`）生成 `misans.css`：**升级包必重跑**。修的是分包族名不统一（medium/semibold 独立族名且 weight 写 400）+ 删 `local()` + url 本地化。
-- **`FACE_SPECS` 双族名封顶**：`MiSans` = `100 600`→Regular / `700`→Medium / `800 900`→Semibold（全站最重）；`MiSans Display` = `100 900`→Bold，只给 `--hf-font-strong`。**例外现为 2 处**：`HfHeroSection .hf-title`(800)、`TopToolBar .tt-brand-title`(800)。`html.font-system` 必须同步覆盖 `--hf-font-strong`。
-- ★ **`MiSans Display` 是单字形族**：挂它时改 `font-weight` 数字**完全无效**，必须先删 `font-family: var(--hf-font-strong)` 再调数字。
-- 业务 CSS **1176 处字重声明一处未改**；调全站轻重只改 `FACE_SPECS`，调例外只改那 2 处引用。753 分片 / 23.5 MB dist / 主 CSS gzip 269 KB；`font-display:swap` 首次一次字形切换，刻意不做淡入以免毛边复发。
-- **合规义务**：MiSans 协议要求注明使用，已写 `SiteFooter.vue` 页脚 `.font-credit`，勿删。
-- Google Fonts 技术兼容但不用 `<link>`（国内不稳、只对西文有效）；要用 `@fontsource-variable/*` 本地包。
-- **冷白定案**：画布保持 `#f8fafc`，`?skin=editorial` 试验皮肤及全部暖白 CSS 已整体删除（11-10），零残留。别再接受「翻回冷白 / 改 tailwind 令牌 / 网格线换 slate / 换暖棕阴影」这类基于错误前提的建议。
-- **11-10 晚导航加深**：`AppHeader .nav-link` → `#111827` / 700，`TopToolBar .tt-link` + `.tt-mobile-link` → `#18181B` / 700（Medium，仍比最初 Bold 细）；激活态靠橙字 + 橙底 + 下划线区分，不叠加字重。
+- 仅 **user 端**：`misans-webfont@4.3.1` + `@fontsource-variable/inter@5.3.0`，自托管零境外 CDN。唯一真相 `--hf-font-sans` = `'Inter Variable','MiSans',系统栈`；body/`--el-font-family`/Tailwind sans/TopToolBar/SiteFooter 全引用它。`?font=system` → `html.font-system`（旧栈不含 MiSans）。admin 零改动。
+- `apps/user/scripts/gen-misans-css.mjs`（`pnpm --filter @haifeng/user fonts:gen`）生成 `misans.css`：**升级包必重跑**。
+- **`FACE_SPECS` 双族名封顶**：`MiSans` = `100 600`→Regular / `700`→Medium / `800 900`→Semibold；`MiSans Display` = `100 900`→Bold，只给 `--hf-font-strong`。例外仅 2 处：`HfHeroSection .hf-title`(800)、`TopToolBar .tt-brand-title`(800)。`html.font-system` 须同步覆盖 `--hf-font-strong`。★ `MiSans Display` 单字形族：挂它时改 `font-weight` 数字**完全无效**，必须先删 `font-family: var(--hf-font-strong)`。业务 CSS 字重一处未改，调全站轻重只改 `FACE_SPECS`。
+- **合规**：MiSans 协议要求注明使用，已写 `SiteFooter.vue` 页脚 `.font-credit`，勿删。
 
-## 业务规则
-- **游客档案/专业组**：游客档案仅 localStorage `haifeng:guest-gaokao-archive`；`Groups.vue` 用 `guestArchiveParams` 上行，已登录不传。`request.ts` 401 仅「有 token」算过期。
-- **高考省份锁定**：登录用户首次保存档案后锁定（导航 + 表单 disabled），游客随便切；单例 `useProvinceLock.ts`。
-- **资料页面向人群 = 单一 `stageFilter`**：`STAGE_FILTER_OPTIONS` 平铺按钮行，`?stage=` 深链经 `syncFromQuery()` 校验预选。
+## ★ 收藏模块契约（11-12 起多模块统一）
+- **targetType 一一对应独立表，ID 空间不重叠，禁止复用**：university / major(本科) / postgrad_major(考研) / city / competition / certificate / enterprise / industry / file_info。
+- **后端新增一种收藏 = 3 处**（Spring 自动收集 `FavoriteTargetValidator` Bean）：① `FavoriteTargetType` 加枚举；② 新建 `favorite/target/XxxFavoriteValidator`（id + `is_deleted=false`）；③ 对应 `XxxServiceImpl.page()` 加 ids 过滤（`BasePageQueryDTO` 自带 `ids` `@Size(max=200)`；空集合直接返回空页避免 `IN ()`）。`t_member_favorite.target_type` VARCHAR(32) 无 CHECK，**无需 DB 迁移**。
+- **ids 上限 200**；前端 `/favorite/list` 单次 size ≤100 → 取 2 页取满 200 截断 + 超量提示。
+- **UI 统一形态**：列表卡片右上角 36px 星标（灰→黄填充，`@click.stop`）；工具栏「查看收藏/收藏中」黄色 toggle（`#FBBF24→#F59E0B`，999px，开启态加深+内凹）；详情页 Hero 元数据行末尾琥珀底收藏药丸（竞赛详情用右上角 40px 圆形星标）。未登录统一 `confirmLogin()`。卡片根元素含收藏按钮时用 `div[role="button" tabindex="0"]`+Enter/Space，不能用 `<button>`。
+- **列表页 toggle 两坑**：① `major/List.vue` 的 `query` 是复用 reactive → 退出收藏视图必须 `delete query.ids`；② 收藏视图内取消收藏立即移除并刷新（末页仅剩 1 条回退一页）。已落地：文件/院校/本科专业/考研专业/竞赛/证书/企业/行业。
 
-## 导航 / 布局
-- 断点 4 档：<768 汉堡 / 768~1700 桌面+更多 / ≥1700 完整菜单 / ≥2100 封顶留白。药丸 el-select 隐藏 `.el-select__suffix` 箭头。
-- `scrollY>8` 抽屉式收起（`composables/useAutoHideHeader.ts` 模块级单例）；顶部双层：`DefaultLayout` 首页渲染 `TopToolBar`（常驻不收起），其下 `AppHeader` 接 `:top-offset`（首页 64 / 其余 0）。`GlobalSearchBox` flex 链逐级 `flex:1;min-width:0`。
-- **主页右侧「首页/百宝箱/生涯规划图谱/大数据对比/专家咨询预约」在 `components/TopToolBar.vue .tt-link`**，不在 `views/home/components`；`config/navigation.ts` 只是纯菜单数据（label/route/subItems/inactiveQuery），**不含任何样式**。
+## ★ 列表页 / 详情页重构统一范式（11-11~11-12 固化）
+- `views/xxx/List.vue` **只做取数与编排**；展示拆到 `views/xxx/components/`（Hero/SearchCard/Card/Skeleton/ToolsCard/utils.ts）；页面级 CSS `views/xxx/xxx.css`，**全部选择器由 `.page-xxx-list` 限定**。详情页同构：`Detail.vue` + `detail/detail.css`（`.page-xxx-detail`）+ `detail/utils.ts` + `detail/components/`。
+- **类名前缀必须全库唯一**：postgrad=`pg-`、competition=`cp-`、certificate=`cert-`、city detail=`ct-`、industry list=`ind-`、**industry detail=`idt-`**、competition detail=`cd-`、major detail=`detail-`。改前缀前查产物 CSS 是否两 chunk 都含该前缀。
+- **Hero**：背景图走 JS 内联 `url(${HERO_BG_URL})` 注入 `--hero-bg-url`，**不进 CSS 产物**（中文路径）。`HERO_BG_URL` 复用 `views/major/detail/components/utils.ts`（`picture/university/列表背景.png`）。Hero **不挂 hf-card**。
+- **色板/图标**：`TONE_COLORS`（blue/amber/green/red/slate）+ `IconTone` 复用 major/detail/utils；统一 `lucide-vue-next`、`stroke-width="1.75"`，**严禁 Emoji**。无正式映射表时用「关键词正则 → 类别兜底 → 最终兜底」两级，集中 `components/utils.ts`。
+- **在线工具栏**：`XXX_TOOLS`（`{key,label,icon,tone,to?,action?:'coming'|'expert',soon?}`）+ `ToolsCard.vue`；`to` 用 `RouterLink`，coming `ElMessage.info('敬请期待',{grouping:true})`，专家 `useExpertContact.open()`。**详情页复用**：`detail/utils.ts` 里 `export { XXX_TOOLS } from '../components/utils'`，卡片组件从 `../utils` 引入，避免两份维护。
+- **URL 同步**：只写已知 key（`buildQuery` 只写非默认值），靠 `stableQueryString` + `lastWrittenQuery` 防 watch 循环；**不要 `query:{}` 全量清空**。深链键只删自己那一个。
+- **分页 size ∈[10,100]**；榜单 `size=5` 违规 → `size=10` + `slice(0,5)`。热门榜无 hot 字段时取列表头部近似，热度值用固定展示常量 `HOT_INDEX_BY_RANK`（非实时）。
+- **卡片网格**：postgrad/竞赛/证书列表 2 列，行业/企业 3 列。**防糊**：列表页启用 hover `translateY(-2px)`；详情页禁用整卡位移，只用颜色/边框/箭头位移。
+- 无「相关专业」类接口时不要硬凑。
+- **详情页 Tab 锚点化（11-13 竞赛详情定案，勿回退成切换隐藏）**：多 Tab 详情页 = 「5 个分区全部同页渲染 + 点击 Tab 平滑滚动到锚点」。要点：① 分区恒存在，空数据也渲染占位卡（否则 `getElementById` 为 null、点击无反应）；② Tab 栏 `position:sticky`，top 用 `asideTop`(8/76) 注入 CSS 变量；③ 滚动偏移 = `asideTop + Tab 栏实高 + 14`；④ `IntersectionObserver({rootMargin:'-40% 0px -50% 0px'})` 反向高亮并同步 `?tab=`，点击后锁 spy 900ms 防平滑滚动抖动；⑤ `watch(query.tab)` 靠 `next===active` 防循环；⑥ `prefers-reduced-motion` 降级 `behavior:'auto'`。
 
-## 专业详情页（11-11 重构）
-- `views/major/Detail.vue` 只取数/编排；12 个子组件 + `utils.ts` + `detail.css` 在 `views/major/detail/`，页面级 CSS 全部由 `.page-major-detail` 限定；不改 `index.css` / `List.vue` / router。
-- **考研方向**返回 `PostgradMajorDirectionBriefVO{id,postgradMajorName,category?}`（不是 `UndergraduateMajorDirectionBriefVO`）；**11-11 晚已新增 `/postgrad-major/:id` 独立详情页**，点击 `router.push`，`PostgradMajorDialog` 已删除（见下节）；**竞赛 + 考研方向都是 VIP 门禁**；竞赛 VO 字段 `competitionId/competitionName`。
-- 无「相关专业」接口：`/list` 支持 `majorCategory`、**不支持 `parentCategory`**；`MajorRateRing` 的 rate 是 0–100 且 null 自显 `—`，复用时父层接管空态。仓库 **eslint 未安装、无配置**，`pnpm lint` 不可用。
-- 防糊：本页可点击项只用颜色/边框/箭头位移反馈，**不启用 hover translateY 位移**。
+## 业务规则 / 导航
+- **游客档案**仅 localStorage `haifeng:guest-gaokao-archive`；`Groups.vue` 用 `guestArchiveParams`，已登录不传。`request.ts` 401 仅「有 token」算过期。
+- **高考省份锁定**：登录用户首次保存档案后锁定（导航+表单 disabled），游客随便切；单例 `useProvinceLock.ts`。
+- **资料页面向人群 = 单一 `stageFilter`**；`?stage=` 深链经 `syncFromQuery()` 校验。
+- **DB province / city_name 存裸字段**（北京/广西，无省/市后缀），UI 下拉必须匹配裸值。
+- 导航断点 4 档：<768 汉堡 / 768~1700 桌面+更多 / ≥1700 完整菜单 / ≥2100 封顶留白。`scrollY>8` 抽屉式收起（`useAutoHideHeader.ts` 单例）；首页 `TopToolBar`（64px 常驻）其下 `AppHeader` 接 `:top-offset`（首页 64 / 其余 0）。主页右侧链接在 `TopToolBar.vue .tt-link`；`config/navigation.ts` 纯数据。
 
-## 考研专业列表页（11-11 重构）
-- `views/major/PostgradList.vue` 只取数/编排；7 组件 + `utils.ts` + `postgrad.css` 在 `views/major/postgrad/`，页面级 CSS 由 `.page-postgrad-list` 限定。
-- **11-11 晚更新（推翻原结论）**：考研专业详情已改独立页面 `/postgrad-major/:id`（`PostgradMajorDetail`），列表卡片/榜单、本科专业详情、院校详情 Tab 3 处入口全部 `router.push`，`PostgradMajorDialog.vue` 已 `git rm`；首页工具箱直跳详情页，列表页保留旧 `?majorId=` 兼容分支（replace 到详情页）。榜单 `size=5` 违反后端 `@Min(10)`，用 `size=10` + `slice(0,5)`；`HOT_INDEX_BY_RANK` 是固定展示值、非实时。
-- URL 同步 8 键 `page/size/name/code/degreeType/disciplineCategory/popularity/difficulty`（靠 `buildQuery` 只写 8 键，**不要 `query:{}` 全量清空**）；`MajorModule.vue` 已不再生成 `?majorId=`。
-- `PostgradMajorQueryDTO` 无排序字段；门类枚举是纯 HTTP `/discipline-categories`，无静态候选；14 门类含「交叉学科」只写在 DESIGN.md，代码静态表是 13 个。
-- DESIGN.md §0.3 指定的 `constants/planningTools.ts`、`components/PlanningToolsCard.vue`、`views/major/utils.ts` **均不存在**；真实共享物是 `detail/components/utils.ts` 的 `HERO_BG_URL` / `TONE_COLORS` / `getDisciplineIcon`。
-- 本页**启用** hover `translateY(-2px)`（Q10），专业详情页**禁用**；两页刻意不同。
-
-## 考研专业详情页（11-11 晚，弹窗改页面）
-- 主文件 `views/major/PostgradDetail.vue`；`postgrad-detail/postgrad-detail.css` + `components/` 下 8 组件（Hero / Skeleton / Intro / ExamSubjects / Requirements / CrossExam / RelatedMajors / Universities）。右栏**零改动复用** `postgrad/components/PostgradHotRank.vue` + `PostgradToolsCard.vue`。
-- **Q10 关键手法**：根节点并列挂 `class="page-postgrad-detail page-postgrad-list"` + `import './postgrad/postgrad.css'`，零改动复用 `.hf-card` / `.hf-section-title` / `.hf-tag` / `.hf-skeleton` / `.pg-pager` / `.pg-grid` / `.pg-right` sticky / `.postgrad-select-popper`；本页专有样式只由 `.page-postgrad-detail` 限定。代价：根类名带「列表页」语义。
-- 数据契约：`PostgradMajorDetailVO` 13 字段全必填、**不含 id / 不含热度数值**；`examSubjects` / `admissionRequirements` 是**扁平 string[]**（原型 3 列分组无字段支撑，切勿按关键词猜分组）；「温馨提示 / 备注说明 / AI 定制 CTA / Tab」均无落点，不做。Hero 只显示 `popularity` / `difficulty` 标签。
-- VIP 门禁沿用弹窗：基础信息公开，「关联本科专业」「开设院校」仅 VIP 可见；手写分页 → `el-pagination`（size=10），院校类型 11 项常量；`watch(isPro)` 开通后免刷新解锁。热榜独立请求 `size=10`+`slice(0,5)`、只一次。面包屑 `router.back()` 无历史兜底列表。
-- 交互策略：本页**禁用整卡 hover 位移**（Q14，与本科详情页一致）；列表页**启用** `translateY(-2px)`；三页刻意不同。请求带自增 `requestId` 防竞态，附属数据失败静默降级空数组。
+## 页面结构 / 数据速查（细节见各自 daily log）
+- **竞赛**：List 冷白 / detail **冷白蓝 Hero**（11-13 定案；右栏=报名卡〔唯一暖橙〕→流程→获奖→专业→工具→收口条；左栏 5 个分区全展示、Tab 为同页锚点，`?tab=` 可深链）。列表 VO 仅 `id/compName/compLevel/registrationTime`；`comp_level` 无 CHECK 自由 VARCHAR → 动态聚合；`registrationTime` 自由文本；`t_competition_major` 0 行；`/competition/{id}/majors` `@RequireVip`。
+- **证书**：无 `/certificate/:id` 路由，详情是 `CertificateDetailDialog.vue` 弹框。C 端列表仅 `category`(精准)+`certName`(模糊) 两筛选。`t_certificate` 275 行：`cert_level` 4 值、`category` 9 值 → 按值映射（初级绿/中级蓝/高级黄/不分等级 slate）。`exam_fee` 275/275 NULL + `non_null` → 键整个不存在，卡片与弹框均不展示。
+- **城市详情**：`views/city/detail/`（9 组件 + `city-detail.css`）；`CityDetailVO` 29 字段、13 个 `Record<string,any>`、**不含 id/cityIntro/coverImageUrl** → 用 `readNum/readText/readList` 安全读取。
+- **行业**：List 冷白 Hero + 3 列 + 右栏热门榜/工具（11-12 `68e8fd2`）。DB 实测 90 条、17 门类、`sort_order` 全 0、真实热度 `investment_heat`(30~88)、`category` 后端 eq 精准匹配；图标 = 名称关键词 61 规则 → 17 门类兜底（90/90 命中、46 种），在 `components/utils.ts` 私有 `KEYWORD_ICONS`。★ **`t_industry_detail` 8 个 JSONB 90/90 全为空 `{}`**、`short/detailed_description` 全空；详情 VO 不含 id、不含 description；主表仅 9 个概览指标有值（`talent_gap` 全空）。`t_enterprise_industry` 0 行，`/enterprises` `@RequireVip`；详情接口 `/industry/{id}/detail` 仅 `@RequireLogin`。C 端 `IndustryListVO.id`（Long）**缺 `@JsonSerialize`**。列表页「名称搜索」是纯 UI 未接后端（`IndustryQueryDTO` 无 name）。**详情页 11-13 已重构**：`Detail.vue` 只做编排 + `detail/`（`detail.css` 用 `.page-industry-detail` / `idt-` 前缀、`utils.ts` re-export `INDUSTRY_TOOLS`+`HERO_BG_URL`、10 组件）；正文以主表 9 指标为主、8 个 JSONB 走通用容错渲染器（有值才出，全空显示「深度数据整理中」），并发补 `/industry/list?ids=` 拿 `description`+`category`。趋势色板语义正向（上升绿/稳定蓝/下降红），用 `trendStyle()`，**刻意不复用列表页 `growthTone()`**（那个是 A 股习惯正=红）。**11-13 二次迭代：详情 Hero 改冷白蓝（与列表页同款），暖橙不再用于任何详情页 Hero。**
+- **企业**：**List（11-12 `444566c`）+ 岗位页（11-13 `30662c3`）均已重构**。类名前缀：列表=`ent-`、岗位页=`pos-`（**`ep-` 已被其它模块占用**）。`EnterpriseListVO` 11 字段含 id、**不含 recruitmentStatus**；`t_enterprise` 2373 条、100% 无 logo、`sort_order` 全 0；`enterprise_nature` 有 CHECK；`enterprise_type` 13 值走 `/enterprise/types`；无 `/enterprise/:id` 路由，只有 `/enterprise/:id/positions`（路由 requiresAuth + 接口 `@RequireLogin`）。`t_enterprise_industry` 0 行、`/industries` 是 `@RequireVip`（**只放行旗舰版 VIP**，普通会员+Pro 被拒，返回 **200+业务码 1005 而非 HTTP 403**）→ 卡片不可展示行业标签。★ **岗位表 `t_enterprise_position` 2999 条 / 1612 企业**：`position_status` 全是「招聘中」；`recruitment_type` 3 值（校招/社招/实习）、`education_requirement` 3 值（本科/硕士/大专）、`work_experience` 4 值（应届/在校生/3-5年/5年以上）——**均封闭集可做值→色映射**；`salary_min/max` 0 条 NULL、范围 2~23/4~40、**单位 K**；★ **`deadline` 2999 全 NULL + `apply_link` 2999 全空**（截止日期与「去申请」是死字段，不展示）；`position_tags` 是 PG 数组 → 后端 `List<String>`，前端 `string[]` **类型一致**；`position_requirement` 是 **93~140 字编号多行文本**（按行拆有序列表）；**761 家企业（32%）无岗位** → 空态是常态。★ **跨页复用组件的样式坑**：`hf-card`/`hf-section-title`/`hf-tag` 定义在各**页面级 CSS** 且带页面根类限定 → 换页复用组件时样式打不到，解法是新页 CSS 自带一份同定义的 `.page-xxx .hf-*`。
 
 ## 最近迭代（节选）
-- 证书页批量导入（10-26）：`POST /api/v1/admin/certificate/import`。竞赛页（10-27）：`/import/main` + `/import/detail` 两端点、同一弹窗 `importMode` 切换；列头见当日日志。
-- 首页 Hero 双栏重构（11-06，`6e7c6be`）：`components/home/hero/` 全套 + `hero.config.ts` 配置驱动；`useGlobalSearch` / `useColumnFocus` / `useLoopPausable`；矩阵高亮用 `@property --hf-snake-angle` + conic-gradient + mask-composite。
-- 罗盘中心 logo（11-10）：`logo-main.png` 是 800×800 **RGBA，四角 alpha=0、71% 像素全透明**；白圆只是 `HfHeroCompass.vue .hf-center` 的 CSS 壳，已删（无 background / border / radius / shadow），`.hf-center-logo` 44→**112px** 占满原圆圈尺寸，`centerStyle` 的入场/展开 scale 保留（纯图片层合法）。图片自带透明留白，可见枫叶约占画布 67%×81%，若要枫叶本身撑满圆圈可再放大到 128~136px。
-- **罗盘节点左上角徽标 = `module.columns.length`（子专栏数量），不是序号**；两个模块都显示 2 是「恰好都含 2 个专栏」。`HeroModule.badge?: string` 可覆盖文案（初高中 11-10 设为 `'1'`），徽标色由 CSS `var(--m-color)` 按模块注入，与文案无关。
-- 顶部品牌区（11-10）：`.top-toolbar` 高 64px / `padding:0 24px`；`.tt-grid` 的 `max-width:2200px;margin:0 auto` **只在 >2200px 生效**，普通屏的左右留白全来自前者。**左右 padding 不限制 logo 尺寸，上限是 64px 高度** → `.tt-logo` 36→48px、`.tt-brand{margin-left:-16px}` 单独贴合，勿全局去 padding（会让搜索框与右侧菜单一起贴边）。tagline 与品牌名间距由 `.tt-brand-sub{margin-top:3px}` 控制，勿动 `.tt-brand-text{top:-2px}` 光学修正。
+- 首页 Hero 双栏重构（11-06 `6e7c6be`）；罗盘中心 logo 44→**112px**（11-10）。
+- 行业详情页重构（11-13 `abd17f6`）；同日晚两个详情页 Hero 改冷白蓝 + 竞赛详情 5 Tab 改同页锚点导航。

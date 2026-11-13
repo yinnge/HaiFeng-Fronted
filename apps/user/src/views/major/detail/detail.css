@@ -13,10 +13,20 @@
   min-height: 100vh;
 }
 
+/* 大屏宽度统一走 :root --hf-container-*（与 .container 同策略，见 index.css 末尾）：
+   >=1536 随视口放宽 + 每边 88px 安全边 + 2200px 封顶；<1536 保持原 1360px。 */
 .page-major-detail .detail-container {
   max-width: 1360px;
   margin: 0 auto;
   padding: 32px 20px 64px;
+}
+@media (min-width: 1536px) {
+  .page-major-detail .detail-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
 }
 
 /* ---------- 面包屑 ---------- */

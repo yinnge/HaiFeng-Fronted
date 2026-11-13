@@ -66,6 +66,11 @@ export interface MajorQueryDTO extends BasePageQuery {
   salaryMin?: number
   /** 月薪上限（元/月） */
   salaryMax?: number
+  /**
+   * 收藏过滤（可选）：仅返回命中的专业 id，与其它筛选 AND 叠加（对应后端 BasePageQueryDTO.ids）。
+   * 逗号分隔的 id 字符串（Spring 自动拆分绑定 List<Long>）；后端上限 200 个。
+   */
+  ids?: string
 }
 
 export interface MajorRankingQueryDTO extends BasePageQuery {

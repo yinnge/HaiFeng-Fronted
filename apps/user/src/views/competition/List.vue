@@ -1,213 +1,407 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+/**
+ * 竞赛列表页：本文件只负责取数与编排，展示拆到 components/ 下。
+ * 接口沿用 /api/v1/app/competition/list（公开、免登录）；
+ * 后端排序固定 sort_order DESC, created_at DESC，故列表头部即为「热门竞赛」。
+ */
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Motion } from 'motion-v'
 import { getCompetitionList } from '@/api/certificate'
 import type { CompetitionListVO, CompetitionQueryDTO } from '@/types/certificate'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
+import { useAutoHideHeader } from '@/composables/useAutoHideHeader'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 
+import CompetitionHero from './components/CompetitionHero.vue'
+import CompetitionValueCards from './components/CompetitionValueCards.vue'
+import CompetitionSearchCard from './components/CompetitionSearchCard.vue'
+import CompetitionCard from './components/CompetitionCard.vue'
+import CompetitionSkeleton from './components/CompetitionSkeleton.vue'
+import CompetitionHotRank from './components/CompetitionHotRank.vue'
+import CompetitionToolsCard from './components/CompetitionToolsCard.vue'
+import {
+  DEFAULT_LEVEL_OPTIONS,
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZES,
+  buildQuery,
+  parseUrlState,
+  stableQueryString,
+  type UrlState,
+} from './components/utils'
+
+import './competition.css'
+
+const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
+const { hidden: headerHidden } = useAutoHideHeader()
+
+/** 与列表页一致，导航抽屉收起时把 sticky 顶部空隙收掉 */
+const asideTop = computed(() => (headerHidden.value ? 8 : 76))
 
 const loading = ref(false)
 const list = ref<CompetitionListVO[]>([])
 const total = ref(0)
+const error = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(DEFAULT_PAGE_SIZE)
+const hotList = ref<CompetitionListVO[]>([])
+const hotLoading = ref(false)
+/** 竞赛级别下拉项：由接口数据动态聚合（后端 comp_level 无 CHECK 约束，取值不封闭） */
+const levelOptions = ref<string[]>([...DEFAULT_LEVEL_OPTIONS])
 
-const query = reactive<CompetitionQueryDTO>({
-  page: 1,
-  size: 10,
+/** 已提交的筛选（名称输入由回车/点搜索提交） */
+const filters = reactive({
   compName: '',
   compLevel: '',
 })
+/** 名称输入态：回车或点搜索才查询 */
+const nameInput = ref('')
 
-const levelOptions = ['国家级', '省级', '校级']
+let requestId = 0
+let lastWrittenQuery = ''
 
-async function fetchList() {
-  loading.value = true
-  try {
-    const params: CompetitionQueryDTO = { page: currentPage.value, size: pageSize.value }
-    if (query.compName) params.compName = query.compName
-    if (query.compLevel) params.compLevel = query.compLevel
-    const res = await getCompetitionList(params)
-    list.value = res.data.data.records
-    total.value = res.data.data.total
-  } catch (e: any) {
-    ElMessage.error(e?.message || '获取竞赛列表失败')
-  } finally {
-    loading.value = false
+function currentState(): UrlState {
+  return {
+    page: currentPage.value,
+    size: pageSize.value,
+    compName: filters.compName,
+    compLevel: filters.compLevel,
   }
 }
 
-function handleSearch() {
+/**
+ * URL 只写 4 个已知 key（page/size/compName/compLevel），天然不含收藏 ids（收藏态是会话态，不进 URL）。
+ * lastWrittenQuery 用于 watch 防循环（router.replace 会再次触发 route.query 变化）。
+ */
+function writeUrl() {
+  const query = buildQuery(currentState())
+  lastWrittenQuery = stableQueryString(query)
+  void router.replace({ path: route.path, query })
+}
+
+function restore(state: UrlState) {
+  currentPage.value = state.page
+  pageSize.value = state.size
+  filters.compName = state.compName
+  filters.compLevel = state.compLevel
+  nameInput.value = state.compName
+}
+
+// ==================== 收藏（favorite，targetType=competition） ====================
+const FAV_TARGET_TYPE = 'competition' as const
+/** 后端 BasePageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（toggle）：开启后只查已收藏的竞赛，再点退出回全部 */
+const favOnly = ref(false)
+/** 当前页已收藏的竞赛 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取全部已收藏竞赛 id（收藏视图用）。
+ * /favorite/list 单次 size ≤100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ */
+async function fetchAllFavIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 个竞赛')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 回填当前页星标状态（每页最多 10 条，/favorite/status 单次上限 100 → 一次即可；失败静默） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 「查看收藏」toggle：开启只查收藏竞赛，再点退出回全部列表 */
+async function onToggleFavOnly() {
+  if (!favOnly.value && !(await requireLogin())) return
+  favOnly.value = !favOnly.value
   currentPage.value = 1
-  fetchList()
+  writeUrl()
+  void fetchList()
+}
+
+/** 星标点击：收藏 / 取消收藏 */
+async function onToggleFav(id: string) {
+  if (!(await requireLogin())) return
+  const idStr = String(id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
+/** 竞态：每次请求带自增 id，只采纳最新一次响应 */
+async function fetchList() {
+  const id = ++requestId
+  loading.value = true
+  error.value = ''
+
+  const params: CompetitionQueryDTO = {
+    page: currentPage.value,
+    size: pageSize.value,
+    compName: filters.compName || undefined,
+    compLevel: filters.compLevel || undefined,
+  }
+
+  try {
+    // 收藏视图：先取已收藏竞赛 id，再透传 ids 与其它筛选 AND 叠加（后端负责分页与 total）
+    if (favOnly.value) {
+      const ids = await fetchAllFavIds()
+      if (id !== requestId) return
+      // 无收藏 → 直接空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        return
+      }
+      params.ids = ids.join(',')
+    }
+
+    const res = await getCompetitionList(params)
+    if (id !== requestId) return
+    list.value = res.data.data.records ?? []
+    total.value = res.data.data.total ?? 0
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
+  } catch (e) {
+    if (id !== requestId) return
+    error.value = (e as Error)?.message || '获取竞赛列表失败'
+    list.value = []
+    total.value = 0
+  } finally {
+    if (id === requestId) loading.value = false
+  }
+}
+
+/**
+ * 热门竞赛榜 + 竞赛级别下拉项：一次独立请求同时解决。
+ *
+ * 后端列表默认按 sort_order DESC 排序，故不带筛选的头部即为「热门」（sort_order 越大越靠前，
+ * 即管理端配置的推荐权重）。独立请求，不随检索条件 / 分页联动 —— 热门是客观推荐位，
+ * 不该被用户的临时筛选改写。
+ *
+ * size 有后端下限 @Min(10) / 上限 @Max(100)，故取 size=100：
+ * - 前 5 条 → 热门竞赛榜
+ * - 全部记录 → 聚合实际出现过的竞赛级别（后端 comp_level 是无 CHECK 的自由文本，取值不封闭）
+ */
+async function fetchHotAndLevels() {
+  hotLoading.value = true
+  try {
+    const res = await getCompetitionList({ page: 1, size: 100 })
+    const records = res.data.data.records ?? []
+    hotList.value = records.slice(0, 5)
+    collectLevelOptions(records)
+  } catch {
+    hotList.value = []
+  } finally {
+    hotLoading.value = false
+  }
+}
+
+/**
+ * 竞赛级别下拉项：从接口数据里动态聚合实际出现过的级别，
+ * 与静态兜底（国家级/省级/校级）合并去重 —— 后端 comp_level 是无 CHECK 的自由文本，取值不封闭。
+ */
+function collectLevelOptions(records: CompetitionListVO[]) {
+  const set = new Set<string>(DEFAULT_LEVEL_OPTIONS)
+  for (const r of records) {
+    const level = (r.compLevel ?? '').trim()
+    if (level) set.add(level)
+  }
+  levelOptions.value = Array.from(set)
+}
+
+function handleSearch() {
+  filters.compName = nameInput.value.trim().slice(0, 100)
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
 }
 
 function handleReset() {
-  query.compName = ''
-  query.compLevel = ''
+  filters.compName = ''
+  filters.compLevel = ''
+  nameInput.value = ''
   currentPage.value = 1
-  fetchList()
+  writeUrl()
+  void fetchList()
 }
 
-function goDetail(id: string) {
-  router.push(`/competition/${id}`)
+/** 级别下拉变更立即查询；等 defineModel 的 update 事件同步回 filters 后再读状态 */
+async function onFilterChange() {
+  await nextTick()
+  currentPage.value = 1
+  writeUrl()
+  void fetchList()
 }
 
 function onPageChange(page: number) {
   currentPage.value = page
-  fetchList()
+  writeUrl()
+  void fetchList()
 }
 
 function onSizeChange(size: number) {
   pageSize.value = size
   currentPage.value = 1
-  fetchList()
+  writeUrl()
+  void fetchList()
 }
 
-onMounted(fetchList)
+/** 推 /competition/:id（详情页带登录门禁，由路由守卫处理） */
+function showDetail(id: string) {
+  void router.push(`/competition/${id}`)
+}
+
+/** 外部 query 变化（浏览器前进/后退、其它页面带参进入）反向恢复；自己写的那次跳过 */
+watch(
+  () => route.query,
+  (query) => {
+    const normalized = buildQuery(parseUrlState(query))
+    if (stableQueryString(normalized) === lastWrittenQuery) return
+    restore(parseUrlState(query))
+    lastWrittenQuery = stableQueryString(normalized)
+    void fetchList()
+  },
+)
+
+onMounted(() => {
+  restore(parseUrlState(route.query))
+  writeUrl()
+  void fetchList()
+  void fetchHotAndLevels()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-    <main class="container mx-auto px-6 py-8">
-      <!-- Intro Banner -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5 }" class="mb-8">
-        <div class="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-8 border border-orange-100">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
-            </span>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">竞赛信息大全 · 点亮学术履历</h1>
-          </div>
-          <p class="text-gray-600 leading-relaxed mb-4">
-            参与科研竞赛是提升综合素质、展示个人能力的重要途径。我们汇集了各类学科竞赛信息，助您找到最适合的竞赛项目。
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="kw in ['学科竞赛', '创新创业', '素质加分', '保研考研']" :key="kw" class="rounded-full bg-white px-4 py-1.5 text-sm text-orange-600 border border-orange-200">
-              {{ kw }}
-            </span>
-          </div>
-        </div>
-      </Motion>
-
-      <!-- Value of competitions (hardcoded) -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.1 }" class="mb-8">
-        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
-            学术竞赛的价值
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🏆</div>
-              <h3 class="font-semibold text-gray-800 mb-1">提升竞争力</h3>
-              <p class="text-sm text-gray-500">获奖经历是保研、考研复试、求职简历中的重要加分项</p>
-            </div>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🧠</div>
-              <h3 class="font-semibold text-gray-800 mb-1">锻炼综合能力</h3>
-              <p class="text-sm text-gray-500">培养创新思维、团队协作、问题解决和项目管理能力</p>
-            </div>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🌐</div>
-              <h3 class="font-semibold text-gray-800 mb-1">拓展视野</h3>
-              <p class="text-sm text-gray-500">接触前沿领域，与全国优秀学子交流，开阔学术视野</p>
-            </div>
-          </div>
-        </section>
-      </Motion>
-
-      <!-- Search bar -->
-      <div class="mb-8 rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] shadow-lg p-6">
-        <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          竞赛检索
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <input
-            v-model="query.compName"
-            type="text"
-            placeholder="输入竞赛名称搜索"
-            class="flex-1 min-w-[180px] rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
-            @keyup.enter="handleSearch"
-          />
-          <el-select v-model="query.compLevel" placeholder="竞赛级别" clearable class="!w-32">
-            <el-option v-for="opt in levelOptions" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-          <button
-            class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200"
-            @click="handleSearch"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            搜索
-          </button>
-          <button
-            class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm text-gray-600 font-medium hover:border-orange-300 hover:text-orange-500 transition-all"
-            @click="handleReset"
-          >
-            重置
-          </button>
-        </div>
+  <div class="page-competition-list">
+    <div class="cp-container">
+      <div class="cp-hero-wrap">
+        <CompetitionHero />
       </div>
 
-      <!-- Competition List -->
-      <Motion :initial="{ opacity: 0, y: 20 }" :while-in-view="{ opacity: 1, y: 0 }" :transition="{ duration: 0.5, delay: 0.2 }">
-        <section class="rounded-2xl bg-gradient-to-b from-orange-50/70 to-white border-t-[3px] border-[#F97316] border-b-[3px] border-[#FB923C] p-6 shadow-lg">
-          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-orange-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v18l3-3 4 3 4-3 3 3V3a2 2 0 00-2-2H7a2 2 0 00-2 2zm7 11v2m0-6v1"/></svg>
-            竞赛列表
+      <div class="cp-grid">
+        <div class="cp-left">
+          <CompetitionValueCards />
+
+          <CompetitionSearchCard
+            v-model:comp-name="nameInput"
+            v-model:comp-level="filters.compLevel"
+            :total="total"
+            :level-options="levelOptions"
+            :fav-only="favOnly"
+            @search="handleSearch"
+            @reset="handleReset"
+            @filter-change="onFilterChange"
+            @toggle-fav="onToggleFavOnly"
+          />
+
+          <CompetitionSkeleton v-if="loading" :count="pageSize" />
+
+          <div v-else-if="error" class="cp-state">
+            <p class="cp-state__text">{{ error }}</p>
+            <button type="button" class="cp-state__btn" @click="fetchList">重试</button>
           </div>
-          <div v-loading="loading" class="min-h-[300px]">
-            <div v-if="list.length" class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="bg-gradient-to-b from-[#fff7ed] to-[#ffedd5] text-left text-sm text-gray-800">
-                    <th class="py-3 pr-4 font-semibold border-b-2 border-[#F97316]">竞赛名称</th>
-                    <th class="py-3 pr-4 font-semibold w-28 border-b-2 border-[#F97316]">级别</th>
-                    <th class="py-3 pr-4 font-semibold w-40 border-b-2 border-[#F97316]">报名时间</th>
-                    <th class="py-3 font-semibold w-20 border-b-2 border-[#F97316]">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="item in list" :key="item.id"
-                    class="border-b border-gray-50 hover:bg-orange-50/50 transition-colors"
-                  >
-                    <td class="py-3 pr-4 text-sm font-medium text-gray-800">{{ item.compName }}</td>
-                    <td class="py-3 pr-4 text-sm">
-                      <span
-                        class="rounded-full px-2.5 py-0.5 text-xs"
-                        :class="item.compLevel === '国家级' ? 'bg-red-50 text-red-600' : item.compLevel === '省级' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'"
-                      >{{ item.compLevel }}</span>
-                    </td>
-                    <td class="py-3 pr-4 text-sm text-gray-600">{{ item.registrationTime || '-' }}</td>
-                    <td class="py-3 text-sm">
-                      <button
-                        class="rounded-full bg-orange-50 px-4 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-100 transition-colors"
-                        @click="goDetail(item.id)"
-                      >
-                        查看详情
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-else-if="!loading" class="py-16 text-center text-gray-400">暂无竞赛数据</div>
+
+          <div v-else-if="!list.length" class="cp-state">
+            <el-empty :description="favOnly ? '暂无收藏的竞赛，在卡片右上角点亮星标即可收藏' : '暂无符合条件的竞赛'" />
+            <button v-if="!favOnly" type="button" class="cp-state__btn" @click="handleReset">清除筛选</button>
           </div>
-          <div v-if="total > pageSize" class="mt-6 flex justify-center">
-            <el-pagination
-              background layout="total, sizes, prev, pager, next"
-              :total="total" :page-sizes="[10, 20, 30, 50, 100]"
-              :page-size="pageSize" :current-page="currentPage"
-              @current-change="onPageChange" @size-change="onSizeChange"
+
+          <div v-else class="cp-card-grid">
+            <CompetitionCard
+              v-for="item in list"
+              :key="item.id"
+              :item="item"
+              :favorited="favIds.has(String(item.id))"
+              @open="showDetail"
+              @toggle-fav="onToggleFav"
             />
           </div>
-        </section>
-      </Motion>
-    </main>
 
+          <div v-if="!loading && !error && list.length && total > pageSize" class="cp-pager">
+            <el-pagination
+              background
+              layout="prev, pager, next, sizes"
+              :total="total"
+              :page-sizes="[...PAGE_SIZES]"
+              :page-size="pageSize"
+              :current-page="currentPage"
+              @current-change="onPageChange"
+              @size-change="onSizeChange"
+            />
+          </div>
+        </div>
+
+        <aside class="cp-right" :style="{ top: `${asideTop}px` }">
+          <CompetitionHotRank :items="hotList" :loading="hotLoading" @open="showDetail" />
+          <CompetitionToolsCard />
+        </aside>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* 两列竞赛卡片网格 */
+.cp-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 767px) {
+  .cp-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

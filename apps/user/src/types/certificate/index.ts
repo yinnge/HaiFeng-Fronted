@@ -1,5 +1,11 @@
 import type { BasePageQuery } from '@haifeng/shared'
 
+/**
+ * 证书列表项。
+ * ⚠️ 后端 application.yml 配了 `jackson.default-property-inclusion: non_null`
+ *    → 所有 null 字段在 JSON 中**整个键都不存在**（不是 null）。
+ *    t_certificate.exam_fee 实测 275/275 行全为 NULL，故 examFee 声明为可选。
+ */
 export interface CertificateListVO {
   id: string
   certName: string
@@ -8,10 +14,12 @@ export interface CertificateListVO {
   applicableMajor: string
   registrationTime: string
   examTime: string
-  examFee: number
+  /** 全表为 NULL，JSON 中可能没有该键 */
+  examFee?: number
   certIntro: string
 }
 
+/** 证书详情（同样受 non_null 省略策略影响，可选字段在响应中可能缺键） */
 export interface CertificateDetailVO {
   id: string
   certName: string
@@ -20,7 +28,8 @@ export interface CertificateDetailVO {
   applicableMajor: string
   registrationTime: string
   examTime: string
-  examFee: number
+  /** 全表为 NULL，JSON 中可能没有该键 */
+  examFee?: number
   certIntro: string
   examRequirements: string[]
   examArrangement: string
@@ -51,8 +60,10 @@ export interface CompetitionDetailVO {
   competitionRules: Array<{ title: string; content: string }> | null
   scoringCriteria: string[] | null
   notices: string[] | null
-  processGuide: Array<{ step: string; desc: string }> | null
-  awardsDisplay: Array<{ level: string; count: string }> | null
+  /** 后端实际结构为 {title, content}（DB JSONB，V74 迁移后统一），勿按 {step,desc} 取 */
+  processGuide: Array<{ title: string; content: string }> | null
+  /** 后端实际结构为 {title, content}（DB JSONB），勿按 {level,count} 取 */
+  awardsDisplay: Array<{ title: string; content: string }> | null
 }
 
 export interface CompetitionMajorBriefVO {
@@ -68,9 +79,19 @@ export interface CompetitionBriefVO {
 export interface CertificateQueryDTO extends BasePageQuery {
   category?: string
   certName?: string
+  /**
+   * 收藏过滤（可选）：仅返回命中的证书 id，与其它筛选 AND 叠加（对应后端 BasePageQueryDTO.ids）。
+   * 逗号分隔的 id 字符串（Spring 自动拆分绑定 List<Long>）；后端上限 200 个。
+   */
+  ids?: string
 }
 
 export interface CompetitionQueryDTO extends BasePageQuery {
   compName?: string
   compLevel?: string
+  /**
+   * 收藏过滤（可选）：仅返回命中的竞赛 id，与其它筛选 AND 叠加（对应后端 BasePageQueryDTO.ids）。
+   * 逗号分隔的 id 字符串（Spring 自动拆分绑定 List<Long>）；后端上限 200 个。
+   */
+  ids?: string
 }

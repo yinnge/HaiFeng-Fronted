@@ -19,6 +19,8 @@ export type FavoriteTargetType =
   | 'industry'
   /** 专栏文件（t_file_info） */
   | 'file_info'
+  /** 考研专业（t_postgrad_major，与本科专业 id 空间不同，不可复用 major） */
+  | 'postgrad_major'
 
 /** 收藏记录项（对应后端 FavoriteItemVO；id/targetId 为防精度的字符串） */
 export interface FavoriteItem {

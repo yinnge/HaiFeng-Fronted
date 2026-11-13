@@ -228,6 +228,17 @@ const handleSocialClick = (url: string, name: string) => {
   gap: 60px;
   align-items: start;
 }
+/* 大屏宽度与内容区(.container)统一走 :root --hf-container-*（见 index.css 末尾）：
+   避免 24"/27" 上「主体放宽、页脚却缩在 1280」的割裂；<1536 保持 1280 原样。
+   页脚 100% 相对 .footer-main(padding 24px)，与主体 100% 基准差 48px，封顶 2200 时仍对齐。 */
+@media (min-width: 1536px) {
+  .footer-container {
+    max-width: max(
+      var(--hf-container-floor),
+      min(calc(100% - 2 * var(--hf-container-gutter)), var(--hf-container-max))
+    );
+  }
+}
 
 .footer-brand {
   max-width: 360px;

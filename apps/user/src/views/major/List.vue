@@ -3,6 +3,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { addFavorite, removeFavorite, getFavoriteList, getFavoriteStatus } from '@/api/favorite'
+import { useUserStore } from '@/store'
+import { confirmLogin } from '@/utils/loginGuide'
 import {
   ArrowRight, ArrowUp, Atom, Award, BookMarked, BookOpen, Boxes, Brain, Briefcase,
   BriefcaseBusiness, ChartNoAxesColumnIncreasing, ChevronsRight, Cog, Coins,
@@ -19,6 +22,7 @@ import MajorRateRing from './components/MajorRateRing.vue'
 
 const expertContact = useExpertContact()
 const router = useRouter()
+const userStore = useUserStore()
 
 const heroBg = encodeURI(`${import.meta.env.BASE_URL}picture/university/列表背景.png`)
 
@@ -178,18 +182,124 @@ function currentFilterParams() {
   }
 }
 
+// ==================== 收藏（favorite，targetType=major） ====================
+const FAV_TARGET_TYPE = 'major' as const
+/** 后端 BasePageQueryDTO.ids 的 @Size(max=200) 上限 */
+const FAV_IDS_LIMIT = 200
+/** 仅看收藏开关（toggle）：开启后只查已收藏专业，再点退出回全部 */
+const favOnly = ref(false)
+/** 当前页已收藏的专业 id 集合（json-bigint 保证雪花 ID 为字符串） */
+const favIds = ref<Set<string>>(new Set())
+
+/**
+ * 拉取全部已收藏专业 id（收藏视图用）。
+ * /favorite/list 单次 size ≤100，后端 ids 上限 200 → 最多两页；取满即停并截断，避免 400。
+ */
+async function fetchAllFavIds(): Promise<string[]> {
+  const ids: string[] = []
+  const size = 100
+  for (let page = 1; page <= 2; page++) {
+    const res = await getFavoriteList({ page, size, targetType: FAV_TARGET_TYPE })
+    const records = res.data.data?.records || []
+    for (const r of records) ids.push(String(r.targetId))
+    if (records.length < size) break
+  }
+  if (ids.length > FAV_IDS_LIMIT) {
+    ElMessage.info('收藏较多，仅展示最近收藏的前 200 个专业')
+  }
+  return ids.slice(0, FAV_IDS_LIMIT)
+}
+
+/** 回填当前页星标状态（每页最多 36 条，/favorite/status 单次上限 100 → 一次即可；失败静默） */
+async function refreshFavStatus(ids: string[]) {
+  if (!userStore.isLoggedIn() || !ids.length) return
+  try {
+    const res = await getFavoriteStatus(FAV_TARGET_TYPE, ids.slice(0, 100))
+    const next = new Set(favIds.value)
+    for (const id of res.data.data || []) next.add(String(id))
+    favIds.value = next
+  } catch {
+    /* 收藏状态回填失败忽略，星标保持默认灰色 */
+  }
+}
+
+/** 未登录统一引导（复用全站 confirmLogin）；返回 true 表示已登录可继续 */
+async function requireLogin(): Promise<boolean> {
+  if (userStore.isLoggedIn()) return true
+  userStore.setRedirectPath(router.currentRoute.value.fullPath)
+  if (await confirmLogin('收藏功能需登录后使用，请先登录')) {
+    router.push('/login')
+  }
+  return false
+}
+
+/** 「查看收藏」toggle：开启只查收藏专业，再点退出回全部列表（未登录引导登录） */
+async function onToggleFavOnly() {
+  if (!favOnly.value && !(await requireLogin())) return
+  favOnly.value = !favOnly.value
+  currentPage.value = 1
+  fetchList()
+}
+
+/** 星标点击：收藏 / 取消收藏 */
+async function onToggleFav(item: MajorListVO) {
+  if (!(await requireLogin())) return
+  const idStr = String(item.id)
+  const isFav = favIds.value.has(idStr)
+  try {
+    if (isFav) {
+      await removeFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.delete(idStr)
+      favIds.value = next
+      ElMessage.success('已取消收藏')
+      // 收藏视图内取消：立即从列表移除并刷新当前页（当前页只剩此条时回退一页）
+      if (favOnly.value) {
+        if (list.value.length <= 1 && currentPage.value > 1) currentPage.value -= 1
+        fetchList()
+      }
+    } else {
+      await addFavorite(FAV_TARGET_TYPE, idStr)
+      const next = new Set(favIds.value)
+      next.add(idStr)
+      favIds.value = next
+      ElMessage.success('收藏成功')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '收藏操作失败')
+  }
+}
+
 async function fetchList() {
   loading.value = true
   try {
+    // 收藏视图：先取已收藏专业 id，再透传 ids 与其它筛选 AND 叠加（后端负责分页与 total）
+    let favFilterIds: string | undefined
+    if (favOnly.value) {
+      const ids = await fetchAllFavIds()
+      // 无收藏 → 直接空页（后端空集合语义一致，省一次列表请求）
+      if (!ids.length) {
+        list.value = []
+        total.value = 0
+        return
+      }
+      favFilterIds = ids.join(',')
+    }
+
     query.page = currentPage.value
     query.size = pageSize.value
     query.sortBy = sortType.value
     query.sortOrder = 'desc'
     Object.assign(query, currentFilterParams())
     query.degreeAwarded = filter.degreeAwarded || undefined
+    // query 是复用的 reactive 对象：进入收藏视图带 ids，退出时必须删除，否则筛选/排序会一直被收藏过滤
+    if (favFilterIds) query.ids = favFilterIds
+    else delete query.ids
     const res = await getMajorList(query)
     list.value = res.data.data.records
     total.value = res.data.data.total
+    // 回填当前页星标状态（不阻塞列表展示）
+    void refreshFavStatus(list.value.map((i) => String(i.id)))
   } catch (e: any) {
     ElMessage.error(e?.message || '获取专业列表失败')
   } finally {
@@ -637,6 +747,19 @@ onMounted(() => {
               <span class="text-sm text-slate-400">共 {{ total }} 条</span>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+              <!-- 查看收藏 toggle：开启后仅查已收藏专业，与筛选/排序 AND 叠加 -->
+              <button
+                type="button"
+                class="major-fav-toggle"
+                :class="{ 'is-on': favOnly }"
+                :aria-pressed="favOnly"
+                @click="onToggleFavOnly"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                </svg>
+                {{ favOnly ? '收藏中' : '查看收藏' }}
+              </button>
               <div class="flex gap-1.5">
                 <button
                   v-for="opt in sortOptions"
@@ -702,7 +825,7 @@ onMounted(() => {
                 class="hf-card group cursor-pointer p-5"
                 @click="goDetail(item.id)"
               >
-                <!-- 头部：圆形语义图标 + 标题/标签 + 右上查看详情 -->
+                <!-- 头部：圆形语义图标 + 标题/标签 + 右上收藏星标 -->
                 <div class="flex items-start gap-3">
                   <span
                     class="major-icon-disc"
@@ -721,9 +844,19 @@ onMounted(() => {
                       >{{ t }}</span>
                     </div>
                   </div>
-                  <span class="major-detail">
-                    查看详情 <ArrowRight :size="14" :stroke-width="2" />
-                  </span>
+                  <!-- 右上操作区：仅收藏星标（放大版；星标需 @click.stop，整卡可点跳详情） -->
+                  <button
+                    type="button"
+                    class="major-fav-star is-lg"
+                    :class="{ 'is-on': favIds.has(String(item.id)) }"
+                    :aria-label="favIds.has(String(item.id)) ? `取消收藏 ${item.majorName}` : `收藏 ${item.majorName}`"
+                    :title="favIds.has(String(item.id)) ? '取消收藏' : '收藏'"
+                    @click.stop="onToggleFav(item)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                    </svg>
+                  </button>
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-1.5">
@@ -757,9 +890,14 @@ onMounted(() => {
             </div>
             <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
               <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-                <SearchX :size="28" :stroke-width="1.5" />
+                <svg v-if="favOnly" class="h-7 w-7 text-[#f59e0b]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                </svg>
+                <SearchX v-else :size="28" :stroke-width="1.5" />
               </div>
-              <p class="text-slate-400">暂无匹配的专业，试试调整筛选条件</p>
+              <p class="text-slate-400">
+                {{ favOnly ? '暂无收藏的专业，在卡片右上角点亮星标即可收藏' : '暂无匹配的专业，试试调整筛选条件' }}
+              </p>
             </div>
           </div>
 
@@ -809,14 +947,27 @@ onMounted(() => {
                       {{ salaryText(item.salaryMin, item.salaryMax) === '薪资数据待公布' ? '—' : salaryText(item.salaryMin, item.salaryMax) }}
                     </td>
                     <td class="px-4 py-3 text-sm">
-                      <span class="font-medium text-orange-700 hover:text-orange-800">查看详情</span>
+                      <div class="flex items-center justify-end">
+                        <button
+                          type="button"
+                          class="major-fav-star is-lg"
+                          :class="{ 'is-on': favIds.has(String(item.id)) }"
+                          :aria-label="favIds.has(String(item.id)) ? `取消收藏 ${item.majorName}` : `收藏 ${item.majorName}`"
+                          :title="favIds.has(String(item.id)) ? '取消收藏' : '收藏'"
+                          @click.stop="onToggleFav(item)"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center text-slate-400">
-              暂无匹配的专业，试试调整筛选条件
+              {{ favOnly ? '暂无收藏的专业，在卡片右上角点亮星标即可收藏' : '暂无匹配的专业，试试调整筛选条件' }}
             </div>
           </div>
 
@@ -971,26 +1122,116 @@ onMounted(() => {
   flex: none;
   border-radius: 50%;
 }
-.major-detail {
+/* ===== 查看收藏 toggle：排序组左侧，黄色实底；开启后加深 + 内凹按下态 ===== */
+.major-fav-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  flex: none;
-  margin-top: 2px;
-  /* 白底上的品牌橙 #f97316 只有 2.80:1（WCAG AA 小字需 4.5:1），
-     12px 细笔画被抗锯齿吃成灰雾 → 观感发毛。字重封顶后 500 命中
-     Regular 字形、笔画更细，问题显形。改用 orange-700/800
-     （5.18:1 / 7.31:1），字号取整提到 13px；刻意不加粗，
-     避免破坏刚定下的全站字重克制。 */
-  font-size: 13px;
-  font-weight: 500;
-  color: #c2410c;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
-  transition: color 0.22s ease;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 2px 6px -1px rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.group:hover .major-detail {
-  color: #9a3412;
+
+.major-fav-toggle svg {
+  width: 14px;
+  height: 14px;
 }
+
+.major-fav-toggle:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.45);
+}
+
+.major-fav-toggle:active {
+  transform: translateY(1px);
+}
+
+.major-fav-toggle:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
+.major-fav-toggle.is-on {
+  border-color: rgba(180, 83, 9, 0.4);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow:
+    inset 0 2px 4px rgba(120, 53, 15, 0.25),
+    0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.major-fav-toggle.is-on svg {
+  fill: currentColor;
+}
+
+/* ===== 收藏星标：卡片右上角 / 表格操作列共用 ===== */
+.major-fav-star {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 放大版：卡片右上角与表格操作列使用 */
+.major-fav-star.is-lg {
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+
+.major-fav-star.is-lg svg {
+  width: 20px;
+  height: 20px;
+}
+
+.major-fav-star svg {
+  width: 15px;
+  height: 15px;
+}
+
+.major-fav-star:hover {
+  color: #d97706;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.major-fav-star.is-on {
+  color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.major-fav-star.is-on svg {
+  fill: currentColor;
+}
+
+.major-fav-star:active {
+  transform: translateY(1px);
+}
+
+.major-fav-star:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+}
+
 .major-metrics {
   display: grid;
   /* 非等宽：学制只有两字，压到 44px，腾出的宽度优先给 4~5 位数薪资，剩余给学位 */

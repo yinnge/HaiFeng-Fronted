@@ -4,7 +4,15 @@ import { Clock, FolderTree, GraduationCap, Layers } from 'lucide-vue-next'
 import type { MajorDetailVO } from '@/types/major'
 import { HERO_BG_URL, PLACEHOLDER_DASH, getDisciplineIcon, parseTags } from './utils'
 
-const props = defineProps<{ detail: MajorDetailVO }>()
+const props = defineProps<{
+  detail: MajorDetailVO
+  /** 是否已收藏（灰星 / 黄星切换） */
+  favorited?: boolean
+  /** 收藏请求进行中 */
+  favBusy?: boolean
+}>()
+
+const emit = defineEmits<{ (e: 'toggle-fav'): void }>()
 
 const discipline = computed(() => getDisciplineIcon(props.detail.parentCategory))
 const tags = computed(() => parseTags(props.detail.majorTags))
@@ -53,6 +61,22 @@ const infoItems = computed(() => {
             <span class="major-hero__info-label">{{ item.label }}</span>
             <span class="major-hero__info-value">{{ item.value || PLACEHOLDER_DASH }}</span>
           </div>
+
+          <!-- 收藏：元数据行末尾第 5 项，琥珀底高亮药丸，区别于普通元数据 -->
+          <button
+            type="button"
+            class="major-hero__fav"
+            :class="{ 'is-on': favorited, 'is-busy': favBusy }"
+            :aria-pressed="favorited"
+            :title="favorited ? '点击取消收藏' : '点击收藏该专业'"
+            @click="emit('toggle-fav')"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+            </svg>
+            <span class="major-hero__fav-label">收藏</span>
+            <span class="major-hero__fav-state">{{ favorited ? '已收藏' : '未收藏' }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -148,6 +172,78 @@ const infoItems = computed(() => {
   font-weight: 600;
   line-height: 1.4;
   color: #1e293b;
+}
+
+/* ---------- 收藏药丸：元数据行末尾，琥珀底高亮，与普通元数据明显区分 ---------- */
+.major-hero__fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #64748b;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.major-hero__fav svg {
+  width: 14px;
+  height: 14px;
+  color: #cbd5e1;
+}
+
+.major-hero__fav:hover {
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.major-hero__fav:hover svg {
+  color: #d97706;
+}
+
+.major-hero__fav.is-on {
+  color: #b45309;
+  background: #fffbeb;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.major-hero__fav.is-on svg {
+  color: #f59e0b;
+  fill: currentColor;
+}
+
+.major-hero__fav.is-on .major-hero__fav-label,
+.major-hero__fav.is-on .major-hero__fav-state {
+  color: #b45309;
+}
+
+.major-hero__fav.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .major-hero {
+    /* 元数据第 5 项加入后允许内容撑开，避免固定高度裁切 */
+    height: auto;
+    min-height: 168px;
+  }
+  .major-hero__fav-label,
+  .major-hero__fav-state {
+    /* 移动端只保留星标，减小占位 */
+    display: none;
+  }
+  .major-hero__fav {
+    padding: 4px;
+  }
 }
 @media (max-width: 767px) {
   .major-hero {
