@@ -143,6 +143,8 @@ export interface InstitutionListVO {
   category: string
   province: string
   tags: string[]
+  /** 轮播图首图 URL（后端取 carousel_images[0]，可能为空） */
+  coverImage?: string
 }
 
 /** 机构详情（不含联系方式） */

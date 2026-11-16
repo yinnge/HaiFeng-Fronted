@@ -50,9 +50,11 @@ function handleRefresh() {
 
 const showAvatarSelector = ref(false)
 const currentAvatar = ref('')
+const customAvatar = ref('')
 
 function handleUpdateAvatar() {
   currentAvatar.value = memberInfo.value?.avatar || ''
+  customAvatar.value = memberInfo.value?.customAvatar || ''
   showAvatarSelector.value = true
 }
 
@@ -175,6 +177,7 @@ onMounted(() => {
     <AvatarSelector
       v-model:visible="showAvatarSelector"
       :current-avatar="currentAvatar"
+      :custom-avatar="customAvatar"
       @updated="handleAvatarUpdated"
     />
   </div>

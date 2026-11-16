@@ -7,6 +7,8 @@ export interface MemberInfoVO {
   username: string
   phone: string
   avatar: string | null
+  /** 历史上传的自定义头像 URL（当前用内置头像时也会返回，便于切回） */
+  customAvatar: string | null
   hasWechat: boolean
   inviteCode: string
   commissionBalance: number
