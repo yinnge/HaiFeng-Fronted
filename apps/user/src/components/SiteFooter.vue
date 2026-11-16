@@ -179,8 +179,6 @@ const handleSocialClick = (url: string, name: string) => {
     <div class="footer-bottom">
       <p class="copyright">{{ siteInfo?.siteDescription }}</p>
       <p class="icp">ICP备案号：{{ siteInfo?.siteIcp ?? '加载中...' }}</p>
-      <!-- MiSans 许可协议要求「在软件中特别注明使用了 MiSans 字体」，此行为合规声明，勿删 -->
-      <p class="font-credit">本站使用 MiSans 字体（© 小米科技有限责任公司）；西文与数字采用 Inter（SIL OFL 1.1）</p>
     </div>
 
     <ElDialog
