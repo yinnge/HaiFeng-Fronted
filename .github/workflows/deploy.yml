@@ -51,7 +51,7 @@ jobs:
             mkdir -p /opt/haifeng/dist/admin
 
       - name: Copy User Files via SCP
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -61,9 +61,11 @@ jobs:
           target: "/opt/haifeng/dist/user"
           strip_components: 3
           overwrite: true
+          timeout: 10m
+          command_timeout: 30m
 
       - name: Copy Admin Files via SCP
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -73,6 +75,8 @@ jobs:
           target: "/opt/haifeng/dist/admin"
           strip_components: 3
           overwrite: true
+          timeout: 10m
+          command_timeout: 30m
 
       - name: Restart Nginx
         uses: appleboy/ssh-action@v1.0.0
