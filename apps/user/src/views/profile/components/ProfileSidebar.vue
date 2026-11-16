@@ -1,6 +1,7 @@
 <!-- apps/user/src/views/profile/components/ProfileSidebar.vue -->
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MemberTypeLabel, MemberType } from '@haifeng/shared'
 import type { MemberInfoVO } from '@/types/member/info'
@@ -11,9 +12,15 @@ const props = defineProps<{
   profile: MemberProfileVO | null
 }>()
 
+const router = useRouter()
+
 const emit = defineEmits<{
   (e: 'view-commission'): void
 }>()
+
+function goTeacherConsultations() {
+  router.push('/teacher/consultations')
+}
 
 const memberStatusLabel = computed(() => {
   if (!props.memberInfo) return '-'
@@ -109,6 +116,22 @@ async function handleCopyInviteCode() {
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- 教师中心 -->
+    <div v-if="memberInfo?.teacher" class="side-card">
+      <div class="side-card-header">
+        <span class="side-card-icon-chip chip-orange">
+          <svg class="side-card-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 5.5A2.5 2.5 0 014.5 3h15A2.5 2.5 0 0122 5.5v9a2.5 2.5 0 01-2.5 2.5H10.4l-4.9 4.2A.9.9 0 014 20.5V17A2.5 2.5 0 012 14.5v-9zm4 2.2a.9.9 0 000 1.8h12a.9.9 0 000-1.8H6zm0 4a.9.9 0 000 1.8h8a.9.9 0 000-1.8H6z" />
+          </svg>
+        </span>
+        <div>
+          <div class="side-card-title">教师中心</div>
+          <div class="side-card-desc">查看学员留言，及时联系对方</div>
+        </div>
+      </div>
+      <button class="teacher-entry-btn" @click="goTeacherConsultations">进入咨询留言</button>
     </div>
 
     <!-- 账户概览 -->
@@ -400,6 +423,26 @@ async function handleCopyInviteCode() {
 
 .copy-btn:active {
   transform: none;
+}
+
+/* ===== 教师中心 ===== */
+.teacher-entry-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 16px rgba(232, 114, 42, 0.22);
+}
+
+.teacher-entry-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(232, 114, 42, 0.3);
 }
 
 /* ===== 账户概览 ===== */

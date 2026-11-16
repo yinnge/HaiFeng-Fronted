@@ -40,6 +40,11 @@ function goProfile() {
   router.push('/profile')
 }
 
+function goTeacherConsultations() {
+  showDropdown.value = false
+  router.push('/teacher/consultations')
+}
+
 async function handleLogout() {
   showDropdown.value = false
   try {
@@ -137,6 +142,12 @@ onBeforeUnmount(() => {
             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
           </svg>
           个人中心
+        </button>
+        <button v-if="userInfo?.teacher" class="dropdown-item" @click="goTeacherConsultations">
+          <svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v7a2.5 2.5 0 01-2.5 2.5H8.6l-3.8 3.2A.75.75 0 013.5 16.7V14A2.5 2.5 0 012 11.5v-7z" />
+          </svg>
+          教师中心
         </button>
         <button class="dropdown-item dropdown-item-danger" @click="handleLogout">
           <svg class="dropdown-icon" viewBox="0 0 20 20" fill="currentColor">

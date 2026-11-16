@@ -5,6 +5,8 @@ export interface NotificationListVO {
   notificationType: string
   title: string
   content: string
+  /** 业务关联ID（如咨询留言ID），无关联时为空 */
+  relatedId?: string | null
   isRead: boolean
   createdAt: string
   readAt: string | null
@@ -20,6 +22,8 @@ export interface NotificationDetailVO {
   notificationType: string
   title: string
   content: string
+  /** 业务关联ID（如咨询留言ID），无关联时为空 */
+  relatedId?: string | null
   isRead: boolean
   createdAt: string
   readAt: string | null

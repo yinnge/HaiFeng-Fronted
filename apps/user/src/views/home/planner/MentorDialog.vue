@@ -9,6 +9,7 @@ import type {
   MentorCardConfig, PlannerListVO, InstitutionListVO,
   PlannerDetailVO, InstitutionDetailVO,
 } from '@/types/home'
+import ConsultationDialog from '@/components/ConsultationDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -190,6 +191,8 @@ interface AppointmentVM {
 const appointmentOpen = ref(false)
 const appointmentLoading = ref(false)
 const appointment = ref<AppointmentVM | null>(null)
+const consultationVisible = ref(false)
+const currentEntry = computed(() => filteredList.value[currentIndex.value] || null)
 
 const openAppointment = async () => {
   const entry = filteredList.value[currentIndex.value]
@@ -516,8 +519,17 @@ const ICO = {
         <img :src="appointment.qrcodeUrl" alt="微信二维码" />
       </div>
       <div v-if="!appointment?.phone && !appointment?.email && !appointment?.address && !appointment?.qrcodeUrl" class="empty-hint">暂无公开联系方式</div>
+      <button class="appt-consult-btn" type="button" @click="consultationVisible = true">留言咨询</button>
     </div>
   </el-dialog>
+
+  <ConsultationDialog
+    v-if="currentEntry"
+    v-model:visible="consultationVisible"
+    :biz-type="isPerson ? 'planner' : 'institution'"
+    :biz-id="currentEntry.id"
+    :biz-name="appointment?.name || currentEntry.name"
+  />
 </template>
 
 <style>
@@ -681,6 +693,14 @@ const ICO = {
 .appt-avatar { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 3.4rem; height: 3.4rem; padding: 3px; border-radius: 50%; background: linear-gradient(145deg, #f97316, #fff7ed); overflow: hidden; }
 .appt-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #fff; }
 .appt-body { padding: 1rem 1.5rem 1.5rem; }
+.appt-consult-btn {
+  width: 100%; margin-top: 1rem; padding: .7rem 1rem; border: none; border-radius: 9999px;
+  color: #fff; font-size: .9rem; font-weight: 600; cursor: pointer;
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  box-shadow: 0 6px 16px rgba(232, 114, 42, .22);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.appt-consult-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(232, 114, 42, .3); }
 .appt-row { display: flex; align-items: center; gap: .6rem; padding: .7rem 0; border-bottom: 1px dashed #f1f5f9; }
 .appt-icon { flex-shrink: 0; display: flex; color: #f97316; }
 .appt-icon svg { width: 1.05rem; height: 1.05rem; }

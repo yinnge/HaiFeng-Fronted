@@ -1,6 +1,7 @@
 <!-- apps/user/src/views/profile/components/NotificationPanel.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getNotificationPage,
@@ -20,6 +21,8 @@ import type { NotificationListVO, NotificationDetailVO, NotificationQueryDTO } f
 const emit = defineEmits<{
   (e: 'refresh'): void
 }>()
+
+const router = useRouter()
 
 const loading = ref(false)
 const tableData = ref<NotificationListVO[]>([])
@@ -172,6 +175,16 @@ function formatTime(dateStr: string) {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+/** 咨询留言通知：跳转教师收件箱并直接打开该条留言 */
+function goConsultation() {
+  const relatedId = detailData.value?.relatedId
+  detailVisible.value = false
+  router.push({
+    path: '/teacher/consultations',
+    query: relatedId ? { focus: String(relatedId) } : {},
+  })
 }
 
 onMounted(() => {
@@ -385,6 +398,13 @@ onMounted(() => {
         </template>
       </div>
       <template #footer>
+        <button
+          v-if="detailData?.notificationType === 'consultation_received'"
+          class="detail-primary-btn"
+          @click="goConsultation"
+        >
+          查看留言
+        </button>
         <button class="detail-close-btn" @click="detailVisible = false">关闭</button>
       </template>
     </el-dialog>
@@ -957,6 +977,25 @@ onMounted(() => {
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.detail-primary-btn {
+  margin-right: 0.75rem;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #f5a54a, #e8722a);
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(232, 114, 42, 0.25);
+}
+
+.detail-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(232, 114, 42, 0.35);
 }
 
 .detail-close-btn:hover {

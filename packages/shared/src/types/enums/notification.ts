@@ -12,6 +12,9 @@ export enum NotificationType {
   MEMBER_ACTIVATION_SUCCESS = 'member_activation_success',
   MEMBER_REVOKED = 'member_revoked',
   COMMISSION_REVERSED = 'commission_reversed',
+  TEACHER_GRANTED = 'teacher_granted',
+  TEACHER_REVOKED = 'teacher_revoked',
+  CONSULTATION_RECEIVED = 'consultation_received',
 }
 
 export const NotificationTypeLabel: Record<NotificationType, string> = {
@@ -25,6 +28,9 @@ export const NotificationTypeLabel: Record<NotificationType, string> = {
   [NotificationType.MEMBER_ACTIVATION_SUCCESS]: '会员开通成功',
   [NotificationType.MEMBER_REVOKED]: '会员已撤销',
   [NotificationType.COMMISSION_REVERSED]: '佣金已撤回',
+  [NotificationType.TEACHER_GRANTED]: '老师身份已开通',
+  [NotificationType.TEACHER_REVOKED]: '老师身份已撤销',
+  [NotificationType.CONSULTATION_RECEIVED]: '收到咨询留言',
 }
 
 export const NotificationTypeTag: Record<NotificationType, 'info' | 'warning' | 'success' | 'danger'> = {
@@ -38,6 +44,9 @@ export const NotificationTypeTag: Record<NotificationType, 'info' | 'warning' | 
   [NotificationType.MEMBER_ACTIVATION_SUCCESS]: 'success',
   [NotificationType.MEMBER_REVOKED]: 'warning',
   [NotificationType.COMMISSION_REVERSED]: 'danger',
+  [NotificationType.TEACHER_GRANTED]: 'success',
+  [NotificationType.TEACHER_REVOKED]: 'warning',
+  [NotificationType.CONSULTATION_RECEIVED]: 'info',
 }
 
 export const NotificationTypeOptions = Object.values(NotificationType).map((value) => ({

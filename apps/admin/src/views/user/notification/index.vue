@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getNotificationPage,
@@ -29,6 +29,17 @@ const queryParams = reactive<NotificationQueryDTO>({
 const dialogVisible = ref(false)
 const broadcastVisible = ref(false)
 const detailData = ref<NotificationListVO | null>(null)
+
+// 咨询留言走独立的「咨询留言」页面，通知管理不再展示该类型
+const adminNotificationTypeLabel = computed<Record<string, string>>(() => {
+  const result: Record<string, string> = {}
+  Object.entries(NotificationTypeLabel).forEach(([key, label]) => {
+    if (key !== 'consultation_received') {
+      result[key] = label
+    }
+  })
+  return result
+})
 
 const fetchData = async () => {
   loading.value = true
@@ -167,7 +178,7 @@ onMounted(() => {
 
     <NotificationSearch
       :model-value="queryParams"
-      :notification-type-label="NotificationTypeLabel"
+      :notification-type-label="adminNotificationTypeLabel"
       @update:model-value="Object.assign(queryParams, $event)"
       @search="handleSearch"
       @reset="handleReset"
@@ -179,7 +190,7 @@ onMounted(() => {
       :total="total"
       :page="queryParams.page"
       :size="queryParams.size"
-      :notification-type-label="NotificationTypeLabel"
+      :notification-type-label="adminNotificationTypeLabel"
       @detail="openDetail"
       @toggle-disable="handleToggleDisable"
       @hard-delete="handleHardDelete"
@@ -191,7 +202,7 @@ onMounted(() => {
     <NotificationDetailModal
       v-model:visible="dialogVisible"
       :data="detailData"
-      :notification-type-label="NotificationTypeLabel"
+      :notification-type-label="adminNotificationTypeLabel"
     />
 
     <BroadcastModal

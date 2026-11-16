@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getInstitutionDetail, getInstitutionAppointment } from '@/api/home'
 import type { InstitutionDetailVO, InstitutionAppointmentVO } from '@/types/home'
+import ConsultationDialog from '@/components/ConsultationDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const detail = ref<InstitutionDetailVO | null>(null)
 const appointment = ref<InstitutionAppointmentVO | null>(null)
+const consultationVisible = ref(false)
 const loading = ref(true)
 
 onMounted(async () => {
@@ -106,6 +108,13 @@ onMounted(async () => {
             </div>
           </div>
 
+          <button
+            class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+            @click="consultationVisible = true"
+          >
+            留言咨询
+          </button>
+
           <div class="mt-8 rounded-2xl bg-white p-6 shadow-lg">
             <h2 class="mb-3 text-lg font-bold text-gray-800">机构简介</h2>
             <p class="text-gray-600 leading-relaxed">{{ detail.introduction }}</p>
@@ -136,5 +145,13 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <ConsultationDialog
+      v-if="detail"
+      v-model:visible="consultationVisible"
+      biz-type="institution"
+      :biz-id="detail.id"
+      :biz-name="detail.name"
+    />
   </div>
 </template>

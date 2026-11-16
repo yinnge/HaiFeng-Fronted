@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPlannerDetail, getPlannerAppointment } from '@/api/home'
 import type { PlannerDetailVO, PlannerAppointmentVO } from '@/types/home'
+import ConsultationDialog from '@/components/ConsultationDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const detail = ref<PlannerDetailVO | null>(null)
 const appointment = ref<PlannerAppointmentVO | null>(null)
+const consultationVisible = ref(false)
 const loading = ref(true)
 
 onMounted(async () => {
@@ -101,6 +103,12 @@ onMounted(async () => {
                 <span v-if="appointment.address">地址：{{ appointment.address }}</span>
               </div>
               <img v-if="appointment.wechatQrcodeUrl" :src="appointment.wechatQrcodeUrl" alt="微信二维码" class="mt-4 h-32 w-32 rounded-lg border border-gray-200" />
+              <button
+                class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+                @click="consultationVisible = true"
+              >
+                留言咨询
+              </button>
             </div>
           </div>
         </div>
@@ -115,5 +123,13 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <ConsultationDialog
+      v-if="detail"
+      v-model:visible="consultationVisible"
+      biz-type="planner"
+      :biz-id="detail.id"
+      :biz-name="detail.name"
+    />
   </div>
 </template>

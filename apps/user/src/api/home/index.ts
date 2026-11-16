@@ -4,6 +4,7 @@ import type {
   SiteInfoVO, HomePageResult, AnnouncementListVO, AnnouncementDetailVO,
   PlannerListVO, PlannerDetailVO, PlannerAppointmentVO,
   InstitutionListVO, InstitutionDetailVO, InstitutionAppointmentVO,
+  ConsultationAddDTO,
   HomeArticleNewsVO, HomeArticleDetailVO,
 } from '@/types/home'
 
@@ -44,6 +45,14 @@ export const getInstitutionDetail = (id: string) =>
 /** 机构预约信息（机构名+联系方式） */
 export const getInstitutionAppointment = (id: string) =>
   request.get<R<InstitutionAppointmentVO>>(`${PREFIX}/institutions/${id}/appointment`)
+
+/** 给规划师提交咨询留言（公开，IP 限流） */
+export const submitPlannerConsultation = (id: string, data: ConsultationAddDTO) =>
+  request.post<R<string>>(`${PREFIX}/planners/${id}/consultations`, data)
+
+/** 给培训机构提交咨询留言（公开，IP 限流） */
+export const submitInstitutionConsultation = (id: string, data: ConsultationAddDTO) =>
+  request.post<R<string>>(`${PREFIX}/institutions/${id}/consultations`, data)
 
 /** 主页资讯（全部模块，按时间倒序，最新在前）：轻量列表，返回 模块名/标题/专栏名/年份/发布时间 */
 export const getHomeArticleNews = (params: { page?: number; size?: number; moduleName?: string }) =>

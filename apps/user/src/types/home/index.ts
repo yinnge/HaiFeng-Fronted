@@ -182,6 +182,13 @@ export interface InstitutionAppointmentVO {
   phone: string
 }
 
+/** 提交咨询留言 */
+export interface ConsultationAddDTO {
+  message: string
+  wechat?: string
+  phone: string
+}
+
 /** 名师指导 - 6 张入口卡片配置（文案照抄原型，数字由接口动态替换） */
 export interface MentorCardConfig {
   key: string

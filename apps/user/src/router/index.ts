@@ -190,6 +190,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '个人中心', requiresAuth: true },
   },
   {
+    path: '/teacher/consultations',
+    name: 'TeacherConsultations',
+    component: () => import('@/views/teacher/consultations/index.vue'),
+    meta: { title: '咨询留言', requiresAuth: true, requiresTeacher: true },
+  },
+  {
     path: '/home/planner/:id',
     name: 'PlannerDetail',
     component: () => import('@/views/home/planner/Detail.vue'),
@@ -540,6 +546,19 @@ router.beforeEach(async (to, _from, next) => {
       } else {
         next(false)
       }
+      return
+    }
+  }
+
+  // 需要老师身份：会员账号被授予 is_teacher 才可进入教师端
+  if (to.meta.requiresTeacher) {
+    const userStore = useUserStore()
+    if (!userStore.userInfo?.teacher) {
+      // 本地缓存可能是授予前的旧值，实时拉一次
+      await userStore.fetchUserInfo()
+    }
+    if (!userStore.userInfo?.teacher) {
+      next({ name: 'Profile' })
       return
     }
   }
