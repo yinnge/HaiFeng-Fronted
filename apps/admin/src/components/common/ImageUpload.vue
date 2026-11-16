@@ -32,7 +32,6 @@ const props = withDefaults(
   }>(),
   {
     modelValue: '',
-    modelValues: () => [],
     allowManual: true,
     max: 10,
     placeholder: '请上传或填写图片链接',
@@ -45,8 +44,8 @@ const emit = defineEmits<{
   (e: 'update:modelValues', v: string[]): void
 }>()
 
-/** 是否多图模式：传入 modelValues 即为多图 */
-const isMulti = computed(() => Array.isArray(props.modelValues))
+/** 是否多图模式：只有父组件显式传了 model-values 才是多图（不能靠默认值判断） */
+const isMulti = computed(() => props.modelValues !== undefined)
 
 const uploading = ref(false)
 /** 单图模式当前处于哪个模式 */
@@ -60,7 +59,7 @@ const manualUrl = ref('')
 const ACCEPT = '.png,.jpg,.jpeg,.webp,.svg'
 const MAX_SIZE = 2 * 1024 * 1024
 
-const currentList = computed<string[]>(() => (isMulti.value ? props.modelValues : []))
+const list = computed<string[]>(() => props.modelValues ?? [])
 
 function isValidUrl(url: string): boolean {
   if (!url) return false
@@ -97,11 +96,11 @@ function handleUpload(options: UploadRequestOptions) {
         return
       }
       if (isMulti.value) {
-        if (props.modelValues.length >= props.max) {
+        if (list.value.length >= props.max) {
           ElMessage.warning(`最多上传 ${props.max} 张`)
           return
         }
-        emit('update:modelValues', [...props.modelValues, url])
+        emit('update:modelValues', [...list.value, url])
       } else {
         emit('update:modelValue', url)
       }
@@ -127,11 +126,11 @@ function handleManualConfirm() {
     return
   }
   if (isMulti.value) {
-    if (props.modelValues.length >= props.max) {
+    if (list.value.length >= props.max) {
       ElMessage.warning(`最多上传 ${props.max} 张`)
       return
     }
-    emit('update:modelValues', [...props.modelValues, url])
+    emit('update:modelValues', [...list.value, url])
   } else {
     emit('update:modelValue', url)
   }
@@ -139,9 +138,9 @@ function handleManualConfirm() {
 }
 
 function removeAt(index: number) {
-  const list = [...props.modelValues]
-  list.splice(index, 1)
-  emit('update:modelValues', list)
+  const next = [...list.value]
+  next.splice(index, 1)
+  emit('update:modelValues', next)
 }
 
 function clearSingle() {
@@ -238,7 +237,7 @@ function clearSingle() {
           @click="multiMode = 'manual'"
         >链接</button>
       </div>
-      <span class="iu-count">已添加 {{ modelValues.length }} / {{ max }} 张</span>
+      <span class="iu-count">已添加 {{ list.length }} / {{ max }} 张</span>
     </div>
 
     <div v-if="multiMode === 'manual'" class="iu-manual iu-manual-multi">
@@ -251,16 +250,16 @@ function clearSingle() {
       <button
         type="button"
         class="iu-btn iu-btn-primary"
-        :disabled="modelValues.length >= max"
+        :disabled="list.length >= max"
         @click="handleManualConfirm"
       >添加链接</button>
     </div>
 
     <div class="iu-multi-list">
-      <div v-for="(url, index) in modelValues" :key="`${url}-${index}`" class="iu-multi-item">
+      <div v-for="(url, index) in list" :key="`${url}-${index}`" class="iu-multi-item">
         <el-image
           :src="url"
-          :preview-src-list="modelValues"
+          :preview-src-list="list"
           preview-teleported
           fit="cover"
           class="iu-preview-img"
@@ -275,7 +274,7 @@ function clearSingle() {
       </div>
 
       <div
-        v-if="multiMode === 'upload' && modelValues.length < max"
+        v-if="multiMode === 'upload' && list.length < max"
         class="iu-multi-add"
         :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
       >
@@ -485,6 +484,8 @@ function clearSingle() {
 
 .iu-multi-add {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px dashed rgba(249, 115, 22, 0.35);
   border-radius: 10px;
   background: rgba(249, 115, 22, 0.03);
@@ -498,6 +499,9 @@ function clearSingle() {
 }
 
 .iu-multi-add :deep(.el-upload) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
 }

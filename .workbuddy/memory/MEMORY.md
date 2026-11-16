@@ -45,6 +45,7 @@
 ## 沙箱校验 Java / Vue 通用坑
 - Java：`-proc:none` 不可行，须 `-proc:full` + 显式 lombok processor + 临时输出目录（绝不碰 target/classes）；classpath 用 Windows 路径分号、按 pom 版本排除冲突 jar（jjwt/jsoup）。
 - EP http-request 须返回 XHR|Promise 且用 `options.file`；el-form validate 回调不能 return false；可选数组 v-model 用 computed 代理；Short 显式强转；相对 import 层级核对（planner/components → `../../constants`）。
+- `common/ImageUpload.vue` 单/多图判断：父传 `model-values` 才是多图，`modelValues` **绝不能设默认值**（设 `() => []` 会让所有单图误判为多图，URL 写不进 `avatarUrl`）。图片「上传」写 OSS 公共读 bucket `haifeng-public`，「链接」只存 URL 字符串到 DB，二者都不落本地静态盘。
 
 ## admin home / 业务规则 / 导航
 - planner = 软删上下架（派生 status + `PUT /{id}/status`）+ 列表「已下线」筛选；institution = status 0/1 + 硬删；枚举全中文落库（高考/考研、4 类机构、34 省裸值）；`uk_institutions_user` 单列唯一 → 演示账号 `demo_teacher_*`；Flyway 提交前查 `ls db/migration | sort -V | tail`。
