@@ -40,8 +40,23 @@ export const updatePassword = (data: PasswordUpdateDTO) => {
 }
 
 /**
- * 修改头像
+ * 修改头像（选择内置头像 / 切回历史上传头像）
  */
 export const updateAvatar = (avatar: string) => {
   return request.put<R<null>>(`${PREFIX}/avatar`, { avatar })
+}
+
+/**
+ * 上传自定义头像（写入头像专用公共读 bucket，按 memberId 固定 key 覆盖更新）
+ *
+ * <p>后端限制：仅 JPG / PNG，≤2MB，边长 64~2048px，宽高比 1:2~2:1。
+ * 后端上传成功后会直接把当前头像改为新 URL。
+ */
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<R<string>>(`${PREFIX}/profile/avatar/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
 }

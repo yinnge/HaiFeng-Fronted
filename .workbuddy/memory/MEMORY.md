@@ -39,6 +39,7 @@
 
 ## OSS / 存储
 - `haifeng1` 私有读是 fileload VIP 门禁根基（@RequireVip + 私有 bucket + 后端实时预签名 3600s），勿改公共读。
+- 会员头像独立 bucket `haifeng-memeber-svg`（公共读，`OSS_AVATAR_BUCKET_NAME`/`PREFIX`，oss.avatar-*）；按 memberId 固定 key `haifeng/avatars/{id}` 覆盖上传=删旧更新，切静态头像不删对象、可凭稳定 URL 切回（MemberInfoVO.customAvatar 由 OSS doesObjectExist 探测）。上传接口 `POST /api/v1/app/member/profile/avatar/upload`；校验 JPG/PNG ≤2MB 边长 64~2048 宽高比 0.5~2（禁 SVG）。
 - 公开素材走 `haifeng-public`（ACL 可公共读即可，勿开公共读写）：`POST /api/v1/admin/common/upload`（仅 @RequireLogin admin），png/jpg/jpeg/webp/svg ≤2MB，SVG 消毒；putObject 不支持自定义响应头（X-Content-Type-Options 实测被静默丢弃）；必须显式设 Content-Type（`OssService.resolveContentType()`），否则 SVG 被当附件；bucket 强制下载对 SVG 是净收益，保留。
 - C 端头像相对路径 `/static/planners/*.svg` 链路断；可用图仅 `apps/user/src/assets/images/avatars/avatar-{1..8}.svg`（vite hash 名不可存 DB）。
 
