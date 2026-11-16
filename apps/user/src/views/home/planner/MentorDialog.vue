@@ -32,6 +32,8 @@ interface EntryVM {
   subtitle: string
   tags: string[]
   avatarUrl: string
+  /** 机构卡片封面 = carouselImages[0] */
+  coverImage: string
   logoText: string
 }
 const list = ref<EntryVM[]>([])
@@ -53,14 +55,14 @@ const toEntryVM = (p: PlannerListVO | InstitutionListVO): EntryVM => {
     return {
       id: v.id, name: v.name, province: v.province || '',
       badge: v.position || '', subtitle: v.listDesc || '',
-      tags: v.listTags || [], avatarUrl: v.avatarUrl || '', logoText: v.name?.slice(0, 1) || '',
+      tags: v.listTags || [], avatarUrl: v.avatarUrl || '', coverImage: '', logoText: v.name?.slice(0, 1) || '',
     }
   }
   const v = p as InstitutionListVO
   return {
     id: v.id, name: v.name, province: v.province || '',
     badge: '', subtitle: v.category || '',
-    tags: v.tags || [], avatarUrl: '', logoText: v.name?.slice(0, 1) || '',
+    tags: v.tags || [], avatarUrl: '', coverImage: v.coverImage || '', logoText: v.name?.slice(0, 1) || '',
   }
 }
 
@@ -373,7 +375,8 @@ const ICO = {
             </template>
             <template v-else>
               <span class="entry-cover">
-                <span class="cover-placeholder">{{ entry.logoText }}</span>
+                <img v-if="entry.coverImage" class="entry-cover__img" :src="entry.coverImage" :alt="entry.name" loading="lazy" />
+                <span v-else class="cover-placeholder">{{ entry.logoText }}</span>
                 <span class="entry-cover__logo">{{ entry.logoText }}</span>
               </span>
               <span class="entry-body">
@@ -691,6 +694,8 @@ const ICO = {
 .entry-card:hover .entry-arrow { color: var(--pc); transform: translateX(3px); }
 .entry-card--org { flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
 .entry-cover { position: relative; aspect-ratio: 16/8.4; overflow: hidden; background: linear-gradient(135deg, var(--pc-soft), var(--pc-line)); }
+.entry-cover__img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.22,1,.36,1); }
+.entry-card:hover .entry-cover__img { transform: scale(1.04); }
 .cover-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 2.4rem; font-weight: 800; color: var(--pc-deep); opacity: .35; }
 .entry-cover__logo { position: absolute; left: .7rem; bottom: .65rem; display: flex; align-items: center; justify-content: center; width: 1.95rem; height: 1.95rem; border-radius: .55rem; background: rgba(255,255,255,.95); color: var(--pc-deep); font-size: .85rem; font-weight: 800; }
 .entry-body { padding: .72rem .9rem .82rem; }
