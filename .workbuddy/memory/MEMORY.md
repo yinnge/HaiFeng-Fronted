@@ -52,7 +52,11 @@
 
 ## ★ OSS / 存储（勿回退）
 - `haifeng1` bucket 私有读，是 fileload VIP 门禁必要条件：门禁三层 = @RequireVip → 私有 bucket → 后端实时签发预签名 URL（url-expire:3600）。改公共读会让门禁形同虚设（objectKey 泄露即可匿名直连）。实测匿名 403。
-- 公开素材（头像 / 轮播图 / 二维码）走独立公共读 bucket：`oss.public-bucket-name`/`public-url-prefix` + `OssService.uploadPublicBytes()` + `buildPublicUrl()`。上传 `POST /api/v1/admin/common/upload`（不绑 @RequireAdminModule，仅 @RequireLogin(userType="admin")），白名单 png/jpg/jpeg/webp/svg ≤2MB，SVG 内容消毒防存储型 XSS。
+- 公开素材（头像 / 轮播图 / 二维码）走独立公共读 bucket `haifeng-public`：`oss.public-bucket-name`/`public-url-prefix` + `OssService.uploadPublicBytes()` + `buildPublicUrl()`。上传 `POST /api/v1/admin/common/upload`（不绑 @RequireAdminModule，仅 @RequireLogin(userType="admin")），白名单 png/jpg/jpeg/webp/svg ≤2MB，SVG 内容消毒防存储型 XSS。
+  - ★ bucket ACL「可公共读」即可，**不要改「可公共读写」**：写权限来自 AK/SK（putObject），与 ACL 无关；公共读写 = 任何人可写入/删除。
+  - ★ **OSS putObject 不支持自定义 HTTP 响应头**：实测 `X-Content-Type-Options` 经 `ObjectMetadata.setHeader` 与 `ResponseHeaderOverrides` 两种传法**均被静默丢弃**（OSS 只认 Content-Type/Content-Disposition/Cache-Control 与 `x-oss-meta-*`）→ 写这类设置等于白写。
+  - ★ **必须显式设 Content-Type**：SDK 用 `InputStream` 构造 `PutObjectRequest` 默认 `application/octet-stream` → SVG 被当附件下载而非内联渲染（PNG/JPG 靠魔数嗅探侥幸能显示）。已加 `OssService.resolveContentType()`。
+  - ★ bucket 开了「强制下载」（响应含 `Content-Disposition: attachment` + `x-oss-force-download: true`）：`<img>` 引用不受影响（正常显示），顶层打开 URL 会下载。对 SVG 是**净收益**（不执行脚本），建议保持。
 - C 端头像链路本就断：DB 写 `avatarUrl=/static/planners/xx.svg` 相对路径，但 static/ 下只有 pdfjs、nginx 无 /static/ location。可用图只有 `apps/user/src/assets/images/avatars/avatar-{1..8}.svg`（vite hash 名，不能存 DB）。
 
 ## ★ 沙箱内校验 Java（11-16 验证可行）
