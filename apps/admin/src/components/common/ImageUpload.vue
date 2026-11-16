@@ -152,69 +152,110 @@ function clearSingle() {
 <template>
   <!-- 单图模式 -->
   <div v-if="!isMulti" class="iu-single">
-    <div class="iu-preview">
-      <el-image
-        v-if="modelValue"
-        :src="modelValue"
-        :preview-src-list="[modelValue]"
-        preview-teleported
-        fit="cover"
-        class="iu-preview-img"
-        :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
-      />
-      <div v-else class="iu-placeholder" :style="{ width: `${previewSize}px`, height: `${previewSize}px` }">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="9" cy="9" r="2" />
-          <path d="m21 15-3.5-3.5L6 23" />
-        </svg>
-        <span>暂无图片</span>
-      </div>
-      <button v-if="modelValue" type="button" class="iu-clear" title="清除图片" @click="clearSingle">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </div>
-
-    <div class="iu-ops">
-      <el-upload
-        v-if="singleMode === 'upload'"
-        :show-file-list="false"
-        :accept="ACCEPT"
-        :http-request="handleUpload"
-        :disabled="uploading"
-      >
-        <button type="button" class="iu-btn iu-btn-primary" :disabled="uploading">
-          {{ uploading ? '上传中…' : '上传图片' }}
-        </button>
-      </el-upload>
-
-      <div v-else class="iu-manual">
-        <el-input
-          v-model="manualUrl"
-          placeholder="https://example.com/a.png 或 /static/a.png"
-          clearable
-          @keyup.enter="handleManualConfirm"
+    <div class="iu-single-main">
+      <div class="iu-preview">
+        <el-image
+          v-if="modelValue"
+          :src="modelValue"
+          :preview-src-list="[modelValue]"
+          preview-teleported
+          fit="cover"
+          class="iu-preview-img"
+          :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
         />
-        <button type="button" class="iu-btn iu-btn-primary" @click="handleManualConfirm">确定</button>
+        <div v-else class="iu-placeholder" :style="{ width: `${previewSize}px`, height: `${previewSize}px` }">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.5-3.5L6 23" />
+          </svg>
+          <span>暂无图片</span>
+        </div>
+        <button v-if="modelValue" type="button" class="iu-clear" title="清除图片" @click="clearSingle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
 
-      <button
-        v-if="allowManual"
-        type="button"
-        class="iu-btn iu-btn-ghost iu-switch"
-        @click="singleMode = singleMode === 'upload' ? 'manual' : 'upload'"
-      >
-        {{ singleMode === 'upload' ? '改用图片链接' : '改用上传' }}
-      </button>
+      <div class="iu-ops">
+        <el-upload
+          v-if="singleMode === 'upload'"
+          :show-file-list="false"
+          :accept="ACCEPT"
+          :http-request="handleUpload"
+          :disabled="uploading"
+        >
+          <button type="button" class="iu-btn iu-btn-primary" :disabled="uploading">
+            {{ uploading ? '上传中…' : '上传图片' }}
+          </button>
+        </el-upload>
+
+        <div v-else class="iu-manual">
+          <el-input
+            v-model="manualUrl"
+            placeholder="粘贴图片地址：https://… 或 /static/…"
+            clearable
+            @keyup.enter="handleManualConfirm"
+          />
+          <button type="button" class="iu-btn iu-btn-primary" @click="handleManualConfirm">确定</button>
+        </div>
+
+        <div v-if="allowManual" class="iu-seg" role="group" aria-label="图片添加方式">
+          <button
+            type="button"
+            class="iu-seg-btn"
+            :class="{ 'is-active': singleMode === 'upload' }"
+            @click="singleMode = 'upload'"
+          >上传</button>
+          <button
+            type="button"
+            class="iu-seg-btn"
+            :class="{ 'is-active': singleMode === 'manual' }"
+            @click="singleMode = 'manual'"
+          >链接</button>
+        </div>
+      </div>
     </div>
     <p v-if="placeholder" class="iu-tip">{{ placeholder }}</p>
   </div>
 
   <!-- 多图模式 -->
   <div v-else class="iu-multi">
+    <div class="iu-multi-head">
+      <div v-if="allowManual" class="iu-seg" role="group" aria-label="图片添加方式">
+        <button
+          type="button"
+          class="iu-seg-btn"
+          :class="{ 'is-active': multiMode === 'upload' }"
+          @click="multiMode = 'upload'"
+        >上传</button>
+        <button
+          type="button"
+          class="iu-seg-btn"
+          :class="{ 'is-active': multiMode === 'manual' }"
+          @click="multiMode = 'manual'"
+        >链接</button>
+      </div>
+      <span class="iu-count">已添加 {{ modelValues.length }} / {{ max }} 张</span>
+    </div>
+
+    <div v-if="multiMode === 'manual'" class="iu-manual iu-manual-multi">
+      <el-input
+        v-model="manualUrl"
+        placeholder="粘贴图片地址：https://… 或 /static/…，回车或点击添加"
+        clearable
+        @keyup.enter="handleManualConfirm"
+      />
+      <button
+        type="button"
+        class="iu-btn iu-btn-primary"
+        :disabled="modelValues.length >= max"
+        @click="handleManualConfirm"
+      >添加链接</button>
+    </div>
+
     <div class="iu-multi-list">
       <div v-for="(url, index) in modelValues" :key="`${url}-${index}`" class="iu-multi-item">
         <el-image
@@ -234,12 +275,11 @@ function clearSingle() {
       </div>
 
       <div
-        v-if="modelValues.length < max"
+        v-if="multiMode === 'upload' && modelValues.length < max"
         class="iu-multi-add"
         :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
       >
         <el-upload
-          v-if="multiMode === 'upload'"
           :show-file-list="false"
           :accept="ACCEPT"
           :http-request="handleUpload"
@@ -253,28 +293,7 @@ function clearSingle() {
             <span>{{ uploading ? '上传中…' : '添加' }}</span>
           </div>
         </el-upload>
-
-        <div v-else class="iu-multi-add-inner iu-multi-add-manual">
-          <el-input
-            v-model="manualUrl"
-            placeholder="图片链接"
-            clearable
-            @keyup.enter="handleManualConfirm"
-          />
-        </div>
       </div>
-    </div>
-
-    <div class="iu-ops">
-      <button
-        v-if="allowManual"
-        type="button"
-        class="iu-btn iu-btn-ghost iu-switch"
-        @click="multiMode = multiMode === 'upload' ? 'manual' : 'upload'"
-      >
-        {{ multiMode === 'upload' ? '改用图片链接' : '改用上传' }}
-      </button>
-      <span class="iu-count">{{ modelValues.length }} / {{ max }}</span>
     </div>
     <p v-if="placeholder" class="iu-tip">{{ placeholder }}</p>
   </div>
@@ -336,10 +355,19 @@ function clearSingle() {
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
 }
 
+.iu-single-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
 .iu-ops {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
 }
 
@@ -347,7 +375,51 @@ function clearSingle() {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 200px;
+}
+
+.iu-manual :deep(.el-input) {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 上传 / 链接 分段切换：替代原先孤立的「改用图片链接」按钮 */
+.iu-ops .iu-seg {
+  margin-left: auto;
+}
+
+.iu-seg {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  background: #fff7ed;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 999px;
+}
+
+.iu-seg-btn {
+  padding: 4px 13px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iu-seg-btn:hover:not(.is-active) {
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.iu-seg-btn.is-active {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(249, 115, 22, 0.25);
 }
 
 .iu-btn {
@@ -379,23 +451,6 @@ function clearSingle() {
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
 
-.iu-btn-ghost {
-  background: #fff;
-  color: #6b7280;
-  border-color: #d1d5db;
-}
-
-.iu-btn-ghost:hover {
-  color: #374151;
-  border-color: #9ca3af;
-  background: #f9fafb;
-}
-
-.iu-switch {
-  font-size: 12px;
-  padding: 5px 14px;
-}
-
 .iu-tip {
   margin: 0;
   font-size: 12px;
@@ -408,6 +463,13 @@ function clearSingle() {
   flex-direction: column;
   gap: 10px;
   width: 100%;
+}
+
+.iu-multi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .iu-multi-list {
@@ -423,10 +485,16 @@ function clearSingle() {
 
 .iu-multi-add {
   display: inline-flex;
-  border: 1px dashed rgba(249, 115, 22, 0.3);
+  border: 1px dashed rgba(249, 115, 22, 0.35);
   border-radius: 10px;
   background: rgba(249, 115, 22, 0.03);
   overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.iu-multi-add:hover {
+  border-color: rgba(249, 115, 22, 0.6);
+  background: rgba(249, 115, 22, 0.07);
 }
 
 .iu-multi-add :deep(.el-upload) {
@@ -447,13 +515,12 @@ function clearSingle() {
   cursor: pointer;
 }
 
-.iu-multi-add-manual {
-  padding: 4px;
-  cursor: default;
-}
-
 .iu-count {
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f9fafb;
   color: #9ca3af;
+  font-size: 12px;
+  white-space: nowrap;
 }
 </style>
