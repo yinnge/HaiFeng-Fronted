@@ -107,6 +107,8 @@ interface DetailVM {
   courses: CourseVM[]
   advantages: string[]
   notice: string
+  /** 机构头部元数据（分类 / 创办年份等，原型 org-metas） */
+  metas: string[]
 }
 const detail = ref<DetailVM | null>(null)
 const detailLoading = ref(false)
@@ -117,6 +119,7 @@ const fillDetail = (d: PlannerDetailVO | InstitutionDetailVO): DetailVM => {
     id: d.id, name: d.name, province: d.province || '',
     badge: '', subtitle: '', credential: '', avatarUrl: '', logoText: (d.name || '').slice(0, 1),
     stats: [], intro: '', tags: [], services: [], images: [], grid: [], courses: [], advantages: [], notice: '',
+    metas: [],
   }
   if (isPerson.value) {
     const p = d as PlannerDetailVO
@@ -142,6 +145,10 @@ const fillDetail = (d: PlannerDetailVO | InstitutionDetailVO): DetailVM => {
   if (o.classSize) grid.push(['班型规模', o.classSize])
   if (o.teacherConfig) grid.push(['师资配置', o.teacherConfig])
   if (o.courseForm) grid.push(['上课形式', o.courseForm])
+  // 头部元数据行：分类 / 创办年份（省份单独渲染，带定位图标）
+  const metas: string[] = []
+  if (o.category) metas.push(o.category)
+  if (o.foundedYear) metas.push(`${o.foundedYear}创办`)
   return {
     ...base,
     images: o.carouselImages || [],
@@ -151,6 +158,7 @@ const fillDetail = (d: PlannerDetailVO | InstitutionDetailVO): DetailVM => {
     courses: (o.classTypes || []).map((t) => ({ name: t.title, meta: t.introduction || '', tag: t.tag || '' })),
     advantages: o.advantages || [],
     notice: o.notice || '',
+    metas,
   }
 }
 
@@ -382,12 +390,30 @@ const ICO = {
 
     <!-- 详情视图 -->
     <template v-else-if="detail">
-      <div class="md-head">
+      <!-- 规划师头部：返回名单 + 面包屑 / 标题 + 认证徽标 / 副标题 -->
+      <div v-if="isPerson" class="md-head">
         <button class="panel-back" type="button" @click="backToList"><span v-html="ICO.back"></span>返回名单</button>
         <span class="md-eyebrow">{{ card?.title }} · {{ detail.province }} · {{ currentIndex + 1 }} / {{ filteredList.length }}</span>
         <h3 class="md-title">{{ detail.name }}<em v-if="detail.badge" class="panel-badge">{{ detail.badge }}</em></h3>
         <p class="md-sub">{{ detail.subtitle }}</p>
       </div>
+
+      <!-- 机构头部：返回名单 + logo 方块 + 面包屑/标题/元数据行（对齐原型 org-logo + org-metas） -->
+      <div v-else class="md-head md-head--org">
+        <button class="panel-back" type="button" @click="backToList"><span v-html="ICO.back"></span>返回名单</button>
+        <div class="md-head__row">
+          <span class="org-logo">{{ detail.logoText }}</span>
+          <div class="md-head__info">
+            <span class="md-eyebrow">{{ card?.title }} · {{ currentIndex + 1 }} / {{ filteredList.length }}</span>
+            <h3 class="md-title">{{ detail.name }}</h3>
+            <div class="org-metas">
+              <span v-if="detail.province" class="org-prov"><span v-html="ICO.place"></span>{{ detail.province }}</span>
+              <span v-for="m in detail.metas" :key="m">{{ m }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="md-body">
         <!-- 人物详情 -->
         <div v-if="isPerson" class="person-detail">
@@ -426,14 +452,14 @@ const ICO = {
 
         <!-- 机构详情 -->
         <div v-else class="org-detail">
-          <div v-if="detail.images.length" class="org-gallery">
+          <div v-if="detail.images.length" class="org-gallery" :class="{ 'org-gallery--single': detail.images.length === 1 }">
             <div class="gallery-stage">
               <img v-if="currentShot" :src="currentShot" :alt="detail.name" />
-              <span class="gallery-cap">{{ detail.images.length > 0 ? `图 ${shotIndex + 1} / ${detail.images.length}` : '' }}</span>
-              <button class="gallery-nav gallery-nav--prev" type="button" aria-label="上一张" @click="stepShot(-1)"><span v-html="ICO.prev"></span></button>
-              <button class="gallery-nav gallery-nav--next" type="button" aria-label="下一张" @click="stepShot(1)"><span v-html="ICO.next"></span></button>
+              <span class="gallery-cap">{{ shotIndex + 1 }} / {{ detail.images.length }}</span>
+              <button v-if="detail.images.length > 1" class="gallery-nav gallery-nav--prev" type="button" aria-label="上一张" @click="stepShot(-1)"><span v-html="ICO.prev"></span></button>
+              <button v-if="detail.images.length > 1" class="gallery-nav gallery-nav--next" type="button" aria-label="下一张" @click="stepShot(1)"><span v-html="ICO.next"></span></button>
             </div>
-            <div class="gallery-thumbs">
+            <div v-if="detail.images.length > 1" class="gallery-thumbs">
               <button
                 v-for="(img, i) in detail.images"
                 :key="i"
@@ -533,13 +559,25 @@ const ICO = {
 </template>
 
 <style>
-/* el-dialog 挂到 body，需非 scoped 覆盖默认内边距，让 .md-head 渐变贴边 */
-.mentor-panel-dialog .el-dialog__header,
-.mentor-appointment-dialog .el-dialog__header { padding: 0; }
+/* el-dialog 挂到 body，需非 scoped 覆盖默认样式。
+   ⚠️ Element Plus 的 .el-dialog 自带 padding: var(--el-dialog-padding-primary)（16px 全向），
+   且空 header 仍占一行高度 —— 两者叠加会在 .md-head 上方留下约 45px 白条（「上面空白很大」的真凶）。
+   这里把 padding 归零并用 !important 确保优先级，同时彻底移除空 header。
+   用 .el-dialog.xxx 提高特异性（0,2,0）压过 EP 的 .el-dialog（0,1,0）。 */
+.el-dialog.mentor-panel-dialog,
+.el-dialog.mentor-appointment-dialog {
+  padding: 0 !important;
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+.el-dialog.mentor-panel-dialog .el-dialog__header,
+.el-dialog.mentor-appointment-dialog .el-dialog__header {
+  display: none;
+}
 .mentor-panel-dialog .el-dialog__body,
-.mentor-appointment-dialog .el-dialog__body { padding: 0; }
-.mentor-panel-dialog,
-.mentor-appointment-dialog { border-radius: 1.25rem; overflow: hidden; }
+.mentor-appointment-dialog .el-dialog__body {
+  padding: 0;
+}
 </style>
 
 <style scoped>
@@ -573,7 +611,16 @@ const ICO = {
 .btn-solid:hover { transform: translateY(-1px); box-shadow: 0 12px 22px -8px rgba(15,23,42,.4); }
 .btn-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
 .btn-outline:hover { border-color: #cbd5e1; background: #f8fafc; }
-.avatar-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; color: var(--pc-deep, #c2410c); font-weight: 800; font-size: 1.1rem; background: var(--pc-soft, #fff7ed); }
+.avatar-fallback {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  border-radius: 50%; color: #fff; font-weight: 800; font-size: 1.1rem;
+  /* 对齐原型 avatar()：accent 渐变底 + 两枚装饰圆 + 白色首字（原来是浅底深字，视觉上过淡） */
+  background:
+    radial-gradient(circle at 83% 17%, rgba(255,255,255,.16) 0 32%, transparent 33%),
+    radial-gradient(circle at 17% 88%, rgba(15,23,42,.14) 0 23%, transparent 24%),
+    linear-gradient(135deg, var(--pc, #f97316), var(--pc-deep, #c2410c));
+  text-shadow: 0 1px 2px rgba(15,23,42,.18);
+}
 .avatar-fallback.big { font-size: 2.4rem; }
 
 /* accent 主题变量（随卡片色） */
@@ -587,6 +634,24 @@ const ICO = {
 /* 头部 */
 .md-head { position: relative; padding: 1.75rem 3.6rem 1.2rem 2rem; border-bottom: 1px solid #f1f5f9; background: linear-gradient(135deg, var(--pc-soft) 0%, #fff 72%); }
 .md-head::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--pc), rgba(255,255,255,0)); }
+
+/* 机构头部：logo 方块 + 右侧信息栈（原型 org-logo / panel-head__row / org-metas） */
+.md-head--org { padding-bottom: 1.35rem; }
+.md-head__row { display: flex; align-items: flex-start; gap: 1rem; }
+.md-head__info { min-width: 0; flex: 1; }
+.org-logo {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 3.25rem; height: 3.25rem; border-radius: .9rem;
+  background: var(--pc); color: #fff;
+  font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em;
+  box-shadow: 0 10px 22px -10px var(--pc-line);
+}
+.org-metas { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.org-metas > span { font-size: .71rem; color: #64748b; background: #fff; border: 1px solid #e8edf3; border-radius: .4rem; padding: .16rem .48rem; }
+.org-metas .org-prov { display: inline-flex; align-items: center; gap: .22rem; color: var(--pc-deep); background: var(--pc-soft); border-color: var(--pc-line); }
+.org-metas .org-prov > span { display: inline-flex; }
+.org-metas .org-prov svg { width: .72rem; height: .72rem; }
+
 .md-body { padding: 1.25rem 2rem 1.9rem; }
 .panel-back { display: inline-flex; align-items: center; gap: .28rem; margin-bottom: .9rem; padding: .26rem .7rem .26rem .5rem; border-radius: 9999px; background: #fff; border: 1px solid #e2e8f0; font-size: .75rem; font-weight: 600; color: #64748b; cursor: pointer; }
 .panel-back:hover { color: var(--pc-deep); border-color: var(--pc-line); background: var(--pc-soft); }
@@ -635,7 +700,7 @@ const ICO = {
 /* 人物详情 */
 .person-detail { display: grid; grid-template-columns: 14rem minmax(0,1fr); gap: 2rem; }
 .person-side { display: flex; flex-direction: column; align-items: center; gap: .85rem; align-self: start; padding: 1.6rem 1rem; border-radius: 1rem; border: 1px solid #f1f5f9; background: radial-gradient(120% 90% at 50% 0%, var(--pc-soft) 0%, #f8fafc 62%); }
-.person-avatar { width: 9.5rem; height: 9.5rem; padding: 4px; border-radius: 50%; background: linear-gradient(150deg, var(--pc), #fff 72%); }
+.person-avatar { width: 9.5rem; height: 9.5rem; padding: 4px; border-radius: 50%; background: linear-gradient(150deg, var(--pc), #fff 72%); box-shadow: 0 18px 36px -20px rgba(15,23,42,.55); }
 .person-credential { display: inline-flex; align-items: center; gap: .3rem; padding: .26rem .65rem; border-radius: 9999px; background: #fff; border: 1px solid var(--pc-line); font-size: .7rem; font-weight: 600; color: var(--pc-deep); white-space: nowrap; }
 .person-credential svg { width: .75rem; height: .75rem; }
 .person-pager { display: flex; align-items: center; gap: .45rem; }
@@ -659,16 +724,19 @@ const ICO = {
 
 /* 机构详情 */
 .org-gallery { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,1fr); gap: .55rem; }
+.org-gallery--single { grid-template-columns: 1fr; }
 .gallery-stage { position: relative; overflow: hidden; border-radius: .85rem; background: #f1f5f9; min-height: 15rem; }
 .gallery-stage img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .gallery-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.5rem .85rem .6rem; font-size: .75rem; font-weight: 600; color: #fff; background: linear-gradient(to top, rgba(15,23,42,.72), rgba(15,23,42,0)); }
-.gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 1.85rem; height: 1.85rem; border-radius: 50%; background: rgba(255,255,255,.9); color: #334155; cursor: pointer; }
+.gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 1.85rem; height: 1.85rem; border-radius: 50%; background: rgba(255,255,255,.9); color: #334155; cursor: pointer; box-shadow: 0 4px 12px rgba(15,23,42,.22); transition: background .25s ease, transform .25s ease; }
+.gallery-nav:hover { background: #fff; transform: translateY(-50%) scale(1.06); }
 .gallery-nav--prev { left: .5rem; }
 .gallery-nav--next { right: .5rem; }
 .gallery-nav svg { width: .85rem; height: .85rem; }
 .gallery-thumbs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(2,minmax(0,1fr)); gap: .55rem; }
-.gallery-thumb { position: relative; overflow: hidden; border-radius: .6rem; border: 2px solid transparent; opacity: .68; cursor: pointer; padding: 0; background: #f1f5f9; }
+.gallery-thumb { position: relative; overflow: hidden; border-radius: .6rem; border: 2px solid transparent; opacity: .68; cursor: pointer; padding: 0; background: #f1f5f9; transition: opacity .25s ease, border-color .25s ease; }
 .gallery-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gallery-thumb:hover { opacity: 1; }
 .gallery-thumb.is-active { border-color: var(--pc); opacity: 1; }
 .org-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .55rem; margin-top: 1.1rem; }
 .org-cell { padding: .65rem .75rem; border-radius: .65rem; background: #f8fafc; border: 1px solid #f1f5f9; }
@@ -720,8 +788,17 @@ const ICO = {
   .person-pager { grid-area: pager; margin: 0; justify-self: start; }
   .org-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .org-gallery { grid-template-columns: 1fr; }
+  .gallery-stage { min-height: 0; aspect-ratio: 16/10; }
+  .gallery-thumbs { grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: none; }
+  .gallery-thumb img { aspect-ratio: 1/1; }
   .org-hl { grid-template-columns: 1fr; }
   .filter-bar { flex-wrap: wrap; }
   .filter-chips { order: 3; flex-basis: 100%; flex-wrap: wrap; overflow: visible; }
+  /* 头部紧凑化（原型 946 行断点） */
+  .md-head { padding: 1.4rem 3rem 1rem 1.15rem; }
+  .md-title { font-size: 1.15rem; }
+  .md-sub { font-size: .78rem; }
+  .org-logo { width: 2.75rem; height: 2.75rem; font-size: 1.05rem; border-radius: .75rem; }
+  .md-head__row { gap: .75rem; }
 }
 </style>
