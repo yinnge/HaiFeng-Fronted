@@ -1,0 +1,459 @@
+<script setup lang="ts">
+/**
+ * 图片上传组件（管理端通用）
+ *
+ * - 双模式：「上传到服务器」/「填写图片链接」可切换
+ * - 单图（v-model:modelValue = string）与多图（v-model:modelValues = string[]）两种形态
+ * - 上传走 /api/v1/admin/common/upload，写入独立的公共读 bucket，返回永久有效的完整 URL
+ * - 后端限制：仅 png / jpg / jpeg / webp / svg，单张 ≤ 2MB（前端同款校验，先拦一道）
+ *
+ * 注意：图片链接格式须为 http(s):// 开头或 / 开头的相对路径，
+ * 与后端 InstitutionAddDTO 的 @Pattern 约束保持一致。
+ */
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { UploadRequestOptions } from 'element-plus'
+import { uploadImage } from '@/api/common/upload'
+
+const props = withDefaults(
+  defineProps<{
+    /** 单图模式的值 */
+    modelValue?: string
+    /** 多图模式的值 */
+    modelValues?: string[]
+    /** 单图模式：是否允许手动填写链接 */
+    allowManual?: boolean
+    /** 多图模式：最多几张 */
+    max?: number
+    /** 占位提示 */
+    placeholder?: string
+    /** 预览尺寸（px） */
+    previewSize?: number
+  }>(),
+  {
+    modelValue: '',
+    modelValues: () => [],
+    allowManual: true,
+    max: 10,
+    placeholder: '请上传或填写图片链接',
+    previewSize: 72,
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: string): void
+  (e: 'update:modelValues', v: string[]): void
+}>()
+
+/** 是否多图模式：传入 modelValues 即为多图 */
+const isMulti = computed(() => Array.isArray(props.modelValues))
+
+const uploading = ref(false)
+/** 单图模式当前处于哪个模式 */
+const singleMode = ref<'upload' | 'manual'>('upload')
+/** 多图模式当前处于哪个模式 */
+const multiMode = ref<'upload' | 'manual'>('upload')
+/** 多图模式下的手填链接 */
+const manualUrl = ref('')
+
+/** 后端白名单，前端同款校验（先拦一道，减少无效请求） */
+const ACCEPT = '.png,.jpg,.jpeg,.webp,.svg'
+const MAX_SIZE = 2 * 1024 * 1024
+
+const currentList = computed<string[]>(() => (isMulti.value ? props.modelValues : []))
+
+function isValidUrl(url: string): boolean {
+  if (!url) return false
+  return /^(https?:\/\/|\/)/i.test(url.trim())
+}
+
+function emitList(list: string[]) {
+  if (isMulti.value) {
+    emit('update:modelValues', list)
+  } else {
+    emit('update:modelValue', list[0] ?? '')
+  }
+}
+
+function handleUpload(options: UploadRequestOptions) {
+  const file = options.file
+  const rawName = (file as File)?.name || ''
+  const ext = rawName.slice(rawName.lastIndexOf('.')).toLowerCase()
+  if (!ACCEPT.includes(ext)) {
+    ElMessage.warning('仅支持 png / jpg / jpeg / webp / svg 格式')
+    return Promise.reject(new Error('文件类型不支持'))
+  }
+  if (file.size > MAX_SIZE) {
+    ElMessage.warning('图片大小不能超过 2MB')
+    return Promise.reject(new Error('图片过大'))
+  }
+
+  uploading.value = true
+  return uploadImage(file as File)
+    .then((res) => {
+      const url = res.data.data?.url
+      if (!url) {
+        ElMessage.error('上传失败：未返回图片地址')
+        return
+      }
+      if (isMulti.value) {
+        if (props.modelValues.length >= props.max) {
+          ElMessage.warning(`最多上传 ${props.max} 张`)
+          return
+        }
+        emit('update:modelValues', [...props.modelValues, url])
+      } else {
+        emit('update:modelValue', url)
+      }
+      ElMessage.success('上传成功')
+    })
+    .catch((e: any) => {
+      ElMessage.error(e?.response?.data?.msg || e?.message || '图片上传失败')
+      throw e
+    })
+    .finally(() => {
+      uploading.value = false
+    })
+}
+
+function handleManualConfirm() {
+  const url = manualUrl.value.trim()
+  if (!url) {
+    ElMessage.warning('请填写图片链接')
+    return
+  }
+  if (!isValidUrl(url)) {
+    ElMessage.warning('图片链接须以 http(s):// 开头或以 / 开头')
+    return
+  }
+  if (isMulti.value) {
+    if (props.modelValues.length >= props.max) {
+      ElMessage.warning(`最多上传 ${props.max} 张`)
+      return
+    }
+    emit('update:modelValues', [...props.modelValues, url])
+  } else {
+    emit('update:modelValue', url)
+  }
+  manualUrl.value = ''
+}
+
+function removeAt(index: number) {
+  const list = [...props.modelValues]
+  list.splice(index, 1)
+  emit('update:modelValues', list)
+}
+
+function clearSingle() {
+  emit('update:modelValue', '')
+}
+</script>
+
+<template>
+  <!-- 单图模式 -->
+  <div v-if="!isMulti" class="iu-single">
+    <div class="iu-preview">
+      <el-image
+        v-if="modelValue"
+        :src="modelValue"
+        :preview-src-list="[modelValue]"
+        preview-teleported
+        fit="cover"
+        class="iu-preview-img"
+        :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
+      />
+      <div v-else class="iu-placeholder" :style="{ width: `${previewSize}px`, height: `${previewSize}px` }">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.5-3.5L6 23" />
+        </svg>
+        <span>暂无图片</span>
+      </div>
+      <button v-if="modelValue" type="button" class="iu-clear" title="清除图片" @click="clearSingle">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="iu-ops">
+      <el-upload
+        v-if="singleMode === 'upload'"
+        :show-file-list="false"
+        :accept="ACCEPT"
+        :http-request="handleUpload"
+        :disabled="uploading"
+      >
+        <button type="button" class="iu-btn iu-btn-primary" :disabled="uploading">
+          {{ uploading ? '上传中…' : '上传图片' }}
+        </button>
+      </el-upload>
+
+      <div v-else class="iu-manual">
+        <el-input
+          v-model="manualUrl"
+          placeholder="https://example.com/a.png 或 /static/a.png"
+          clearable
+          @keyup.enter="handleManualConfirm"
+        />
+        <button type="button" class="iu-btn iu-btn-primary" @click="handleManualConfirm">确定</button>
+      </div>
+
+      <button
+        v-if="allowManual"
+        type="button"
+        class="iu-btn iu-btn-ghost iu-switch"
+        @click="singleMode = singleMode === 'upload' ? 'manual' : 'upload'"
+      >
+        {{ singleMode === 'upload' ? '改用图片链接' : '改用上传' }}
+      </button>
+    </div>
+    <p v-if="placeholder" class="iu-tip">{{ placeholder }}</p>
+  </div>
+
+  <!-- 多图模式 -->
+  <div v-else class="iu-multi">
+    <div class="iu-multi-list">
+      <div v-for="(url, index) in modelValues" :key="`${url}-${index}`" class="iu-multi-item">
+        <el-image
+          :src="url"
+          :preview-src-list="modelValues"
+          preview-teleported
+          fit="cover"
+          class="iu-preview-img"
+          :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
+        />
+        <button type="button" class="iu-clear" title="移除" @click="removeAt(index)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        v-if="modelValues.length < max"
+        class="iu-multi-add"
+        :style="{ width: `${previewSize}px`, height: `${previewSize}px` }"
+      >
+        <el-upload
+          v-if="multiMode === 'upload'"
+          :show-file-list="false"
+          :accept="ACCEPT"
+          :http-request="handleUpload"
+          :disabled="uploading"
+        >
+          <div class="iu-multi-add-inner">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>{{ uploading ? '上传中…' : '添加' }}</span>
+          </div>
+        </el-upload>
+
+        <div v-else class="iu-multi-add-inner iu-multi-add-manual">
+          <el-input
+            v-model="manualUrl"
+            placeholder="图片链接"
+            clearable
+            @keyup.enter="handleManualConfirm"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="iu-ops">
+      <button
+        v-if="allowManual"
+        type="button"
+        class="iu-btn iu-btn-ghost iu-switch"
+        @click="multiMode = multiMode === 'upload' ? 'manual' : 'upload'"
+      >
+        {{ multiMode === 'upload' ? '改用图片链接' : '改用上传' }}
+      </button>
+      <span class="iu-count">{{ modelValues.length }} / {{ max }}</span>
+    </div>
+    <p v-if="placeholder" class="iu-tip">{{ placeholder }}</p>
+  </div>
+</template>
+
+<style scoped>
+.iu-single {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.iu-preview {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+}
+
+.iu-preview-img {
+  border-radius: 10px;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: #f9fafb;
+}
+
+.iu-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px dashed rgba(249, 115, 22, 0.3);
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.03);
+  color: #c2410c;
+  font-size: 12px;
+}
+
+.iu-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iu-clear:hover {
+  background: #dc2626;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+}
+
+.iu-ops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.iu-manual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.iu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+}
+
+.iu-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.iu-btn-primary {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.iu-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.iu-btn-ghost {
+  background: #fff;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+.iu-btn-ghost:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.iu-switch {
+  font-size: 12px;
+  padding: 5px 14px;
+}
+
+.iu-tip {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+.iu-multi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.iu-multi-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.iu-multi-item {
+  position: relative;
+  display: inline-flex;
+}
+
+.iu-multi-add {
+  display: inline-flex;
+  border: 1px dashed rgba(249, 115, 22, 0.3);
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.03);
+  overflow: hidden;
+}
+
+.iu-multi-add :deep(.el-upload) {
+  width: 100%;
+  height: 100%;
+}
+
+.iu-multi-add-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  color: #c2410c;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.iu-multi-add-manual {
+  padding: 4px;
+  cursor: default;
+}
+
+.iu-count {
+  font-size: 12px;
+  color: #9ca3af;
+}
+</style>

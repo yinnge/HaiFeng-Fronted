@@ -1,10 +1,22 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { PlannerListVO } from '@/types/home'
+
+/**
+ * 旧版规划师卡片（首页已改用 planner/MentorSection.vue，本组件保留备用）。
+ * 字段按重构前的结构就地声明，避免依赖已全量换字段的 PlannerListVO。
+ */
+interface LegacyPlanner {
+  id: string
+  name: string
+  avatar: string
+  position: string
+  region: string
+  specialty: string
+}
 
 const props = defineProps<{
-  planner: PlannerListVO
+  planner: LegacyPlanner
   offset?: number
   align?: 'left' | 'right'
 }>()

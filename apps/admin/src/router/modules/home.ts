@@ -24,6 +24,12 @@ const homeRoutes: RouteRecordRaw = {
       component: () => import('@/views/home/institution/index.vue'),
       meta: { title: '培训机构管理', moduleCode: 'home_institution' },
     },
+    {
+      path: 'consultation',
+      name: 'HomeConsultation',
+      component: () => import('@/views/home/consultation/index.vue'),
+      meta: { title: '咨询留言', moduleCode: 'home_consultation' },
+    },
   ],
 }
 

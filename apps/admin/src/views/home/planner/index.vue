@@ -1,9 +1,16 @@
 <script setup lang="ts">
+/**
+ * 规划师管理（首页管理）
+ *
+ * <p>上下架语义：规划师无 status 列，状态由软删除标记 is_deleted 承担。
+ * 后端以派生字段 status 返回（1=在线 / 0=已下线），并提供 PUT /{id}/status 切换。
+ */
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getPlannerPage,
   getPlannerDetail,
+  getPlannerTeachers,
   addPlanner,
   updatePlanner,
   updatePlannerStatus,
@@ -14,6 +21,7 @@ import type {
   PlannerDetailVO,
   PlannerQueryDTO,
   PlannerAddDTO,
+  TeacherOptionVO,
 } from '@/types/home/planner'
 import PlannerSearch from './components/PlannerSearch.vue'
 import PlannerTable from './components/PlannerTable.vue'
@@ -28,6 +36,8 @@ const queryParams = reactive<PlannerQueryDTO>({
   page: 1,
   size: 10,
   name: '',
+  serviceTarget: '',
+  province: '',
   status: undefined,
 })
 
@@ -43,11 +53,16 @@ const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const initialFormData = ref<PlannerAddDTO | null>(null)
 
+// 教师账号下拉
+const teacherOptions = ref<TeacherOptionVO[]>([])
+
 const fetchData = async () => {
   loading.value = true
   try {
     const params: Record<string, any> = { page: queryParams.page, size: queryParams.size }
     if (queryParams.name) params.name = queryParams.name
+    if (queryParams.serviceTarget) params.serviceTarget = queryParams.serviceTarget
+    if (queryParams.province) params.province = queryParams.province
     if (queryParams.status !== undefined && queryParams.status !== null) params.status = queryParams.status
     const res = await getPlannerPage(params as PlannerQueryDTO)
     if (res.data.code === 200) {
@@ -63,8 +78,21 @@ const fetchData = async () => {
   }
 }
 
-const handleSearch = (params: Pick<PlannerQueryDTO, 'name' | 'status'>) => {
+const fetchTeachers = async () => {
+  try {
+    const res = await getPlannerTeachers()
+    if (res.data.code === 200) {
+      teacherOptions.value = res.data.data || []
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '获取教师账号列表失败')
+  }
+}
+
+const handleSearch = (params: Pick<PlannerQueryDTO, 'name' | 'serviceTarget' | 'province' | 'status'>) => {
   queryParams.name = params.name
+  queryParams.serviceTarget = params.serviceTarget
+  queryParams.province = params.province
   queryParams.status = params.status
   queryParams.page = 1
   fetchData()
@@ -72,6 +100,8 @@ const handleSearch = (params: Pick<PlannerQueryDTO, 'name' | 'status'>) => {
 
 const handleReset = () => {
   queryParams.name = ''
+  queryParams.serviceTarget = ''
+  queryParams.province = ''
   queryParams.status = undefined
   queryParams.page = 1
   fetchData()
@@ -107,7 +137,7 @@ const handleDetailClose = () => {
 const handleAdd = () => {
   formMode.value = 'add'
   currentId.value = null
-  initialFormData.value = { name: '' }
+  initialFormData.value = null
   formVisible.value = true
 }
 
@@ -122,18 +152,26 @@ const handleEdit = async (id: string) => {
     if (res.data.code === 200) {
       const d = res.data.data
       initialFormData.value = {
+        userId: d.userId,
         name: d.name,
+        serviceTarget: d.serviceTarget,
         position: d.position || '',
-        region: d.region || '',
-        avatar: d.avatar || '',
-        specialty: d.specialty || '',
-        douyinName: d.douyinName || '',
-        douyinUrl: d.douyinUrl || '',
-        personalDescription: d.personalDescription || '',
-        experienceJob: d.experienceJob || '',
-        achievements: d.achievements || [],
-        expertiseAreas: d.expertiseAreas || [],
-        sortOrder: d.sortOrder || 0,
+        province: d.province || '',
+        listDesc: d.listDesc || '',
+        listTags: d.listTags ? [...d.listTags] : [],
+        avatarUrl: d.avatarUrl || '',
+        workYears: d.workYears || '',
+        servedCount: d.servedCount || '',
+        draftSla: d.draftSla || '',
+        certDesc: d.certDesc || '',
+        description: d.description || '',
+        detailTags: d.detailTags ? [...d.detailTags] : [],
+        services: (d.services || []).map((s) => ({ title: s.title, content: s.content })),
+        email: d.email || '',
+        phone: d.phone || '',
+        address: d.address || '',
+        wechatQrcodeUrl: d.wechatQrcodeUrl || '',
+        sortOrder: d.sortOrder ?? 0,
       }
     } else {
       ElMessage.error(res.data.msg || '获取详情失败')
@@ -147,41 +185,12 @@ const handleEdit = async (id: string) => {
 
 // 提交新增/修改
 const handleSubmit = async (data: PlannerAddDTO) => {
-  if (!data.name) {
-    ElMessage.warning('请填写姓名')
-    return
-  }
-
   try {
     let res: any
     if (formMode.value === 'add') {
-      const payload: PlannerAddDTO = { name: data.name }
-      if (data.position) payload.position = data.position
-      if (data.region) payload.region = data.region
-      if (data.avatar) payload.avatar = data.avatar
-      if (data.specialty) payload.specialty = data.specialty
-      if (data.douyinName) payload.douyinName = data.douyinName
-      if (data.douyinUrl) payload.douyinUrl = data.douyinUrl
-      if (data.personalDescription) payload.personalDescription = data.personalDescription
-      if (data.experienceJob) payload.experienceJob = data.experienceJob
-      if (data.achievements && data.achievements.length > 0) payload.achievements = data.achievements
-      if (data.expertiseAreas && data.expertiseAreas.length > 0) payload.expertiseAreas = data.expertiseAreas
-      payload.sortOrder = data.sortOrder ?? 0
-      res = await addPlanner(payload)
+      res = await addPlanner(data)
     } else if (formMode.value === 'edit' && currentId.value) {
-      const payload: any = { name: data.name }
-      if (data.position) payload.position = data.position
-      if (data.region) payload.region = data.region
-      if (data.avatar) payload.avatar = data.avatar
-      if (data.specialty) payload.specialty = data.specialty
-      if (data.douyinName) payload.douyinName = data.douyinName
-      if (data.douyinUrl) payload.douyinUrl = data.douyinUrl
-      if (data.personalDescription) payload.personalDescription = data.personalDescription
-      if (data.experienceJob) payload.experienceJob = data.experienceJob
-      if (data.achievements && data.achievements.length > 0) payload.achievements = data.achievements
-      if (data.expertiseAreas && data.expertiseAreas.length > 0) payload.expertiseAreas = data.expertiseAreas
-      payload.sortOrder = data.sortOrder ?? 0
-      res = await updatePlanner(currentId.value, payload)
+      res = await updatePlanner(currentId.value, data)
     } else {
       return
     }
@@ -198,41 +207,69 @@ const handleSubmit = async (data: PlannerAddDTO) => {
   }
 }
 
-// 启用/禁用切换
-const handleToggleStatus = async (row: PlannerListVO) => {
-  const newStatus = row.status === 1 ? 0 : 1
-  const actionText = newStatus === 1 ? '启用' : '禁用'
+/** 下线（软删，C 端立即不可见，可在列表用「已下线」筛选找回并重新上线） */
+const handleOffline = async (row: PlannerListVO) => {
   try {
-    await ElMessageBox.confirm(`确定${actionText}该规划师吗？`, '提示')
-    const res = await updatePlannerStatus(row.id, { status: newStatus })
+    await ElMessageBox.confirm(
+      `确定下线「${row.name}」吗？下线后该规划师将不在 C 端展示，可随时重新上线。`,
+      '提示',
+      { type: 'warning' }
+    )
+    const res = await updatePlannerStatus(row.id, 0)
     if (res.data.code === 200) {
-      ElMessage.success(`${actionText}成功`)
+      ElMessage.success('下线成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '操作失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    if (e === 'cancel' || e === 'close') return
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
 }
 
-// 删除
-const handleDelete = async (id: string) => {
+/** 上线（从已下线恢复） */
+const handleOnline = async (row: PlannerListVO) => {
   try {
-    await ElMessageBox.confirm('确定要删除该规划师吗？此操作不可恢复！', '警告', {
-      type: 'warning',
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-    })
-    const res = await deletePlanner(id)
+    await ElMessageBox.confirm(`确定重新上线「${row.name}」吗？`, '提示')
+    const res = await updatePlannerStatus(row.id, 1)
+    if (res.data.code === 200) {
+      ElMessage.success('上线成功')
+      fetchData()
+    } else {
+      ElMessage.error(res.data.msg || '操作失败')
+    }
+  } catch (e: any) {
+    if (e === 'cancel' || e === 'close') return
+    ElMessage.error(e?.response?.data?.msg || e?.message || '操作失败')
+  }
+}
+
+/** 彻底删除（物理删除，不可恢复） */
+const handleDelete = async (row: PlannerListVO) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定彻底删除「${row.name}」吗？此操作不可恢复！如仅需暂时下架，请使用「下线」。`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+    const res = await deletePlanner(row.id)
     if (res.data.code === 200) {
       ElMessage.success('删除成功')
       fetchData()
     } else {
       ElMessage.error(res.data.msg || '删除失败')
     }
-  } catch { /* 取消 */ }
+  } catch (e: any) {
+    if (e === 'cancel' || e === 'close') return
+    ElMessage.error(e?.response?.data?.msg || e?.message || '删除失败')
+  }
 }
 
-onMounted(() => { fetchData() })
+onMounted(() => {
+  fetchData()
+  fetchTeachers()
+})
 </script>
 
 <template>
@@ -247,7 +284,7 @@ onMounted(() => { fetchData() })
 
     <div class="page-header">
       <div class="page-title">规划师管理</div>
-      <div class="page-subtitle">管理首页规划师展示，支持新增、修改、上下架与删除</div>
+      <div class="page-subtitle">管理首页名师指导展示，支持新增、修改、上下架与删除</div>
     </div>
 
     <!-- 操作栏 -->
@@ -281,7 +318,8 @@ onMounted(() => { fetchData() })
       @size-change="handleSizeChange"
       @detail="handleDetail"
       @edit="handleEdit"
-      @toggle-status="handleToggleStatus"
+      @offline="handleOffline"
+      @online="handleOnline"
       @delete="handleDelete"
     />
 
@@ -297,6 +335,7 @@ onMounted(() => { fetchData() })
       :mode="formMode"
       :form-loading="formLoading"
       :initial-data="initialFormData"
+      :teacher-options="teacherOptions"
       @submit="handleSubmit"
     />
   </div>
@@ -361,49 +400,41 @@ onMounted(() => { fetchData() })
   margin-bottom: 20px;
 }
 
-.primary-btn {
+.primary-btn,
+.refresh-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 20px;
-  background: linear-gradient(135deg, #F97316, #FB923C);
-  color: #fff;
-  border: none;
-  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
+  border-radius: 20px;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  color: #fff;
+  border: none;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 .primary-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
 }
-.primary-btn:active {
-  transform: translateY(0);
-}
+.primary-btn:active { transform: translateY(0); }
 
 .refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
   background: #fff;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  border-radius: 20px;
-  font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
 }
 .refresh-btn:hover {
   color: #374151;
   border-color: #9ca3af;
   background: #f9fafb;
 }
-.refresh-btn:active {
-  background: #f3f4f6;
-}
+.refresh-btn:active { background: #f3f4f6; }
 </style>
