@@ -74,6 +74,9 @@ onUnmounted(() => {
     <!-- ==================== 全周期规划矩阵 / 生涯星图（可切换） ==================== -->
     <HomePathwaySection />
 
+    <!-- ==================== 名师指导（6 张入口卡片 + 名单/详情/预约弹窗） ==================== -->
+    <MentorSection />
+
     <!-- ==================== 百宝箱 ==================== -->
     <section id="toolbox" class="section-wrapper section-toolbox">
       <div class="section-container reveal">
@@ -85,9 +88,6 @@ onUnmounted(() => {
         <ToolboxSection />
       </div>
     </section>
-
-    <!-- ==================== 名师指导（6 张入口卡片 + 名单/详情/预约弹窗） ==================== -->
-    <MentorSection />
 
   </div>
 </template>
