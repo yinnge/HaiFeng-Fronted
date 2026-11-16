@@ -1,26 +1,42 @@
 <script setup lang="ts">
+/**
+ * 规划师 - 搜索筛选区
+ */
 import { reactive } from 'vue'
-import type { PlannerQueryDTO } from '@/types/home/planner'
+import { ProvinceOptions } from '@haifeng/shared'
+import { SERVICE_TARGET_OPTIONS } from '../../constants'
+import type { PlannerQueryDTO, PlannerStatus } from '@/types/home/planner'
 
 const emit = defineEmits<{
-  (e: 'search', params: Pick<PlannerQueryDTO, 'name' | 'status'>): void
+  (e: 'search', params: Pick<PlannerQueryDTO, 'name' | 'serviceTarget' | 'province' | 'status'>): void
   (e: 'reset'): void
 }>()
 
 const searchForm = reactive<{
   name: string
-  status: number | undefined
+  serviceTarget: string
+  province: string
+  status: PlannerStatus | undefined
 }>({
   name: '',
+  serviceTarget: '',
+  province: '',
   status: undefined,
 })
 
 const handleSearch = () => {
-  emit('search', { name: searchForm.name, status: searchForm.status })
+  emit('search', {
+    name: searchForm.name.trim(),
+    serviceTarget: searchForm.serviceTarget,
+    province: searchForm.province,
+    status: searchForm.status,
+  })
 }
 
 const handleReset = () => {
   searchForm.name = ''
+  searchForm.serviceTarget = ''
+  searchForm.province = ''
   searchForm.status = undefined
   emit('reset')
 }
@@ -44,19 +60,50 @@ const handleReset = () => {
             v-model="searchForm.name"
             placeholder="姓名模糊搜索"
             clearable
-            style="width: 200px"
+            style="width: 180px"
             @keyup.enter="handleSearch"
           />
+        </el-form-item>
+        <el-form-item label="服务对象">
+          <el-select
+            v-model="searchForm.serviceTarget"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+          >
+            <el-option
+              v-for="opt in SERVICE_TARGET_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="省份">
+          <el-select
+            v-model="searchForm.province"
+            placeholder="全部"
+            clearable
+            filterable
+            style="width: 120px"
+          >
+            <el-option
+              v-for="opt in ProvinceOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select
             v-model="searchForm.status"
             placeholder="全部"
             clearable
-            style="width: 130px"
+            style="width: 120px"
           >
-            <el-option label="展示" :value="1" />
-            <el-option label="下架" :value="0" />
+            <el-option label="在线" :value="1" />
+            <el-option label="已下线" :value="0" />
           </el-select>
         </el-form-item>
       </div>
@@ -89,6 +136,7 @@ const handleReset = () => {
   box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
   transform: translateY(-1px);
 }
+
 .section-label {
   display: inline-flex;
   align-items: center;
@@ -101,7 +149,11 @@ const handleReset = () => {
   border-radius: 20px;
   margin-bottom: 20px;
 }
-.label-icon { display: flex; align-items: center; }
+.label-icon {
+  display: flex;
+  align-items: center;
+}
+
 .search-form {
   display: flex;
   align-items: flex-start;
@@ -116,32 +168,67 @@ const handleReset = () => {
   gap: 8px;
 }
 .search-form :deep(.el-form-item) { margin-bottom: 0; }
-.search-form :deep(.el-form-item__label) { font-weight: 500; color: #374151; }
+.search-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+}
 .search-form :deep(.el-input__wrapper),
-.search-form :deep(.el-select__wrapper) { border-radius: 8px; transition: all 0.25s ease; }
+.search-form :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
 .search-form :deep(.el-input__wrapper:hover),
-.search-form :deep(.el-select__wrapper:hover) { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset; }
+.search-form :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3) inset;
+}
 .search-form :deep(.el-input__wrapper.is-focus),
-.search-form :deep(.el-select__wrapper.is-focused) { box-shadow: 0 0 0 1px #F97316 inset; }
-.search-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.search-form :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #F97316 inset;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
 .search-btn {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 24px;
   background: linear-gradient(135deg, #F97316, #FB923C);
-  color: #fff; border: none; border-radius: 20px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
-.search-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
 .search-btn:active { transform: translateY(0); }
 .reset-btn {
-  display: inline-flex; align-items: center;
-  padding: 8px 20px; background: #fff; color: #6b7280;
-  border: 1px solid #d1d5db; border-radius: 20px;
-  font-size: 14px; font-weight: 500; cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.25s ease;
 }
-.reset-btn:hover { color: #374151; border-color: #9ca3af; background: #f9fafb; }
+.reset-btn:hover {
+  color: #374151;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
 .reset-btn:active { background: #f3f4f6; }
 </style>
