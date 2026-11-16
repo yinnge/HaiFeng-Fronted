@@ -70,6 +70,8 @@
 - v-model 传可选数组报 TS：子 prop `string[]` 父字段 `string[]|undefined` → computed 代理（get ?? []，set 回写）。
 - Short 不能由三元 int 隐式转：`(short) 0 : (short) 1`。
 - 相对 import 层级：`views/home/constants.ts` 从 `views/home/planner/components/` 出发是 `../../constants`。
+- ★ **el-dialog 顶部多出 ~45px 白条**：EP 的 `.el-dialog` 本体自带 `padding: var(--el-dialog-padding-primary)`（**16px 全向**），只清 `.el-dialog__header` 的 padding 不够。正解 `.el-dialog.xxx{padding:0!important}` + `.el-dialog.xxx .el-dialog__header{display:none}`（0,2,0 压 EP 的 0,1,0）。
+- ★ **改 DB 后 C 端不生效先想 Redis**：`haifeng:app:home:*` 缓存 30min。`redis-cli --scan` 若返回空先怀疑 **NOAUTH**（错误被 `2>/dev/null` 吞了）。带密码：`PW=$(grep ^REDIS_PASSWORD= .env|cut -d= -f2-); docker exec haifeng-redis redis-cli -a "$PW" --no-auth-warning --scan --pattern "*institution*"`。
 
 ## ★ admin home 模块（11-16 重构完成）
 - planner / institution 契约对齐 V79/V80 新表（此前新增必 400、上下架接口不存在、筛选静默失效）。
