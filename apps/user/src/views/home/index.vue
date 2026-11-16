@@ -1,109 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getPlanners, getInstitutions } from '@/api/home'
-import type { PlannerListVO, InstitutionListVO } from '@/types/home'
-import PlannerCard from './components/PlannerCard.vue'
-import CircularGallery from './components/CircularGallery.vue'
+import { onMounted, onUnmounted } from 'vue'
 import HomePathwaySection from './components/HomePathwaySection.vue'
 import ToolboxSection from './components/toolbox/ToolboxSection.vue'
 import HfHeroSection from '@/components/home/hero/HfHeroSection.vue'
-
-// ===== Core =====
-const router = useRouter()
-
-// ===== Planner =====
-const planners = ref<PlannerListVO[]>([])
-const plannerRegion = ref('')
-const plannerPageIndex = ref(0)
-const waveOffsets = [-10, 8, -14, 8, -10]
-const isSmallScreen = ref(false)
-const viewportWidth = ref(0)
-const touchStartX = ref(0)
-const touchStartY = ref(0)
-
-const updateViewport = () => {
-  viewportWidth.value = window.innerWidth
-  isSmallScreen.value = viewportWidth.value < 768
-}
-
-const plannersPerPage = computed(() => (isSmallScreen.value ? 3 : 5))
-
-const fetchPlanners = async () => {
-  const res = await getPlanners({ page: 1, size: 100, region: plannerRegion.value || undefined })
-  planners.value = res.data.data.records
-  plannerPageIndex.value = 0
-}
-
-const plannerPages = computed(() => {
-  const pages: PlannerListVO[][] = []
-  for (let i = 0; i < planners.value.length; i += plannersPerPage.value) {
-    pages.push(planners.value.slice(i, i + plannersPerPage.value))
-  }
-  return pages
-})
-
-watch(plannerPages, (pages) => {
-  if (plannerPageIndex.value >= pages.length) {
-    plannerPageIndex.value = Math.max(0, pages.length - 1)
-  }
-})
-
-const currentPlannerPage = computed(() => plannerPages.value[plannerPageIndex.value] || [])
-const prevPlannerPage = () => { if (plannerPageIndex.value > 0) plannerPageIndex.value-- }
-const nextPlannerPage = () => { if (plannerPageIndex.value < plannerPages.value.length - 1) plannerPageIndex.value++ }
-
-const onPlannerTouchStart = (e: TouchEvent) => {
-  touchStartX.value = e.touches[0].clientX
-  touchStartY.value = e.touches[0].clientY
-}
-
-const onPlannerTouchEnd = (e: TouchEvent) => {
-  const dx = e.changedTouches[0].clientX - touchStartX.value
-  const dy = e.changedTouches[0].clientY - touchStartY.value
-  if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy)) {
-    dx < 0 ? nextPlannerPage() : prevPlannerPage()
-  }
-}
-
-// ===== Institution =====
-const institutions = ref<InstitutionListVO[]>([])
-const institutionTotal = ref(0)
-const institutionName = ref('')
-const institutionType = ref('')
-
-const fetchInstitutions = async () => {
-  try {
-    const res = await getInstitutions({ page: 1, size: 100, name: institutionName.value || undefined })
-    institutions.value = res.data.data.records
-    institutionTotal.value = res.data.data.total
-  } catch (e: any) {
-    ElMessage.error(e?.message || '获取机构列表失败')
-  }
-}
-
-const institutionTypes = computed(() => {
-  const types = new Set<string>()
-  institutions.value.forEach(inst => { if (inst.type) types.add(inst.type) })
-  return Array.from(types)
-})
-
-const filteredInstitutions = computed(() => {
-  if (!institutionType.value) return institutions.value
-  return institutions.value.filter(inst => inst.type === institutionType.value)
-})
-
-const institutionGalleryItems = computed(() =>
-  filteredInstitutions.value.map(inst => ({ image: inst.images?.[0] || '', text: inst.name }))
-)
-
-const onInstitutionSelect = (index: number) => {
-  const inst = filteredInstitutions.value[index]
-  if (inst) router.push(`/home/institution/${inst.id}`)
-}
-
-const onMoreInstitutions = () => { ElMessage.info('机构列表页开发中，敬请期待') }
+import MentorSection from './planner/MentorSection.vue'
 
 // ===== Scroll Reveal =====
 let revealObserver: IntersectionObserver | null = null
@@ -155,16 +55,11 @@ const initScrollReveal = () => {
 
 // ===== Lifecycle =====
 onMounted(() => {
-  fetchPlanners()
-  fetchInstitutions()
-  updateViewport()
-  window.addEventListener('resize', updateViewport)
   initScrollReveal()
 })
 
 onUnmounted(() => {
   if (revealObserver) revealObserver.disconnect()
-  window.removeEventListener('resize', updateViewport)
 })
 </script>
 
@@ -191,120 +86,8 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <!-- ==================== 专业规划师 ==================== -->
-    <section class="section-wrapper section-planner">
-      <div class="section-container reveal">
-        <div class="section-head">
-          <h2 class="section-title">专业规划师</h2>
-          <p class="section-sub">资深团队，一对一陪伴你的每一步</p>
-        </div>
-
-        <div v-if="plannerPages.length" class="flex items-center justify-center">
-          <button
-            class="nav-arrow-btn magnetic-btn"
-            :disabled="plannerPageIndex === 0"
-            @click="prevPlannerPage"
-          >
-            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <div
-            class="flex items-center justify-center gap-0"
-            @touchstart="onPlannerTouchStart"
-            @touchend="onPlannerTouchEnd"
-          >
-            <PlannerCard
-              v-for="(planner, i) in currentPlannerPage"
-              :key="planner.id"
-              :planner="planner"
-              :offset="waveOffsets[i % waveOffsets.length]"
-              :align="i === currentPlannerPage.length - 1 ? 'left' : 'right'"
-            />
-          </div>
-
-          <button
-            class="nav-arrow-btn magnetic-btn"
-            :disabled="plannerPageIndex >= plannerPages.length - 1"
-            @click="nextPlannerPage"
-          >
-            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-        <div v-else class="py-12 text-center text-gray-400">暂无规划师</div>
-
-        <div class="mt-6 flex justify-center gap-2">
-          <span
-            v-for="(_, i) in plannerPages"
-            :key="i"
-            class="page-dot"
-            :class="i === plannerPageIndex ? 'active' : ''"
-            @click="plannerPageIndex = i"
-          ></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== 培训机构 ==================== -->
-    <section class="section-wrapper section-institution section-alt grain-overlay">
-      <div class="section-container reveal">
-        <div class="section-head">
-          <h2 class="section-title">培训机构</h2>
-          <p class="section-sub">优质教育资源，助力升学之路</p>
-        </div>
-
-        <div class="institution-search">
-          <input
-            v-model="institutionName"
-            type="text"
-            placeholder="输入机构名称搜索"
-            class="institution-input"
-            @keyup.enter="fetchInstitutions"
-          />
-          <button class="institution-search-btn magnetic-btn" @click="fetchInstitutions">搜索</button>
-        </div>
-
-        <div v-if="institutionTypes.length" class="institution-filters">
-          <button
-            class="filter-pill"
-            :class="institutionType === '' ? 'active' : ''"
-            @click="institutionType = ''"
-          >全部</button>
-          <button
-            v-for="type in institutionTypes"
-            :key="type"
-            class="filter-pill"
-            :class="institutionType === type ? 'active' : ''"
-            @click="institutionType = type"
-          >{{ type }}</button>
-        </div>
-
-        <div v-if="filteredInstitutions.length" class="relative">
-          <div class="h-[440px] sm:h-[500px] md:h-[560px]">
-            <CircularGallery
-              :items="institutionGalleryItems"
-              :bend="3"
-              text-color="#1f2937"
-              @select="onInstitutionSelect"
-            />
-          </div>
-          <p class="mt-2 text-center text-xs text-gray-400">左右拖拽 / 滚动浏览 · 点击卡片查看详情</p>
-        </div>
-        <div v-else class="py-12 text-center text-gray-400">暂无培训机构</div>
-
-        <div class="mt-8 flex items-center justify-end">
-          <button class="more-link magnetic-btn" @click="onMoreInstitutions">
-            共 {{ institutionTotal }} 家 · 查看更多机构
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
+    <!-- ==================== 名师指导（6 张入口卡片 + 名单/详情/预约弹窗） ==================== -->
+    <MentorSection />
 
   </div>
 </template>
@@ -351,18 +134,6 @@ onUnmounted(() => {
   scroll-margin-top: 8.75rem;
 }
 
-.section-alt {
-  background: transparent;
-}
-
-.section-alt .section-container {
-  padding: 2rem;
-  border-radius: 1.5rem;
-  background: #ffffff;
-  border: 1px solid var(--neutral-border);
-  box-shadow: 0 2px 10px var(--neutral-shadow);
-}
-
 .section-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -396,14 +167,6 @@ onUnmounted(() => {
   background: var(--sem-yellow);
 }
 
-.section-planner .section-title::before {
-  background: var(--sem-blue);
-}
-
-.section-institution .section-title::before {
-  background: var(--brand-orange);
-}
-
 .section-sub {
   margin-top: 0.5rem;
   font-size: 0.95rem;
@@ -434,160 +197,10 @@ onUnmounted(() => {
   }
 }
 
-/* ============ Planner Nav ============ */
-.nav-arrow-btn {
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #ffffff;
-  /* 纯白不透明底，backdrop-filter 无任何视觉收益，却会让这颗按钮常驻合成层 */
-  border: 1px solid var(--neutral-border-strong);
-  box-shadow: 0 4px 16px var(--neutral-shadow);
-  color: #64748b;
-  cursor: pointer;
-}
-
-@media (min-width: 768px) {
-  .nav-arrow-btn {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-}
-
-.nav-arrow-btn:hover:not(:disabled) {
-  color: var(--sem-blue);
-  border-color: #bfdbfe;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.14);
-}
-
-.nav-arrow-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.page-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #d1d5db;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.page-dot.active {
-  background: var(--sem-blue);
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.35);
-}
-
-/* ============ Institution ============ */
-.institution-search {
-  display: flex;
-  max-width: 32rem;
-  margin: 0 auto 1.5rem;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.institution-input {
-  flex: 1;
-  border-radius: 0.5rem;
-  border: 1px solid var(--neutral-border-strong);
-  background: #ffffff;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  color: #334155;
-  outline: none;
-  transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.institution-input::placeholder {
-  color: #94a3b8;
-}
-
-.institution-input:hover {
-  border-color: #cbd5e1;
-}
-
-.institution-input:focus {
-  border-color: var(--sem-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-}
-
-.institution-search-btn {
-  border-radius: 0.5rem;
-  background: var(--sem-blue);
-  padding: 0.625rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #ffffff;
-  border: none;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.institution-search-btn:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.22);
-}
-
-.institution-filters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.filter-pill {
-  border-radius: 9999px;
-  padding: 0.375rem 1rem;
-  font-size: 0.875rem;
-  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  background: var(--sem-blue-bg);
-  color: #2563eb;
-  border: 1px solid transparent;
-  cursor: pointer;
-}
-
-.filter-pill:hover {
-  background: #dbeafe;
-}
-
-.filter-pill.active {
-  background: var(--sem-blue);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.22);
-}
-
-.more-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: var(--sem-blue);
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-
-.more-link:hover {
-  color: #2563eb;
-}
-
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
   .home-page {
     padding: 0 0.875rem 3rem;
-  }
-  .section-alt .section-container {
-    padding: 1.25rem;
-    border-radius: 1.125rem;
   }
 }
 

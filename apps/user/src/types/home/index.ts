@@ -69,47 +69,139 @@ export interface HomeArticleDetailVO {
   publishTime: string
 }
 
+/** 服务内容条目（services JSONB 内部 title/content） */
+export interface PlannerServiceItem {
+  title: string
+  content: string
+}
+
+/** 规划师列表项：基础信息 + 列表页展示 */
 export interface PlannerListVO {
   id: string
   name: string
-  region: string
+  /** 服务对象：高考 / 考研 */
+  serviceTarget: string
+  /** 职位（首席/高级/学硕…），作徽章 */
   position: string
-  avatar: string
-  specialty: string
-  personalDescription: string
+  /** 省份（ProvinceEnum 中文 desc 裸值） */
+  province: string
+  /** 列表描述 */
+  listDesc: string
+  /** 列表 tag */
+  listTags: string[]
+  /** svg 头像（本地静态资源相对路径，可空） */
+  avatarUrl: string
 }
 
+/** 规划师详情：基础信息 + 列表页展示 + 详情页展示（不含预约联系方式） */
 export interface PlannerDetailVO {
   id: string
   name: string
+  serviceTarget: string
   position: string
-  region: string
-  avatar: string
-  specialty: string
-  douyinName: string
-  douyinUrl: string
-  personalDescription: string
-  experienceJob: string
-  achievements: string[]
-  expertiseAreas: string[]
+  province: string
+  avatarUrl: string
+  listDesc: string
+  listTags: string[]
+  /** 从业年限，如 11年 */
+  workYears: string
+  /** 服务考生，如 3200+ */
+  servedCount: string
+  /** 初稿时效，如 48h */
+  draftSla: string
+  /** 认证描述，如 持证生涯规划师 */
+  certDesc: string
+  /** 详情大段介绍 */
+  description: string
+  detailTags: string[]
+  services: PlannerServiceItem[]
 }
 
+/** 规划师预约信息：头像 + 姓名 + 联系方式（直连 DB，不缓存） */
+export interface PlannerAppointmentVO {
+  id: string
+  avatarUrl: string
+  name: string
+  email: string
+  phone: string
+  address: string
+  wechatQrcodeUrl: string
+}
+
+/** 机构主打班型（class_types JSONB 内部） */
+export interface InstitutionClassType {
+  title: string
+  introduction: string
+  tag: string
+}
+
+/** 机构列表项 */
 export interface InstitutionListVO {
   id: string
   name: string
-  type: string
-  description: string
-  images: string[]
+  /** 分类：高中冲刺小班/考公考编机构/央国企培训/职业培训机构 */
+  category: string
+  province: string
+  tags: string[]
 }
 
+/** 机构详情（不含联系方式） */
 export interface InstitutionDetailVO {
   id: string
+  category: string
   name: string
-  type: string
-  phone: string
+  province: string
+  /** 创办时间，如 2013年 */
+  foundedYear: string
+  /** 轮播图片 */
+  carouselImages: string[]
+  tags: string[]
+  introduction: string
+  /** 主打方向 */
+  mainDirection: string
+  /** 班级规模 */
+  classSize: string
+  /** 师资配置 */
+  teacherConfig: string
+  /** 上课形式 */
+  courseForm: string
+  classTypes: InstitutionClassType[]
+  /** 说明/温馨提示 */
+  notice: string
+  /** 机构优势 */
+  advantages: string[]
+}
+
+/** 机构预约信息：机构名 + 联系方式 */
+export interface InstitutionAppointmentVO {
+  id: string
+  name: string
   address: string
-  description: string
-  courses: string[]
-  images: string[]
-  logo: string
+  wechatQrcodeUrl: string
+  email: string
+  phone: string
+}
+
+/** 名师指导 - 6 张入口卡片配置（文案照抄原型，数字由接口动态替换） */
+export interface MentorCardConfig {
+  key: string
+  kind: 'person' | 'org'
+  accent: 'blue' | 'indigo' | 'orange' | 'green' | 'red' | 'cyan'
+  eyebrow: string
+  title: string
+  desc: string
+  /** 数量单位，如「位规划师」「家机构」 */
+  countUnit: string
+  /** 副标签模板，{n} 由接口省份数替换 */
+  tagTemplate: string
+  /** 名单弹窗简介 */
+  sub: string
+  /** 名单弹窗底部说明 */
+  foot: string
+  /** 完整 svg 图标字符串 */
+  iconSvg: string
+  /** 规划师：高考 / 考研 */
+  serviceTarget?: string
+  /** 机构：4 个分类之一 */
+  category?: string
 }
