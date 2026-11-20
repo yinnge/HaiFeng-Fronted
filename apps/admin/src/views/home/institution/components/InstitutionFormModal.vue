@@ -15,6 +15,7 @@ import { computed, ref, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ProvinceOptions } from '@haifeng/shared'
 import ImageUpload from '@/components/common/ImageUpload.vue'
+import { uploadInstitutionImage } from '@/api/common/upload'
 import TagEditor from '@/components/common/TagEditor.vue'
 import InstitutionClassTypeEditor from './InstitutionClassTypeEditor.vue'
 import { INSTITUTION_CATEGORY_OPTIONS } from '../../constants'
@@ -35,6 +36,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'submit', data: InstitutionAddDTO): void
+  /** 真实上传成功（透传给列表页追踪孤儿图，关闭时回收） */
+  (e: 'uploaded', url: string): void
 }>()
 
 const activeTab = ref('basic')
@@ -232,7 +235,9 @@ const handleSubmit = async () => {
     sortOrder: d.sortOrder ?? 0,
   }
   if (d.foundedYear) payload.foundedYear = d.foundedYear.trim()
-  if (d.carouselImages && d.carouselImages.length) payload.carouselImages = [...d.carouselImages]
+  // 图片字段必须显式提交（清空时传空串/空数组），否则后端收不到字段、
+  // MyBatis-Plus 默认 NOT_NULL 策略不会写入，DB 残留旧 URL 而 OSS 旧图已被删。
+  payload.carouselImages = d.carouselImages ? [...d.carouselImages] : []
   if (d.tags && d.tags.length) payload.tags = [...d.tags]
   if (d.introduction) payload.introduction = d.introduction.trim()
   if (d.mainDirection) payload.mainDirection = d.mainDirection.trim()
@@ -249,7 +254,7 @@ const handleSubmit = async () => {
   if (d.notice) payload.notice = d.notice.trim()
   if (d.advantages && d.advantages.length) payload.advantages = [...d.advantages]
   if (d.address) payload.address = d.address.trim()
-  if (d.wechatQrcodeUrl) payload.wechatQrcodeUrl = d.wechatQrcodeUrl.trim()
+  payload.wechatQrcodeUrl = d.wechatQrcodeUrl?.trim() || ''
   if (d.email) payload.email = d.email.trim()
   if (d.phone) payload.phone = d.phone.trim()
 
@@ -398,9 +403,11 @@ const dialogTitle = computed(() => (props.mode === 'add' ? '新增培训机构' 
             <el-form-item label="轮播图片">
               <ImageUpload
                 v-model:model-values="carouselImagesProxy"
+                :upload-fn="uploadInstitutionImage"
                 :max="10"
                 :preview-size="88"
                 placeholder="最多 10 张；C 端机构详情页以画廊形式展示"
+                @uploaded="emit('uploaded', $event)"
               />
             </el-form-item>
           </el-tab-pane>
@@ -432,8 +439,10 @@ const dialogTitle = computed(() => (props.mode === 'add' ? '新增培训机构' 
             <el-form-item label="微信二维码">
               <ImageUpload
                 v-model="formData.wechatQrcodeUrl"
+                :upload-fn="uploadInstitutionImage"
                 :preview-size="80"
                 placeholder="选填，C 端机构详情页展示，供家长扫码咨询"
+                @uploaded="emit('uploaded', $event)"
               />
             </el-form-item>
           </el-tab-pane>

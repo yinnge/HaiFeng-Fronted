@@ -5,8 +5,9 @@
  * <p>上下架语义：机构有 status 列（0=下架 / 1=上架），C 端按 status=1 过滤。
  * 删除为物理删除（不可恢复），与规划师的「下线 + 彻底删除」两段式不同。
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { createPendingUploadTracker } from '@/utils/pendingUploads'
 import {
   getInstitutionPage,
   getInstitutionDetail,
@@ -55,6 +56,18 @@ const initialFormData = ref<InstitutionAddDTO | null>(null)
 
 // 教师账号下拉
 const teacherOptions = ref<TeacherOptionVO[]>([])
+
+/**
+ * 表单里上传但最终未保存的图片（孤儿图）追踪器：
+ * 轮播图支持多次上传与移除，取消或反复换图时中间产物从未写进 DB，需在此回收。
+ */
+const imageTracker = createPendingUploadTracker()
+const handleImageUploaded = (url: string) => imageTracker.track(url)
+
+// 弹窗关闭即回收孤儿图；提交成功路径会先调 markSubmitted，故在用的图不会被误删
+watch(formVisible, (visible) => {
+  if (!visible) imageTracker.flush()
+})
 
 const fetchData = async () => {
   loading.value = true
@@ -200,6 +213,8 @@ const handleSubmit = async (data: InstitutionAddDTO) => {
     }
 
     if (res.data.code === 200) {
+      // 提交成功：轮播图 + 二维码最终被 DB 引用，关闭时不回收
+      imageTracker.markSubmitted([...(data.carouselImages || []), data.wechatQrcodeUrl])
       ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
@@ -324,6 +339,7 @@ onMounted(() => {
       :form-loading="formLoading"
       :initial-data="initialFormData"
       :teacher-options="teacherOptions"
+      @uploaded="handleImageUploaded"
       @submit="handleSubmit"
     />
   </div>

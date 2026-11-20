@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import { Plus, Delete } from '@element-plus/icons-vue'
 import type { UniversityAddDTO } from '@/types/university/info'
+import ImageUpload from '@/components/common/ImageUpload.vue'
+import { uploadUniversityLogo, uploadUniversityCarousel } from '@/api/university/info'
 
 export interface UniversityFormData extends UniversityAddDTO {
   status?: number
@@ -37,6 +38,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'submit', data: UniversityFormData, detail: UniversityDetailFormData): void
+  /** 真实上传成功的图片 URL，供父级回收「传了但没保存」的孤儿图 */
+  (e: 'uploaded', url: string): void
 }>()
 
 const formData = reactive<UniversityFormData>({
@@ -73,7 +76,7 @@ watch(
           hasDoctorate: form.hasDoctorate ?? false, hasMaster: form.hasMaster ?? false,
           department: form.department || '', tags: form.tags || [],
           famousUnion: form.famousUnion || '', imageUrl: form.imageUrl || '',
-          introduction: form.introduction || '', sortOrder: form.sortOrder ?? 0,
+          introduction: form.introduction || '', sortOrder: form.sortOrder ?? undefined,
         })
         if (detail) {
           Object.assign(detailFormData, {
@@ -114,9 +117,6 @@ const handleSubmit = () => {
 
 const handleClose = () => { emit('update:visible', false) }
 const dialogTitle = () => (props.mode === 'add' ? '新增院校' : '修改院校')
-
-const addCarouselImage = () => { detailFormData.carouselImages.push('') }
-const removeCarouselImage = (index: number) => { detailFormData.carouselImages.splice(index, 1) }
 </script>
 
 <template>
@@ -245,17 +245,13 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
               </div>
             </el-form-item>
             <el-form-item label="院校图片">
-              <div class="image-url-row">
-                <el-input v-model="formData.imageUrl" placeholder="图片URL地址" maxlength="500" class="image-url-input" />
-                <el-image
-                  v-if="formData.imageUrl"
-                  :src="formData.imageUrl"
-                  fit="cover"
-                  :preview-src-list="[formData.imageUrl]"
-                  preview-teleported
-                  class="image-url-thumb"
-                />
-              </div>
+              <ImageUpload
+                v-model="formData.imageUrl"
+                :upload-fn="uploadUniversityLogo"
+                :preview-size="80"
+                placeholder="上传 Logo 或填写图片链接；C 端院校列表与详情页展示"
+                @uploaded="(url) => emit('uploaded', url)"
+              />
             </el-form-item>
             <el-form-item label="院校简介">
               <el-input v-model="formData.introduction" type="textarea" :rows="3" maxlength="5000" show-word-limit />
@@ -294,21 +290,14 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
               </el-col>
             </el-row>
             <el-form-item label="轮播图片">
-              <div class="carousel-images-list">
-                <div v-for="(img, idx) in detailFormData.carouselImages" :key="idx" class="carousel-image-row">
-                  <el-input v-model="detailFormData.carouselImages[idx]" placeholder="图片URL地址" maxlength="500" class="carousel-image-input" />
-                  <el-image
-                    v-if="img"
-                    :src="img"
-                    :preview-src-list="[img]"
-                    fit="cover"
-                    class="carousel-image-thumb"
-                    preview-teleported
-                  />
-                  <el-button type="danger" :icon="Delete" circle size="small" @click="removeCarouselImage(idx)" />
-                </div>
-                <el-button type="primary" :icon="Plus" plain size="small" @click="addCarouselImage">新增轮播图片</el-button>
-              </div>
+              <ImageUpload
+                v-model:model-values="detailFormData.carouselImages"
+                :upload-fn="uploadUniversityCarousel"
+                :max="10"
+                :preview-size="88"
+                placeholder="最多 10 张；C 端院校详情页以画廊形式展示"
+                @uploaded="(url) => emit('uploaded', url)"
+              />
             </el-form-item>
             <el-form-item label="院校详细介绍">
               <el-input v-model="detailFormData.detailIntroduction" type="textarea" :rows="3" maxlength="5000" show-word-limit />
@@ -429,16 +418,4 @@ const removeCarouselImage = (index: number) => { detailFormData.carouselImages.s
 
 .sort-order-row { display: flex; align-items: center; gap: 12px; width: 100%; }
 .sort-order-tip { font-size: 13px; color: #9ca3af; }
-
-.carousel-images-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-.carousel-image-row { display: flex; align-items: center; gap: 8px; }
-.carousel-image-input { flex: 1; }
-.carousel-image-thumb { width: 64px; height: 64px; border-radius: 6px; border: 1px solid #e5e7eb; flex-shrink: 0; }
-.image-url-row { display: flex; align-items: center; gap: 12px; width: 100%; }
-.image-url-input { flex: 1; }
-.image-url-thumb {
-  width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0; cursor: pointer;
-  border: 1px solid rgba(249, 115, 22, 0.15); transition: all 0.2s ease;
-}
-.image-url-thumb:hover { border-color: #F97316; }
 </style>

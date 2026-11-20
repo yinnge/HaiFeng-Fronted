@@ -1,5 +1,7 @@
 import request from '@haifeng/shared/utils/request'
 import type { R, PageResult } from '@haifeng/shared'
+import type { AxiosResponse } from 'axios'
+import type { ImageUploadVO } from '@/api/common/upload'
 import type {
   CityListVO,
   CityDetailVO,
@@ -11,6 +13,21 @@ import type {
 } from '@/types/city'
 
 const PREFIX = '/api/v1/admin/city'
+
+/**
+ * 上传城市封面图（city-cover-image bucket）
+ * 后端限制：png/jpg/jpeg/webp/svg，单张 ≤ 2MB，返回完整可访问 URL
+ */
+export const uploadCityCover = (
+  file: File,
+): Promise<AxiosResponse<R<ImageUploadVO>>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post(`${PREFIX}/upload-cover`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+}
 
 export const getCityPage = (params: CityQueryDTO) => {
   return request.get<R<PageResult<CityListVO>>>(`${PREFIX}/list`, { params })

@@ -40,6 +40,16 @@ const list = ref<EntryVM[]>([])
 const listLoading = ref(false)
 const provinceFilter = ref('全部')
 
+/** 加载失败的头像 URL（OSS 对象被删 / 失效）；加载失败时回退到姓名首字，避免破图 */
+const brokenAvatars = ref<Set<string>>(new Set())
+const onAvatarError = (url?: string) => {
+  if (!url) return
+  const next = new Set(brokenAvatars.value)
+  next.add(url)
+  brokenAvatars.value = next
+}
+const avatarOk = (url?: string) => !!url && !brokenAvatars.value.has(url)
+
 const provinceChips = computed(() => {
   const counts: Record<string, number> = {}
   list.value.forEach((it) => { if (it.province) counts[it.province] = (counts[it.province] || 0) + 1 })
@@ -360,7 +370,7 @@ const ICO = {
           >
             <template v-if="isPerson">
               <span class="entry-avatar">
-                <img v-if="entry.avatarUrl" :src="entry.avatarUrl" :alt="entry.name" />
+                <img v-if="avatarOk(entry.avatarUrl)" :src="entry.avatarUrl" :alt="entry.name" @error="onAvatarError(entry.avatarUrl)" />
                 <span v-else class="avatar-fallback">{{ entry.logoText }}</span>
               </span>
               <span class="entry-main">
@@ -422,7 +432,7 @@ const ICO = {
         <div v-if="isPerson" class="person-detail">
           <div class="person-side">
             <div class="person-avatar">
-              <img v-if="detail.avatarUrl" :src="detail.avatarUrl" :alt="detail.name" />
+              <img v-if="avatarOk(detail.avatarUrl)" :src="detail.avatarUrl" :alt="detail.name" @error="onAvatarError(detail.avatarUrl)" />
               <span v-else class="avatar-fallback big">{{ detail.logoText }}</span>
             </div>
             <span v-if="detail.credential" class="person-credential"><span v-html="ICO.check"></span>{{ detail.credential }}</span>
@@ -517,7 +527,7 @@ const ICO = {
     </button>
     <div class="appt-head">
       <span class="appt-avatar">
-        <img v-if="appointment?.avatarUrl" :src="appointment.avatarUrl" :alt="appointment.name" />
+        <img v-if="avatarOk(appointment?.avatarUrl)" :src="appointment?.avatarUrl" :alt="appointment?.name" @error="onAvatarError(appointment?.avatarUrl)" />
         <span v-else class="avatar-fallback">{{ appointment?.logoText }}</span>
       </span>
       <div>

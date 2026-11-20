@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { createPendingUploadTracker } from '@/utils/pendingUploads'
 import {
   getUniversityPage,
   getUniversityDetail,
@@ -54,6 +55,15 @@ const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const initialForm = ref<UniversityFormData | null>(null)
 const initialDetail = ref<UniversityDetailFormData | null>(null)
+
+// 图片孤儿回收：记录弹窗内「上传了但最终没保存」的 URL，关闭时清理
+const imageTracker = createPendingUploadTracker()
+const handleImageUploaded = (url: string) => imageTracker.track(url)
+
+// 弹窗关闭即回收；提交成功路径会先 markSubmitted，已在用的图不会被误删
+watch(formVisible, (visible) => {
+  if (!visible) imageTracker.flush()
+})
 
 const fetchData = async () => {
   loading.value = true
@@ -145,7 +155,7 @@ const handleEdit = async (id: string) => {
         hasDoctorate: d.hasDoctorate, hasMaster: d.hasMaster,
         department: d.department || '', tags: d.tags || [],
         famousUnion: d.famousUnion || '', imageUrl: d.imageUrl || '',
-        introduction: d.introduction || '', sortOrder: d.sortOrder ?? 0,
+        introduction: d.introduction || '', sortOrder: d.sortOrder ?? undefined,
       }
       initialDetail.value = {
         address: d.address || '', admissionPhone: d.admissionPhone || '',
@@ -179,25 +189,41 @@ const handleSubmit = async (form: UniversityFormData, detail: UniversityDetailFo
     ElMessage.warning('请填写完整的基础信息（带*字段）')
     return
   }
+  // 详情 payload（add / edit 共用）：轮播图等详情字段新增时也要一并落库
+  const detailPayload: UniversityDetailUpdateDTO = {
+    address: detail.address || undefined,
+    admissionPhone: detail.admissionPhone || undefined,
+    website: detail.website || undefined,
+    historyGroupScore: detail.historyGroupScore ?? undefined,
+    scienceGroupScore: detail.scienceGroupScore ?? undefined,
+    carouselImages: detail.carouselImages?.length ? detail.carouselImages : undefined,
+    introduction: detail.detailIntroduction || undefined,
+    rankings: Object.values(detail.rankings).some(v => v !== undefined) ? detail.rankings as Record<string, number> : undefined,
+    abroadRate: detail.abroadRate || undefined,
+    genderRatio: detail.genderRatio || undefined,
+  }
+
   try {
     let res: any
     if (formMode.value === 'add') {
       res = await addUniversity({ ...form })
+      if (res.data.code === 200 && res.data.data != null) {
+        // 主表已落库，Logo 已被引用，先锁定，防止后续详情失败时被当孤儿回收
+        imageTracker.markSubmitted([form.imageUrl])
+        // 新增院校只写主表，详情（含轮播图）需再提交一次；
+        // 后端 updateDetail 在详情不存在时会新建，故可直接复用。
+        await updateUniversityDetail(String(res.data.data), detailPayload)
+        // 详情也落库，轮播图一并锁定
+        imageTracker.markSubmitted([form.imageUrl, ...(detail.carouselImages || [])])
+      }
     } else if (formMode.value === 'edit' && currentId.value) {
       res = await updateUniversity(currentId.value, { ...form })
-      const detailPayload: UniversityDetailUpdateDTO = {
-        address: detail.address || undefined,
-        admissionPhone: detail.admissionPhone || undefined,
-        website: detail.website || undefined,
-        historyGroupScore: detail.historyGroupScore ?? undefined,
-        scienceGroupScore: detail.scienceGroupScore ?? undefined,
-        carouselImages: detail.carouselImages?.length ? detail.carouselImages : undefined,
-        introduction: detail.detailIntroduction || undefined,
-        rankings: Object.values(detail.rankings).some(v => v !== undefined) ? detail.rankings as Record<string, number> : undefined,
-        abroadRate: detail.abroadRate || undefined,
-        genderRatio: detail.genderRatio || undefined,
+      if (res.data.code === 200) {
+        // 主表 Logo 先锁定，再存详情
+        imageTracker.markSubmitted([form.imageUrl])
+        await updateUniversityDetail(currentId.value, detailPayload)
+        imageTracker.markSubmitted([form.imageUrl, ...(detail.carouselImages || [])])
       }
-      await updateUniversityDetail(currentId.value, detailPayload)
     } else return
 
     if (res.data.code === 200) {
@@ -327,6 +353,7 @@ onMounted(() => { fetchData() })
       :form-loading="formLoading"
       :initial-form="initialForm"
       :initial-detail="initialDetail"
+      @uploaded="handleImageUploaded"
       @submit="handleSubmit"
     />
   </div>

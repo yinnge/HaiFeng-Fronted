@@ -34,6 +34,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'submit', data: PlannerAddDTO): void
+  /** 真实上传成功（透传给列表页追踪孤儿图，关闭时回收） */
+  (e: 'uploaded', url: string): void
 }>()
 
 const activeTab = ref('basic')
@@ -224,7 +226,9 @@ const handleSubmit = async () => {
   if (d.province) payload.province = d.province
   if (d.listDesc) payload.listDesc = d.listDesc.trim()
   if (d.listTags && d.listTags.length) payload.listTags = [...d.listTags]
-  if (d.avatarUrl) payload.avatarUrl = d.avatarUrl
+  // 图片字段必须显式提交（清空时传空串），否则后端收不到字段、
+  // MyBatis-Plus 默认 NOT_NULL 策略不会写入，DB 残留旧 URL 而 OSS 旧图已被删。
+  payload.avatarUrl = d.avatarUrl || ''
   if (d.workYears) payload.workYears = d.workYears.trim()
   if (d.servedCount) payload.servedCount = d.servedCount.trim()
   if (d.draftSla) payload.draftSla = d.draftSla.trim()
@@ -235,7 +239,7 @@ const handleSubmit = async () => {
   if (d.email) payload.email = d.email.trim()
   if (d.phone) payload.phone = d.phone.trim()
   if (d.address) payload.address = d.address.trim()
-  if (d.wechatQrcodeUrl) payload.wechatQrcodeUrl = d.wechatQrcodeUrl.trim()
+  payload.wechatQrcodeUrl = d.wechatQrcodeUrl?.trim() || ''
 
   emit('submit', payload)
 }
@@ -325,6 +329,7 @@ const dialogTitle = computed(() => (props.mode === 'add' ? '新增规划师' : '
                 v-model="formData.avatarUrl"
                 :preview-size="80"
                 placeholder="建议上传正方形头像；C 端列表与详情页均使用此图"
+                @uploaded="emit('uploaded', $event)"
               />
             </el-form-item>
           </el-tab-pane>
@@ -406,6 +411,7 @@ const dialogTitle = computed(() => (props.mode === 'add' ? '新增规划师' : '
                 v-model="formData.wechatQrcodeUrl"
                 :preview-size="80"
                 placeholder="选填，C 端预约弹窗中展示，供考生扫码联系"
+                @uploaded="emit('uploaded', $event)"
               />
             </el-form-item>
           </el-tab-pane>
