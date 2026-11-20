@@ -9,8 +9,38 @@ import type {
 } from '@/types/university/info'
 import type { R, PageResponse } from '@haifeng/shared'
 import type { AxiosResponse } from 'axios'
+import type { ImageUploadVO } from '@/api/common/upload'
 
 const PREFIX = '/api/v1/admin/university'
+
+/**
+ * 上传院校 Logo（universities-logo bucket）
+ * 后端限制：png/jpg/jpeg/webp/svg，单张 ≤ 2MB，返回完整可访问 URL
+ */
+export const uploadUniversityLogo = (
+  file: File,
+): Promise<AxiosResponse<R<ImageUploadVO>>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post(`${PREFIX}/upload-logo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+}
+
+/**
+ * 上传院校详情轮播图（univeristies-detail bucket）
+ */
+export const uploadUniversityCarousel = (
+  file: File,
+): Promise<AxiosResponse<R<ImageUploadVO>>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post(`${PREFIX}/upload-carousel`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+}
 
 export const getUniversityPage = (
   params: UniversityQueryDTO,

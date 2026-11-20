@@ -39,7 +39,11 @@ const pageSizes = [10, 20, 30, 50, 100]
               preview-teleported
               fit="cover"
               class="avatar-img"
-            />
+            >
+              <template #error>
+                <span class="avatar-fallback">{{ row.name?.slice(0, 1) || '?' }}</span>
+              </template>
+            </el-image>
             <span v-else class="avatar-fallback">{{ row.name?.slice(0, 1) || '?' }}</span>
           </template>
         </el-table-column>

@@ -5,8 +5,9 @@
  * <p>上下架语义：规划师无 status 列，状态由软删除标记 is_deleted 承担。
  * 后端以派生字段 status 返回（1=在线 / 0=已下线），并提供 PUT /{id}/status 切换。
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { createPendingUploadTracker } from '@/utils/pendingUploads'
 import {
   getPlannerPage,
   getPlannerDetail,
@@ -55,6 +56,19 @@ const initialFormData = ref<PlannerAddDTO | null>(null)
 
 // 教师账号下拉
 const teacherOptions = ref<TeacherOptionVO[]>([])
+
+/**
+ * 表单里上传但最终未保存的图片（孤儿图）追踪器：
+ * 打开弹窗后每次真实上传都记账，提交成功时标记最终保留的 URL，
+ * 弹窗关闭（取消 / 提交成功 / 直接关闭）时回收没被保留的那些。
+ */
+const imageTracker = createPendingUploadTracker()
+const handleImageUploaded = (url: string) => imageTracker.track(url)
+
+// 弹窗关闭即回收孤儿图；提交成功路径会先调 markSubmitted，故在用的图不会被误删
+watch(formVisible, (visible) => {
+  if (!visible) imageTracker.flush()
+})
 
 const fetchData = async () => {
   loading.value = true
@@ -196,6 +210,8 @@ const handleSubmit = async (data: PlannerAddDTO) => {
     }
 
     if (res.data.code === 200) {
+      // 提交成功：声明最终被 DB 引用的图片，关闭弹窗时不回收这些
+      imageTracker.markSubmitted([data.avatarUrl, data.wechatQrcodeUrl])
       ElMessage.success(formMode.value === 'add' ? '新增成功' : '修改成功')
       formVisible.value = false
       fetchData()
@@ -336,6 +352,7 @@ onMounted(() => {
       :form-loading="formLoading"
       :initial-data="initialFormData"
       :teacher-options="teacherOptions"
+      @uploaded="handleImageUploaded"
       @submit="handleSubmit"
     />
   </div>

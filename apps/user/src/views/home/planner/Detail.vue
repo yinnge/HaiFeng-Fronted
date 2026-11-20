@@ -12,6 +12,10 @@ const appointment = ref<PlannerAppointmentVO | null>(null)
 const consultationVisible = ref(false)
 const loading = ref(true)
 
+/** 头像加载失败（OSS 对象被删 / URL 失效）时回退到姓名首字 */
+const avatarBroken = ref(false)
+const onAvatarError = () => { avatarBroken.value = true }
+
 onMounted(async () => {
   try {
     const id = route.params.id as string
@@ -51,9 +55,10 @@ onMounted(async () => {
         <div class="flex flex-col gap-8 md:flex-row">
           <div class="flex-shrink-0 text-center md:text-left">
             <img
-              v-if="detail.avatarUrl"
+              v-if="detail.avatarUrl && !avatarBroken"
               :src="detail.avatarUrl"
               :alt="detail.name"
+              @error="onAvatarError"
               class="mx-auto h-40 w-40 rounded-full border-4 border-orange-100 object-cover md:mx-0"
             />
             <div

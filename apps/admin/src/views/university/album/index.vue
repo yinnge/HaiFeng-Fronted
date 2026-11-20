@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { createPendingUploadTracker } from '@/utils/pendingUploads'
+import ImageUpload from '@/components/common/ImageUpload.vue'
 import {
   getGalleryPage,
   getGalleryDetail,
@@ -12,6 +14,7 @@ import {
   batchDeleteGallery,
   batchHardDeleteGallery,
   importGallery,
+  uploadGalleryImage,
 } from '@/api/university/gallery'
 import { getUniversityPage } from '@/api/university/info'
 import type {
@@ -57,6 +60,16 @@ const editFormData = reactive<CampusGalleryUpdateDTO>({
   imageUrl: '',
   sortOrder: undefined,
   status: 1,
+})
+
+/**
+ * 孤儿图回收：上传的图片先落 OSS，若取消/反复换图，未入库的中间图由前端回收。
+ * 提交成功时先 markSubmitted，弹窗关闭 flush 时保留最终入库的图。
+ */
+const imageTracker = createPendingUploadTracker()
+const handleImageUploaded = (url: string) => imageTracker.track(url)
+watch(dialogVisible, (visible) => {
+  if (!visible) imageTracker.flush()
 })
 
 const fetchUniversityOptions = async (name?: string) => {
@@ -197,6 +210,7 @@ const handleSubmit = async () => {
         sortOrder: formData.sortOrder,
       })
       if (res.data.code === 200) {
+        imageTracker.markSubmitted([formData.imageUrl])
         ElMessage.success('新增成功')
         dialogVisible.value = false
         fetchData()
@@ -219,6 +233,7 @@ const handleSubmit = async () => {
         status: editFormData.status,
       })
       if (res.data.code === 200) {
+        imageTracker.markSubmitted([editFormData.imageUrl])
         ElMessage.success('修改成功')
         dialogVisible.value = false
         fetchData()
@@ -534,8 +549,14 @@ onMounted(() => {
             <el-form-item label="图片类型" required>
               <el-input v-model="formData.imageType" placeholder="如：教学楼、宿舍、食堂" maxlength="30" />
             </el-form-item>
-            <el-form-item label="图片URL" required>
-              <el-input v-model="formData.imageUrl" placeholder="请输入图片地址" maxlength="500" />
+            <el-form-item label="校园图片" required>
+              <ImageUpload
+                v-model="formData.imageUrl"
+                :upload-fn="uploadGalleryImage"
+                :preview-size="88"
+                placeholder="上传图片到 OSS 或填写图片链接"
+                @uploaded="handleImageUploaded"
+              />
             </el-form-item>
             <el-form-item label="排序权重">
               <el-input-number v-model="formData.sortOrder" :min="0" style="width: 200px" />
@@ -549,8 +570,14 @@ onMounted(() => {
             <el-form-item label="图片类型" required>
               <el-input v-model="editFormData.imageType" placeholder="如：教学楼、宿舍、食堂" maxlength="30" />
             </el-form-item>
-            <el-form-item label="图片URL" required>
-              <el-input v-model="editFormData.imageUrl" placeholder="请输入图片地址" maxlength="500" />
+            <el-form-item label="校园图片" required>
+              <ImageUpload
+                v-model="editFormData.imageUrl"
+                :upload-fn="uploadGalleryImage"
+                :preview-size="88"
+                placeholder="上传图片到 OSS 或填写图片链接"
+                @uploaded="handleImageUploaded"
+              />
             </el-form-item>
             <el-form-item label="排序权重">
               <el-input-number v-model="editFormData.sortOrder" :min="0" style="width: 200px" />

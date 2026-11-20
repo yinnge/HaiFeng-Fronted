@@ -4,7 +4,7 @@
  *
  * - 双模式：「上传到服务器」/「填写图片链接」可切换
  * - 单图（v-model:modelValue = string）与多图（v-model:modelValues = string[]）两种形态
- * - 上传走 /api/v1/admin/common/upload，写入独立的公共读 bucket，返回永久有效的完整 URL
+ * - 上传默认走 /api/v1/admin/common/upload（haifeng/images/ 前缀）；业务可用 uploadFn 改走专用前缀
  * - 后端限制：仅 png / jpg / jpeg / webp / svg，单张 ≤ 2MB（前端同款校验，先拦一道）
  *
  * 注意：图片链接格式须为 http(s):// 开头或 / 开头的相对路径，
@@ -13,7 +13,12 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
-import { uploadImage } from '@/api/common/upload'
+import type { AxiosResponse } from 'axios'
+import type { R } from '@haifeng/shared'
+import { uploadImage, type ImageUploadVO } from '@/api/common/upload'
+
+/** 自定义上传函数；不传则走默认 /common/upload（规划师头像等沿用） */
+export type ImageUploadFn = (file: File) => Promise<AxiosResponse<R<ImageUploadVO>>>
 
 const props = withDefaults(
   defineProps<{
@@ -29,6 +34,8 @@ const props = withDefaults(
     placeholder?: string
     /** 预览尺寸（px） */
     previewSize?: number
+    /** 自定义上传端点（业务专用前缀 / bucket）；不传走通用上传 */
+    uploadFn?: ImageUploadFn
   }>(),
   {
     modelValue: '',
@@ -42,6 +49,11 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
   (e: 'update:modelValues', v: string[]): void
+  /**
+   * 真实上传成功（仅 upload 接口，手填链接不触发）。
+   * 供父级追踪「上传了但可能没被保存」的图片，关闭弹窗时回收孤儿图。
+   */
+  (e: 'uploaded', url: string): void
 }>()
 
 /** 是否多图模式：只有父组件显式传了 model-values 才是多图（不能靠默认值判断） */
@@ -88,13 +100,17 @@ function handleUpload(options: UploadRequestOptions) {
   }
 
   uploading.value = true
-  return uploadImage(file as File)
+  const doUpload = props.uploadFn ?? uploadImage
+  return doUpload(file as File)
     .then((res) => {
       const url = res.data.data?.url
       if (!url) {
         ElMessage.error('上传失败：未返回图片地址')
         return
       }
+      // 图片已落到 OSS，先记账供父级在关闭弹窗时回收「传了但没保存」的孤儿图。
+      // 必须放在所有 return 之前：多图超出 max 被丢弃的那张同样已上传，也要能被回收。
+      emit('uploaded', url)
       if (isMulti.value) {
         if (list.value.length >= props.max) {
           ElMessage.warning(`最多上传 ${props.max} 张`)

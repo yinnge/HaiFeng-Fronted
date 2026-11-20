@@ -8,8 +8,24 @@ import type {
 } from '@/types/university/gallery'
 import type { R, PageResponse } from '@haifeng/shared'
 import type { AxiosResponse } from 'axios'
+import type { ImageUploadVO } from '@/api/common/upload'
 
 const PREFIX = '/api/v1/admin/university/gallery'
+
+/**
+ * 上传校园图册图片（universities-album bucket）
+ * 后端限制：png/jpg/jpeg/webp/svg，单张 ≤ 2MB，返回完整可访问 URL
+ */
+export const uploadGalleryImage = (
+  file: File,
+): Promise<AxiosResponse<R<ImageUploadVO>>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post(`${PREFIX}/upload-image`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+}
 
 export const getGalleryPage = (
   params: CampusGalleryQueryDTO,

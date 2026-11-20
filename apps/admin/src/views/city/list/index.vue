@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { createPendingUploadTracker } from '@/utils/pendingUploads'
+import ImageUpload from '@/components/common/ImageUpload.vue'
 import {
   getCityPage,
   getCityDetail,
@@ -12,6 +14,7 @@ import {
   batchDeleteCity,
   importCity,
   importCityDetail,
+  uploadCityCover,
 } from '@/api/city'
 import type {
   CityListVO,
@@ -42,6 +45,16 @@ const formLoading = ref(false)
 const currentId = ref<string | null>(null)
 const detailData = ref<CityDetailVO | null>(null)
 const activeTab = ref('basic')
+
+/**
+ * 孤儿图回收：上传的封面图先落 OSS，若取消/反复换图，未入库的中间图由前端回收。
+ * 封面图在 saveBasic 落库，故在 saveBasic 成功处 markSubmitted；弹窗关闭 flush 时保留最终入库的图。
+ */
+const imageTracker = createPendingUploadTracker()
+const handleImageUploaded = (url: string) => imageTracker.track(url)
+watch(dialogVisible, (visible) => {
+  if (!visible) imageTracker.flush()
+})
 
 const formData = reactive<Record<string, any>>({
   cityName: '',
@@ -327,6 +340,8 @@ const saveBasic = async (): Promise<boolean> => {
     }
 
     if (res.data.code === 200) {
+      // 封面图在基本信息提交时落库，此处声明为最终保留，关闭弹窗不回收
+      imageTracker.markSubmitted([formData.coverImageUrl])
       if (dialogMode.value === 'add' && res.data.data) {
         currentId.value = res.data.data
       }
@@ -807,14 +822,13 @@ onMounted(() => {
                 <el-row :gutter="20">
                   <el-col :span="24">
                     <el-form-item label="城市背景图">
-                      <el-input v-model="formData.coverImageUrl" placeholder="请输入背景图URL（对应Excel导入列「城市背景图」）" maxlength="500" clearable />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20" v-if="formData.coverImageUrl">
-                  <el-col :span="24">
-                    <el-form-item label="图片预览">
-                      <el-image :src="formData.coverImageUrl" :preview-src-list="[formData.coverImageUrl]" fit="cover" style="width:180px;height:100px;border-radius:8px;border:1px solid #fed7aa" />
+                      <ImageUpload
+                        v-model="formData.coverImageUrl"
+                        :upload-fn="uploadCityCover"
+                        :preview-size="100"
+                        placeholder="上传图片到 OSS 或填写背景图链接（对应Excel导入列「城市背景图」）"
+                        @uploaded="handleImageUploaded"
+                      />
                     </el-form-item>
                   </el-col>
                 </el-row>

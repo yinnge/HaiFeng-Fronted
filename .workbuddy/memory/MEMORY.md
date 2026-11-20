@@ -12,6 +12,7 @@
 ## 高频坑
 1. 新公开接口同步 `SecurityConfig.WHITE_LIST` 2. 分页 `size∈[10,100]`、`page≥1` 3. 就业枚举以 DTO `@Pattern` + DB CHECK 为权威 4. 错误文案 `err.response?.data?.msg || err.message || '操作失败'`（拦截器 reject `new Error(msg)`，无 `.response`）5. MP `updateById` 排除 `is_deleted`，禁用=软删 / 删除=物理删，查含禁用或恢复状态走自定义 SQL 6. CORS 含 PATCH 7. 列表 VO 返 `id` 主键 8. OSS 预签名 3.17.4 仅 `ResponseHeaderOverrides` 9. C 端 VO 的 Long 雪花 ID 加 `@JsonSerialize(ToStringSerializer)` 10. 标签配色 / 筛选前先查 DB 实际取值：`SELECT col,count(*) FROM t_x GROUP BY col`。
 11. 改 DB 后 C 端不生效先想 Redis `haifeng:app:home:*` 缓存 30min；`--scan` 空先怀疑 NOAUTH，带密码 `PW=$(grep ^REDIS_PASSWORD= .env|cut -d= -f2-); docker exec haifeng-redis redis-cli -a "$PW" --no-auth-warning --scan --pattern "*institution*"`。
+12. 位次与分数语义相反：数字越小越靠前。最低位次(minRank)=最低分考生位次=数值最大，最高位次(maxRank)=数值最小，中位(avgRank)居中 → 合法关系 `minRank ≥ avgRank ≥ maxRank`，勿照搬分数的 `minScore ≤ avgScore ≤ maxScore`。导入校验(AdmissionGroupServiceImpl)、DB 聚合(fn_recalc_group: MAX(min_rank)/MIN(max_rank))、app 安全系数(ScoreBasedCalculator: 优先 avgRank、降级 minRank*0.85、rankRatio=avgHistRank/userRank) 三处均已按此语义。
 
 ## 勿回退（视觉 / 交互）
 - 弹窗锁滚动抖动：`body{overflow-y:scroll;scrollbar-gutter:stable}` + `body.el-popup-parent--hidden{width:100%!important}`。

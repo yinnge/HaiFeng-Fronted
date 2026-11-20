@@ -144,7 +144,7 @@ onMounted(fetchAllCounts)
   <section class="section-wrapper section-mentor">
     <div class="section-container reveal">
       <div class="section-head">
-        <h2 class="section-title">名师指导</h2>
+        <h2 class="section-title">更多需求</h2>
         <p class="section-sub">不止志愿填报 —— 从高中冲刺到职场上岸，找人、找课、找机构一站直达</p>
       </div>
 
