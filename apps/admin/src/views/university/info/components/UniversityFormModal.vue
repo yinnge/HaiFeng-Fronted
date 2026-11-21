@@ -60,11 +60,22 @@ const detailFormData = reactive<UniversityDetailFormData>({
 
 const activeTab = ref('basic')
 
+/**
+ * 排序权重是否被用户「主动」改动过。
+ * 编辑弹窗保存时会全量提交主表，若用户只是改了轮播图/Logo，不应顺带写 sortOrder：
+ * 旧数据该列为 NULL，一旦被表单兜底的 0 覆盖，列表排序键就从 NULL 变 0，行位置会跳变。
+ * el-input-number 的 @change 只在用户交互时触发，回填 v-model 不会触发，可据此区分。
+ */
+const sortOrderTouched = ref(false)
+const onSortOrderChange = () => { sortOrderTouched.value = true }
+
 watch(
   () => [props.visible, props.initialForm, props.initialDetail, props.mode] as const,
   ([visible, form, detail, mode]) => {
     if (visible) {
       activeTab.value = 'basic'
+      // 每次打开弹窗重置「排序是否被改动」标记（回填 v-model 不算用户改动）
+      sortOrderTouched.value = false
       if (mode === 'edit' && form) {
         Object.assign(formData, {
           name: form.name || '', nameEn: form.nameEn || '',
@@ -112,7 +123,12 @@ watch(
 )
 
 const handleSubmit = () => {
-  emit('submit', { ...formData }, { ...detailFormData, rankings: { ...detailFormData.rankings } })
+  const payload = { ...formData }
+  // 用户没主动改排序权重时剔除该字段，避免全量提交把兜底值 0 写回库、改变列表排序
+  if (!sortOrderTouched.value) {
+    delete (payload as Partial<UniversityFormData>).sortOrder
+  }
+  emit('submit', payload, { ...detailFormData, rankings: { ...detailFormData.rankings } })
 }
 
 const handleClose = () => { emit('update:visible', false) }
@@ -240,6 +256,7 @@ const dialogTitle = () => (props.mode === 'add' ? '新增院校' : '修改院校
                   :max="9999"
                   controls-position="right"
                   style="width: 200px"
+                  @change="onSortOrderChange"
                 />
                 <span class="sort-order-tip">数值越大，C 端院校列表展示越靠前</span>
               </div>
