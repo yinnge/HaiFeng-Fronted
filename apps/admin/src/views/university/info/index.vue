@@ -196,7 +196,9 @@ const handleSubmit = async (form: UniversityFormData, detail: UniversityDetailFo
     website: detail.website || undefined,
     historyGroupScore: detail.historyGroupScore ?? undefined,
     scienceGroupScore: detail.scienceGroupScore ?? undefined,
-    carouselImages: detail.carouselImages?.length ? detail.carouselImages : undefined,
+    // 轮播图清空时显式传空数组（不能传 undefined）：后端 setCarouselImages(null)
+    // 会被 MyBatis-Plus 的 NOT_NULL 策略忽略，导致 DB 残留旧 URL、前端仍显示旧图
+    carouselImages: detail.carouselImages ? [...detail.carouselImages] : [],
     introduction: detail.detailIntroduction || undefined,
     rankings: Object.values(detail.rankings).some(v => v !== undefined) ? detail.rankings as Record<string, number> : undefined,
     abroadRate: detail.abroadRate || undefined,
